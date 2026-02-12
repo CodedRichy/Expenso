@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../repositories/cycle_repository.dart';
-import 'EmptyStates.dart';
+import 'empty_states.dart';
 
 class GroupsList extends StatelessWidget {
   const GroupsList({super.key});
@@ -188,9 +188,8 @@ class GroupsList extends StatelessWidget {
               ],
             ),
           ),
-        );
+          );
         },
-      ),
     );
   }
 }

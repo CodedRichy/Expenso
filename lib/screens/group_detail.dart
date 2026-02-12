@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
-import 'EmptyStates.dart';
+import 'empty_states.dart';
 
 class GroupDetail extends StatelessWidget {
   final Group? group;

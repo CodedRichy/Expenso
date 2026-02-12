@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
-import 'screens/PhoneAuth.dart';
-import 'screens/GroupsList.dart';
-import 'screens/CreateGroup.dart';
-import 'screens/InviteMembers.dart';
-import 'screens/GroupDetail.dart';
-import 'screens/ExpenseInput.dart';
-import 'screens/UndoExpense.dart';
-import 'screens/EditExpense.dart';
-import 'screens/GroupMembers.dart';
-import 'screens/MemberChange.dart';
-import 'screens/DeleteGroup.dart';
-import 'screens/SettlementConfirmation.dart';
-import 'screens/PaymentResult.dart';
-import 'screens/CycleSettled.dart';
-import 'screens/CycleHistory.dart';
-import 'screens/CycleHistoryDetail.dart';
-import 'screens/EmptyStates.dart';
-import 'screens/ErrorStates.dart';
+import 'screens/phone_auth.dart';
+import 'screens/groups_list.dart';
+import 'screens/create_group.dart';
+import 'screens/invite_members.dart';
+import 'screens/group_detail.dart';
+import 'screens/expense_input.dart';
+import 'screens/undo_expense.dart';
+import 'screens/edit_expense.dart';
+import 'screens/group_members.dart';
+import 'screens/member_change.dart';
+import 'screens/delete_group.dart';
+import 'screens/settlement_confirmation.dart';
+import 'screens/payment_result.dart';
+import 'screens/cycle_settled.dart';
+import 'screens/cycle_history.dart';
+import 'screens/cycle_history_detail.dart';
+import 'screens/empty_states.dart';
+import 'screens/error_states.dart';
 
 void main() {
-  print("APP STARTING...");
+  debugPrint("APP STARTING...");
   runApp(const MyApp());
 }
 
