@@ -1,29 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import '../models/cycle.dart';
 
 class CycleHistoryDetail extends StatelessWidget {
-  final String groupName;
-  final String cycleDate;
-  final double settledAmount;
-  final List<Expense>? expenses;
-
-  const CycleHistoryDetail({
-    super.key,
-    this.groupName = 'Weekend Trip',
-    this.cycleDate = 'Dec 1 – Dec 7',
-    this.settledAmount = 2800,
-    this.expenses,
-  });
+  const CycleHistoryDetail({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final defaultExpenses = expenses ??
-        [
-          Expense(id: '1', description: 'Dinner at Bistro 42', amount: 1200, date: 'Dec 5'),
-          Expense(id: '2', description: 'Taxi ride', amount: 850, date: 'Dec 4'),
-          Expense(id: '3', description: 'Groceries', amount: 700, date: 'Dec 2'),
-          Expense(id: '4', description: 'Fuel', amount: 490, date: 'Dec 1'),
-        ];
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final cycle = args['cycle'] as Cycle;
+    final groupName = args['groupName'] as String;
+    final startDate = cycle.startDate ?? '–';
+    final endDate = cycle.endDate ?? '–';
+    final cycleDate = '$startDate – $endDate';
+    final settledAmount = cycle.expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+    final listExpenses = cycle.expenses;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -130,9 +120,9 @@ class CycleHistoryDetail extends StatelessWidget {
                   Expanded(
                     child: ListView.builder(
                       padding: EdgeInsets.zero,
-                      itemCount: defaultExpenses.length,
+                      itemCount: listExpenses.length,
                       itemBuilder: (context, index) {
-                        final expense = defaultExpenses[index];
+                        final expense = listExpenses[index];
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                           decoration: BoxDecoration(

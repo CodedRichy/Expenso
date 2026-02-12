@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
-import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 
 class CycleHistory extends StatelessWidget {
