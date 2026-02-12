@@ -29,6 +29,7 @@ class GroupDetail extends StatelessWidget {
         final defaultGroup = repo.getGroup(groupId) ?? routeGroup ?? group ?? fallbackGroup;
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
+        final pendingAmount = expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
         final isClosing = defaultGroup.status == 'closing';
         final isSettled = defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty;
@@ -111,7 +112,7 @@ class GroupDetail extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '₹${defaultGroup.amount.toStringAsFixed(0).replaceAllMapped(
+                          '₹${pendingAmount.toStringAsFixed(0).replaceAllMapped(
                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                             (Match m) => '${m[1]},',
                           )}',

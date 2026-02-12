@@ -72,6 +72,11 @@ class CycleRepository extends ChangeNotifier {
 
   List<Group> get groups => List.unmodifiable(_groups);
 
+  void addGroup(Group group) {
+    _groups.add(group);
+    notifyListeners();
+  }
+
   Group? getGroup(String id) {
     try {
       return _groups.firstWhere((g) => g.id == id);
@@ -130,6 +135,13 @@ class CycleRepository extends ChangeNotifier {
     final index = cycle.expenses.indexWhere((e) => e.id == updatedExpense.id);
     if (index < 0) return;
     cycle.expenses[index] = updatedExpense;
+    notifyListeners();
+  }
+
+  /// Removes the expense from the active cycle and notifies listeners.
+  void deleteExpense(String groupId, String expenseId) {
+    final cycle = getActiveCycle(groupId);
+    cycle.expenses.removeWhere((e) => e.id == expenseId);
     notifyListeners();
   }
 

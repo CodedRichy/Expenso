@@ -94,9 +94,10 @@ class CycleSettled extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.pushReplacementNamed(
+                                Navigator.pushNamedAndRemoveUntil(
                                   context,
                                   '/group-detail',
+                                  (route) => route.isFirst,
                                   arguments: group,
                                 );
                               },

@@ -17,30 +17,49 @@ class _EditExpenseState extends State<EditExpense> {
   String? _groupId;
   String? _expenseId;
   bool _canEdit = true;
+  bool _hasInitialized = false;
+  bool _expenseNotFound = false;
 
   @override
   void initState() {
     super.initState();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final expenseId = args?['expenseId'] as String?;
-    final groupId = args?['groupId'] as String?;
+    descriptionController = TextEditingController();
+    amountController = TextEditingController();
+  }
 
-    _groupId = groupId;
-    _expenseId = expenseId;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasInitialized) return;
+    _hasInitialized = true;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is! Map<String, dynamic>) {
+      setState(() => _expenseNotFound = true);
+      return;
+    }
+
+    final expenseId = args['expenseId'] as String?;
+    final groupId = args['groupId'] as String?;
+    if (groupId == null || expenseId == null || expenseId.isEmpty || groupId.isEmpty) {
+      setState(() => _expenseNotFound = true);
+      return;
+    }
 
     final repo = CycleRepository.instance;
-    final cycle = groupId != null ? repo.getActiveCycle(groupId) : null;
-    final cycleStatus = cycle?.status;
-    _canEdit = cycleStatus == CycleStatus.active;
+    final expense = repo.getExpense(groupId, expenseId);
+    if (expense == null) {
+      setState(() => _expenseNotFound = true);
+      return;
+    }
 
-    final expense = (groupId != null && expenseId != null)
-        ? repo.getExpense(groupId, expenseId)
-        : null;
-    final description = expense?.description ?? '';
-    final amount = expense?.amount ?? 0.0;
-
-    descriptionController = TextEditingController(text: description);
-    amountController = TextEditingController(text: amount.toStringAsFixed(0));
+    final cycle = repo.getActiveCycle(groupId);
+    _groupId = groupId;
+    _expenseId = expenseId;
+    _canEdit = cycle.status == CycleStatus.active;
+    descriptionController.text = expense.description;
+    amountController.text = expense.amount.toStringAsFixed(0);
+    setState(() {});
   }
 
   @override
@@ -73,11 +92,19 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   void handleDelete() {
+    final groupId = _groupId;
+    final expenseId = _expenseId;
+    if (groupId != null && expenseId != null) {
+      CycleRepository.instance.deleteExpense(groupId, expenseId);
+    }
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_expenseNotFound) {
+      return _buildErrorScreen(context);
+    }
     final canEdit = _canEdit;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -118,6 +145,91 @@ class _EditExpenseState extends State<EditExpense> {
               ),
             ),
             _buildSaveButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.chevron_left, size: 24),
+                color: const Color(0xFF1A1A1A),
+                padding: EdgeInsets.zero,
+                alignment: Alignment.centerLeft,
+                constraints: const BoxConstraints(),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(32, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                  child: SizedBox(
+                    width: 280,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: const Color(0xFF9B9B9B),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Expense not found',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'This expense may have been removed or the link is invalid. Go back and try again.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: const Color(0xFF6B6B6B),
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A1A1A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text('Go back'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

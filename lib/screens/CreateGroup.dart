@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -39,13 +41,20 @@ class _CreateGroupState extends State<CreateGroup> {
   }
 
   void handleCreate() {
-    if (name.trim().isNotEmpty) {
-      Navigator.pushReplacementNamed(
-        context,
-        '/invite-members',
-        arguments: name.trim(),
-      );
-    }
+    if (name.trim().isEmpty) return;
+    final newGroup = Group(
+      id: 'g_${DateTime.now().millisecondsSinceEpoch}',
+      name: name.trim(),
+      status: 'open',
+      amount: 0,
+      statusLine: 'Cycle open',
+    );
+    CycleRepository.instance.addGroup(newGroup);
+    Navigator.pushReplacementNamed(
+      context,
+      '/invite-members',
+      arguments: name.trim(),
+    );
   }
 
   @override
