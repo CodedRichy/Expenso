@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class GroupDetail extends StatelessWidget {
   final Group? group;
@@ -11,29 +12,28 @@ class GroupDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get group from route arguments or use the passed group or default
+    final repo = CycleRepository.instance;
     final routeGroup = ModalRoute.of(context)?.settings.arguments as Group?;
-    final defaultGroup = routeGroup ?? group ??
-        Group(
-          id: '1',
-          name: 'Weekend Trip',
-          status: 'closing',
-          amount: 3240,
-          statusLine: 'Cycle closes Sunday',
-        );
+    final groupId = (routeGroup ?? group)?.id ?? '1';
+    final fallbackGroup = Group(
+      id: '1',
+      name: 'Weekend Trip',
+      status: 'closing',
+      amount: 3240,
+      statusLine: 'Cycle closes Sunday',
+    );
 
-    final List<Expense> expenses = [
-      Expense(id: '1', description: 'Dinner at Bistro 42', amount: 1200, date: 'Today'),
-      Expense(id: '2', description: 'Taxi ride', amount: 850, date: 'Today'),
-      Expense(id: '3', description: 'Groceries', amount: 700, date: 'Yesterday'),
-      Expense(id: '4', description: 'Fuel', amount: 490, date: 'Yesterday'),
-    ];
+    return ListenableBuilder(
+      listenable: repo,
+      builder: (context, _) {
+        final defaultGroup = repo.getGroup(groupId) ?? routeGroup ?? group ?? fallbackGroup;
+        final activeCycle = repo.getActiveCycle(groupId);
+        final expenses = repo.getExpenses(activeCycle.id);
+        final isClosing = defaultGroup.status == 'closing';
+        final isSettled = defaultGroup.status == 'settled';
+        final hasExpenses = expenses.isNotEmpty;
 
-    final isClosing = defaultGroup.status == 'closing';
-    final isSettled = defaultGroup.status == 'settled';
-    final hasExpenses = expenses.isNotEmpty;
-
-    return Scaffold(
+        return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
@@ -64,7 +64,11 @@ class GroupDetail extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/group-members');
+                          Navigator.pushNamed(
+                            context,
+                            '/group-members',
+                            arguments: defaultGroup,
+                          );
                         },
                         icon: const Icon(Icons.people_outline, size: 24),
                         color: const Color(0xFF1A1A1A),
@@ -152,7 +156,11 @@ class GroupDetail extends StatelessWidget {
                               children: [
                                 ElevatedButton(
                                   onPressed: () {
-                                    Navigator.pushNamed(context, '/settlement-confirmation');
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/settlement-confirmation',
+                                      arguments: defaultGroup,
+                                    );
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF1A1A1A),
@@ -175,7 +183,11 @@ class GroupDetail extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pushNamed(context, '/settlement-confirmation');
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/settlement-confirmation',
+                                      arguments: defaultGroup,
+                                    );
                                   },
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -229,16 +241,13 @@ class GroupDetail extends StatelessWidget {
                           final expense = expenses[index];
                           return InkWell(
                             onTap: () {
-                              // Convert Expense to Map for passing
-                              final expenseData = {
-                                'id': expense.id,
-                                'description': expense.description,
-                                'amount': expense.amount,
-                              };
                               Navigator.pushNamed(
                                 context,
                                 '/edit-expense',
-                                arguments: expenseData,
+                                arguments: {
+                                  'expenseId': expense.id,
+                                  'groupId': defaultGroup.id,
+                                },
                               );
                             },
                             child: Container(
@@ -318,7 +327,11 @@ class GroupDetail extends StatelessWidget {
                 ),
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.pushNamed(context, '/expense-input');
+                    Navigator.pushNamed(
+                      context,
+                      '/expense-input',
+                      arguments: defaultGroup,
+                    );
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -340,6 +353,8 @@ class GroupDetail extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

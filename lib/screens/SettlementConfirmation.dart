@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class SettlementConfirmation extends StatelessWidget {
-  final String groupName;
-  final double amount;
   final String method; // 'system' or 'upi'
 
   const SettlementConfirmation({
     super.key,
-    this.groupName = 'Weekend Trip',
-    this.amount = 3240,
     this.method = 'system',
   });
 
   @override
   Widget build(BuildContext context) {
+    final group = ModalRoute.of(context)!.settings.arguments as Group;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -42,7 +41,7 @@ class SettlementConfirmation extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    groupName,
+                    group.name,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -64,7 +63,7 @@ class SettlementConfirmation extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '₹${amount.toStringAsFixed(0).replaceAllMapped(
+                          '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                             (Match m) => '${m[1]},',
                           )}',
@@ -103,7 +102,12 @@ class SettlementConfirmation extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.pushReplacementNamed(context, '/payment-result');
+                                CycleRepository.instance.settleAndRestartCycle(group.id);
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/payment-result',
+                                  arguments: group,
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1A1A1A),

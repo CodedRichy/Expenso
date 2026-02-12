@@ -1,57 +1,19 @@
 import 'package:flutter/material.dart';
-
-class HistoryCycle {
-  final String id;
-  final String startDate;
-  final String endDate;
-  final double settledAmount;
-  final int expenseCount;
-
-  HistoryCycle({
-    required this.id,
-    required this.startDate,
-    required this.endDate,
-    required this.settledAmount,
-    required this.expenseCount,
-  });
-}
+import '../models/models.dart';
+import '../models/cycle.dart';
+import '../repositories/cycle_repository.dart';
 
 class CycleHistory extends StatelessWidget {
-  final String groupName;
-  final List<HistoryCycle>? cycles;
-
-  const CycleHistory({
-    super.key,
-    this.groupName = 'Weekend Trip',
-    this.cycles,
-  });
+  const CycleHistory({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final defaultCycles = cycles ??
-        [
-          HistoryCycle(
-            id: '1',
-            startDate: 'Dec 1',
-            endDate: 'Dec 7',
-            settledAmount: 2800,
-            expenseCount: 6,
-          ),
-          HistoryCycle(
-            id: '2',
-            startDate: 'Nov 24',
-            endDate: 'Nov 30',
-            settledAmount: 3240,
-            expenseCount: 8,
-          ),
-          HistoryCycle(
-            id: '3',
-            startDate: 'Nov 17',
-            endDate: 'Nov 23',
-            settledAmount: 1950,
-            expenseCount: 4,
-          ),
-        ];
+    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final groupName = group?.name ?? 'Weekend Trip';
+    final groupId = group?.id ?? '1';
+
+    final repo = CycleRepository.instance;
+    final cycles = repo.getHistory(groupId);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -101,7 +63,7 @@ class CycleHistory extends StatelessWidget {
               ),
             ),
             // Cycles List
-            if (defaultCycles.isNotEmpty)
+            if (cycles.isNotEmpty)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,19 +83,39 @@ class CycleHistory extends StatelessWidget {
                     Expanded(
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
-                        itemCount: defaultCycles.length,
+                        itemCount: cycles.length,
                         itemBuilder: (context, index) {
-                          final cycle = defaultCycles[index];
+                          final cycle = cycles[index];
+                          final startDate = cycle.startDate ?? '–';
+                          final endDate = cycle.endDate ?? '–';
+                          final settledAmount = cycle.expenses.fold<double>(
+                            0.0,
+                            (sum, e) => sum + e.amount,
+                          );
+                          final expenseCount = cycle.expenses.length;
                           return InkWell(
                             onTap: () {
-                              Navigator.pushNamed(context, '/cycle-history-detail');
+                              Navigator.pushNamed(
+                                context,
+                                '/cycle-history-detail',
+                                arguments: {
+                                  'cycle': cycle,
+                                  'groupName': groupName,
+                                },
+                              );
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
                               decoration: BoxDecoration(
                                 border: Border(
                                   top: index > 0
-                                      ? const BorderSide(color: Color(0xFFE5E5E5), width: 1)
+                                      ? const BorderSide(
+                                          color: Color(0xFFE5E5E5),
+                                          width: 1,
+                                        )
                                       : BorderSide.none,
                                 ),
                               ),
@@ -141,10 +123,11 @@ class CycleHistory extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          '${cycle.startDate} – ${cycle.endDate}',
+                                          '$startDate – $endDate',
                                           style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w500,
@@ -155,7 +138,7 @@ class CycleHistory extends StatelessWidget {
                                         Row(
                                           children: [
                                             Text(
-                                              '₹${cycle.settledAmount.toStringAsFixed(0).replaceAllMapped(
+                                              '₹${settledAmount.toStringAsFixed(0).replaceAllMapped(
                                                 RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                                                 (Match m) => '${m[1]},',
                                               )}',
@@ -167,7 +150,7 @@ class CycleHistory extends StatelessWidget {
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              'settled · ${cycle.expenseCount} expense${cycle.expenseCount != 1 ? 's' : ''}',
+                                              'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
                                               style: TextStyle(
                                                 fontSize: 15,
                                                 color: const Color(0xFF6B6B6B),
@@ -198,7 +181,10 @@ class CycleHistory extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 64,
+                    ),
                     child: SizedBox(
                       width: 280,
                       child: Column(

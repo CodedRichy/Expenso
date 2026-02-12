@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
 
 class PaymentResult extends StatelessWidget {
   final String status; // 'success', 'failed', 'cancelled'
@@ -14,6 +15,7 @@ class PaymentResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final group = ModalRoute.of(context)!.settings.arguments as Group;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -110,7 +112,11 @@ class PaymentResult extends StatelessWidget {
                   // Action Button
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/cycle-settled');
+                        Navigator.pushReplacementNamed(
+                          context,
+                          '/cycle-settled',
+                          arguments: group,
+                        );
                       },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A1A1A),

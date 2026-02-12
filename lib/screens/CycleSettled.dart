@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
 
 class CycleSettled extends StatelessWidget {
-  final String groupName;
-  final double settledAmount;
-  final String settlementDate;
-
-  const CycleSettled({
-    super.key,
-    this.groupName = 'Weekend Trip',
-    this.settledAmount = 3240,
-    this.settlementDate = 'Dec 15',
-  });
+  const CycleSettled({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final group = ModalRoute.of(context)!.settings.arguments as Group;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -42,7 +35,7 @@ class CycleSettled extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    groupName,
+                    group.name,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -76,10 +69,10 @@ class CycleSettled extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '₹${settledAmount.toStringAsFixed(0).replaceAllMapped(
+                          '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                             (Match m) => '${m[1]},',
-                          )} settled on $settlementDate',
+                          )} settled',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
@@ -101,7 +94,11 @@ class CycleSettled extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.pushReplacementNamed(context, '/group-detail');
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/group-detail',
+                                  arguments: group,
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1A1A1A),
@@ -124,7 +121,7 @@ class CycleSettled extends StatelessWidget {
                             const SizedBox(height: 12),
                             OutlinedButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/cycle-history');
+                                Navigator.pushNamed(context, '/cycle-history', arguments: group);
                               },
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: Colors.white,

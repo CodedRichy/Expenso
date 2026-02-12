@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class ParsedExpense {
   final String description;
@@ -63,7 +64,18 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   void handleConfirm() {
-    // Handle expense submission
+    if (parsedData != null) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      if (group != null) {
+        final expense = Expense(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          description: parsedData!.description,
+          amount: parsedData!.amount,
+          date: 'Today',
+        );
+        CycleRepository.instance.addExpense(group.id, expense);
+      }
+    }
     setState(() {
       input = '';
       parsedData = null;
@@ -81,14 +93,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultGroup = widget.group ??
-        Group(
-          id: '1',
-          name: 'Weekend Trip',
-          status: 'open',
-          amount: 3240,
-          statusLine: 'Cycle closes Sunday',
-        );
+    final group = ModalRoute.of(context)!.settings.arguments as Group;
 
     if (showConfirmation && parsedData != null) {
       return Scaffold(
@@ -268,7 +273,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    defaultGroup.name,
+                    group.name,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -294,7 +299,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₹${defaultGroup.amount.toStringAsFixed(0).replaceAllMapped(
+                    '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
                       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                       (Match m) => '${m[1]},',
                     )}',
@@ -308,7 +313,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'pending · ${defaultGroup.statusLine}',
+                    'pending · ${group.statusLine}',
                     style: TextStyle(
                       fontSize: 15,
                       color: const Color(0xFF6B6B6B),

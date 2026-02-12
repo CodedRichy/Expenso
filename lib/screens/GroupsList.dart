@@ -1,36 +1,14 @@
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class GroupsList extends StatelessWidget {
   const GroupsList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Group> groups = [
-      Group(
-        id: '1',
-        name: 'Weekend Trip',
-        status: 'closing',
-        amount: 3240,
-        statusLine: 'Cycle closes Sunday',
-      ),
-      Group(
-        id: '2',
-        name: 'Movie Night',
-        status: 'open',
-        amount: 1850,
-        statusLine: 'Cycle open until Sunday',
-      ),
-      Group(
-        id: '3',
-        name: 'Office Lunch',
-        status: 'settled',
-        amount: 0,
-        statusLine: 'All balances cleared',
-      ),
-    ];
+    final repo = CycleRepository.instance;
 
-    if (groups.isEmpty) {
+    if (repo.groups.isEmpty) {
       // Empty state placeholder - actual EmptyState will be converted later
       return Scaffold(
         backgroundColor: const Color(0xFFF7F7F8),
@@ -40,7 +18,11 @@ class GroupsList extends StatelessWidget {
       );
     }
 
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: repo,
+      builder: (context, _) {
+        final groups = repo.groups;
+        return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
@@ -197,6 +179,8 @@ class GroupsList extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

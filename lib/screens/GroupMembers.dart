@@ -2,26 +2,20 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 
 class GroupMembers extends StatelessWidget {
-  final String groupName;
   final List<Member>? members;
 
   const GroupMembers({
     super.key,
-    this.groupName = 'Weekend Trip',
     this.members,
   });
 
   @override
   Widget build(BuildContext context) {
-    final defaultMembers = members ??
-        [
-          Member(id: '1', phone: '+91 98765 43210', status: 'joined'),
-          Member(id: '2', phone: '+91 87654 32109', status: 'joined'),
-          Member(id: '3', phone: '+91 76543 21098', status: 'invited'),
-        ];
+    final group = ModalRoute.of(context)!.settings.arguments as Group;
+    final listMembers = members ?? [];
 
-    final joinedMembers = defaultMembers.where((m) => m.status == 'joined').toList();
-    final invitedMembers = defaultMembers.where((m) => m.status == 'invited').toList();
+    final joinedMembers = listMembers.where((m) => m.status == 'joined').toList();
+    final invitedMembers = listMembers.where((m) => m.status == 'invited').toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -51,7 +45,7 @@ class GroupMembers extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    groupName,
+                    group.name,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
