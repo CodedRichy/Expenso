@@ -54,50 +54,50 @@ class SettlementConfirmation extends StatelessWidget {
             ),
             // Confirmation Content
             Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
-                  child: SizedBox(
-                    width: 320,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                            (Match m) => '${m[1]},',
-                          )}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 52,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
-                            letterSpacing: -1.2,
-                            height: 1.1,
-                          ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
+                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                          (Match m) => '${m[1]},',
+                        )}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 52,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1A1A1A),
+                          letterSpacing: -1.2,
+                          height: 1.1,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Settlement amount',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
-                          ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Settlement amount',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: const Color(0xFF6B6B6B),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          method == 'upi'
-                              ? 'You will be redirected to complete payment via UPI.'
-                              : 'This will close the current cycle. All pending balances will be cleared.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
-                            height: 1.5,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        method == 'upi'
+                            ? 'You will be redirected to complete payment via UPI.'
+                            : 'This will close the current cycle. All pending balances will be cleared.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: const Color(0xFF6B6B6B),
+                          height: 1.5,
                         ),
-                        const SizedBox(height: 48),
+                      ),
+                      _buildPendingSettlements(group.id),
+                      const SizedBox(height: 48),
                         Column(
                           children: [
                             ElevatedButton(
@@ -157,9 +157,44 @@ class SettlementConfirmation extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPendingSettlements(String groupId) {
+    final instructions = CycleRepository.instance.getSettlementInstructions(groupId);
+    if (instructions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PENDING SETTLEMENTS',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF9B9B9B),
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...instructions.map(
+            (line) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                line,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: const Color(0xFF1A1A1A),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

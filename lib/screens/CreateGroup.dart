@@ -42,18 +42,20 @@ class _CreateGroupState extends State<CreateGroup> {
 
   void handleCreate() {
     if (name.trim().isEmpty) return;
+    final repo = CycleRepository.instance;
     final newGroup = Group(
       id: 'g_${DateTime.now().millisecondsSinceEpoch}',
       name: name.trim(),
       status: 'open',
       amount: 0,
       statusLine: 'Cycle open',
+      creatorId: repo.currentUserId,
     );
-    CycleRepository.instance.addGroup(newGroup);
+    repo.addGroup(newGroup);
     Navigator.pushReplacementNamed(
       context,
       '/invite-members',
-      arguments: name.trim(),
+      arguments: newGroup,
     );
   }
 
@@ -127,7 +129,7 @@ class _CreateGroupState extends State<CreateGroup> {
                             });
                           },
                           decoration: InputDecoration(
-                            hintText: 'Weekend Trip',
+                            hintText: 'e.g. Roommates, Trip',
                             hintStyle: TextStyle(
                               color: const Color(0xFFB0B0B0),
                             ),

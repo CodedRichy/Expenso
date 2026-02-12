@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
-import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 
 class EditExpense extends StatefulWidget {
@@ -53,10 +52,10 @@ class _EditExpenseState extends State<EditExpense> {
       return;
     }
 
-    final cycle = repo.getActiveCycle(groupId);
     _groupId = groupId;
     _expenseId = expenseId;
-    _canEdit = cycle.status == CycleStatus.active;
+    // Creator (group.creatorId) can always edit — "God Mode" even when cycle is Settling.
+    _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);
     setState(() {});
@@ -86,6 +85,8 @@ class _EditExpenseState extends State<EditExpense> {
       description: desc,
       amount: amount,
       date: existing?.date ?? 'Today',
+      participantPhones: existing?.participantPhones ?? [],
+      paidByPhone: existing?.paidByPhone ?? CycleRepository.instance.currentUserPhone,
     );
     repo.updateExpense(groupId, updatedExpense);
     Navigator.pop(context);

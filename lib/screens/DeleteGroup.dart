@@ -7,7 +7,7 @@ class DeleteGroup extends StatelessWidget {
 
   const DeleteGroup({
     super.key,
-    this.groupName = 'Weekend Trip',
+    this.groupName = '',
     this.hasPendingBalance = false,
     this.pendingAmount,
   });
@@ -64,7 +64,7 @@ class DeleteGroup extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Delete "$groupName"',
+                          groupName.isEmpty ? 'Delete group' : 'Delete "$groupName"',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 22,

@@ -30,10 +30,18 @@ class _ExpenseInputState extends State<ExpenseInput> {
   String input = '';
   bool showConfirmation = false;
   ParsedExpense? parsedData;
+  final Set<String> selectedMemberPhones = {};
+  String? _paidByPhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _paidByPhone = CycleRepository.instance.currentUserPhone;
+  }
 
   ParsedExpense parseExpense(String text) {
     // Simple parser for demonstration
-    // Example: "Dinner 1200 with Arjun, Amal"
+    // Example: "Dinner 1200 with" (optional names after "with")
     final amountMatch = RegExp(r'\d+').firstMatch(text);
     final amount = amountMatch != null ? double.parse(amountMatch.group(0)!) : 0.0;
 
@@ -64,6 +72,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   void handleConfirm() {
+    final payerPhone = _paidByPhone ?? CycleRepository.instance.currentUserPhone;
+    if (payerPhone.isEmpty) return;
     if (parsedData != null) {
       final group = ModalRoute.of(context)?.settings.arguments as Group?;
       if (group != null) {
@@ -72,6 +82,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
           description: parsedData!.description,
           amount: parsedData!.amount,
           date: 'Today',
+          participantPhones: selectedMemberPhones.toList(),
+          paidByPhone: payerPhone,
         );
         CycleRepository.instance.addExpense(group.id, expense);
       }
@@ -80,6 +92,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
       input = '';
       parsedData = null;
       showConfirmation = false;
+      selectedMemberPhones.clear();
+      _paidByPhone = CycleRepository.instance.currentUserPhone;
     });
     Navigator.pop(context);
   }
@@ -89,6 +103,172 @@ class _ExpenseInputState extends State<ExpenseInput> {
       showConfirmation = false;
       parsedData = null;
     });
+  }
+
+  Widget _buildWhoPaid(BuildContext context, Group group) {
+    final repo = CycleRepository.instance;
+    final members = repo.getMembersForGroup(group.id);
+    if (members.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'WHO PAID?',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: members.map((member) {
+            final isSelected = _paidByPhone == member.phone;
+            final displayName = repo.getMemberDisplayName(member.phone);
+            return ChoiceChip(
+              label: Text(displayName),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) setState(() => _paidByPhone = member.phone);
+              },
+              selectedColor: const Color(0xFF1A1A1A),
+              labelStyle: TextStyle(
+                fontSize: 15,
+                color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+              ),
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5E5),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWhoIsInvolved(BuildContext context, Group group) {
+    final repo = CycleRepository.instance;
+    final members = repo.getMembersForGroup(group.id);
+    if (members.isEmpty) return const SizedBox.shrink();
+    final allPhones = members.map((m) => m.phone).toSet();
+    final allSelected = allPhones.isNotEmpty && selectedMemberPhones.containsAll(allPhones);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "WHO'S INVOLVED",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: () {
+            setState(() {
+              if (allSelected) {
+                selectedMemberPhones.removeAll(allPhones);
+              } else {
+                selectedMemberPhones.addAll(allPhones);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: Checkbox(
+                    value: allSelected,
+                    tristate: false,
+                    onChanged: (_) {
+                      setState(() {
+                        if (allSelected) {
+                          selectedMemberPhones.removeAll(allPhones);
+                        } else {
+                          selectedMemberPhones.addAll(allPhones);
+                        }
+                      });
+                    },
+                    activeColor: const Color(0xFF1A1A1A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Select All',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        ...members.map((member) {
+          final isSelected = selectedMemberPhones.contains(member.phone);
+          final displayName = repo.getMemberDisplayName(member.phone);
+          return InkWell(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  selectedMemberPhones.remove(member.phone);
+                } else {
+                  selectedMemberPhones.add(member.phone);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Checkbox(
+                      value: isSelected,
+                      onChanged: (_) {
+                        setState(() {
+                          if (isSelected) {
+                            selectedMemberPhones.remove(member.phone);
+                          } else {
+                            selectedMemberPhones.add(member.phone);
+                          }
+                        });
+                      },
+                      activeColor: const Color(0xFF1A1A1A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
   }
 
   @override
@@ -161,12 +341,23 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           color: const Color(0xFF1A1A1A),
                         ),
                       ),
-                      if (parsedData!.participants.isNotEmpty) ...[
+                      if (_paidByPhone != null && _paidByPhone!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Paid by ${CycleRepository.instance.getMemberDisplayName(_paidByPhone!)}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: const Color(0xFF6B6B6B),
+                          ),
+                        ),
+                      ],
+                      if (selectedMemberPhones.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: parsedData!.participants.map((participant) {
+                          children: selectedMemberPhones.map((phone) {
+                            final displayName = CycleRepository.instance.getMemberDisplayName(phone);
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
@@ -174,7 +365,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                participant,
+                                displayName,
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: const Color(0xFF1A1A1A),
@@ -202,10 +393,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 child: Column(
                   children: [
                     ElevatedButton(
-                      onPressed: handleConfirm,
+                      onPressed: (_paidByPhone != null && _paidByPhone!.isNotEmpty)
+                          ? handleConfirm
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1A1A1A),
+                        disabledBackgroundColor: const Color(0xFFE5E5E5),
                         foregroundColor: Colors.white,
+                        disabledForegroundColor: const Color(0xFFB0B0B0),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -347,7 +542,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     },
                     onSubmitted: (_) => handleSubmit(),
                     decoration: InputDecoration(
-                      hintText: 'Dinner 1200 with Arjun, Amal',
+                      hintText: 'e.g. Dinner 1200 with',
                       hintStyle: TextStyle(
                         color: const Color(0xFFB0B0B0),
                       ),
@@ -372,6 +567,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       color: const Color(0xFF1A1A1A),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _buildWhoPaid(context, group),
+                  const SizedBox(height: 24),
+                  _buildWhoIsInvolved(context, group),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: input.trim().isNotEmpty ? handleSubmit : null,

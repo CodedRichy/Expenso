@@ -7,16 +7,26 @@ class MemberChange extends StatelessWidget {
 
   const MemberChange({
     super.key,
-    this.groupName = 'Weekend Trip',
-    this.memberPhone = '+91 98765 43210',
+    this.groupName = '',
+    this.memberPhone = '',
     this.action = 'leave',
   });
 
   @override
   Widget build(BuildContext context) {
-    // Get member phone from route arguments or use default
-    final routeMemberPhone = ModalRoute.of(context)?.settings.arguments as String?;
-    final displayMemberPhone = routeMemberPhone ?? memberPhone;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final String displayGroupName;
+    final String displayMemberPhone;
+    final String displayAction;
+    if (args is Map<String, dynamic>) {
+      displayGroupName = args['groupName'] as String? ?? groupName;
+      displayMemberPhone = args['memberPhone'] as String? ?? memberPhone;
+      displayAction = args['action'] as String? ?? action;
+    } else {
+      displayGroupName = groupName;
+      displayMemberPhone = args is String ? args : memberPhone;
+      displayAction = action;
+    }
     
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -46,7 +56,7 @@ class MemberChange extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    groupName,
+                    displayGroupName,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -68,7 +78,7 @@ class MemberChange extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          action == 'leave' ? 'Leave group' : 'Remove member',
+                          displayAction == 'leave' ? 'Leave group' : 'Remove member',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 22,
@@ -79,7 +89,7 @@ class MemberChange extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          action == 'leave'
+                          displayAction == 'leave'
                               ? 'You will be removed from this group'
                               : '$displayMemberPhone will be removed from this group',
                           textAlign: TextAlign.center,

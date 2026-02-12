@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import 'EmptyStates.dart';
 
 class GroupDetail extends StatelessWidget {
   final Group? group;
@@ -14,19 +15,18 @@ class GroupDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = CycleRepository.instance;
     final routeGroup = ModalRoute.of(context)?.settings.arguments as Group?;
-    final groupId = (routeGroup ?? group)?.id ?? '1';
-    final fallbackGroup = Group(
-      id: '1',
-      name: 'Weekend Trip',
-      status: 'closing',
-      amount: 3240,
-      statusLine: 'Cycle closes Sunday',
-    );
+    final resolvedGroup = routeGroup ?? group;
+    if (resolvedGroup == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final groupId = resolvedGroup.id;
 
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
-        final defaultGroup = repo.getGroup(groupId) ?? routeGroup ?? group ?? fallbackGroup;
+        final defaultGroup = repo.getGroup(groupId) ?? resolvedGroup;
+        // Single lookup at start of builder; getActiveCycle may create a cycle if none exists.
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
         final pendingAmount = expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
@@ -269,7 +269,17 @@ class GroupDetail extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          expense.description,
+                                          () {
+                                            final d = expense.description;
+                                            if (expense.participantPhones.isEmpty) {
+                                              return d.contains('Just you') ? d : '$d — Just you';
+                                            }
+                                            final names = expense.participantPhones
+                                                .map((p) => repo.getMemberDisplayName(p))
+                                                .toList();
+                                            final alreadyInDescription = names.every((name) => d.contains(name));
+                                            return alreadyInDescription ? d : '$d — with ${names.join(', ')}';
+                                          }(),
                                           style: TextStyle(
                                             fontSize: 17,
                                             color: const Color(0xFF1A1A1A),
@@ -309,11 +319,7 @@ class GroupDetail extends StatelessWidget {
                 ),
               )
             else
-              Expanded(
-                child: Center(
-                  child: Text('No expenses'),
-                ),
-              ),
+              EmptyStates(type: 'no-expenses-new-cycle'),
             // Add Expense Input
             if (!isSettled)
               Container(

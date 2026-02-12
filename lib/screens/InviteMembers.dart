@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
+import '../repositories/cycle_repository.dart';
 
 class InviteMembers extends StatefulWidget {
   final String groupName;
@@ -16,11 +17,8 @@ class InviteMembers extends StatefulWidget {
 
 class _InviteMembersState extends State<InviteMembers> {
   String phone = '';
+  String name = '';
   bool linkCopied = false;
-  List<Member> members = [
-    Member(id: '1', phone: '+91 98765 43210', status: 'joined'),
-    Member(id: '2', phone: '+91 87654 32109', status: 'invited'),
-  ];
 
   void handleCopyLink() {
     setState(() {
@@ -36,27 +34,35 @@ class _InviteMembersState extends State<InviteMembers> {
   }
 
   void handleAddMember() {
-    if (phone.length == 10) {
-      setState(() {
-        members.add(
-          Member(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            phone: '+91 ${phone.substring(0, 5)} ${phone.substring(5)}',
-            status: 'invited',
-          ),
-        );
-        phone = '';
-      });
+    if (phone.length != 10) return;
+    final formattedPhone = '+91 ${phone.substring(0, 5)} ${phone.substring(5)}';
+    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    if (group != null) {
+      final member = Member(
+        id: 'm_${DateTime.now().millisecondsSinceEpoch}',
+        name: name.trim(),
+        phone: formattedPhone,
+      );
+      CycleRepository.instance.addMemberToGroup(group.id, member);
     }
+    setState(() {
+      phone = '';
+      name = '';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get group name from route arguments or use the widget's groupName
-    final routeGroupName = ModalRoute.of(context)?.settings.arguments as String?;
-    final displayGroupName = routeGroupName ?? widget.groupName;
-    
-    return Scaffold(
+    final routeArgs = ModalRoute.of(context)?.settings.arguments;
+    final Group? groupArg = routeArgs is Group ? routeArgs : null;
+    final String displayGroupName = groupArg?.name ?? (routeArgs is String ? routeArgs : widget.groupName);
+    final repo = CycleRepository.instance;
+
+    return ListenableBuilder(
+      listenable: repo,
+      builder: (context, _) {
+        final listMembers = groupArg != null ? repo.getMembersForGroup(groupArg.id) : <Member>[];
+        return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
@@ -176,6 +182,30 @@ class _InviteMembersState extends State<InviteMembers> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  TextField(
+                    onChanged: (value) => setState(() => name = value),
+                    decoration: InputDecoration(
+                      hintText: 'Name (optional)',
+                      hintStyle: TextStyle(color: const Color(0xFFB0B0B0)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                    style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Container(
@@ -290,10 +320,9 @@ class _InviteMembersState extends State<InviteMembers> {
                     Expanded(
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
-                        itemCount: members.length,
+                        itemCount: listMembers.length,
                         itemBuilder: (context, index) {
-                          final member = members[index];
-                          final isJoined = member.status == 'joined';
+                          final member = listMembers[index];
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                             decoration: BoxDecoration(
@@ -307,20 +336,20 @@ class _InviteMembersState extends State<InviteMembers> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  member.phone,
+                                  repo.getMemberDisplayName(member.phone),
                                   style: TextStyle(
                                     fontSize: 17,
                                     color: const Color(0xFF1A1A1A),
                                   ),
                                 ),
-                                Text(
-                                  isJoined ? 'Joined' : 'Invited',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: isJoined ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
-                                    fontWeight: isJoined ? FontWeight.w500 : FontWeight.w400,
+                                if (member.name.isNotEmpty)
+                                  Text(
+                                    member.phone,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: const Color(0xFF6B6B6B),
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           );
@@ -344,19 +373,31 @@ class _InviteMembersState extends State<InviteMembers> {
               ),
               child: ElevatedButton(
                 onPressed: () {
-                  // Create a new group with the entered data
-                  final newGroup = Group(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: displayGroupName,
-                    status: 'open',
-                    amount: 0,
-                    statusLine: 'No expenses yet',
-                  );
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/group-detail',
-                    arguments: newGroup,
-                  );
+                  if (groupArg != null) {
+                    final updatedGroup = repo.getGroup(groupArg.id);
+                    if (updatedGroup != null) {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/group-detail',
+                        arguments: updatedGroup,
+                      );
+                    }
+                  } else {
+                    final newGroup = Group(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      name: displayGroupName,
+                      status: 'open',
+                      amount: 0,
+                      statusLine: 'No expenses yet',
+                      creatorId: repo.currentUserId,
+                      memberIds: [],
+                    );
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/group-detail',
+                      arguments: newGroup,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1A1A1A),
@@ -379,6 +420,8 @@ class _InviteMembersState extends State<InviteMembers> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

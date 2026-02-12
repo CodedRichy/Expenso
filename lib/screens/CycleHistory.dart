@@ -8,8 +8,12 @@ class CycleHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final group = ModalRoute.of(context)?.settings.arguments as Group?;
-    final groupName = group?.name ?? 'Weekend Trip';
-    final groupId = group?.id ?? '1';
+    if (group == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final groupName = group.name;
+    final groupId = group.id;
 
     final repo = CycleRepository.instance;
     final cycles = repo.getHistory(groupId);
