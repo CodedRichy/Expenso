@@ -1,47 +1,43 @@
-# Expenso
-
-**System-driven group expense management.**
-
-Expenso is a group-centric expense ledger designed to eliminate the social friction of shared spending.
-
-Unlike traditional split-based apps, Expenso is built around **settlement cycles**, **centralized authority**, and a **system-enforced workflow** that removes the need for manual reminders or personal enforcement.
+<p align="center">
+  <strong>Expenso</strong>
+</p>
+<p align="center">
+  <em>System-driven group expense management</em>
+</p>
+<p align="center">
+  <sub>Flutter · Dart · Material 3</sub>
+</p>
 
 ---
 
-## Key concepts
+> Expenso is a group-centric expense ledger designed to **eliminate the social friction** of shared spending.  
+> Unlike traditional split-based apps, it’s built around settlement cycles, centralized authority, and a system-enforced workflow—no manual reminders, no awkward follow-ups.
 
-### NLP-driven expense entry
+---
 
-Expenses are logged using natural language input. The system parses amounts, participants, and context to reduce interaction cost and errors.
+## What it does
 
-### Creator-authority model
-
-Each group has a designated creator with elevated permissions to manage cycles, enforce settlements, and maintain ledger integrity.
-
-### Two-phase settlement engine
-
-Cycles transition through a controlled lifecycle (**Active → Settling → Closed**), ensuring expenses are frozen and verifiable before archival.
-
-### System-first architecture
-
-Business rules live in a centralized repository layer, not in UI widgets, enabling predictable behavior and future backend integration.
-
-### Minimal, high-contrast UI
-
-The interface is designed for speed, clarity, and trust, prioritizing readability over decorative elements.
+| | |
+|:---|:---|
+| **NLP expense entry** | Log with natural language. Amounts, participants, and context are parsed automatically. |
+| **Creator-led groups** | One creator per group with full control over cycles, settlements, and ledger integrity. |
+| **Two-phase settlement** | Cycles move **Active → Settling → Closed** so expenses are frozen and verifiable before archival. |
+| **Repository-first logic** | Rules live in the data layer, not in the UI—predictable behavior and ready for backend integration. |
+| **Minimal UI** | High-contrast, fast to scan. Readability and trust over decoration. |
 
 ---
 
 ## Status
 
-This repository implements the full UI and in-memory domain logic, serving as a foundation for future persistence, payments, and multi-device sync.
+In-memory implementation with full UI and domain logic. Foundation for persistence, payments, and sync.
 
-**Stack:** Flutter (Dart), Material 3.
-
-For implementation details, routes, and conventions, see **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)**.
+| | |
+|:---|:---|
+| **Stack** | Flutter (Dart), Material 3 |
+| **Docs** | [APP_BLUEPRINT.md](APP_BLUEPRINT.md) — routes, screens, data layer, conventions |
 
 ---
 
 ## License
 
-Proprietary. All rights reserved. This source code is for **viewing only**; no use, copy, or distribution without permission. See [LICENSE](LICENSE).
+See [LICENSE](LICENSE).
