@@ -63,23 +63,30 @@ class GroupDetail extends StatelessWidget {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/group-members',
-                            arguments: defaultGroup,
-                          );
-                        },
-                        icon: const Icon(Icons.people_outline, size: 24),
-                        color: const Color(0xFF1A1A1A),
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerRight,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildSettleAction(context, repo, groupId, defaultGroup, isSettled),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/group-members',
+                                arguments: defaultGroup,
+                              );
+                            },
+                            icon: const Icon(Icons.people_outline, size: 24),
+                            color: const Color(0xFF1A1A1A),
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerRight,
+                            constraints: const BoxConstraints(),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(32, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -117,11 +124,11 @@ class GroupDetail extends StatelessWidget {
                             (Match m) => '${m[1]},',
                           )}',
                           style: TextStyle(
-                            fontSize: 52,
+                            fontSize: 28,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1A1A1A),
-                            letterSpacing: -1.2,
-                            height: 1.1,
+                            letterSpacing: -0.5,
+                            height: 1.2,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -271,14 +278,22 @@ class GroupDetail extends StatelessWidget {
                                         Text(
                                           () {
                                             final d = expense.description;
+                                            final currentName = repo.currentUserName;
                                             if (expense.participantPhones.isEmpty) {
-                                              return d.contains('Just you') ? d : '$d — Just you';
+                                              final fallback = currentName.isNotEmpty ? currentName : 'Just you';
+                                              final dLower = d.toLowerCase();
+                                              if (dLower.contains(fallback.toLowerCase()) || dLower.contains('just you')) return d;
+                                              return '$d — $fallback';
                                             }
                                             final names = expense.participantPhones
                                                 .map((p) => repo.getMemberDisplayName(p))
                                                 .toList();
-                                            final alreadyInDescription = names.every((name) => d.contains(name));
-                                            return alreadyInDescription ? d : '$d — with ${names.join(', ')}';
+                                            final dLower = d.toLowerCase();
+                                            final notInDescription = names
+                                                .where((name) => !dLower.contains(name.toLowerCase()))
+                                                .toList();
+                                            if (notInDescription.isEmpty) return d;
+                                            return '$d — with ${notInDescription.join(', ')}';
                                           }(),
                                           style: TextStyle(
                                             fontSize: 17,
@@ -362,6 +377,126 @@ class GroupDetail extends StatelessWidget {
       ),
     );
       },
+    );
+  }
+
+  Widget _buildSettleAction(BuildContext context, CycleRepository repo, String groupId, Group defaultGroup, bool isSettled) {
+    if (isSettled) return const SizedBox.shrink();
+    final isLeader = repo.isCreator(groupId, repo.currentUserId);
+    if (isLeader) {
+      return TextButton(
+        onPressed: () => _showSettleConfirmDialog(context, repo, groupId),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          'Settle & Restart',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF1A1A1A),
+          ),
+        ),
+      );
+    }
+    return TextButton(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request sent to group leader.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        'Request Settlement',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF5B7C99),
+        ),
+      ),
+    );
+  }
+
+  void _showSettleConfirmDialog(BuildContext context, CycleRepository repo, String groupId) {
+    final instructions = repo.getSettlementInstructions(groupId);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Settle & Restart',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1A1A1A),
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                instructions.isEmpty ? 'No balances to settle.' : 'The following will close this cycle:',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: const Color(0xFF6B6B6B),
+                ),
+              ),
+              if (instructions.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ...instructions.map(
+                  (s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      s,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF5B7C99),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              repo.settleAndRestartCycle(groupId);
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              'Confirm',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

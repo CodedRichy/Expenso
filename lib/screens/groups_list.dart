@@ -157,34 +157,6 @@ class GroupsList extends StatelessWidget {
                     },
                   ),
                 ),
-                // Create Group Button
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: const Color(0xFFE5E5E5),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/create-group');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Create Group',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF5B7C99),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

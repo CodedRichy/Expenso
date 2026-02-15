@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'repositories/cycle_repository.dart';
 import 'screens/phone_auth.dart';
+import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
 import 'screens/create_group.dart';
 import 'screens/invite_members.dart';
@@ -37,7 +39,15 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const PhoneAuth(),
+        '/': (context) => ListenableBuilder(
+          listenable: CycleRepository.instance,
+          builder: (context, _) {
+            final repo = CycleRepository.instance;
+            if (repo.currentUserPhone.isEmpty) return const PhoneAuth();
+            if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
+            return const GroupsList();
+          },
+        ),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
         '/invite-members': (context) => const InviteMembers(),

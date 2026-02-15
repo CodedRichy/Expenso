@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../repositories/cycle_repository.dart';
 
 class PhoneAuth extends StatefulWidget {
   const PhoneAuth({super.key});
@@ -23,8 +24,17 @@ class _PhoneAuthState extends State<PhoneAuth> {
 
   void handleOtpSubmit() {
     if (otp.length == 6) {
-      Navigator.pushReplacementNamed(context, '/groups');
+      final formattedPhone = _formatPhone(phone);
+      CycleRepository.instance.setGlobalProfile(formattedPhone, '');
+      // Home route (/) listens to repo and will rebuild to show OnboardingNameScreen or GroupsList.
     }
+  }
+
+  static String _formatPhone(String digits) {
+    if (digits.length == 10) {
+      return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
+    }
+    return digits.isEmpty ? '' : '+91 $digits';
   }
 
   @override

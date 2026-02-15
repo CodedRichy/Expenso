@@ -20,9 +20,20 @@ class CycleRepository extends ChangeNotifier {
   // TODO: Replace with real Firebase Auth user id.
   String get currentUserId => 'dev_user_01';
 
-  /// Current user phone; used for auto-join as creator when creating a group.
-  // TODO: Replace with real Firebase Auth phone number.
-  String get currentUserPhone => '+91 00000 00000';
+  /// Current user phone; set after phone auth, used for auto-join as creator when creating a group.
+  String get currentUserPhone => _currentUserPhone;
+  String _currentUserPhone = '';
+
+  /// Global display name for the current user; set in onboarding or via setGlobalProfile.
+  String get currentUserName => _currentUserName;
+  String _currentUserName = '';
+
+  /// Updates the global profile (phone and name) and notifies listeners.
+  void setGlobalProfile(String phone, String name) {
+    _currentUserPhone = phone;
+    _currentUserName = name.trim();
+    notifyListeners();
+  }
 
   final List<Group> _groups = [];
   final Map<String, Member> _membersById = {};
@@ -35,7 +46,7 @@ class CycleRepository extends ChangeNotifier {
     final creatorMember = Member(
       id: creatorMemberId,
       phone: currentUserPhone,
-      name: '',
+      name: currentUserName,
     );
     _membersById[creatorMemberId] = creatorMember;
     final groupWithCreator = Group(
@@ -75,9 +86,12 @@ class CycleRepository extends ChangeNotifier {
         .toList();
   }
 
-  /// Returns display name for a member by phone: 'You' for current user, else name if set, else phone formatted cleanly.
+  /// Returns display name for a member by phone. Priority: (1) current user → currentUserName or 'You';
+  /// (2) any Member (across groups) with this phone → that member's name; (3) formatted phone.
   String getMemberDisplayName(String phone) {
-    if (phone == currentUserPhone) return 'You';
+    if (phone == currentUserPhone) {
+      return _currentUserName.isNotEmpty ? _currentUserName : 'You';
+    }
     for (final m in _membersById.values) {
       if (m.phone == phone) return m.name.isNotEmpty ? m.name : _formatPhone(phone);
     }

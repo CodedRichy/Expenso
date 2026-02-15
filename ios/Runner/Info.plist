@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSContactsUsageDescription</key>
+	<string>Expenso uses contacts to suggest names and numbers when inviting members to a group.</string>
 </dict>
 </plist>

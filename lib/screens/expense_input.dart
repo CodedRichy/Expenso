@@ -40,10 +40,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   ParsedExpense parseExpense(String text) {
-    // Simple parser for demonstration
-    // Example: "Dinner 1200 with" (optional names after "with")
-    final amountMatch = RegExp(r'\d+').firstMatch(text);
-    final amount = amountMatch != null ? double.parse(amountMatch.group(0)!) : 0.0;
+    // Parse amount: allow digits with optional commas (e.g. "1200" or "1,200")
+    final amountPart = RegExp(r'[\d,]+').firstMatch(text);
+    final amountStr = amountPart?.group(0)?.replaceAll(',', '') ?? '';
+    final amount = amountStr.isNotEmpty ? (double.tryParse(amountStr) ?? 0.0) : 0.0;
 
     final withIndex = text.toLowerCase().indexOf('with');
     final description = withIndex > 0
@@ -62,13 +62,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   void handleSubmit() {
-    if (input.trim().isNotEmpty) {
-      final parsed = parseExpense(input);
-      setState(() {
-        parsedData = parsed;
-        showConfirmation = true;
-      });
-    }
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return;
+    final parsed = parseExpense(input);
+    if (parsed.amount <= 0) return;
+    setState(() {
+      parsedData = parsed;
+      showConfirmation = true;
+    });
   }
 
   void handleConfirm() {
@@ -103,6 +104,33 @@ class _ExpenseInputState extends State<ExpenseInput> {
       showConfirmation = false;
       parsedData = null;
     });
+  }
+
+  bool get _canSubmit {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return false;
+    return parseExpense(input).amount > 0;
+  }
+
+  /// As user types, if any word in the input matches a member's display name, auto-add that member to Who's Involved.
+  void _syncSelectedMembersFromInput(Group group) {
+    final repo = CycleRepository.instance;
+    final members = repo.getMembersForGroup(group.id);
+    if (members.isEmpty) return;
+    final words = input
+        .split(RegExp(r'[\s,]+'))
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+    for (final member in members) {
+      final displayName = repo.getMemberDisplayName(member.phone);
+      if (displayName.isEmpty) continue;
+      final nameLower = displayName.trim().toLowerCase();
+      final matches = words.contains(nameLower) || input.toLowerCase().contains(nameLower);
+      if (matches) {
+        selectedMemberPhones.add(member.phone);
+      }
+    }
   }
 
   Widget _buildWhoPaid(BuildContext context, Group group) {
@@ -393,7 +421,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 child: Column(
                   children: [
                     ElevatedButton(
-                      onPressed: (_paidByPhone != null && _paidByPhone!.isNotEmpty)
+                      onPressed: (_paidByPhone != null &&
+                              _paidByPhone!.isNotEmpty &&
+                              parsedData != null &&
+                              parsedData!.amount > 0)
                           ? handleConfirm
                           : null,
                       style: ElevatedButton.styleFrom(
@@ -536,8 +567,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   TextField(
                     autofocus: true,
                     onChanged: (value) {
+                      final group = ModalRoute.of(context)?.settings.arguments as Group?;
                       setState(() {
                         input = value;
+                        if (group != null) _syncSelectedMembersFromInput(group);
                       });
                     },
                     onSubmitted: (_) => handleSubmit(),
@@ -573,7 +606,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   _buildWhoIsInvolved(context, group),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: input.trim().isNotEmpty ? handleSubmit : null,
+                    onPressed: _canSubmit ? handleSubmit : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A1A1A),
                       disabledBackgroundColor: const Color(0xFFE5E5E5),
