@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import 'empty_states.dart';
 
@@ -30,8 +31,9 @@ class GroupDetail extends StatelessWidget {
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
         final pendingAmount = expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
-        final isClosing = defaultGroup.status == 'closing';
-        final isSettled = defaultGroup.status == 'settled';
+        final isPassive = activeCycle.status == CycleStatus.settling;
+        final isClosing = activeCycle.status == CycleStatus.settling || defaultGroup.status == 'closing';
+        final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty;
 
         return Scaffold(
@@ -63,30 +65,23 @@ class GroupDetail extends StatelessWidget {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildSettleAction(context, repo, groupId, defaultGroup, isSettled),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/group-members',
-                                arguments: defaultGroup,
-                              );
-                            },
-                            icon: const Icon(Icons.people_outline, size: 24),
-                            color: const Color(0xFF1A1A1A),
-                            padding: EdgeInsets.zero,
-                            alignment: Alignment.centerRight,
-                            constraints: const BoxConstraints(),
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(32, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ),
-                        ],
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/group-members',
+                            arguments: defaultGroup,
+                          );
+                        },
+                        icon: const Icon(Icons.people_outline, size: 24),
+                        color: const Color(0xFF1A1A1A),
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerRight,
+                        constraints: const BoxConstraints(),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(32, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ],
                   ),
@@ -126,92 +121,90 @@ class GroupDetail extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            color: isPassive ? const Color(0xFF9B9B9B) : const Color(0xFF1A1A1A),
                             letterSpacing: -0.5,
                             height: 1.2,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'pending',
+                          isPassive ? 'Cycle Settled - Pending Restart' : 'pending',
                           style: TextStyle(
                             fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
+                            color: isPassive ? const Color(0xFF9B9B9B) : const Color(0xFF6B6B6B),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          defaultGroup.statusLine,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
-                            fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                        if (!isPassive) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            defaultGroup.statusLine,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
+                              fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                            ),
                           ),
-                        ),
-                        if (isClosing) ...[
+                        ],
+                        if (repo.getGroupPendingAmount(groupId) > 0 || isPassive) ...[
                           const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.only(top: 20),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color: const Color(0xFFE5E5E5),
-                                  width: 1,
-                                ),
+                          ElevatedButton(
+                            onPressed: () {
+                              if (isPassive) {
+                                repo.archiveAndRestart(groupId);
+                              } else {
+                                final isLeader = repo.isCreator(groupId, repo.currentUserId);
+                                if (isLeader) {
+                                  _showSettleConfirmDialog(context, repo, groupId);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Request sent to group leader.'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A1A1A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              minimumSize: const Size(double.infinity, 0),
+                            ),
+                            child: Text(
+                              isPassive ? 'Start New Cycle' : 'Settle now',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/settlement-confirmation',
-                                      arguments: defaultGroup,
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1A1A1A),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    elevation: 0,
-                                    minimumSize: const Size(double.infinity, 0),
-                                  ),
-                                  child: Text(
-                                    'Close cycle',
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/settlement-confirmation',
-                                      arguments: defaultGroup,
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                  child: Text(
-                                    'Pay now via UPI',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF5B7C99),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/settlement-confirmation',
+                                arguments: defaultGroup,
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(
+                              'Pay via UPI',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF5B7C99),
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 24),
                         ],
                       ],
                     )
@@ -248,16 +241,18 @@ class GroupDetail extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final expense = expenses[index];
                           return InkWell(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/edit-expense',
-                                arguments: {
-                                  'expenseId': expense.id,
-                                  'groupId': defaultGroup.id,
-                                },
-                              );
-                            },
+                            onTap: isPassive
+                                ? null
+                                : () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/edit-expense',
+                                      arguments: {
+                                        'expenseId': expense.id,
+                                        'groupId': defaultGroup.id,
+                                      },
+                                    );
+                                  },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                               decoration: BoxDecoration(
@@ -335,8 +330,8 @@ class GroupDetail extends StatelessWidget {
               )
             else
               EmptyStates(type: 'no-expenses-new-cycle'),
-            // Add Expense Input
-            if (!isSettled)
+            // Add Expense Input (hidden when passive - cycle is read-only)
+            if (!isSettled && !isPassive)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -377,52 +372,6 @@ class GroupDetail extends StatelessWidget {
       ),
     );
       },
-    );
-  }
-
-  Widget _buildSettleAction(BuildContext context, CycleRepository repo, String groupId, Group defaultGroup, bool isSettled) {
-    if (isSettled) return const SizedBox.shrink();
-    final isLeader = repo.isCreator(groupId, repo.currentUserId);
-    if (isLeader) {
-      return TextButton(
-        onPressed: () => _showSettleConfirmDialog(context, repo, groupId),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          'Settle & Restart',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF1A1A1A),
-          ),
-        ),
-      );
-    }
-    return TextButton(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Request sent to group leader.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(
-        'Request Settlement',
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF5B7C99),
-        ),
-      ),
     );
   }
 

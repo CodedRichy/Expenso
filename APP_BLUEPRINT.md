@@ -2,6 +2,9 @@
 
 **Use this as the primary reference for all future logic and UI changes.**
 
+**Sections 1–8** describe the **current implementation** (what is built and live).  
+**Section 9** lists **planned features** (not implemented yet), grouped into three suites for later prioritization.
+
 ---
 
 ## Table of contents
@@ -14,6 +17,7 @@
 6. [Key logic conventions](#6-key-logic-conventions)
 7. [File layout](#7-file-layout)
 8. [Dependencies](#8-dependencies)
+9. [Planned features (not implemented)](#9-planned-features-not-implemented)
 
 ---
 
@@ -55,7 +59,7 @@ The home route is a `ListenableBuilder` on `CycleRepository.instance`. Which scr
 | `/groups` | GroupsList | List of groups. **Only the black FAB** creates a group (no blue text button). |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Group name, **28px** pending amount, expense log, “Add expense”, **Settle** in AppBar, close cycle. |
+| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI** in body (when pending > 0), expense log, “Add expense”. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -100,9 +104,9 @@ The home route is a `ListenableBuilder` on `CycleRepository.instance`. Which scr
 | **Groups** | `_groups`, `addGroup`, `getGroup`, `getMembersForGroup`, `removeMemberFromGroup`, … |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. |
-| **Cycles** | `_cycles`, `getActiveCycle`, `getExpenses`, `addExpense`, `updateExpense`, `deleteExpense`, `settleAndRestartCycle`, `getHistory`. |
+| **Cycles** | `_cycles`, `getActiveCycle`, `getExpenses`, `addExpense`, `updateExpense`, `deleteExpense`, `settleAndRestartCycle` (Phase 1: freeze → settling), `archiveAndRestart` (Phase 2: close + new cycle), `getHistory`. |
 | **Balances** | `calculateBalances`, `getSettlementInstructions` (uses `getMemberDisplayName`). |
-| **Authority** | `isCreator(groupId, userId)`, `canEditCycle(groupId, userId)`, `canDeleteGroup(groupId, userId)`. |
+| **Authority** | `isCreator(groupId, userId)`, `canEditCycle(groupId, userId)` (false when cycle is **settling** for everyone, including leader), `canDeleteGroup(groupId, userId)`. |
 
 ### Models
 
@@ -153,21 +157,14 @@ The home route is a `ListenableBuilder` on `CycleRepository.instance`. Which scr
 - Do **not** add a blue “Create Group” text button.
 - Empty state CTA may still navigate to create-group.
 
-### God Mode — Settle (GroupDetail)
+### Settlement — Passive state (Freeze before Wipe) & God Mode (GroupDetail)
 
-- AppBar has a **Settle** action. Use `repo.isCreator(groupId, repo.currentUserId)`.
-
-**If leader:**
-
-1. Show **“Settle & Restart”**.
-2. On tap → dialog with `repo.getSettlementInstructions(groupId)`.
-3. On Confirm → `repo.settleAndRestartCycle(groupId)` (cycle resets to ₹0).
-
-**If member:**
-
-- Show **“Request Settlement”**. On tap → snackbar: “Request sent to group leader.”
-
-**If group already settled:** Hide the Settle action.
+- **CycleStatus:** `active` → **settling** (Phase 1: freeze) → **closed** + new active (Phase 2: archive & restart).
+- **Phase 1 — Freeze:** “Settle now” (leader) → dialog with `getSettlementInstructions` → on Confirm call `repo.settleAndRestartCycle(groupId)`. This only sets the current cycle to `CycleStatus.settling`; no new cycle yet. **Phase 2 — Archive & Restart:** When cycle is **settling** (passive), show “Start New Cycle” button; on tap call `repo.archiveAndRestart(groupId)` to close the settling cycle and create a new active cycle at ₹0.
+- **Passive state (`isPassive = activeCycle.status == CycleStatus.settling`):** Amount and status use muted gray (0xFF9B9B9B); status text “Cycle Settled - Pending Restart”. Hide “Add expense” row. Disable expense log item taps (no navigation to edit). “Pay via UPI” remains visible. Only “Start New Cycle” performs the wipe.
+- **Permissions:** `canEditCycle` returns false when cycle is **settling** for everyone (including leader). Edit screen and add expense are read-only / hidden.
+- **If member:** “Settle now” → snackbar “Request sent to group leader.”
+- **“Pay via UPI”** (secondary): navigates to settlement-confirmation. Design: primary button black, borderRadius 8, no elevation; balanced vertical padding before Expense Log.
 
 ### Phone format
 
@@ -247,4 +244,81 @@ lib/
 
 ---
 
-*Keep this file updated when adding routes, screens, design tokens, or repository contracts.*
+## 9. Planned features (not implemented)
+
+The following are **not built yet**. Each feature has a **verdict**, **why it matters**, and **when to add** so you can come back later and implement in the right order.  
+**Status** = Not implemented until you ship it.
+
+---
+
+### 9.1 “Polished Local” suite (no server)
+
+**Suite verdict:** ✅ **YES — do selectively.** Best pre-backend, pre-AI upgrades. This is where you win early.
+
+| Feature | Verdict | When to add | Status |
+|--------|---------|-------------|--------|
+| **Receipt attachments** | ✅ Must-have polish | After settlement math, before Firebase. | Not implemented |
+| **Dynamic UPI QR generator** | 🔥 Differentiator (India hit) | Early; no backend needed. Amount from your logic. | Not implemented |
+| **Category intelligence** | ✅ Add later, keep dumb | After receipts/QR. Simple keyword → category map; don’t overdo NLP. | Not implemented |
+| **Smart “nudge” templates** | ✅ Good — tone matters | Opt-in only. Don’t automate sending or nag. e.g. “₹2,480 pending. Settlement: Sunday.” | Not implemented |
+| **Biometric lock** | ⏳ Nice-to-have, not urgent | After core flow is solid. Adds friction if too early; good for trust/credibility. | Not implemented |
+
+**Implementation notes (Polished Local):**
+
+- **Receipt attachments** — Ends arguments, reduces friction. Zero backend at first (local/file-based). High value.
+- **Dynamic UPI QR** — Killer in India. Faster than links; amount from your engine. Makes “Pay now” feel real. Do before Firebase.
+- **Category intelligence** — Icons (🍔 🚗 🏠) from keywords. Cosmetic but improves scan speed and perceived quality. Keep logic simple.
+- **Nudge templates** — Funny/ruthless options only if optional. System reminder tone is safer. Aligned with “calm” philosophy.
+- **Biometric lock** — Privacy/pro feel. Low–medium value for money awkwardness; do when you want premium trust, not in MVP.
+
+---
+
+### 9.2 “Cloud Power” suite (backend phase)
+
+**Suite verdict:** ✅ **YES — only after local logic is rock-solid.** Backend-dependent and complex.
+
+| Feature | Verdict | When to add | Status |
+|--------|---------|-------------|--------|
+| **Real-time “join” notifications** | ✅ High value | Phase 2. Needs auth, push, backend identity. Add too early = chaos. | Not implemented |
+| **Live activity feed** | ⚠️ Only if subtle | After join notifications. Risk: noise, notification fatigue, anxiety. Keep calm. | Not implemented |
+| **Cross-group identity** | 🔥 Long-term core | Backend + stable member identity. Unlocks debt minimization later. Very high value. | Not implemented |
+| **Cloud backup & sync** | ✅ Mandatory (boring) | Required once you leave MVP. Non-negotiable; users assume it. | Not implemented |
+
+**Implementation notes (Cloud Power):**
+
+- **Join notifications** — When you add “Pradhyun” by contact, he gets a push to join. High value, Phase 2.
+- **Live activity feed** — “Rekha added Dinner” in real time. Feels social but can feel like Splitwise noise. Only if subtle and calm.
+- **Cross-group identity** — Net balance across all groups with same person. Invisible at first, huge later. Foundation for God Mode math.
+- **Cloud backup & sync** — Not exciting; required. Do when you leave MVP.
+
+---
+
+### 9.3 “AI & Hit-Maker” suite (final vision)
+
+**Suite verdict:** ⚠️ **Dangerous if rushed; massive if timed right.** Many apps die here by overpromising.
+
+| Feature | Verdict | When to add | Status |
+|--------|---------|-------------|--------|
+| **Bill splitting via camera (OCR)** | 🚫 Do NOT touch early | After everything else works. Not MVP, not Phase 2. OCR + item–person matching = support nightmare. | Not implemented |
+| **Voice command entry** | ❌ Skip or postpone | Low real usage. Accent/noise/debug pain. Sounds cool, rarely used. | Not implemented |
+| **Debt minimization (“God Mode” math)** | 🔥 Signature feature | After cross-group identity. A owes B, B owes C → A pays C. Saves money, fewer txns, feels magical. | Not implemented |
+| **Spending insights** | ⚠️ Optional, tone-sensitive | If done wrong, feels like a finance app and breaks “calm.” Useful but can feel preachy. | Not implemented |
+
+**Implementation notes (AI & Hit-Maker):**
+
+- **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last.
+- **Voice entry** — “Hey Expenso, I paid 400 for movies with the boys.” Low real value; skip or postpone indefinitely.
+- **Debt minimization** — Real intelligence. Builds on members, balances, cross-group identity. Can be your signature feature. Extremely high value.
+- **Spending insights** — “Rishi, 20% more on travel this month. Time to settle up!” Medium value; tone matters.
+
+---
+
+### Suggested implementation order (when you return)
+
+1. **Polished Local (selective):** Receipt attachments → Dynamic UPI QR → (optional) Category intelligence → Nudge templates → (later) Biometric lock.
+2. **Cloud (after local is solid):** Cloud backup & sync → Real-time join notifications → Cross-group identity → (optional, subtle) Live activity feed.
+3. **AI / Hit-Maker (last):** Debt minimization (“God Mode” math) → (optional) Spending insights. Skip or defer OCR and voice.
+
+---
+
+*Keep sections 1–8 updated when you change the app. When you implement a feature in §9, change its Status and add a one-line “Implemented in …” if helpful.*

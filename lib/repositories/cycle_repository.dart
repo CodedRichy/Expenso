@@ -147,10 +147,11 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// True if [userId] can edit expenses in the group's current cycle.
-  /// Creator can always edit; non-creators only when cycle is active.
+  /// When cycle is settling, no one (including leader) can edit. Otherwise creator can always edit; non-creators only when active.
   bool canEditCycle(String groupId, String userId) {
-    if (isCreator(groupId, userId)) return true;
     final cycle = getActiveCycle(groupId);
+    if (cycle.status == CycleStatus.settling) return false;
+    if (isCreator(groupId, userId)) return true;
     return cycle.status == CycleStatus.active;
   }
 
@@ -278,10 +279,28 @@ class CycleRepository extends ChangeNotifier {
     return result;
   }
 
-  /// Closes the current (active or settling) cycle and starts a new active cycle for the group.
+  /// Phase 1 (Freeze): Sets the current cycle's status to settling. No new cycle created; expenses are read-only.
   void settleAndRestartCycle(String groupId) {
     final idx = _cycles.indexWhere(
       (c) => c.groupId == groupId && c.status != CycleStatus.closed,
+    );
+    if (idx < 0) return;
+    final old = _cycles[idx];
+    _cycles[idx] = Cycle(
+      id: old.id,
+      groupId: old.groupId,
+      status: CycleStatus.settling,
+      expenses: List.from(old.expenses),
+      startDate: old.startDate,
+      endDate: old.endDate,
+    );
+    notifyListeners();
+  }
+
+  /// Phase 2 (Archive & Restart): Closes the settling cycle and starts a new active cycle at ₹0.
+  void archiveAndRestart(String groupId) {
+    final idx = _cycles.indexWhere(
+      (c) => c.groupId == groupId && c.status == CycleStatus.settling,
     );
     if (idx < 0) return;
 
