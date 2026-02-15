@@ -1,4 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_app.dart';
+import 'firebase_options.dart';
 import 'repositories/cycle_repository.dart';
 import 'screens/phone_auth.dart';
 import 'screens/onboarding_name.dart';
@@ -20,8 +23,17 @@ import 'screens/cycle_history_detail.dart';
 import 'screens/empty_states.dart';
 import 'screens/error_states.dart';
 
-void main() {
-  debugPrint("APP STARTING...");
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    setFirebaseAuthAvailable(true);
+    debugPrint("Firebase initialized.");
+  } catch (e, st) {
+    debugPrint("Firebase not configured (run: dart run flutterfire configure): $e");
+    debugPrint("$st");
+    setFirebaseAuthAvailable(false);
+  }
   runApp(const MyApp());
 }
 

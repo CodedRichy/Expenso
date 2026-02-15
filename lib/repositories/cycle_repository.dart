@@ -16,9 +16,9 @@ class CycleRepository extends ChangeNotifier {
 
   static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
 
-  /// Current user id; used as creator id when creating a group.
-  // TODO: Replace with real Firebase Auth user id.
-  String get currentUserId => 'dev_user_01';
+  /// Current user id; used as creator id when creating a group. Set from Firebase Auth UID when available.
+  String get currentUserId => _currentUserId;
+  String _currentUserId = 'dev_user_01';
 
   /// Current user phone; set after phone auth, used for auto-join as creator when creating a group.
   String get currentUserPhone => _currentUserPhone;
@@ -28,10 +28,11 @@ class CycleRepository extends ChangeNotifier {
   String get currentUserName => _currentUserName;
   String _currentUserName = '';
 
-  /// Updates the global profile (phone and name) and notifies listeners.
-  void setGlobalProfile(String phone, String name) {
+  /// Updates the global profile (phone, name, and optionally auth user id). Notifies listeners.
+  void setGlobalProfile(String phone, String name, {String? authUserId}) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
+    if (authUserId != null && authUserId.isNotEmpty) _currentUserId = authUserId;
     notifyListeners();
   }
 

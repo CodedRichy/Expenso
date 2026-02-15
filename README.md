@@ -31,11 +31,12 @@
 
 ## Status
 
-In-memory implementation with full UI and domain logic. Foundation for persistence, payments, and sync.
+In-memory implementation with full UI and domain logic. **Phone auth** uses Firebase when configured (real OTP); otherwise a mock flow allows testing without a backend.
 
 | | |
 |:---|:---|
 | **Stack** | Flutter (Dart), Material 3 |
+| **Auth** | Firebase Auth (phone/OTP). Run `dart run flutterfire configure`, then enable Phone sign-in in Firebase Console. |
 | **Docs** | [APP_BLUEPRINT.md](APP_BLUEPRINT.md) — routes, screens, data layer, conventions |
 
 ---
