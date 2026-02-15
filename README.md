@@ -39,3 +39,9 @@ This repository implements the full UI and in-memory domain logic, serving as a 
 **Stack:** Flutter (Dart), Material 3.
 
 For implementation details, routes, and conventions, see **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)**.
+
+---
+
+## License
+
+Proprietary. All rights reserved. This source code is for **viewing only**; no use, copy, or distribution without permission. See [LICENSE](LICENSE).
