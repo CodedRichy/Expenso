@@ -1,0 +1,13 @@
+---
+description: Update README and APP_BLUEPRINT when adding features or changing the app
+alwaysApply: true
+---
+
+# Keep docs in sync with the app
+
+When you **add features**, **change behavior**, or **refactor** the Expenso app:
+
+1. **README.md** — Update so it stays accurate: e.g. "What it does", Status, stack, or any new capabilities. Keep it short and user-facing.
+2. **APP_BLUEPRINT.md** — Update the relevant sections (1–8) for current implementation: routes, screens, data layer, design system, logic conventions, file layout, dependencies. If you implement something from §9 (planned features), set its Status and add a one-line "Implemented in …" if helpful.
+
+Do not leave README or APP_BLUEPRINT outdated after app changes.

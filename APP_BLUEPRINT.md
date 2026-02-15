@@ -321,4 +321,4 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 ---
 
-*Keep sections 1–8 updated when you change the app. When you implement a feature in §9, change its Status and add a one-line “Implemented in …” if helpful.*
+*When you add features or change the app: update **APP_BLUEPRINT** (sections 1–8) and **README.md**. When you implement a feature in §9, change its Status and add a one-line “Implemented in …” if helpful.*

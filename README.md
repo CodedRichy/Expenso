@@ -1,3 +1,5 @@
+<!-- When adding features or changing the app, update README.md and APP_BLUEPRINT.md. -->
+
 <p align="center">
   <strong>Expenso</strong>
 </p>
