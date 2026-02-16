@@ -638,6 +638,12 @@ class CycleRepository extends ChangeNotifier {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
   }
 
+  /// Deletes the group from Firestore. Only the creator can delete. Listeners will update when the groups stream emits.
+  Future<void> deleteGroup(String groupId) async {
+    if (!canDeleteGroup(groupId, _currentUserId)) return;
+    await FirestoreService.instance.deleteGroup(groupId);
+  }
+
   Map<String, double> calculateBalances(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
@@ -697,16 +703,23 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Phase 1 (Freeze): Sets the current cycle's status to settling. Creator-only.
+  /// Makes the group passive immediately (cycle settling) and writes to Firestore.
   void settleAndRestartCycle(String groupId) {
     if (!isCreator(groupId, _currentUserId)) return;
+    final meta = _groupMeta[groupId];
+    if (meta == null) return;
     FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
+    _groupMeta[groupId] = _GroupMeta(activeCycleId: meta.activeCycleId, cycleStatus: 'settling');
+    _refreshGroupAmounts();
+    notifyListeners();
   }
 
-  /// Phase 2 (Archive & Restart): Moves current cycle expenses to settled_cycles, then starts new cycle. Creator-only.
+  /// Archive & Restart: Moves current cycle expenses to settled_cycles, then starts new cycle. Creator-only.
+  /// Works whether cycle is 'active' (e.g. from Settle now dialog) or 'settling' (e.g. after Pay via UPI).
   Future<void> archiveAndRestart(String groupId) async {
     if (!isCreator(groupId, _currentUserId)) return;
     final meta = _groupMeta[groupId];
-    if (meta == null || meta.cycleStatus != 'settling') return;
+    if (meta == null) return;
     final now = DateTime.now();
     final endStr = _formatDate(now);
     final startStr = meta.activeCycleId.startsWith('c_')

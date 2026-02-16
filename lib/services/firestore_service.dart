@@ -90,6 +90,11 @@ class FirestoreService {
     return _firestore.doc(FirestorePaths.groupDoc(groupId)).get();
   }
 
+  /// Delete a group document. Only the creator should call this. Subcollections (expenses, settled_cycles) are not deleted.
+  Future<void> deleteGroup(String groupId) async {
+    await _firestore.doc(FirestorePaths.groupDoc(groupId)).delete();
+  }
+
   /// Update group fields (e.g. cycleStatus, activeCycleId).
   Future<void> updateGroup(String groupId, Map<String, dynamic> updates) async {
     await _firestore.doc(FirestorePaths.groupDoc(groupId)).update(updates);

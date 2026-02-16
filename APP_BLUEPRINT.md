@@ -66,7 +66,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/groups` | GroupsList | List of groups. **Only the black FAB** creates a group (no blue text button). |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, expense log, **Magic Bar** (natural language → Groq/Llama 3 → confirm → add expense), “Add expense manually” link to full form. |
+| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, expense log, **Smart Bar** at bottom (natural language → Groq/Llama 3 → confirm; keyboard icon for manual entry). |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -132,7 +132,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. |
-| **Magic Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. |
+| **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 
 ### Models
@@ -205,7 +205,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - Description / “with” used for participants.
 - Submit enabled when `input.trim().isNotEmpty` and `parseExpense(input).amount > 0`.
 
-### Magic Bar (GroupDetail) — Groq AI parser
+### Smart Bar (GroupDetail) — Groq AI parser + manual fallback
 
 - **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Pradhyun”.
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
@@ -213,7 +213,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
 - **Success:** Confirmation dialog with amount, description, category, split type, and resolved participant names; on Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
 - **Failure:** Snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
-- **Rate limit (429 after retry):** Magic Bar enters a 30s cooldown; placeholder becomes “AI is cooling down... try manual entry”. **Manual “Add expense manually” remains enabled** so the user can always add expenses.
+- **Rate limit (429 after retry):** Smart Bar enters a 30s cooldown; use keyboard icon for manual entry; placeholder becomes “AI is cooling down... try manual entry”. **Manual “Add expense manually” remains enabled** so the user can always add expenses.
 
 ### NLP — Who’s involved (ExpenseInput)
 

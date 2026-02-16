@@ -44,6 +44,11 @@ class GroupDetail extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Main content (scrollable area + fills space so Smart Bar stays at bottom)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
@@ -284,16 +289,14 @@ class GroupDetail extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          () {
+                                            () {
                                             final d = expense.description;
-                                            final currentName = repo.currentUserName;
-                                            if (expense.participantPhones.isEmpty) {
-                                              final fallback = currentName.isNotEmpty ? currentName : 'Just you';
-                                              final dLower = d.toLowerCase();
-                                              if (dLower.contains(fallback.toLowerCase()) || dLower.contains('just you')) return d;
-                                              return '$d — $fallback';
-                                            }
-                                            final names = expense.participantPhones
+                                            // No "— with X" when no other participants (empty or only payer in split, e.g. "dinner 2000").
+                                            final others = expense.participantPhones
+                                                .where((p) => p != expense.paidByPhone)
+                                                .toList();
+                                            if (others.isEmpty) return d;
+                                            final names = others
                                                 .map((p) => repo.getMemberDisplayName(p))
                                                 .toList();
                                             final dLower = d.toLowerCase();
@@ -342,38 +345,13 @@ class GroupDetail extends StatelessWidget {
                 ),
               )
             else
-              EmptyStates(type: 'no-expenses-new-cycle'),
-            // Magic Bar + Add expense (hidden when passive - cycle is read-only)
-            if (!isSettled && !isPassive)
-              _MagicBarSection(group: defaultGroup),
-              if (!isSettled && !isPassive)
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/expense-input',
-                      arguments: defaultGroup,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFE5E5E5)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Add expense manually',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFFB0B0B0),
-                      ),
-                    ),
-                  ),
-                ),
+              Expanded(child: EmptyStates(type: 'no-expenses-new-cycle')),
+                ],
               ),
+            ),
+            // Smart Bar at bottom (hidden when passive)
+            if (!isSettled && !isPassive)
+              _SmartBarSection(group: defaultGroup),
           ],
         ),
       ),
@@ -438,9 +416,9 @@ class GroupDetail extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
-              repo.settleAndRestartCycle(groupId);
+            onPressed: () async {
               Navigator.pop(ctx);
+              await repo.archiveAndRestart(groupId);
             },
             child: Text(
               'Confirm',
@@ -457,16 +435,16 @@ class GroupDetail extends StatelessWidget {
   }
 }
 
-class _MagicBarSection extends StatefulWidget {
+class _SmartBarSection extends StatefulWidget {
   final Group group;
 
-  const _MagicBarSection({required this.group});
+  const _SmartBarSection({required this.group});
 
   @override
-  State<_MagicBarSection> createState() => _MagicBarSectionState();
+  State<_SmartBarSection> createState() => _SmartBarSectionState();
 }
 
-class _MagicBarSectionState extends State<_MagicBarSection> {
+class _SmartBarSectionState extends State<_SmartBarSection> {
   final TextEditingController _controller = TextEditingController();
   bool _loading = false;
   bool _sendAllowed = false;
@@ -521,31 +499,42 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
     super.dispose();
   }
 
-  List<String> _resolveParticipantNamesToPhones(
+  /// Resolves a single name to one phone, or null if ambiguous/unmatched.
+  String? _resolveOneNameToPhone(CycleRepository repo, String groupId, String name) {
+    final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+    return r.phone;
+  }
+
+  /// Like [_resolveOneNameToPhone] but also returns whether the match was fuzzy (user should verify).
+  ({String? phone, bool isGuessed}) _resolveOneNameToPhoneWithGuess(
     CycleRepository repo,
     String groupId,
-    List<String> names,
+    String name,
   ) {
-    if (names.isEmpty) return [];
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return (phone: null, isGuessed: false);
     final members = repo.getMembersForGroup(groupId);
     final currentName = repo.currentUserName;
     final currentPhone = repo.currentUserPhone;
-    final phones = <String>[];
-    for (final name in names) {
-      final n = name.trim().toLowerCase();
-      if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
-        if (currentPhone.isNotEmpty && !phones.contains(currentPhone)) phones.add(currentPhone);
-        continue;
+    if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
+      return (phone: currentPhone.isNotEmpty ? currentPhone : null, isGuessed: false);
+    }
+    String? exactMatch;
+    List<String> partialMatches = [];
+    for (final m in members) {
+      final display = repo.getMemberDisplayName(m.phone).toLowerCase();
+      if (display == n) {
+        exactMatch = m.phone;
+        break;
       }
-      for (final m in members) {
-        final display = repo.getMemberDisplayName(m.phone).toLowerCase();
-        if (display == n || display.contains(n)) {
-          if (!phones.contains(m.phone)) phones.add(m.phone);
-          break;
-        }
+      if (display.contains(n) || n.contains(display) ||
+          display.startsWith(n) || n.startsWith(display)) {
+        partialMatches.add(m.phone);
       }
     }
-    return phones;
+    if (exactMatch != null) return (phone: exactMatch, isGuessed: false);
+    if (partialMatches.length == 1) return (phone: partialMatches.single, isGuessed: true);
+    return (phone: null, isGuessed: false);
   }
 
   Future<void> _submit() async {
@@ -598,192 +587,65 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
     final members = repo.getMembersForGroup(groupId);
     final allPhones = members.map((m) => m.phone).toList();
 
-    // Payer: default current user; allow AI to set payer (e.g. "Pradhyun paid 500 for me")
     String payerPhone = repo.currentUserPhone;
     if (result.payerName != null && result.payerName!.trim().isNotEmpty) {
-      final resolved = _resolveParticipantNamesToPhones(repo, groupId, [result.payerName!.trim()]);
-      if (resolved.isNotEmpty) payerPhone = resolved.first;
+      final p = _resolveOneNameToPhone(repo, groupId, result.payerName!.trim());
+      if (p != null) payerPhone = p;
     }
 
-    List<String> participantPhones;
-    List<String>? excludedPhones;
-    Map<String, double>? exactAmountsByPhone;
     final splitTypeCap = result.splitType == 'exact'
         ? 'Exact'
         : result.splitType == 'exclude'
             ? 'Exclude'
             : 'Even';
 
+    // Build slots: each has name, amount, and resolved phone (or null → "Select Member")
+    final List<_ParticipantSlot> slots = [];
+    final bool isExclude = result.splitType == 'exclude';
+
     if (result.splitType == 'exclude' && result.excludedNames.isNotEmpty) {
-      excludedPhones = _resolveParticipantNamesToPhones(repo, groupId, result.excludedNames);
-      final excludedSet = excludedPhones.toSet();
-      participantPhones = allPhones.where((p) => !excludedSet.contains(p)).toList();
-      if (participantPhones.isEmpty) participantPhones = [payerPhone];
+      for (final name in result.excludedNames) {
+        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+        slots.add(_ParticipantSlot(name: name, amount: 0, phone: r.phone, isGuessed: r.isGuessed));
+      }
     } else if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
-      exactAmountsByPhone = {};
       for (final entry in result.exactAmountsByName.entries) {
-        final phones = _resolveParticipantNamesToPhones(repo, groupId, [entry.key]);
-        if (phones.isNotEmpty) exactAmountsByPhone[phones.first] = entry.value;
+        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, entry.key);
+        slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, phone: r.phone, isGuessed: r.isGuessed));
       }
-      participantPhones = exactAmountsByPhone.keys.toList();
-      if (participantPhones.isEmpty) participantPhones = [payerPhone];
     } else {
-      participantPhones = _resolveParticipantNamesToPhones(repo, groupId, result.participantNames);
-      if (participantPhones.isEmpty) participantPhones = [payerPhone];
-    }
-
-    // Per-person amounts for UI
-    final perPersonAmounts = <String, double>{};
-    if (result.splitType == 'exact' && exactAmountsByPhone != null) {
-      perPersonAmounts.addAll(exactAmountsByPhone);
-    } else {
-      final n = participantPhones.length;
-      final perShare = n > 0 ? result.amount / n : 0.0;
-      for (final p in participantPhones) {
-        perPersonAmounts[p] = perShare;
+      // When user didn't say "with X": in a 2-person group default to the other member ("Dinner 2000" → "Dinner – with Prasi"); else payer-only.
+      List<String> names = result.participantNames;
+      if (names.isEmpty && members.length == 2) {
+        final others = allPhones.where((p) => p != repo.currentUserPhone).toList();
+        if (others.isNotEmpty) names = [repo.getMemberDisplayName(others.first)];
+      }
+      final perShare = names.isNotEmpty ? result.amount / names.length : result.amount;
+      for (final name in names) {
+        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+        slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
       }
     }
 
-    // Exact case: validate sum equals totalAmount
-    final exactSum = exactAmountsByPhone?.values.fold<double>(0.0, (a, b) => a + b) ?? 0.0;
+    final exactSum = result.splitType == 'exact'
+        ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
+        : 0.0;
     const tolerance = 0.01;
     final exactValid = result.splitType != 'exact' ||
-        (exactAmountsByPhone != null &&
-            (exactSum - result.amount).abs() <= tolerance);
+        (exactSum - result.amount).abs() <= tolerance;
 
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Confirm expense',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1A1A1A),
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '₹${result.amount.toStringAsFixed(0).replaceAllMapped(
-                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                  (Match m) => '${m[1]},',
-                )}',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                result.description,
-                style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
-              ),
-              if (result.category.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  result.category,
-                  style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
-                ),
-              ],
-              const SizedBox(height: 4),
-              Text(
-                'Paid by ${repo.getMemberDisplayName(payerPhone)}',
-                style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
-              ),
-              Text(
-                'Split: $splitTypeCap',
-                style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
-              ),
-              if (!exactValid) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Exact split total (₹${exactSum.toStringAsFixed(0)}) does not match expense amount (₹${result.amount.toStringAsFixed(0)}). Adjust amounts to confirm.',
-                    style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
-                  ),
-                ),
-              ],
-              if (participantPhones.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: participantPhones.map((p) {
-                    final name = repo.getMemberDisplayName(p);
-                    final amt = perPersonAmounts[p] ?? 0.0;
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5E5E5),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '$name  ₹${amt.toStringAsFixed(0)}',
-                        style: TextStyle(fontSize: 14, color: const Color(0xFF1A1A1A)),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF5B7C99)),
-            ),
-          ),
-          TextButton(
-            onPressed: exactValid
-                ? () {
-                    try {
-                      repo.addExpenseFromMagicBar(
-                        groupId,
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        description: result.description,
-                        amount: result.amount,
-                        date: 'Today',
-                        payerPhone: payerPhone,
-                        splitType: splitTypeCap,
-                        participantPhones: participantPhones,
-                        excludedPhones: excludedPhones,
-                        exactAmountsByPhone: exactAmountsByPhone,
-                        category: result.category,
-                      );
-                      Navigator.pop(ctx);
-                    } on ArgumentError catch (e) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(e.message ?? 'Invalid expense.'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                : null,
-            child: Text(
-              'Confirm',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: exactValid ? const Color(0xFF1A1A1A) : const Color(0xFFB0B0B0),
-              ),
-            ),
-          ),
-        ],
+      builder: (ctx) => _ExpenseConfirmDialog(
+        repo: repo,
+        groupId: groupId,
+        result: result,
+        payerPhone: payerPhone,
+        splitTypeCap: splitTypeCap,
+        initialSlots: slots,
+        isExclude: isExclude,
+        allPhones: allPhones,
+        exactValid: exactValid,
       ),
     );
   }
@@ -813,6 +675,25 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/expense-input',
+                  arguments: widget.group,
+                );
+              },
+              icon: Icon(
+                Icons.keyboard_alt_outlined,
+                size: 22,
+                color: const Color(0xFF6B6B6B),
+              ),
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+                minimumSize: const Size(40, 40),
+              ),
+            ),
+            const SizedBox(width: 4),
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -820,7 +701,7 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
                 onSubmitted: (_) => _submit(),
                 decoration: InputDecoration(
                   hintText: _inCooldown
-                      ? 'AI is cooling down... try manual entry'
+                      ? 'AI cooling down — use keyboard for manual entry'
                       : 'e.g. Dinner 500 with Pradhyun',
                   hintStyle: TextStyle(
                     color: _inCooldown ? const Color(0xFF6B6B6B) : const Color(0xFFB0B0B0),
@@ -873,6 +754,263 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ParticipantSlot {
+  final String name;
+  final double amount;
+  String? phone;
+  final bool isGuessed; // true when resolved via fuzzy/partial match — highlight in confirmation
+  _ParticipantSlot({required this.name, required this.amount, this.phone, this.isGuessed = false});
+}
+
+class _ExpenseConfirmDialog extends StatefulWidget {
+  final CycleRepository repo;
+  final String groupId;
+  final ParsedExpenseResult result;
+  final String payerPhone;
+  final String splitTypeCap;
+  final List<_ParticipantSlot> initialSlots;
+  final bool isExclude;
+  final List<String> allPhones;
+  final bool exactValid;
+
+  const _ExpenseConfirmDialog({
+    required this.repo,
+    required this.groupId,
+    required this.result,
+    required this.payerPhone,
+    required this.splitTypeCap,
+    required this.initialSlots,
+    required this.isExclude,
+    required this.allPhones,
+    required this.exactValid,
+  });
+
+  @override
+  State<_ExpenseConfirmDialog> createState() => _ExpenseConfirmDialogState();
+}
+
+class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
+  late List<_ParticipantSlot> slots;
+
+  @override
+  void initState() {
+    super.initState();
+    slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, phone: s.phone, isGuessed: s.isGuessed)).toList();
+  }
+
+  bool get _allResolved => slots.every((s) => s.phone != null && s.phone!.isNotEmpty);
+  bool get _canConfirm => widget.exactValid && _allResolved;
+
+  void _pickMember(int slotIndex) {
+    final repo = widget.repo;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Select member',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+              ),
+            ),
+            ...repo.getMembersForGroup(widget.groupId).map((m) {
+              final displayName = repo.getMemberDisplayName(m.phone);
+              return ListTile(
+                title: Text(displayName),
+                onTap: () {
+                  setState(() => slots[slotIndex].phone = m.phone);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onConfirm() {
+    if (!_canConfirm) return;
+    final repo = widget.repo;
+    final groupId = widget.groupId;
+    List<String> participantPhones;
+    List<String>? excludedPhones;
+    Map<String, double>? exactAmountsByPhone;
+
+    if (widget.isExclude) {
+      excludedPhones = slots.map((s) => s.phone!).toList();
+      final excludedSet = excludedPhones.toSet();
+      participantPhones = widget.allPhones.where((p) => !excludedSet.contains(p)).toList();
+      if (participantPhones.isEmpty) participantPhones = [widget.payerPhone];
+    } else if (widget.splitTypeCap == 'Exact') {
+      exactAmountsByPhone = {for (final s in slots) s.phone!: s.amount};
+      participantPhones = exactAmountsByPhone.keys.toList();
+    } else {
+      participantPhones = slots.map((s) => s.phone!).toList();
+    }
+
+    try {
+      repo.addExpenseFromMagicBar(
+        groupId,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        description: widget.result.description,
+        amount: widget.result.amount,
+        date: 'Today',
+        payerPhone: widget.payerPhone,
+        splitType: widget.splitTypeCap,
+        participantPhones: participantPhones,
+        excludedPhones: excludedPhones,
+        exactAmountsByPhone: exactAmountsByPhone,
+        category: widget.result.category,
+      );
+      Navigator.pop(context);
+    } on ArgumentError catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Invalid expense.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = widget.repo;
+    final exactSum = widget.result.splitType == 'exact'
+        ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
+        : 0.0;
+
+    return AlertDialog(
+      title: Text(
+        'Confirm expense',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '₹${widget.result.amount.toStringAsFixed(0).replaceAllMapped(
+                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                (Match m) => '${m[1]},',
+              )}',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+            ),
+            const SizedBox(height: 8),
+            Text(widget.result.description, style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A))),
+            if (widget.result.category.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(widget.result.category, style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
+            ],
+            const SizedBox(height: 4),
+            Text(
+              'Paid by ${repo.getMemberDisplayName(widget.payerPhone)}',
+              style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
+            ),
+            Text('Split: ${widget.splitTypeCap}', style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
+            if (!widget.exactValid) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Exact split total (₹${exactSum.toStringAsFixed(0)}) does not match expense amount (₹${widget.result.amount.toStringAsFixed(0)}).',
+                  style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: List.generate(slots.length, (i) {
+                final slot = slots[i];
+                final label = slot.phone != null && slot.phone!.isNotEmpty
+                    ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
+                    : 'Select Member  ₹${slot.amount.toStringAsFixed(0)}';
+                final isPlaceholder = slot.phone == null || slot.phone!.isEmpty;
+                final isGuessed = slot.isGuessed && !isPlaceholder;
+                return GestureDetector(
+                  onTap: isPlaceholder ? () => _pickMember(i) : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isPlaceholder
+                          ? const Color(0xFFE8E8E8)
+                          : isGuessed
+                              ? const Color(0xFFFFF8E1)
+                              : const Color(0xFFE5E5E5),
+                      borderRadius: BorderRadius.circular(6),
+                      border: isPlaceholder
+                          ? Border.all(color: const Color(0xFF5B7C99), width: 1)
+                          : isGuessed
+                              ? Border.all(color: const Color(0xFFF9A825), width: 1.5)
+                              : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isPlaceholder
+                                ? const Color(0xFF5B7C99)
+                                : isGuessed
+                                    ? const Color(0xFFE65100)
+                                    : const Color(0xFF1A1A1A),
+                            fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                          ),
+                        ),
+                        if (isPlaceholder) const SizedBox(width: 4),
+                        if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                        if (isGuessed) const SizedBox(width: 2),
+                        if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+            if (slots.any((s) => s.isGuessed && s.phone != null)) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Highlighted names are best guesses — verify before confirming.',
+                style: TextStyle(fontSize: 12, color: const Color(0xFF9B9B9B), fontStyle: FontStyle.italic),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF5B7C99))),
+        ),
+        TextButton(
+          onPressed: _canConfirm ? _onConfirm : null,
+          child: Text(
+            'Confirm',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: _canConfirm ? const Color(0xFF1A1A1A) : const Color(0xFFB0B0B0),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

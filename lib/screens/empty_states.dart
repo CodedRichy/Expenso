@@ -99,8 +99,7 @@ class EmptyStates extends StatelessWidget {
     }
 
     if (type == 'no-expenses') {
-      return Expanded(
-        child: Center(
+      return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
@@ -131,13 +130,11 @@ class EmptyStates extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      );
+        );
     }
 
     if (type == 'new-cycle') {
-      return Expanded(
-        child: Center(
+      return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
@@ -168,13 +165,11 @@ class EmptyStates extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      );
+        );
     }
 
     if (type == 'no-expenses-new-cycle') {
-      return Expanded(
-        child: Center(
+      return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
@@ -205,8 +200,7 @@ class EmptyStates extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      );
+        );
     }
 
     return const SizedBox.shrink();

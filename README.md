@@ -21,7 +21,7 @@
 
 | | |
 |:---|:---|
-| **NLP expense entry** | Log with natural language via the **Magic Bar** (Groq + Llama 3) on group detail, or the manual expense form. Amounts, participants, category, split type (even / exact / exclude), and payer are parsed. Confirmation shows per-person amounts; for exact splits the sum is validated before saving. |
+| **NLP expense entry** | **Smart Bar** at bottom of group detail: natural language (Groq) or keyboard icon for manual form. Partial name match and typos tolerated; unresolved names show "Select Member" in confirmation. Per-person amounts and exact-sum validation before save. |
 | **Creator-led groups** | One creator per group with full control over cycles, settlements, and ledger integrity. |
 | **Two-phase settlement** | Cycles move **Active → Settling → Closed** so expenses are frozen and verifiable before archival. |
 | **Repository-first logic** | Rules live in the data layer, not in the UI—predictable behavior and ready for backend integration. |

@@ -42,10 +42,11 @@ class ParsedExpenseResult {
         exactAmountsByName = exactAmountsByName ?? {};
 
   static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
-    final amount = (json['amount'] is num)
-        ? (json['amount'] as num).toDouble()
-        : double.tryParse(json['amount']?.toString() ?? '') ?? 0.0;
-    final desc = (json['description'] as String?)?.trim() ?? '';
+    final amountRaw = json['amount'] ?? json['amt'];
+    final amount = (amountRaw is num)
+        ? (amountRaw as num).toDouble()
+        : double.tryParse(amountRaw?.toString() ?? '') ?? 0.0;
+    final desc = ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
     final category = (json['category'] as String?)?.trim() ?? '';
     final split = (json['splitType'] as String?)?.trim().toLowerCase();
     final st = split == 'exact'
@@ -53,7 +54,8 @@ class ParsedExpenseResult {
         : split == 'exclude'
             ? 'exclude'
             : 'even';
-    final parts = json['participants'];
+    // Accept "participants" or "participant" (some models use singular)
+    final parts = json['participants'] ?? json['participant'];
     List<String> names = [];
     if (parts is List) {
       for (final p in parts) {
@@ -61,6 +63,8 @@ class ParsedExpenseResult {
           names.add(p.toString().trim());
         }
       }
+    } else if (parts != null && parts.toString().trim().isNotEmpty) {
+      names.add(parts.toString().trim());
     }
     final payer = (json['payer'] as String?)?.trim();
     final excluded = json['excluded'];
@@ -74,9 +78,9 @@ class ParsedExpenseResult {
     }
     final exactRaw = json['exactAmounts'];
     Map<String, double> exactMap = {};
-    if (exactRaw is Map<String, dynamic>) {
+    if (exactRaw is Map) {
       for (final entry in exactRaw.entries) {
-        final name = entry.key.trim();
+        final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
         final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
@@ -124,17 +128,20 @@ class GroqExpenseParserService {
         ? ' (no members listed)'
         : ' ${groupMemberNames.join(", ")}';
     final systemPrompt = '''
-You are a Financial Data Parser. You must return ONLY valid raw JSON with no markdown, no code fence, and no explanation.
-Use these keys: "amount" (number), "description" (string), "category" (string), "splitType" ("even" | "exact" | "exclude"), "participants" (array of strings), and optionally "payer" (string), "excluded" (array of strings), "exactAmounts" (object name->number).
-- amount: the expense amount as a number (e.g. 500 or 1200.50).
-- description: short description of the expense (e.g. "Dinner", "Uber to airport").
-- category: a short category label (e.g. "Food", "Transport").
-- splitType: "even" = split equally among participants; "exact" = specific amounts per person (provide "exactAmounts"); "exclude" = split equally among everyone EXCEPT the people in "excluded". Use "even" when unclear.
-- participants: display names of people in the split. Use ONLY names from this list:$memberList. If user says "split with X" or "with X and Y", put those names. If no one else mentioned, use [].
-- payer: (optional) display name of who paid. Use ONLY from the list. If user says "X paid 500 for me" or "paid by X", set payer to X. If not mentioned, omit or leave empty.
-- excluded: (optional) only for splitType "exclude". Array of display names to exclude from the split (they don't owe anything). Use names from the list.
-- exactAmounts: (optional) only for splitType "exact". Object mapping display name to amount owed, e.g. {"Alice": 200, "Bob": 300}. Sum must equal "amount". Use names from the list.
-Return nothing but the JSON object.''';
+You extract expense details from any casual user message and reply with ONLY one valid JSON object. No other text, no markdown, no explanation.
+
+Output format (double quotes for keys and strings; amount as number; no trailing commas):
+{"amount":<number>,"description":"<what was bought>","category":"<Food|Transport|etc>","splitType":"even","participants":["<name>",...]}
+
+Member list for names:$memberList
+- participants: only include people the user said they are splitting with. Match what they said to this list (e.g. user says "Prasi" and list has "Prasid" -> use "Prasid"). Do NOT add the payer or anyone the user did not mention. If they said "with Prasi", participants must be ["Prasid"] (from list), not someone else. If they mentioned no one to split with, participants: [].
+- amount: always extract the money number from the message.
+- description: short phrase for what was bought (fix typos/fragments: "ght biriyani" -> "Biriyani", "dinr 500" -> "Dinner").
+- category: infer (Food, Transport, etc.) if possible.
+- splitType: "even" unless user gives exact per-person amounts or says who to exclude.
+- Only add "payer" if user clearly says "X paid" or "paid by X".
+
+Reply with nothing except the single JSON object. Use double-quoted keys and strings only.''';
 
     final body = {
       'model': _model,
@@ -173,14 +180,88 @@ Return nothing but the JSON object.''';
 
     if (raw.isEmpty) throw Exception('No content from AI.');
 
-    // Strip optional markdown code block
-    final codeBlockMatch = RegExp(r'^```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
+    raw = raw.replaceAll('\uFEFF', ''); // BOM
+    raw = _extractJson(raw);
+    raw = _fixCommonJsonIssues(raw);
+
+    Map<String, dynamic>? decoded = _tryDecodeJson(raw);
+    if (decoded == null) {
+      if (kDebugMode) {
+        final preview = raw.length > 400 ? '${raw.substring(0, 400)}...' : raw;
+        debugPrint('Groq parse failed (JSON decode). Raw response: $preview');
+      }
+      throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
+    }
+
+    try {
+      return ParsedExpenseResult.fromJson(decoded);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Groq parse failed (fromJson). Decoded: $decoded');
+        debugPrint('Error: $e');
+        debugPrint(st.toString());
+      }
+      throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
+    }
+  }
+
+  /// Tries to decode a JSON object from LLM output. Tries strict parse first,
+  /// then normalizes smart quotes, then single-quoted style (common with Groq/Llama).
+  static Map<String, dynamic>? _tryDecodeJson(String raw) {
+    // 1) Strict parse
+    try {
+      final value = jsonDecode(raw);
+      if (value is Map<String, dynamic>) return value;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Groq JSON strict decode failed: $e');
+    }
+    // 2) Normalize smart/curly quotes to straight
+    String normalized = raw
+        .replaceAll('\u201c', '"')
+        .replaceAll('\u201d', '"')
+        .replaceAll('\u2018', "'")
+        .replaceAll('\u2019', "'");
+    try {
+      final value = jsonDecode(normalized);
+      if (value is Map<String, dynamic>) return value;
+    } catch (_) {}
+    // 3) LLM often returns single-quoted JSON; try replacing ' with "
+    try {
+      final value = jsonDecode(normalized.replaceAll("'", '"'));
+      if (value is Map<String, dynamic>) return value;
+    } catch (_) {}
+    // 4) Some models return unquoted keys (e.g. {amount: 200}); try quoting keys
+    try {
+      final fixed = normalized.replaceAllMapped(
+        RegExp(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:'),
+        (m) => '${m[1]}"${m[2]}":',
+      );
+      final value = jsonDecode(fixed);
+      if (value is Map<String, dynamic>) return value;
+    } catch (_) {}
+    return null;
+  }
+
+  /// Extracts a JSON object from raw text (handles markdown, leading/trailing text).
+  static String _extractJson(String raw) {
+    raw = raw.trim();
+    // Strip markdown code block if present
+    final codeBlockMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
     if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
+    // Find first { and last }; use that as the JSON object
+    final start = raw.indexOf('{');
+    final end = raw.lastIndexOf('}');
+    if (start != -1 && end != -1 && end > start) {
+      raw = raw.substring(start, end + 1);
+    }
+    return raw.trim();
+  }
 
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) throw Exception('AI did not return a JSON object.');
-
-    return ParsedExpenseResult.fromJson(decoded);
+  /// Fixes common JSON issues from LLM output (trailing commas, etc.).
+  static String _fixCommonJsonIssues(String raw) {
+    // Remove trailing commas before } or ]
+    raw = raw.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
+    return raw;
   }
 
   static Future<http.Response> _post(String apiKey, Map<String, dynamic> body) {
