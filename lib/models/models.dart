@@ -41,6 +41,8 @@ class Expense {
   final String paidByPhone;
   /// Per-person share (phone -> amount). When non-null, balances use these; else equal split.
   final Map<String, double>? splitAmountsByPhone;
+  /// Optional category (e.g. Food, Transport). Persisted in Firestore.
+  final String category;
 
   Expense({
     required this.id,
@@ -50,5 +52,6 @@ class Expense {
     List<String>? participantPhones,
     this.paidByPhone = '',
     this.splitAmountsByPhone,
+    this.category = '',
   }) : participantPhones = participantPhones ?? [];
 }

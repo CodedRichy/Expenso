@@ -749,19 +749,29 @@ class _MagicBarSectionState extends State<_MagicBarSection> {
           TextButton(
             onPressed: exactValid
                 ? () {
-                    repo.addExpenseFromMagicBar(
-                      groupId,
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      description: result.description,
-                      amount: result.amount,
-                      date: 'Today',
-                      payerPhone: payerPhone,
-                      splitType: splitTypeCap,
-                      participantPhones: participantPhones,
-                      excludedPhones: excludedPhones,
-                      exactAmountsByPhone: exactAmountsByPhone,
-                    );
-                    Navigator.pop(ctx);
+                    try {
+                      repo.addExpenseFromMagicBar(
+                        groupId,
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        description: result.description,
+                        amount: result.amount,
+                        date: 'Today',
+                        payerPhone: payerPhone,
+                        splitType: splitTypeCap,
+                        participantPhones: participantPhones,
+                        excludedPhones: excludedPhones,
+                        exactAmountsByPhone: exactAmountsByPhone,
+                        category: result.category,
+                      );
+                      Navigator.pop(ctx);
+                    } on ArgumentError catch (e) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(e.message ?? 'Invalid expense.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   }
                 : null,
             child: Text(

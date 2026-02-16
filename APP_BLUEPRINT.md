@@ -106,7 +106,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 - **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`.
 - **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
-- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`.
+- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`, optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
 
 **Archive logic:** Settle (Phase 1) sets `cycleStatus` to `settling`. Archive (Phase 2, creator-only) copies current-cycle expenses into `settled_cycles/{cycleId}/expenses`, deletes from current `expenses`, then sets new `activeCycleId` and `cycleStatus: 'active'`.
@@ -139,8 +139,9 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; used by balance calculation)
+- **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; optional `category`; used by balance calculation)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
+- **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 
 ---
 
@@ -210,7 +211,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
 - **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env only; model `llama-3.3-70b-versatile`; system prompt instructs “Financial Data Parser” to return only JSON: amount, description, category, splitType, participants (names from injected member list). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
-- **Success:** Confirmation dialog with amount, description, category, split type, and resolved participant names; on Confirm → build `Expense`, resolve participant names to phones via `getMemberDisplayName` / `getMembersForGroup`, then `CycleRepository.addExpense(groupId, expense)` (same path as ExpenseInput).
+- **Success:** Confirmation dialog with amount, description, category, split type, and resolved participant names; on Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
 - **Failure:** Snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
 - **Rate limit (429 after retry):** Magic Bar enters a 30s cooldown; placeholder becomes “AI is cooling down... try manual entry”. **Manual “Add expense manually” remains enabled** so the user can always add expenses.
 
@@ -248,6 +249,8 @@ lib/
     phone_auth_service.dart   # Firebase verifyPhoneNumber, codeSent, verificationCompleted, error handling
     firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
+  utils/
+    expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
   screens/
     phone_auth.dart
     onboarding_name.dart
@@ -268,6 +271,9 @@ lib/
     cycle_history_detail.dart
     empty_states.dart
     error_states.dart
+test/
+  expense_validation_test.dart   # Unit tests for validateExpenseAmount, validateExpenseDescription
+  parsed_expense_result_test.dart # Unit tests for ParsedExpenseResult.fromJson (Groq parser)
 ```
 
 ---

@@ -71,15 +71,25 @@ class _ExpenseInputState extends State<ExpenseInput> {
     if (parsedData != null) {
       final group = ModalRoute.of(context)?.settings.arguments as Group?;
       if (group != null) {
-        final expense = Expense(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          description: parsedData!.description,
-          amount: parsedData!.amount,
-          date: 'Today',
-          participantPhones: selectedMemberPhones.toList(),
-          paidByPhone: payerPhone,
-        );
-        CycleRepository.instance.addExpense(group.id, expense);
+        try {
+          final expense = Expense(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            description: parsedData!.description,
+            amount: parsedData!.amount,
+            date: 'Today',
+            participantPhones: selectedMemberPhones.toList(),
+            paidByPhone: payerPhone,
+          );
+          CycleRepository.instance.addExpense(group.id, expense);
+        } on ArgumentError catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message ?? 'Invalid expense.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
       }
     }
     setState(() {

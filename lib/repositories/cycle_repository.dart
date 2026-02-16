@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../services/firestore_service.dart';
+import '../utils/expense_validation.dart';
 
 class CycleRepository extends ChangeNotifier {
   CycleRepository._();
@@ -66,7 +67,10 @@ class CycleRepository extends ChangeNotifier {
         displayName: _currentUserName,
         phoneNumber: _currentUserPhone,
       );
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('CycleRepository._writeCurrentUserProfile failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
+    }
   }
 
   /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.
@@ -221,7 +225,10 @@ class CycleRepository extends ChangeNotifier {
             );
           }
         }
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrint('CycleRepository._loadUsersForMembers error for uid $uid: $e');
+        if (kDebugMode) debugPrint(st.toString());
+      }
     }
     notifyListeners();
   }
@@ -267,6 +274,7 @@ class CycleRepository extends ChangeNotifier {
       participantPhones: participantPhones,
       paidByPhone: paidByPhone,
       splitAmountsByPhone: splitAmountsByPhone.isEmpty ? null : splitAmountsByPhone,
+      category: data['category'] as String? ?? '',
     );
   }
 
@@ -453,6 +461,11 @@ class CycleRepository extends ChangeNotifier {
   }
 
   void addExpense(String groupId, Expense expense) {
+    final amountError = validateExpenseAmount(expense.amount);
+    if (amountError != null) throw ArgumentError(amountError);
+    final descError = validateExpenseDescription(expense.description);
+    if (descError != null) throw ArgumentError(descError);
+
     final meta = _groupMeta[groupId];
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) return;
@@ -480,6 +493,7 @@ class CycleRepository extends ChangeNotifier {
       'splits': splits.map((k, v) => MapEntry(k, v)),
       'description': expense.description,
       'date': expense.date,
+      if (expense.category.isNotEmpty) 'category': expense.category,
     };
     FirestoreService.instance.addExpense(groupId, data);
   }
@@ -497,7 +511,13 @@ class CycleRepository extends ChangeNotifier {
     required List<String> participantPhones,
     List<String>? excludedPhones,
     Map<String, double>? exactAmountsByPhone,
+    String category = '',
   }) {
+    final amountError = validateExpenseAmount(amount);
+    if (amountError != null) throw ArgumentError(amountError);
+    final descError = validateExpenseDescription(description);
+    if (descError != null) throw ArgumentError(descError);
+
     final meta = _groupMeta[groupId];
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) return;
@@ -549,6 +569,7 @@ class CycleRepository extends ChangeNotifier {
       'splits': splits.map((k, v) => MapEntry(k, v)),
       'description': description,
       'date': date,
+      if (category.isNotEmpty) 'category': category,
     };
     FirestoreService.instance.addExpense(groupId, data);
   }
@@ -566,30 +587,50 @@ class CycleRepository extends ChangeNotifier {
   }
 
   void updateExpense(String groupId, Expense updatedExpense) {
+    final amountError = validateExpenseAmount(updatedExpense.amount);
+    if (amountError != null) throw ArgumentError(amountError);
+    final descError = validateExpenseDescription(updatedExpense.description);
+    if (descError != null) throw ArgumentError(descError);
+
     final meta = _groupMeta[groupId];
     if (meta == null) return;
     final payerId = _uidForPhone(updatedExpense.paidByPhone.isEmpty ? _currentUserPhone : updatedExpense.paidByPhone) ?? _currentUserId;
-    final participants = updatedExpense.participantPhones.isNotEmpty
-        ? updatedExpense.participantPhones
-        : [updatedExpense.paidByPhone.isNotEmpty ? updatedExpense.paidByPhone : _currentUserPhone];
-    final uids = <String>[];
-    for (final p in participants) {
-      final uid = _uidForPhone(p);
-      if (uid != null) uids.add(uid);
+
+    final Map<String, double> splits;
+    final String splitType;
+    if (updatedExpense.splitAmountsByPhone != null && updatedExpense.splitAmountsByPhone!.isNotEmpty) {
+      splits = <String, double>{};
+      for (final entry in updatedExpense.splitAmountsByPhone!.entries) {
+        final uid = _uidForPhone(entry.key);
+        if (uid != null) splits[uid] = entry.value;
+      }
+      if (splits.isEmpty) {
+        splits[payerId] = updatedExpense.amount;
+      }
+      splitType = 'Exact';
+    } else {
+      final participants = updatedExpense.participantPhones.isNotEmpty
+          ? updatedExpense.participantPhones
+          : [updatedExpense.paidByPhone.isNotEmpty ? updatedExpense.paidByPhone : _currentUserPhone];
+      final uids = <String>[];
+      for (final p in participants) {
+        final uid = _uidForPhone(p);
+        if (uid != null) uids.add(uid);
+      }
+      if (uids.isEmpty) uids.add(_currentUserId);
+      final perShare = updatedExpense.amount / uids.length;
+      splits = {for (final uid in uids) uid: perShare};
+      splitType = 'Even';
     }
-    if (uids.isEmpty) uids.add(_currentUserId);
-    final perShare = updatedExpense.amount / uids.length;
-    final splits = <String, double>{};
-    for (final uid in uids) {
-      splits[uid] = perShare;
-    }
+
     FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
       'amount': updatedExpense.amount,
       'description': updatedExpense.description,
       'date': updatedExpense.date,
       'payerId': payerId,
-      'splitType': 'Even',
+      'splitType': splitType,
       'splits': splits.map((k, v) => MapEntry(k, v)),
+      if (updatedExpense.category.isNotEmpty) 'category': updatedExpense.category,
     });
   }
 
@@ -711,7 +752,9 @@ class CycleRepository extends ChangeNotifier {
         ));
       }
       return closed;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('CycleRepository.getHistory failed for $groupId: $e');
+      if (kDebugMode) debugPrint(st.toString());
       return [];
     }
   }

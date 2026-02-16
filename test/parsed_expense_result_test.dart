@@ -1,0 +1,91 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:expenso/services/groq_expense_parser_service.dart';
+
+void main() {
+  group('ParsedExpenseResult.fromJson', () {
+    test('parses even split with amount and description', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 600,
+        'description': 'Dinner',
+        'category': 'Food',
+        'splitType': 'even',
+        'participants': ['Alice', 'Bob'],
+      });
+      expect(result.amount, 600.0);
+      expect(result.description, 'Dinner');
+      expect(result.category, 'Food');
+      expect(result.splitType, 'even');
+      expect(result.participantNames, ['Alice', 'Bob']);
+      expect(result.payerName, isNull);
+      expect(result.excludedNames, isEmpty);
+      expect(result.exactAmountsByName, isEmpty);
+    });
+
+    test('parses exact split with exactAmounts', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 500,
+        'description': 'Lunch',
+        'category': 'Food',
+        'splitType': 'exact',
+        'participants': [],
+        'exactAmounts': {'Alice': 200, 'Bob': 300},
+      });
+      expect(result.amount, 500.0);
+      expect(result.splitType, 'exact');
+      expect(result.exactAmountsByName, {'Alice': 200.0, 'Bob': 300.0});
+    });
+
+    test('parses exclude split with excluded list', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 900,
+        'description': 'Taxi',
+        'category': 'Transport',
+        'splitType': 'exclude',
+        'participants': ['Alice', 'Bob', 'Carol'],
+        'excluded': ['Carol'],
+      });
+      expect(result.amount, 900.0);
+      expect(result.splitType, 'exclude');
+      expect(result.excludedNames, ['Carol']);
+    });
+
+    test('parses payer when set', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 500,
+        'description': 'Snacks',
+        'category': 'Food',
+        'splitType': 'even',
+        'participants': [],
+        'payer': 'Pradhyun',
+      });
+      expect(result.payerName, 'Pradhyun');
+    });
+
+    test('defaults to even when splitType unknown', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 100,
+        'description': 'Misc',
+        'category': '',
+        'splitType': 'unknown',
+        'participants': [],
+      });
+      expect(result.splitType, 'even');
+    });
+
+    test('handles missing or invalid amount', () {
+      final result = ParsedExpenseResult.fromJson({
+        'description': 'Test',
+        'splitType': 'even',
+        'participants': [],
+      });
+      expect(result.amount, 0.0);
+      final result2 = ParsedExpenseResult.fromJson({
+        'amount': 'not a number',
+        'description': 'Test',
+        'splitType': 'even',
+        'participants': [],
+      });
+      expect(result2.amount, 0.0);
+    });
+  });
+}

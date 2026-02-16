@@ -41,6 +41,7 @@
 | **Creator** | Only `creatorId` can trigger Settle and Archive; `isCurrentUserCreator(groupId)` gates the UI. |
 | **Env** | `.env` for secrets (e.g. **GROQ_API_KEY** for the Magic Bar AI parser). Copy `.env.example` to `.env`. `.env` is gitignored; loaded in `main()` via `flutter_dotenv`. |
 | **Loading UX** | No full-screen buffer: auth or groups loading show the Groups scaffold with a list **skeleton shimmer** (same chrome, animated placeholders). |
+| **Testing** | Unit tests for expense validation (`lib/utils/expense_validation.dart`) and Groq parser result (`ParsedExpenseResult`). Run: `flutter test`. |
 | **Docs** | [APP_BLUEPRINT.md](APP_BLUEPRINT.md) — routes, screens, data layer, Firestore layout, conventions |
 
 ---

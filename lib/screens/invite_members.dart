@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -66,7 +67,9 @@ class _InviteMembersState extends State<InviteMembers> {
       final contacts = await fc.FlutterContacts.getContacts(withProperties: true);
       if (!mounted) return;
       setState(() => _allContacts = contacts);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('InviteMembers._loadContacts failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
       if (mounted) setState(() {});
     }
   }

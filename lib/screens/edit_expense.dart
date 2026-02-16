@@ -80,16 +80,27 @@ class _EditExpenseState extends State<EditExpense> {
     final repo = CycleRepository.instance;
     final existing = repo.getExpense(groupId, expenseId);
 
-    final updatedExpense = Expense(
-      id: expenseId,
-      description: desc,
-      amount: amount,
-      date: existing?.date ?? 'Today',
-      participantPhones: existing?.participantPhones ?? [],
-      paidByPhone: existing?.paidByPhone ?? CycleRepository.instance.currentUserPhone,
-    );
-    repo.updateExpense(groupId, updatedExpense);
-    Navigator.pop(context);
+    try {
+      final updatedExpense = Expense(
+        id: expenseId,
+        description: desc,
+        amount: amount,
+        date: existing?.date ?? 'Today',
+        participantPhones: existing?.participantPhones ?? [],
+        paidByPhone: existing?.paidByPhone ?? CycleRepository.instance.currentUserPhone,
+        splitAmountsByPhone: existing?.splitAmountsByPhone,
+        category: existing?.category ?? '',
+      );
+      repo.updateExpense(groupId, updatedExpense);
+      Navigator.pop(context);
+    } on ArgumentError catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Invalid expense.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void handleDelete() {
