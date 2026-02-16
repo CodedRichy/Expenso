@@ -63,7 +63,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | Route | Screen | Notes |
 |-------|--------|--------|
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
-| `/groups` | GroupsList | List of groups. **Only the black FAB** creates a group (no blue text button). |
+| `/groups` | GroupsList | List of groups; **swipe left** = Pin/Unpin (max 3, user preference); **swipe right** = Delete (creator only, confirm). Pinned groups at top. **Only the black FAB** creates a group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
 | `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, expense log, **Smart Bar** at bottom (natural language → Groq/Llama 3 → confirm; keyboard icon for manual entry). |
@@ -75,7 +75,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 |-------|--------|--------|
 | `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. |
 | `/undo-expense` | UndoExpense | Undo last expense. |
-| `/group-members` | GroupMembers | List / edit members. |
+| `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. |
 | `/member-change` | MemberChange | Change one member. |
 | `/delete-group` | DeleteGroup | Confirm delete. |
 
@@ -113,7 +113,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### FirestoreService
 
-**Location:** `lib/services/firestore_service.dart` — Singleton. Low-level Firestore: `setUser`, `createGroup`, `groupsStream(uid)`, `expensesStream(groupId)`, `addExpense`, `updateExpense`, `deleteExpense`, `archiveCycleExpenses`, `getSettledCycles`, `getSettledCycleExpenses`.
+**Location:** `lib/services/firestore_service.dart` — Singleton. Low-level Firestore: `setUser`, `createGroup`, `deleteGroup`, `groupsStream(uid)`, `expensesStream(groupId)`, `addExpense`, `updateExpense`, `deleteExpense`, `archiveCycleExpenses`, `getSettledCycles`, `getSettledCycleExpenses`.
 
 ### GroqExpenseParserService
 
@@ -184,6 +184,8 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - The **black FAB** is the only way to create a group.
 - Do **not** add a blue “Create Group” text button.
 - Empty state CTA may still navigate to create-group.
+- **Swipe left** on a row: Pin / Unpin (user preference; max 3 pinned; pinned groups shown at top).
+- **Swipe right** on a row: Delete Group (red; only if `isCurrentUserCreator`; confirm dialog then `repo.deleteGroup`).
 
 ### Settlement — Passive state (Freeze before Wipe) & God Mode (GroupDetail)
 
@@ -247,7 +249,8 @@ lib/
     cycle_repository.dart      # Singleton; Firestore-backed (groups, members, cycles, expenses, identity)
   services/
     phone_auth_service.dart   # Firebase verifyPhoneNumber, codeSent, verificationCompleted, error handling
-    firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles
+    firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles; deleteGroup (creator-only)
+    pinned_groups_service.dart # User pin preference (max 3 groups); SharedPreferences
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
@@ -290,6 +293,8 @@ test/
 | `cloud_firestore` | Groups, expenses, settled_cycles; Test Mode. All writes use real User.uid. |
 | `flutter_dotenv` | Loads `.env`; **GROQ_API_KEY** required for Magic Bar AI parsing. |
 | `http` | Groq API requests (chat completions). |
+| `flutter_slidable` | Swipe actions on GroupsList (Pin left, Delete right). |
+| `shared_preferences` | User pin preference (pinned group IDs, max 3). |
 
 **Permissions:**
 

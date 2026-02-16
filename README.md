@@ -22,7 +22,7 @@
 | | |
 |:---|:---|
 | **NLP expense entry** | **Smart Bar** at bottom of group detail: natural language (Groq) or keyboard icon for manual form. Partial name match and typos tolerated; unresolved names show "Select Member" in confirmation. Per-person amounts and exact-sum validation before save. |
-| **Creator-led groups** | One creator per group with full control over cycles, settlements, and ledger integrity. |
+| **Creator-led groups** | One creator per group (👑 in member list) with full control over cycles, settlements, and delete. Swipe groups: **left** = Pin (max 3), **right** = Delete (creator only). |
 | **Two-phase settlement** | Cycles move **Active → Settling → Closed** so expenses are frozen and verifiable before archival. |
 | **Repository-first logic** | Rules live in the data layer, not in the UI—predictable behavior and ready for backend integration. |
 | **Minimal UI** | High-contrast, fast to scan. Readability and trust over decoration. |

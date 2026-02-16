@@ -125,12 +125,21 @@ class GroupMembers extends StatelessWidget {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                repo.getMemberDisplayName(member.phone),
-                                                style: TextStyle(
-                                                  fontSize: 17,
-                                                  color: const Color(0xFF1A1A1A),
-                                                ),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    repo.getMemberDisplayName(member.phone),
+                                                    style: TextStyle(
+                                                      fontSize: 17,
+                                                      color: const Color(0xFF1A1A1A),
+                                                    ),
+                                                  ),
+                                                  if (member.id == group.creatorId) ...[
+                                                    const SizedBox(width: 6),
+                                                    const Text('👑', style: TextStyle(fontSize: 16)),
+                                                  ],
+                                                ],
                                               ),
                                               if (member.name.isNotEmpty) ...[
                                                 const SizedBox(height: 2),

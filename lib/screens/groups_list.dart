@@ -1,19 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/pinned_groups_service.dart';
 import 'empty_states.dart';
 import 'group_list_skeleton.dart';
 
-class GroupsList extends StatelessWidget {
+class GroupsList extends StatefulWidget {
   const GroupsList({super.key});
+
+  @override
+  State<GroupsList> createState() => _GroupsListState();
+}
+
+class _GroupsListState extends State<GroupsList> {
+  @override
+  void initState() {
+    super.initState();
+    PinnedGroupsService.instance.load();
+  }
+
+  /// Sort groups: pinned first (in pin order), then unpinned in repo order.
+  List<Group> _sortedGroups(List<Group> groups, List<String> pinnedIds) {
+    final pinnedSet = pinnedIds.toSet();
+    final pinned = <Group>[];
+    for (final id in pinnedIds) {
+      final match = groups.where((g) => g.id == id).toList();
+      if (match.isNotEmpty) pinned.add(match.first);
+    }
+    final unpinned = groups.where((g) => !pinnedSet.contains(g.id)).toList();
+    return [...pinned, ...unpinned];
+  }
+
+  Future<void> _confirmDeleteGroup(BuildContext context, Group group) async {
+    final repo = CycleRepository.instance;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Group'),
+        content: Text(
+          'Permanently delete "${group.name}" and all expense history?',
+          style: const TextStyle(fontSize: 16, color: Color(0xFF6B6B6B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final wasPinned = PinnedGroupsService.instance.isPinned(group.id);
+    try {
+      await repo.deleteGroup(group.id);
+      if (context.mounted) {
+        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Group deleted'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final repo = CycleRepository.instance;
+    final pinService = PinnedGroupsService.instance;
 
     return ListenableBuilder(
-      listenable: repo,
+      listenable: Listenable.merge([repo, pinService]),
       builder: (context, _) {
-        final groups = repo.groups;
+        final groups = _sortedGroups(repo.groups, pinService.pinnedIds);
         final loading = repo.groupsLoading && groups.isEmpty;
         return Scaffold(
           backgroundColor: const Color(0xFFF7F7F8),
@@ -60,7 +129,6 @@ class GroupsList extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Header
                           Padding(
                             padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
                             child: Text(
@@ -73,118 +141,168 @@ class GroupsList extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Groups List
                           Expanded(
                             child: ListView.builder(
                               padding: const EdgeInsets.only(bottom: 88),
-                    itemCount: groups.length,
-                    itemBuilder: (context, index) {
-                      final group = groups[index];
-                      final isSettled = group.status == 'settled';
-                      final isClosing = group.status == 'closing';
+                              itemCount: groups.length,
+                              itemBuilder: (context, index) {
+                                final group = groups[index];
+                                final isSettled = group.status == 'settled';
+                                final isClosing = group.status == 'closing';
+                                final isPinned = pinService.isPinned(group.id);
+                                final isCreator = repo.isCurrentUserCreator(group.id);
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/group-detail',
-                            arguments: group,
-                          );
-                        },
-                        child: Opacity(
-                          opacity: isSettled ? 0.5 : 1.0,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: isSettled ? 18 : 22,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color: const Color(0xFFE5E5E5),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                return Slidable(
+                                  key: ValueKey(group.id),
+                                  startActionPane: ActionPane(
+                                    motion: const DrawerMotion(),
+                                    extentRatio: 0.25,
                                     children: [
-                                      Text(
-                                        group.name,
-                                        style: TextStyle(
-                                          fontSize: 19,
-                                          fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
-                                          color: const Color(0xFF1A1A1A),
-                                          letterSpacing: -0.3,
-                                        ),
+                                      SlidableAction(
+                                        onPressed: (_) async {
+                                          if (!isPinned && !pinService.canPinMore) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('You can pin up to 3 groups. Unpin one first.'),
+                                                  behavior: SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            }
+                                            return;
+                                          }
+                                          await pinService.togglePin(group.id);
+                                        },
+                                        backgroundColor: const Color(0xFFE5A017),
+                                        foregroundColor: Colors.white,
+                                        icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                                        label: isPinned ? 'Unpin' : 'Pin',
                                       ),
-                                      const SizedBox(height: 8),
-                                      if (!isSettled) ...[
-                                        Row(
+                                    ],
+                                  ),
+                                  endActionPane: isCreator
+                                      ? ActionPane(
+                                          motion: const DrawerMotion(),
+                                          extentRatio: 0.25,
                                           children: [
-                                            Text(
-                                              '₹${repo.getGroupPendingAmount(group.id).toStringAsFixed(0).replaceAllMapped(
-                                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                                (Match m) => '${m[1]},',
-                                              )}',
-                                              style: TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w600,
-                                                color: const Color(0xFF1A1A1A),
+                                            SlidableAction(
+                                              onPressed: (_) => _confirmDeleteGroup(context, group),
+                                              backgroundColor: const Color(0xFFC62828),
+                                              foregroundColor: Colors.white,
+                                              icon: Icons.delete_outline,
+                                              label: 'Delete',
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/group-detail',
+                                        arguments: group,
+                                      );
+                                    },
+                                    child: Opacity(
+                                      opacity: isSettled ? 0.5 : 1.0,
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: isSettled ? 18 : 22,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            top: BorderSide(
+                                              color: const Color(0xFFE5E5E5),
+                                              width: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    group.name,
+                                                    style: TextStyle(
+                                                      fontSize: 19,
+                                                      fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
+                                                      color: const Color(0xFF1A1A1A),
+                                                      letterSpacing: -0.3,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  if (!isSettled) ...[
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          '₹${repo.getGroupPendingAmount(group.id).toStringAsFixed(0).replaceAllMapped(
+                                                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                                            (Match m) => '${m[1]},',
+                                                          )}',
+                                                          style: TextStyle(
+                                                            fontSize: 17,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: const Color(0xFF1A1A1A),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Text(
+                                                          'pending',
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            color: const Color(0xFF6B6B6B),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      group.statusLine,
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
+                                                        fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                  ] else
+                                                    Text(
+                                                      'All balances cleared',
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        color: const Color(0xFF9B9B9B),
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'pending',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                color: const Color(0xFF6B6B6B),
+                                            if (isPinned)
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 8),
+                                                child: Icon(Icons.push_pin, size: 18, color: const Color(0xFFE5A017)),
                                               ),
+                                            const SizedBox(width: 16),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              size: 20,
+                                              color: const Color(0xFFB0B0B0),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          group.statusLine,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
-                                            fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
-                                          ),
-                                        ),
-                                      ] else
-                                        Text(
-                                          'All balances cleared',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: const Color(0xFF9B9B9B),
-                                          ),
-                                        ),
-                                    ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 20,
-                                  color: const Color(0xFFB0B0B0),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          );
-        },
+                        ],
+                      ),
+                    ),
+                  );
+      },
     );
   }
 }
