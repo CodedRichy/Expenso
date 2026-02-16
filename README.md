@@ -13,36 +13,40 @@
 ---
 
 > Expenso is a group-centric expense ledger designed to **eliminate the social friction** of shared spending.  
-> Unlike traditional split-based apps, it’s built around settlement cycles, centralized authority, and a system-enforced workflow—no manual reminders, no awkward follow-ups.
+> It’s built around settlement cycles, a single creator per group, and a system-enforced workflow—no manual reminders, no awkward follow-ups.
 
 ---
 
-## What it does
+## What it does (current state)
 
 | | |
 |:---|:---|
-| **NLP expense entry** | **Smart Bar** at bottom of group detail: natural language (Groq) or keyboard icon for manual form. Partial name match and typos tolerated; unresolved names show "Select Member" in confirmation. Per-person amounts and exact-sum validation before save. |
-| **Creator-led groups** | One creator per group (👑 in member list) with full control over cycles, settlements, and delete. Swipe groups: **left** = Pin (max 3), **right** = Delete (creator only). |
-| **Two-phase settlement** | Cycles move **Active → Settling → Closed** so expenses are frozen and verifiable before archival. |
-| **Repository-first logic** | Rules live in the data layer, not in the UI—predictable behavior and ready for backend integration. |
-| **Minimal UI** | High-contrast, fast to scan. Readability and trust over decoration. |
+| **Groups list** | All groups you’re in. **Swipe left** = Pin/Unpin (max 3 pinned; pinned stay at top). **Swipe right** = Delete group (creator only; confirm then removed from Firestore). Black FAB = create group. |
+| **Creator** | One creator per group: 👑 in member list, can Settle, Start New Cycle, and Delete group. |
+| **Smart Bar** | At bottom of group detail: type e.g. “Dinner 500 with Pradhyun” → Groq (Llama 3.3) parses to amount, description, split type, participants. Confirm dialog with per-person amounts; exact splits validated. Keyboard icon = manual expense form. |
+| **Expense log** | List of current-cycle expenses (description, date, amount). Tap to edit (creator can edit even when settling). “Dinner 2000” in a 2-person group → “Dinner – with [other]”; no “with” → no suffix. |
+| **Two-phase settlement** | **Settle now** (creator) → confirm → cycle goes to **Settling** (frozen), then one tap **Start New Cycle** closes and starts a new cycle at ₹0. “Pay via UPI” path uses settlement-confirmation screen. |
+| **Cycle history** | Past settled cycles and archived expenses per group. |
+| **Invite & members** | Add by phone/name; contact suggestions via `flutter_contacts`. Member list shows 👑 next to creator. |
+| **Data & rules** | All logic in `CycleRepository`; Firestore for users, groups, expenses, settled_cycles. Phone auth (Firebase); **GROQ_API_KEY** in `.env` for Smart Bar. |
 
 ---
 
 ## Status
 
-**Backend:** Cloud Firestore (Test Mode) with real split logic and archive. **Auth** is Firebase-only: `onAuthStateChanged` drives the app (logged in → ledger; not → login). All UIDs come from Firebase Auth; no mock user.
+**Backend:** Cloud Firestore (Test Mode). All writes use the real Firebase Auth `User.uid`. No mock user.
 
 | | |
 |:---|:---|
 | **Stack** | Flutter (Dart), Material 3, Cloud Firestore |
-| **Auth** | Firebase Auth (phone/OTP). `PhoneAuthService` handles verifyPhoneNumber, codeSent, verificationCompleted; errors and test-number hint (code 123456). Run `dart run flutterfire configure`, enable Phone sign-in and Firestore in Firebase Console. |
-| **Firestore** | `users` (uid → displayName, phoneNumber, photoURL), `groups` (groupName, members, creatorId, activeCycleId, cycleStatus), `groups/{id}/expenses` (current cycle), `groups/{id}/settled_cycles/{cycleId}` (archived). Settle moves cycle to settling; only creator can archive (expenses → settled_cycles) and start new cycle. |
-| **Creator** | Only `creatorId` can trigger Settle and Archive; `isCurrentUserCreator(groupId)` gates the UI. |
-| **Env** | `.env` for secrets (e.g. **GROQ_API_KEY** for the Magic Bar AI parser). Copy `.env.example` to `.env`. `.env` is gitignored; loaded in `main()` via `flutter_dotenv`. |
-| **Loading UX** | No full-screen buffer: auth or groups loading show the Groups scaffold with a list **skeleton shimmer** (same chrome, animated placeholders). |
-| **Testing** | Unit tests for expense validation (`lib/utils/expense_validation.dart`) and Groq parser result (`ParsedExpenseResult`). Run: `flutter test`. |
-| **Docs** | [APP_BLUEPRINT.md](APP_BLUEPRINT.md) — routes, screens, data layer, Firestore layout, conventions |
+| **Auth** | Firebase Auth (phone/OTP). `PhoneAuthService`: verifyPhoneNumber, OTP; test-number hint (code 123456). Run `dart run flutterfire configure`, enable Phone sign-in and Firestore. |
+| **Firestore** | `users` (uid → displayName, phoneNumber), `groups` (groupName, members, creatorId, activeCycleId, cycleStatus), `groups/{id}/expenses` (current cycle), `groups/{id}/settled_cycles/{cycleId}` (archived). Creator can delete group doc via `deleteGroup`. |
+| **Creator** | Only `creatorId` can Settle, Archive/Start New Cycle, and Delete group; `isCurrentUserCreator(groupId)` gates the UI. |
+| **Pinned groups** | User preference (max 3) in SharedPreferences; list sorted pinned-first. |
+| **Env** | `.env` with **GROQ_API_KEY** for Smart Bar. `.env` is gitignored; loaded in `main()` via `flutter_dotenv`. |
+| **Loading** | Auth/groups loading show Groups scaffold with list **skeleton shimmer**. |
+| **Tests** | `flutter test` — expense validation and `ParsedExpenseResult` (Groq parser). |
+| **Docs** | [APP_BLUEPRINT.md](APP_BLUEPRINT.md) — routes, screens, data layer, design, conventions. |
 
 ---
 
