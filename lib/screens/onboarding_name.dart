@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../repositories/cycle_repository.dart';
 
@@ -22,7 +23,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     if (name.isEmpty) return;
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
-    // Home route (/) is ListenableBuilder; it will rebuild and show GroupsList.
+    FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+    // Home route (/) will rebuild and show GroupsList; name persists via Firebase for next launch.
   }
 
   @override

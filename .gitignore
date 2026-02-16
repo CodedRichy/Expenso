@@ -12,6 +12,11 @@
 .swiftpm/
 migrate_working_dir/
 
+# Env and secrets (flutter_dotenv)
+.env
+.env.*
+!.env.example
+
 # IntelliJ related
 *.iml
 *.ipr

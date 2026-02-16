@@ -100,7 +100,8 @@ class SettlementConfirmation extends StatelessWidget {
                       const SizedBox(height: 48),
                         Column(
                           children: [
-                            ElevatedButton(
+                            if (CycleRepository.instance.isCurrentUserCreator(group.id))
+                              ElevatedButton(
                               onPressed: () {
                                 CycleRepository.instance.settleAndRestartCycle(group.id);
                                 Navigator.pushReplacementNamed(
@@ -126,7 +127,19 @@ class SettlementConfirmation extends StatelessWidget {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ),
+                            )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  'Only the group creator can close the cycle.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: const Color(0xFF6B6B6B),
+                                  ),
+                                ),
+                              ),
                             const SizedBox(height: 12),
                             OutlinedButton(
                               onPressed: () {

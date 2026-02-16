@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../firebase_app.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/phone_auth_service.dart';
 
 class PhoneAuth extends StatefulWidget {
   const PhoneAuth({super.key});
@@ -48,20 +49,20 @@ class _PhoneAuthState extends State<PhoneAuth> {
       _loading = true;
       _errorMessage = null;
     });
-    FirebaseAuth.instance.verifyPhoneNumber(
+    PhoneAuthService.instance.verifyPhoneNumber(
       phoneNumber: _e164(phone),
-      verificationCompleted: (PhoneAuthCredential credential) {
+      onVerificationCompleted: (PhoneAuthCredential credential) {
         if (!mounted) return;
         _signInWithCredential(credential);
       },
-      verificationFailed: (FirebaseAuthException e) {
+      onError: (String message) {
         if (!mounted) return;
         setState(() {
           _loading = false;
-          _errorMessage = e.message ?? e.code;
+          _errorMessage = message;
         });
       },
-      codeSent: (String verificationId, int? resendToken) {
+      onCodeSent: (String verificationId, int? resendToken) {
         if (!mounted) return;
         setState(() {
           _verificationId = verificationId;
@@ -71,31 +72,26 @@ class _PhoneAuthState extends State<PhoneAuth> {
           _errorMessage = null;
         });
       },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        if (!mounted) return;
-        setState(() => _loading = false);
-      },
-      timeout: const Duration(seconds: 120),
-      forceResendingToken: _resendToken,
+      resendToken: _resendToken,
     );
   }
 
   Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      final user = userCredential.user;
+      await PhoneAuthService.instance.signInWithCredential(credential);
+      final user = PhoneAuthService.instance.currentUser;
       if (!mounted || user == null) return;
       final formattedPhone = _formatPhone(phone);
       CycleRepository.instance.setGlobalProfile(
         formattedPhone,
-        '',
+        user.displayName ?? '',
         authUserId: user.uid,
       );
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _errorMessage = e.toString();
+        _errorMessage = PhoneAuthService.messageForError(e);
       });
     }
   }
@@ -308,17 +304,28 @@ class _PhoneAuthState extends State<PhoneAuth> {
                     ),
                   ),
                   const SizedBox(height: 12),
+              Text(
+                  'Sent to +91 $phone',
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: const Color(0xFF6B6B6B),
+                  ),
+                ),
+                if (PhoneAuthService.isTestNumber(phone)) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    'Sent to +91 $phone',
+                    'For this test number, use the code ${PhoneAuthService.devTestCode}.',
                     style: TextStyle(
-                      fontSize: 17,
-                      color: const Color(0xFF6B6B6B),
+                      fontSize: 14,
+                      color: const Color(0xFF5B7C99),
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 48),
-              TextField(
+              ],
+            ),
+            const SizedBox(height: 48),
+            TextField(
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,

@@ -5,12 +5,10 @@ import '../repositories/cycle_repository.dart';
 class ParsedExpense {
   final String description;
   final double amount;
-  final List<String> participants;
 
   ParsedExpense({
     required this.description,
     required this.amount,
-    required this.participants,
   });
 }
 
@@ -50,14 +48,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
         ? text.substring(0, withIndex).replaceAll(RegExp(r'\d+'), '').trim()
         : text.replaceAll(RegExp(r'\d+'), '').trim();
 
-    final participants = withIndex > 0
-        ? text.substring(withIndex + 4).split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList()
-        : <String>[];
-
     return ParsedExpense(
       description: description,
       amount: amount,
-      participants: participants,
     );
   }
 

@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../services/firestore_service.dart';
 
 class CycleRepository extends ChangeNotifier {
   CycleRepository._();
@@ -16,9 +19,9 @@ class CycleRepository extends ChangeNotifier {
 
   static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
 
-  /// Current user id; used as creator id when creating a group. Set from Firebase Auth UID when available.
+  /// Current user id; used as creator id when creating a group. From Firebase Auth UID only (no mock).
   String get currentUserId => _currentUserId;
-  String _currentUserId = 'dev_user_01';
+  String _currentUserId = '';
 
   /// Current user phone; set after phone auth, used for auto-join as creator when creating a group.
   String get currentUserPhone => _currentUserPhone;
@@ -28,6 +31,9 @@ class CycleRepository extends ChangeNotifier {
   String get currentUserName => _currentUserName;
   String _currentUserName = '';
 
+  /// True if the current user is the creator of the group (for Settle & Restart, etc.).
+  bool isCurrentUserCreator(String groupId) => isCreator(groupId, _currentUserId);
+
   /// Updates the global profile (phone, name, and optionally auth user id). Notifies listeners.
   void setGlobalProfile(String phone, String name, {String? authUserId}) {
     _currentUserPhone = phone;
@@ -36,31 +42,262 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Syncs identity from Firebase user (uid, phone, displayName). Call when auth state becomes non-null.
+  /// Writes user profile to Firestore (users/{uid}) and starts listening to groups + expenses.
+  void setAuthFromFirebaseUser(String uid, String? phone, String? displayName) {
+    if (uid.isNotEmpty) _currentUserId = uid;
+    if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
+    if (displayName != null && displayName.isNotEmpty) _currentUserName = displayName.trim();
+    _userCache[uid] = {
+      'displayName': _currentUserName,
+      'phoneNumber': _currentUserPhone,
+    };
+    notifyListeners();
+    if (_currentUserId.isNotEmpty) {
+      _writeCurrentUserProfile();
+      _startListening();
+    }
+  }
+
+  Future<void> _writeCurrentUserProfile() async {
+    try {
+      await FirestoreService.instance.setUser(
+        _currentUserId,
+        displayName: _currentUserName,
+        phoneNumber: _currentUserPhone,
+      );
+    } catch (_) {}
+  }
+
+  /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.
+  void clearAuth() {
+    _stopListening();
+    _groupsLoading = false;
+    _currentUserId = '';
+    _currentUserPhone = '';
+    _currentUserName = '';
+    _groups.clear();
+    _membersById.clear();
+    _expensesByCycleId.clear();
+    _groupMeta.clear();
+    _userCache.clear();
+    notifyListeners();
+  }
+
   final List<Group> _groups = [];
   final Map<String, Member> _membersById = {};
-  final List<Cycle> _cycles = [];
+  /// cycleId -> list of expenses for that cycle (current cycle per group).
+  final Map<String, List<Expense>> _expensesByCycleId = {};
+  /// groupId -> { activeCycleId, cycleStatus } from Firestore.
+  final Map<String, _GroupMeta> _groupMeta = {};
+  final Map<String, Map<String, dynamic>> _userCache = {};
+
+  StreamSubscription<List<QueryDocumentSnapshot<Map<String, dynamic>>>>? _groupsSub;
+  final Map<String, StreamSubscription<List<QueryDocumentSnapshot<Map<String, dynamic>>>>> _expenseSubs = {};
+
+  /// True while waiting for the first Firestore groups snapshot (for skeleton UX).
+  bool get groupsLoading => _groupsLoading;
+  bool _groupsLoading = false;
+
+  void _startListening() {
+    if (_currentUserId.isEmpty) return;
+    _groupsSub?.cancel();
+    _groupsLoading = true;
+    notifyListeners();
+    _groupsSub = FirestoreService.instance.groupsStream(_currentUserId).listen(_onGroupsSnapshot);
+  }
+
+  void _stopListening() {
+    _groupsSub?.cancel();
+    _groupsSub = null;
+    _groupsLoading = false;
+    for (final sub in _expenseSubs.values) {
+      sub.cancel();
+    }
+    _expenseSubs.clear();
+  }
+
+  void _onGroupsSnapshot(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    _groupsLoading = false;
+    final newIds = docs.map((d) => d.id).toSet();
+    for (final id in _expenseSubs.keys.toList()) {
+      if (!newIds.contains(id)) {
+        _expenseSubs[id]?.cancel();
+        _expenseSubs.remove(id);
+      }
+    }
+
+    _groups.clear();
+    _groupMeta.clear();
+    for (final doc in docs) {
+      final data = doc.data();
+      final groupId = doc.id;
+      final groupName = data['groupName'] as String? ?? '';
+      final members = List<String>.from(data['members'] as List? ?? []);
+      final creatorId = data['creatorId'] as String? ?? '';
+      final activeCycleId = data['activeCycleId'] as String? ?? _nextCycleId();
+      final cycleStatus = data['cycleStatus'] as String? ?? 'active';
+      final pendingList = (data['pendingMembers'] as List?)
+          ?.map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+          .toList() ?? <Map<String, String>>[];
+
+      _groupMeta[groupId] = _GroupMeta(activeCycleId: activeCycleId, cycleStatus: cycleStatus);
+      final status = cycleStatus == 'settling' ? 'closing' : (cycleStatus == 'active' ? 'open' : 'settled');
+      final expenses = _expensesByCycleId[activeCycleId] ?? [];
+      final pendingAmount = expenses.fold<double>(0.0, (s, e) => s + e.amount);
+      final statusLine = cycleStatus == 'settling' ? 'Cycle Settled - Pending Restart' : 'Cycle open';
+
+      final memberIds = <String>[
+        ...members,
+        ...pendingList.map((p) => 'p_${p['phone'] ?? ''}'),
+      ];
+      _groups.add(Group(
+        id: groupId,
+        name: groupName,
+        status: status,
+        amount: pendingAmount,
+        statusLine: statusLine,
+        creatorId: creatorId,
+        memberIds: memberIds,
+      ));
+
+      _membersById.clear();
+      for (final g in _groups) {
+        final meta = _groupMeta[g.id];
+        if (meta == null) continue;
+        for (final uid in g.memberIds.where((id) => !id.startsWith('p_'))) {
+          if (!_membersById.containsKey(uid) && _userCache.containsKey(uid)) {
+            final u = _userCache[uid]!;
+            _membersById[uid] = Member(
+              id: uid,
+              phone: u['phoneNumber'] as String? ?? '',
+              name: u['displayName'] as String? ?? '',
+            );
+          }
+        }
+        final groupData = docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>().where((d) => d.id == g.id);
+        if (groupData.isEmpty) continue;
+        final d = groupData.first.data();
+        final pending = (d['pendingMembers'] as List?)
+            ?.map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+            .toList() ?? <Map<String, String>>[];
+        for (final p in pending) {
+          final phone = p['phone'] ?? '';
+          final name = p['name'] ?? '';
+          if (phone.isEmpty) continue;
+          final pid = 'p_$phone';
+          _membersById[pid] = Member(id: pid, phone: phone, name: name);
+        }
+      }
+
+      if (!_expenseSubs.containsKey(groupId)) {
+        _expenseSubs[groupId] = FirestoreService.instance.expensesStream(groupId).listen((expDocs) {
+          _onExpensesSnapshot(groupId, expDocs);
+        });
+      }
+    }
+
+    _loadUsersForMembers(docs);
+    notifyListeners();
+  }
+
+  Future<void> _loadUsersForMembers(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    final uids = <String>{};
+    for (final doc in docs) {
+      final members = List<String>.from(doc.data()['members'] as List? ?? []);
+      uids.addAll(members);
+    }
+    for (final uid in uids) {
+      if (_userCache.containsKey(uid)) continue;
+      try {
+        final u = await FirestoreService.instance.getUser(uid);
+        if (u != null) {
+          _userCache[uid] = u;
+          if (!_membersById.containsKey(uid)) {
+            _membersById[uid] = Member(
+              id: uid,
+              phone: u['phoneNumber'] as String? ?? '',
+              name: u['displayName'] as String? ?? '',
+            );
+          }
+        }
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
+  void _onExpensesSnapshot(String groupId, List<QueryDocumentSnapshot<Map<String, dynamic>>> expDocs) {
+    final meta = _groupMeta[groupId];
+    if (meta == null) return;
+    final cycleId = meta.activeCycleId;
+    final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
+    _expensesByCycleId[cycleId] = list;
+    _refreshGroupAmounts();
+    notifyListeners();
+  }
+
+  Expense _expenseFromFirestore(Map<String, dynamic> data, String id) {
+    final amount = (data['amount'] is num) ? (data['amount'] as num).toDouble() : 0.0;
+    final payerId = data['payerId'] as String? ?? '';
+    final splits = data['splits'] as Map<String, dynamic>?;
+    String paidByPhone = _currentUserPhone;
+    if (payerId == _currentUserId) {
+      paidByPhone = _currentUserPhone;
+    } else if (_userCache.containsKey(payerId)) {
+      paidByPhone = _userCache[payerId]!['phoneNumber'] as String? ?? '';
+    }
+    final participantPhones = <String>[];
+    final splitAmountsByPhone = <String, double>{};
+    if (splits != null) {
+      for (final entry in splits.entries) {
+        final uid = entry.key;
+        final amt = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
+        final phone = uid == _currentUserId ? _currentUserPhone : (_userCache[uid]?['phoneNumber'] as String? ?? '');
+        if (phone.isNotEmpty) {
+          participantPhones.add(phone);
+          splitAmountsByPhone[phone] = amt;
+        }
+      }
+    }
+    return Expense(
+      id: id,
+      description: data['description'] as String? ?? '',
+      amount: amount,
+      date: data['date'] as String? ?? 'Today',
+      participantPhones: participantPhones,
+      paidByPhone: paidByPhone,
+      splitAmountsByPhone: splitAmountsByPhone.isEmpty ? null : splitAmountsByPhone,
+    );
+  }
+
+  void _refreshGroupAmounts() {
+    for (var i = 0; i < _groups.length; i++) {
+      final g = _groups[i];
+      final meta = _groupMeta[g.id];
+      if (meta == null) continue;
+      final expenses = _expensesByCycleId[meta.activeCycleId] ?? [];
+      final amount = expenses.fold<double>(0.0, (s, e) => s + e.amount);
+      final status = meta.cycleStatus == 'settling' ? 'closing' : (meta.cycleStatus == 'active' ? 'open' : 'settled');
+      final statusLine = meta.cycleStatus == 'settling' ? 'Cycle Settled - Pending Restart' : 'Cycle open';
+      _groups[i] = Group(
+        id: g.id,
+        name: g.name,
+        status: status,
+        amount: amount,
+        statusLine: statusLine,
+        creatorId: g.creatorId,
+        memberIds: g.memberIds,
+      );
+    }
+  }
 
   List<Group> get groups => List.unmodifiable(_groups);
 
   void addGroup(Group group) {
-    final creatorMemberId = 'm_${group.id}_creator';
-    final creatorMember = Member(
-      id: creatorMemberId,
-      phone: currentUserPhone,
-      name: currentUserName,
-    );
-    _membersById[creatorMemberId] = creatorMember;
-    final groupWithCreator = Group(
-      id: group.id,
-      name: group.name,
-      status: group.status,
-      amount: group.amount,
-      statusLine: group.statusLine,
-      creatorId: group.creatorId,
-      memberIds: [creatorMemberId, ...group.memberIds],
-    );
-    _groups.add(groupWithCreator);
-    notifyListeners();
+    if (_currentUserId.isEmpty) return;
+    final groupId = group.id;
+    FirestoreService.instance.createGroup(groupId, groupName: group.name, creatorId: _currentUserId);
+    _writeCurrentUserProfile();
   }
 
   Group? getGroup(String id) {
@@ -71,11 +308,10 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
-  /// Sum of all expense amounts in the group's active cycle (pending amount).
   double getGroupPendingAmount(String groupId) {
     final cycle = getActiveCycle(groupId);
     final expenses = getExpenses(cycle.id);
-    return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+    return expenses.fold<double>(0.0, (total, e) => total + e.amount);
   }
 
   List<Member> getMembersForGroup(String groupId) {
@@ -87,8 +323,6 @@ class CycleRepository extends ChangeNotifier {
         .toList();
   }
 
-  /// Returns display name for a member by phone. Priority: (1) current user → currentUserName or 'You';
-  /// (2) any Member (across groups) with this phone → that member's name; (3) formatted phone.
   String getMemberDisplayName(String phone) {
     if (phone == currentUserPhone) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
@@ -101,126 +335,268 @@ class CycleRepository extends ChangeNotifier {
 
   static String _formatPhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length == 11 && digits.startsWith('91')) return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
     if (digits.length == 10) return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
     return phone;
   }
 
   void addMemberToGroup(String groupId, Member member) {
-    final group = getGroup(groupId);
-    if (group == null) return;
-    _membersById[member.id] = member;
+    if (member.id.startsWith('p_') || (member.id.startsWith('m_') && member.id.length < 28)) {
+      FirestoreService.instance.addPendingMemberToGroup(groupId, member.phone, member.name);
+      _refreshGroupPendingMembersLocally(groupId, member);
+    } else {
+      FirestoreService.instance.addMemberToGroup(groupId, member.id);
+      _userCache[member.id] = {'displayName': member.name, 'phoneNumber': member.phone};
+      _membersById[member.id] = member;
+      notifyListeners();
+    }
+  }
+
+  void _refreshGroupPendingMembersLocally(String groupId, Member newPending) {
     final idx = _groups.indexWhere((g) => g.id == groupId);
     if (idx < 0) return;
+    final g = _groups[idx];
+    final pid = 'p_${newPending.phone}';
+    if (g.memberIds.contains(pid)) return;
+    _membersById[pid] = newPending;
     _groups[idx] = Group(
-      id: group.id,
-      name: group.name,
-      status: group.status,
-      amount: group.amount,
-      statusLine: group.statusLine,
-      creatorId: group.creatorId,
-      memberIds: [...group.memberIds, member.id],
+      id: g.id,
+      name: g.name,
+      status: g.status,
+      amount: g.amount,
+      statusLine: g.statusLine,
+      creatorId: g.creatorId,
+      memberIds: [...g.memberIds, pid],
     );
     notifyListeners();
   }
 
   void removeMemberFromGroup(String groupId, String memberId) {
-    final group = getGroup(groupId);
-    if (group == null) return;
-    final idx = _groups.indexWhere((g) => g.id == groupId);
-    if (idx < 0) return;
-    _groups[idx] = Group(
-      id: group.id,
-      name: group.name,
-      status: group.status,
-      amount: group.amount,
-      statusLine: group.statusLine,
-      creatorId: group.creatorId,
-      memberIds: group.memberIds.where((id) => id != memberId).toList(),
-    );
-    _membersById.remove(memberId);
-    notifyListeners();
+    if (memberId.startsWith('p_')) {
+      final phone = memberId.substring(2);
+      FirestoreService.instance.removePendingMemberFromGroup(groupId, phone);
+      _membersById.remove(memberId);
+      final idx = _groups.indexWhere((g) => g.id == groupId);
+      if (idx >= 0) {
+        final g = _groups[idx];
+        _groups[idx] = Group(
+          id: g.id,
+          name: g.name,
+          status: g.status,
+          amount: g.amount,
+          statusLine: g.statusLine,
+          creatorId: g.creatorId,
+          memberIds: g.memberIds.where((id) => id != memberId).toList(),
+        );
+      }
+      notifyListeners();
+    } else {
+      FirestoreService.instance.removeMemberFromGroup(groupId, memberId);
+      notifyListeners();
+    }
   }
 
-  /// True if [userId] is the creator of the group.
   bool isCreator(String groupId, String userId) {
     final group = getGroup(groupId);
     return group != null && group.creatorId == userId;
   }
 
-  /// True if [userId] can edit expenses in the group's current cycle.
-  /// When cycle is settling, no one (including leader) can edit. Otherwise creator can always edit; non-creators only when active.
   bool canEditCycle(String groupId, String userId) {
-    final cycle = getActiveCycle(groupId);
-    if (cycle.status == CycleStatus.settling) return false;
+    final meta = _groupMeta[groupId];
+    if (meta == null) return false;
+    if (meta.cycleStatus == 'settling') return false;
     if (isCreator(groupId, userId)) return true;
-    return cycle.status == CycleStatus.active;
+    return meta.cycleStatus == 'active';
   }
 
-  /// True if [userId] can delete the group (creator only).
   bool canDeleteGroup(String groupId, String userId) {
     return isCreator(groupId, userId);
   }
 
-  /// Returns the one non-closed cycle for the group; creates one if none exists.
   Cycle getActiveCycle(String groupId) {
-    try {
-      return _cycles.firstWhere(
-        (c) => c.groupId == groupId && c.status != CycleStatus.closed,
-      );
-    } catch (_) {
-      final now = DateTime.now();
-      final newCycle = Cycle(
-        id: _nextCycleId(),
+    final meta = _groupMeta[groupId];
+    final group = getGroup(groupId);
+    if (meta != null && group != null) {
+      final status = meta.cycleStatus == 'settling' ? CycleStatus.settling : CycleStatus.active;
+      final expenses = _expensesByCycleId[meta.activeCycleId] ?? [];
+      return Cycle(
+        id: meta.activeCycleId,
         groupId: groupId,
-        status: CycleStatus.active,
-        startDate: _formatDate(now),
-        expenses: [],
+        status: status,
+        startDate: _formatDate(DateTime.now()),
+        expenses: expenses,
       );
-      _cycles.add(newCycle);
-      return newCycle;
     }
+    final now = DateTime.now();
+    final newCycleId = _nextCycleId();
+    return Cycle(
+      id: newCycleId,
+      groupId: groupId,
+      status: CycleStatus.active,
+      startDate: _formatDate(now),
+      expenses: [],
+    );
   }
 
   List<Expense> getExpenses(String cycleId) {
-    for (final cycle in _cycles) {
-      if (cycle.id == cycleId) return List.unmodifiable(cycle.expenses);
+    final list = _expensesByCycleId[cycleId];
+    return list != null ? List.unmodifiable(list) : [];
+  }
+
+  /// Resolve phone to UID (current user or from cache).
+  String? _uidForPhone(String phone) {
+    if (phone == _currentUserPhone) return _currentUserId;
+    for (final e in _userCache.entries) {
+      if (e.value['phoneNumber'] == phone) return e.key;
     }
-    return [];
+    return null;
   }
 
   void addExpense(String groupId, Expense expense) {
-    final cycle = getActiveCycle(groupId);
-    cycle.expenses.add(expense);
-    notifyListeners();
+    final meta = _groupMeta[groupId];
+    final cycleId = meta?.activeCycleId;
+    if (cycleId == null) return;
+    final payerId = _uidForPhone(expense.paidByPhone.isEmpty ? _currentUserPhone : expense.paidByPhone) ?? _currentUserId;
+    final participants = expense.participantPhones.isNotEmpty
+        ? expense.participantPhones
+        : [expense.paidByPhone.isNotEmpty ? expense.paidByPhone : _currentUserPhone];
+    final uids = <String>[];
+    for (final p in participants) {
+      final uid = _uidForPhone(p);
+      if (uid != null) uids.add(uid);
+    }
+    if (uids.isEmpty) uids.add(_currentUserId);
+    final perShare = expense.amount / uids.length;
+    final splits = <String, double>{};
+    for (final uid in uids) {
+      splits[uid] = perShare;
+    }
+    final data = {
+      'id': expense.id,
+      'groupId': groupId,
+      'amount': expense.amount,
+      'payerId': payerId,
+      'splitType': 'Even',
+      'splits': splits.map((k, v) => MapEntry(k, v)),
+      'description': expense.description,
+      'date': expense.date,
+    };
+    FirestoreService.instance.addExpense(groupId, data);
   }
 
-  /// Returns the expense in the group's current (active or settling) cycle, or null.
+  /// Adds an expense from the Magic Bar confirmation flow. Ensures splits map contains
+  /// every member of the split. splitType: Even | Exact | Exclude.
+  void addExpenseFromMagicBar(
+    String groupId, {
+    required String id,
+    required String description,
+    required double amount,
+    required String date,
+    required String payerPhone,
+    required String splitType,
+    required List<String> participantPhones,
+    List<String>? excludedPhones,
+    Map<String, double>? exactAmountsByPhone,
+  }) {
+    final meta = _groupMeta[groupId];
+    final cycleId = meta?.activeCycleId;
+    if (cycleId == null) return;
+    final payerId = _uidForPhone(payerPhone.isEmpty ? _currentUserPhone : payerPhone) ?? _currentUserId;
+    final members = getMembersForGroup(groupId);
+    final allPhones = members.map((m) => m.phone).toList();
+
+    List<String> phonesInSplit = [];
+    Map<String, double> splitsByPhone = {};
+
+    if (splitType == 'Exact' && exactAmountsByPhone != null && exactAmountsByPhone.isNotEmpty) {
+      phonesInSplit = exactAmountsByPhone.keys.toList();
+      for (final e in exactAmountsByPhone.entries) {
+        splitsByPhone[e.key] = e.value;
+      }
+    } else if (splitType == 'Exclude' && excludedPhones != null && excludedPhones.isNotEmpty) {
+      final excludedSet = excludedPhones.toSet();
+      phonesInSplit = allPhones.where((p) => !excludedSet.contains(p)).toList();
+      if (phonesInSplit.isEmpty) phonesInSplit = [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
+      final perShare = amount / phonesInSplit.length;
+      for (final p in phonesInSplit) {
+        splitsByPhone[p] = perShare;
+      }
+    } else {
+      // Even (or fallback): split among participantPhones; if empty, payer only
+      phonesInSplit = participantPhones.isNotEmpty
+          ? participantPhones
+          : [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
+      final perShare = amount / phonesInSplit.length;
+      for (final p in phonesInSplit) {
+        splitsByPhone[p] = perShare;
+      }
+    }
+
+    final splits = <String, double>{};
+    for (final phone in phonesInSplit) {
+      final uid = _uidForPhone(phone);
+      final share = splitsByPhone[phone] ?? 0.0;
+      if (uid != null) splits[uid] = share;
+    }
+    if (splits.isEmpty) splits[payerId] = amount;
+
+    final data = {
+      'id': id,
+      'groupId': groupId,
+      'amount': amount,
+      'payerId': payerId,
+      'splitType': splitType,
+      'splits': splits.map((k, v) => MapEntry(k, v)),
+      'description': description,
+      'date': date,
+    };
+    FirestoreService.instance.addExpense(groupId, data);
+  }
+
   Expense? getExpense(String groupId, String expenseId) {
-    final cycle = getActiveCycle(groupId);
+    final meta = _groupMeta[groupId];
+    if (meta == null) return null;
+    final list = _expensesByCycleId[meta.activeCycleId];
+    if (list == null) return null;
     try {
-      return cycle.expenses.firstWhere((e) => e.id == expenseId);
+      return list.firstWhere((e) => e.id == expenseId);
     } catch (_) {
       return null;
     }
   }
 
-  /// Replaces the expense with the same id in the active cycle and notifies listeners.
   void updateExpense(String groupId, Expense updatedExpense) {
-    final cycle = getActiveCycle(groupId);
-    final index = cycle.expenses.indexWhere((e) => e.id == updatedExpense.id);
-    if (index < 0) return;
-    cycle.expenses[index] = updatedExpense;
-    notifyListeners();
+    final meta = _groupMeta[groupId];
+    if (meta == null) return;
+    final payerId = _uidForPhone(updatedExpense.paidByPhone.isEmpty ? _currentUserPhone : updatedExpense.paidByPhone) ?? _currentUserId;
+    final participants = updatedExpense.participantPhones.isNotEmpty
+        ? updatedExpense.participantPhones
+        : [updatedExpense.paidByPhone.isNotEmpty ? updatedExpense.paidByPhone : _currentUserPhone];
+    final uids = <String>[];
+    for (final p in participants) {
+      final uid = _uidForPhone(p);
+      if (uid != null) uids.add(uid);
+    }
+    if (uids.isEmpty) uids.add(_currentUserId);
+    final perShare = updatedExpense.amount / uids.length;
+    final splits = <String, double>{};
+    for (final uid in uids) {
+      splits[uid] = perShare;
+    }
+    FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
+      'amount': updatedExpense.amount,
+      'description': updatedExpense.description,
+      'date': updatedExpense.date,
+      'payerId': payerId,
+      'splitType': 'Even',
+      'splits': splits.map((k, v) => MapEntry(k, v)),
+    });
   }
 
-  /// Removes the expense from the active cycle and notifies listeners.
   void deleteExpense(String groupId, String expenseId) {
-    final cycle = getActiveCycle(groupId);
-    cycle.expenses.removeWhere((e) => e.id == expenseId);
-    notifyListeners();
+    FirestoreService.instance.deleteExpense(groupId, expenseId);
   }
 
-  /// Net balance per phone: positive = owed money, negative = owes money.
   Map<String, double> calculateBalances(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
@@ -229,25 +605,26 @@ class CycleRepository extends ChangeNotifier {
     for (final phone in phones) {
       net[phone] = 0.0;
     }
-
     for (final expense in cycle.expenses) {
       final payer = expense.paidByPhone.isNotEmpty ? expense.paidByPhone : currentUserPhone;
       net[payer] = (net[payer] ?? 0) + expense.amount;
-
       final participants = expense.participantPhones.isNotEmpty
           ? expense.participantPhones
           : [payer];
-      final perShare = expense.amount / participants.length;
-
-      for (final phone in participants) {
-        net[phone] = (net[phone] ?? 0) - perShare;
+      if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
+        for (final entry in expense.splitAmountsByPhone!.entries) {
+          net[entry.key] = (net[entry.key] ?? 0) - entry.value;
+        }
+      } else {
+        final perShare = expense.amount / participants.length;
+        for (final phone in participants) {
+          net[phone] = (net[phone] ?? 0) - perShare;
+        }
       }
     }
-
     return net;
   }
 
-  /// Who owes whom: list of strings like 'Rishi owes Prasi ₹500'.
   List<String> getSettlementInstructions(String groupId) {
     final balances = calculateBalances(groupId);
     final debtors = balances.entries
@@ -258,10 +635,8 @@ class CycleRepository extends ChangeNotifier {
         .where((e) => e.value > 0.01)
         .map((e) => _BalanceEntry(e.key, e.value))
         .toList();
-
     debtors.sort((a, b) => b.amount.compareTo(a.amount));
     creditors.sort((a, b) => b.amount.compareTo(a.amount));
-
     final List<String> result = [];
     int d = 0, c = 0;
     while (d < debtors.length && c < creditors.length) {
@@ -280,67 +655,72 @@ class CycleRepository extends ChangeNotifier {
     return result;
   }
 
-  /// Phase 1 (Freeze): Sets the current cycle's status to settling. No new cycle created; expenses are read-only.
+  /// Phase 1 (Freeze): Sets the current cycle's status to settling. Creator-only.
   void settleAndRestartCycle(String groupId) {
-    final idx = _cycles.indexWhere(
-      (c) => c.groupId == groupId && c.status != CycleStatus.closed,
-    );
-    if (idx < 0) return;
-    final old = _cycles[idx];
-    _cycles[idx] = Cycle(
-      id: old.id,
-      groupId: old.groupId,
-      status: CycleStatus.settling,
-      expenses: List.from(old.expenses),
-      startDate: old.startDate,
-      endDate: old.endDate,
-    );
-    notifyListeners();
+    if (!isCreator(groupId, _currentUserId)) return;
+    FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
   }
 
-  /// Phase 2 (Archive & Restart): Closes the settling cycle and starts a new active cycle at ₹0.
-  void archiveAndRestart(String groupId) {
-    final idx = _cycles.indexWhere(
-      (c) => c.groupId == groupId && c.status == CycleStatus.settling,
-    );
-    if (idx < 0) return;
-
+  /// Phase 2 (Archive & Restart): Moves current cycle expenses to settled_cycles, then starts new cycle. Creator-only.
+  Future<void> archiveAndRestart(String groupId) async {
+    if (!isCreator(groupId, _currentUserId)) return;
+    final meta = _groupMeta[groupId];
+    if (meta == null || meta.cycleStatus != 'settling') return;
     final now = DateTime.now();
     final endStr = _formatDate(now);
-    final old = _cycles[idx];
-    final closedCycle = Cycle(
-      id: old.id,
-      groupId: old.groupId,
-      status: CycleStatus.closed,
-      expenses: List.from(old.expenses),
-      startDate: old.startDate,
+    final startStr = meta.activeCycleId.startsWith('c_')
+        ? _formatDate(DateTime.fromMillisecondsSinceEpoch(int.tryParse(meta.activeCycleId.substring(2)) ?? 0))
+        : endStr;
+    await FirestoreService.instance.archiveCycleExpenses(
+      groupId,
+      meta.activeCycleId,
+      startDate: startStr,
       endDate: endStr,
     );
-    _cycles[idx] = closedCycle;
-
-    final newCycle = Cycle(
-      id: _nextCycleId(),
-      groupId: groupId,
-      status: CycleStatus.active,
-      startDate: endStr,
-      expenses: [],
-    );
-    _cycles.add(newCycle);
+    final newCycleId = _nextCycleId();
+    await FirestoreService.instance.updateGroup(groupId, {
+      'activeCycleId': newCycleId,
+      'cycleStatus': 'active',
+    });
+    _groupMeta[groupId] = _GroupMeta(activeCycleId: newCycleId, cycleStatus: 'active');
+    _expensesByCycleId.remove(meta.activeCycleId);
+    _expensesByCycleId[newCycleId] = [];
+    _refreshGroupAmounts();
     notifyListeners();
   }
 
-  /// Returns all closed cycles for the group, newest first (by endDate).
-  List<Cycle> getHistory(String groupId) {
-    final closed = _cycles
-        .where((c) => c.groupId == groupId && c.status == CycleStatus.closed)
-        .toList();
-    closed.sort((a, b) {
-      final aEnd = a.endDate ?? '';
-      final bEnd = b.endDate ?? '';
-      return bEnd.compareTo(aEnd);
-    });
-    return closed;
+  /// Returns all closed cycles for the group, newest first (from Firestore settled_cycles).
+  Future<List<Cycle>> getHistory(String groupId) async {
+    try {
+      final settledDocs = await FirestoreService.instance.getSettledCycles(groupId);
+      final List<Cycle> closed = [];
+      for (final doc in settledDocs) {
+        final data = doc.data() ?? {};
+        final cycleId = doc.id;
+        final startDate = data['startDate'] as String? ?? '';
+        final endDate = data['endDate'] as String? ?? '';
+        final expenseDocs = await FirestoreService.instance.getSettledCycleExpenses(groupId, cycleId);
+        final expenses = expenseDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
+        closed.add(Cycle(
+          id: cycleId,
+          groupId: groupId,
+          status: CycleStatus.closed,
+          startDate: startDate,
+          endDate: endDate,
+          expenses: expenses,
+        ));
+      }
+      return closed;
+    } catch (_) {
+      return [];
+    }
   }
+}
+
+class _GroupMeta {
+  final String activeCycleId;
+  final String cycleStatus;
+  _GroupMeta({required this.activeCycleId, required this.cycleStatus});
 }
 
 class _BalanceEntry {

@@ -35,22 +35,24 @@
 
 **Initial route:** `/`
 
-The home route is a `ListenableBuilder` on `CycleRepository.instance`. Which screen shows depends on repo state:
+The home route uses **Firebase Auth state** first, then repo state:
 
-| Condition | Screen |
-|-----------|--------|
-| `currentUserPhone.isEmpty` | **PhoneAuth** |
-| Phone set, `currentUserName.isEmpty` | **OnboardingNameScreen** |
-| Both set | **GroupsList** |
+1. **StreamBuilder** on `PhoneAuthService.instance.authStateChanges`.
+2. If **user == null** → repo is cleared and **PhoneAuth** (login) is shown.
+3. If **user != null** → repo is synced from Firebase (`setAuthFromFirebaseUser(uid, phone, displayName)`), then:
+   - If `currentUserName.isEmpty` → **OnboardingNameScreen**
+   - Else → **GroupsList** (ledger).
+
+Every UID in the app comes from Firebase Auth; there is no mock user id.
 
 **PhoneAuth** — User enters +91 phone → OTP step.
 
-- **When Firebase is configured** (`firebaseAuthAvailable`): app calls Firebase `verifyPhoneNumber`; user receives SMS and enters 6-digit code; on verify, `signInWithCredential` then `setGlobalProfile(formattedPhone, '', authUserId: user.uid)`.
-- **When Firebase is not configured**: mock flow — any 10 digits → OTP step, any 6 digits → `setGlobalProfile(formattedPhone, '')`. No SMS sent.
+- **When Firebase is configured** (`firebaseAuthAvailable`): `PhoneAuthService` calls `FirebaseAuth.instance.verifyPhoneNumber`; `codeSent` → OTP screen; user enters 6-digit code; on verify, `signInWithCredential` then auth state updates and repo is synced. Errors `invalid-verification-code` and `too-many-requests` are caught; for the test number (+91 79022 03218) the UI shows that code **123456** is the required dev bypass.
+- **When Firebase is not configured**: mock flow — any 10 digits → OTP step, any 6 digits → `setGlobalProfile` only (no UID; creator features unavailable until real auth).
 
 To enable real phone auth: run `dart run flutterfire configure`, enable **Phone** sign-in in Firebase Console → Authentication → Sign-in method, and add `google-services.json` (Android) / `GoogleService-Info.plist` (iOS) via FlutterFire or manually.
 
-**OnboardingNameScreen** — “What should we call you?” → user taps “Get Started” → `setGlobalProfile(repo.currentUserPhone, name)`. Home rebuilds and shows GroupsList.
+**OnboardingNameScreen** — “What should we call you?” → user taps “Get Started” → `setGlobalProfile(repo.currentUserPhone, name)` and `FirebaseAuth.instance.currentUser?.updateDisplayName(name)` so the name persists across restarts.
 
 ---
 
@@ -60,11 +62,11 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/` | PhoneAuth / OnboardingName / GroupsList | Decided by repo state (see §2). |
+| `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
 | `/groups` | GroupsList | List of groups. **Only the black FAB** creates a group (no blue text button). |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI** in body (when pending > 0), expense log, “Add expense”. |
+| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, expense log, **Magic Bar** (natural language → Groq/Llama 3 → confirm → add expense), “Add expense manually” link to full form. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -81,7 +83,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/settlement-confirmation` | SettlementConfirmation | Confirm settlement. |
+| `/settlement-confirmation` | SettlementConfirmation | Confirm settlement; "Close Cycle" only for creator. |
 | `/payment-result` | PaymentResult | After payment. |
 | `/cycle-settled` | CycleSettled | Cycle settled. |
 | `/cycle-history` | CycleHistory | Past cycles. |
@@ -98,26 +100,46 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 ## 4. Data layer
 
+### Cloud Firestore (Test Mode)
+
+All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 03218).
+
+- **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`.
+- **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
+- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`.
+- **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
+
+**Archive logic:** Settle (Phase 1) sets `cycleStatus` to `settling`. Archive (Phase 2, creator-only) copies current-cycle expenses into `settled_cycles/{cycleId}/expenses`, deletes from current `expenses`, then sets new `activeCycleId` and `cycleStatus: 'active'`.
+
+### FirestoreService
+
+**Location:** `lib/services/firestore_service.dart` — Singleton. Low-level Firestore: `setUser`, `createGroup`, `groupsStream(uid)`, `expensesStream(groupId)`, `addExpense`, `updateExpense`, `deleteExpense`, `archiveCycleExpenses`, `getSettledCycles`, `getSettledCycleExpenses`.
+
+### GroqExpenseParserService
+
+**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. Calls Groq API (`llama-3.3-70b-versatile`) with a “Financial Data Parser” system prompt; expects raw JSON: `amount`, `description`, `category`, `splitType` ("even" | "exact" | "exclude"), `participants` (display names), and optionally `payer`, `excluded`, `exactAmounts`. Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude).
+
 ### CycleRepository
 
 **Location:** `lib/repositories/cycle_repository.dart`  
-**Type:** Singleton, `ChangeNotifier`.
+**Type:** Singleton, `ChangeNotifier`. Backed by Firestore: subscribes to `groupsStream(currentUserId)` and each group's `expensesStream`; maps snapshots to `_groups`, `_expensesByCycleId`, `_membersById` and notifies listeners.
 
 | Area | Details |
 |------|---------|
-| **Identity** | `currentUserId`, `currentUserPhone`, `currentUserName`. `setGlobalProfile(phone, name, {authUserId})` updates and notifies. When Firebase auth is used, `authUserId` is the Firebase UID; otherwise `currentUserId` defaults to `dev_user_01`. |
-| **Groups** | `_groups`, `addGroup`, `getGroup`, `getMembersForGroup`, `removeMemberFromGroup`, … |
+| **Identity** | `setAuthFromFirebaseUser` writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
+| **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. |
-| **Cycles** | `_cycles`, `getActiveCycle`, `getExpenses`, `addExpense`, `updateExpense`, `deleteExpense`, `settleAndRestartCycle` (Phase 1: freeze → settling), `archiveAndRestart` (Phase 2: close + new cycle), `getHistory`. |
-| **Balances** | `calculateBalances`, `getSettlementInstructions` (uses `getMemberDisplayName`). |
-| **Authority** | `isCreator(groupId, userId)`, `canEditCycle(groupId, userId)` (false when cycle is **settling** for everyone, including leader), `canDeleteGroup(groupId, userId)`. |
+| **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
+| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. |
+| **Magic Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. |
+| **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 
 ### Models
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member`, `Expense`, `ExpenseItem`, `HistoryCycle`
+- **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; used by balance calculation)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 
 ---
@@ -182,6 +204,16 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 - Description / “with” used for participants.
 - Submit enabled when `input.trim().isNotEmpty` and `parseExpense(input).amount > 0`.
 
+### Magic Bar (GroupDetail) — Groq AI parser
+
+- **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Pradhyun”.
+- **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
+- **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env only; model `llama-3.3-70b-versatile`; system prompt instructs “Financial Data Parser” to return only JSON: amount, description, category, splitType, participants (names from injected member list). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
+- **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
+- **Success:** Confirmation dialog with amount, description, category, split type, and resolved participant names; on Confirm → build `Expense`, resolve participant names to phones via `getMemberDisplayName` / `getMembersForGroup`, then `CycleRepository.addExpense(groupId, expense)` (same path as ExpenseInput).
+- **Failure:** Snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
+- **Rate limit (429 after retry):** Magic Bar enters a 30s cooldown; placeholder becomes “AI is cooling down... try manual entry”. **Manual “Add expense manually” remains enabled** so the user can always add expenses.
+
 ### NLP — Who’s involved (ExpenseInput)
 
 - As the user types, match input (words or substrings, case-insensitive) to each member’s **display name** (`getMemberDisplayName`).
@@ -208,10 +240,14 @@ lib/
   firebase_app.dart            # firebaseAuthAvailable flag (set by main, read by PhoneAuth)
   firebase_options.dart        # Generated by: dart run flutterfire configure (stub in repo until then)
   models/
-    models.dart                # Group, Member, Expense, ExpenseItem, HistoryCycle
+    models.dart                # Group, Member, Expense
     cycle.dart                 # Cycle, CycleStatus
   repositories/
-    cycle_repository.dart      # Singleton (groups, members, cycles, expenses, identity)
+    cycle_repository.dart      # Singleton; Firestore-backed (groups, members, cycles, expenses, identity)
+  services/
+    phone_auth_service.dart   # Firebase verifyPhoneNumber, codeSent, verificationCompleted, error handling
+    firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles
+    groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
   screens/
     phone_auth.dart
     onboarding_name.dart
@@ -245,6 +281,9 @@ lib/
 | `flutter_contacts` ^1.1.9+1 | Import as `fc` to avoid `Group` clash. |
 | `firebase_core` | Required for Firebase. Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` (stub in repo is replaced). |
 | `firebase_auth` | Phone (OTP) sign-in when Firebase is configured. |
+| `cloud_firestore` | Groups, expenses, settled_cycles; Test Mode. All writes use real User.uid. |
+| `flutter_dotenv` | Loads `.env`; **GROQ_API_KEY** required for Magic Bar AI parsing. |
+| `http` | Groq API requests (chat completions). |
 
 **Permissions:**
 
@@ -315,6 +354,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 **Implementation notes (AI & Hit-Maker):**
 
+- **Natural language expense parsing** — **Implemented.** GroupDetail “Magic Bar” uses Groq (Llama 3.3 70B) to parse free text → JSON (amount, description, category, splitType, participants); confirmation dialog then `CycleRepository.addExpense`. See §4 GroqExpenseParserService, §6 Magic Bar.
 - **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last.
 - **Voice entry** — “Hey Expenso, I paid 400 for movies with the boys.” Low real value; skip or postpone indefinitely.
 - **Debt minimization** — Real intelligence. Builds on members, balances, cross-group identity. Can be your signature feature. Extremely high value.

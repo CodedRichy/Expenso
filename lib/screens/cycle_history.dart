@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 
 class CycleHistory extends StatelessWidget {
@@ -16,8 +17,6 @@ class CycleHistory extends StatelessWidget {
     final groupId = group.id;
 
     final repo = CycleRepository.instance;
-    final cycles = repo.getHistory(groupId);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -66,29 +65,76 @@ class CycleHistory extends StatelessWidget {
               ),
             ),
             // Cycles List
-            if (cycles.isNotEmpty)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      child: Text(
-                        'PAST CYCLES',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF9B9B9B),
-                          letterSpacing: 0.3,
+            FutureBuilder<List<Cycle>>(
+              future: repo.getHistory(groupId),
+              builder: (context, snapshot) {
+                final cycles = snapshot.data ?? [];
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (cycles.isEmpty) {
+                  return Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 64,
+                        ),
+                        child: SizedBox(
+                          width: 280,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'No settlement history',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF1A1A1A),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Settled cycles will appear here.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: const Color(0xFF6B6B6B),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: cycles.length,
-                        itemBuilder: (context, index) {
-                          final cycle = cycles[index];
+                  );
+                }
+                return Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                        child: Text(
+                          'PAST CYCLES',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF9B9B9B),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: cycles.length,
+                          itemBuilder: (context, index) {
+                            final cycle = cycles[index];
                           final startDate = cycle.startDate ?? '–';
                           final endDate = cycle.endDate ?? '–';
                           final settledAmount = cycle.expenses.fold<double>(
@@ -179,45 +225,9 @@ class CycleHistory extends StatelessWidget {
                     ),
                   ],
                 ),
-              )
-            else
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 64,
-                    ),
-                    child: SizedBox(
-                      width: 280,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'No settlement history',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF1A1A1A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Settled cycles will appear here.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: const Color(0xFF6B6B6B),
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              );
+              },
+            ),
           ],
         ),
       ),

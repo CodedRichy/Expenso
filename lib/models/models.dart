@@ -39,6 +39,8 @@ class Expense {
   final String date;
   final List<String> participantPhones;
   final String paidByPhone;
+  /// Per-person share (phone -> amount). When non-null, balances use these; else equal split.
+  final Map<String, double>? splitAmountsByPhone;
 
   Expense({
     required this.id,
@@ -47,33 +49,6 @@ class Expense {
     required this.date,
     List<String>? participantPhones,
     this.paidByPhone = '',
+    this.splitAmountsByPhone,
   }) : participantPhones = participantPhones ?? [];
-}
-
-class ExpenseItem {
-  final String id;
-  final String description;
-  final double amount;
-
-  ExpenseItem({
-    required this.id,
-    required this.description,
-    required this.amount,
-  });
-}
-
-class HistoryCycle {
-  final String id;
-  final String startDate;
-  final String endDate;
-  final double settledAmount;
-  final int expenseCount;
-
-  HistoryCycle({
-    required this.id,
-    required this.startDate,
-    required this.endDate,
-    required this.settledAmount,
-    required this.expenseCount,
-  });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../repositories/cycle_repository.dart';
 import 'empty_states.dart';
+import 'group_list_skeleton.dart';
 
 class GroupsList extends StatelessWidget {
   const GroupsList({super.key});
@@ -13,9 +14,10 @@ class GroupsList extends StatelessWidget {
       listenable: repo,
       builder: (context, _) {
         final groups = repo.groups;
+        final loading = repo.groupsLoading && groups.isEmpty;
         return Scaffold(
           backgroundColor: const Color(0xFFF7F7F8),
-          floatingActionButton: groups.isNotEmpty
+          floatingActionButton: !loading && groups.isNotEmpty
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
                   backgroundColor: const Color(0xFF1A1A1A),
@@ -27,33 +29,54 @@ class GroupsList extends StatelessWidget {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: groups.isEmpty
-              ? EmptyStates(
-                  type: 'no-groups',
-                  wrapInScaffold: false,
-                  onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
-                )
-              : SafeArea(
+          body: loading
+              ? SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
                         child: Text(
                           'Groups',
                           style: TextStyle(
                             fontSize: 34,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            color: Color(0xFF1A1A1A),
                             letterSpacing: -0.6,
                           ),
                         ),
                       ),
-                      // Groups List
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 88),
+                      const Expanded(child: GroupListSkeleton()),
+                    ],
+                  ),
+                )
+              : groups.isEmpty
+                  ? EmptyStates(
+                      type: 'no-groups',
+                      wrapInScaffold: false,
+                      onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
+                    )
+                  : SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+                            child: Text(
+                              'Groups',
+                              style: TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1A1A1A),
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                          ),
+                          // Groups List
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 88),
                     itemCount: groups.length,
                     itemBuilder: (context, index) {
                       final group = groups[index];
