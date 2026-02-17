@@ -21,14 +21,14 @@ class EmptyStates extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
               child: Text(
                 'Groups',
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A1A1A),
+                  color: Color(0xFF1A1A1A),
                   letterSpacing: -0.6,
                 ),
               ),

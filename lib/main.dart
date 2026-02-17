@@ -26,6 +26,7 @@ import 'screens/cycle_history.dart';
 import 'screens/cycle_history_detail.dart';
 import 'screens/empty_states.dart';
 import 'screens/error_states.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,8 +59,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A1A1A)),
       ),
-      initialRoute: '/',
+      initialRoute: '/splash',
       routes: {
+        '/splash': (context) => const SplashScreen(),
         '/': (context) => StreamBuilder<User?>(
           stream: PhoneAuthService.instance.authStateChanges,
           builder: (context, snapshot) {

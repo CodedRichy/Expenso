@@ -87,5 +87,45 @@ void main() {
       });
       expect(result2.amount, 0.0);
     });
+
+    test('partial success: valid amount with empty description yields description in fromJson', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 100,
+        'description': '',
+        'splitType': 'even',
+        'participants': [],
+      });
+      expect(result.amount, 100.0);
+      expect(result.description, '');
+      expect(result.participantNames, isEmpty);
+    });
+
+    test('parses percentage split with percentageAmounts', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 1000,
+        'description': 'Rent',
+        'category': '',
+        'splitType': 'percentage',
+        'participants': [],
+        'percentageAmounts': {'Alice': 60, 'Bob': 40},
+      });
+      expect(result.amount, 1000.0);
+      expect(result.splitType, 'percentage');
+      expect(result.percentageByName, {'Alice': 60.0, 'Bob': 40.0});
+    });
+
+    test('parses shares split with sharesAmounts', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 1500,
+        'description': 'Airbnb',
+        'category': '',
+        'splitType': 'shares',
+        'participants': [],
+        'sharesAmounts': {'Alice': 2, 'Bob': 3},
+      });
+      expect(result.amount, 1500.0);
+      expect(result.splitType, 'shares');
+      expect(result.sharesByName, {'Alice': 2.0, 'Bob': 3.0});
+    });
   });
 }

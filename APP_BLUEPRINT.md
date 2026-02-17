@@ -33,9 +33,11 @@
 
 ## 2. Entry and auth flow
 
-**Initial route:** `/`
+**Initial route:** `/splash` → then `/`.
 
-The home route uses **Firebase Auth state** first, then repo state:
+On launch, **SplashScreen** shows the app logo (light background) for ~1.5s, then navigates to `/`.
+
+The home route `/` uses **Firebase Auth state** first, then repo state:
 
 1. **StreamBuilder** on `PhoneAuthService.instance.authStateChanges`.
 2. If **user == null** → repo is cleared and **PhoneAuth** (login) is shown.
@@ -62,11 +64,12 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
+| `/splash` | SplashScreen | Shown first; logo then navigates to `/`. |
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
 | `/groups` | GroupsList | List of groups; **swipe left** = Pin/Unpin (max 3, user preference); **swipe right** = Delete (creator only, confirm). Pinned groups at top. **Only the black FAB** creates a group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, expense log, **Smart Bar** at bottom (natural language → Groq/Llama 3 → confirm; keyboard icon for manual entry). |
+| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, **Balances** section (who owes whom, from SettlementEngine), expense log, **Smart Bar** at bottom (natural language → Groq/Llama 3 → confirm; keyboard icon for manual entry). |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -117,7 +120,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### GroqExpenseParserService
 
-**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. Calls Groq API (`llama-3.3-70b-versatile`) with a “Financial Data Parser” system prompt; expects raw JSON: `amount`, `description`, `category`, `splitType` ("even" | "exact" | "exclude"), `participants` (display names), and optionally `payer`, `excluded`, `exactAmounts`. Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude).
+**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. Calls Groq API (`llama-3.3-70b-versatile`) with a “Financial Data Parser” system prompt; expects raw JSON: `amount`, `description`, `category`, `splitType` ("even" | "exact" | "exclude"), `participants` (display names), and optionally `payer`, `excluded`, `exactAmounts`. Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude).
 
 ### CycleRepository
 
@@ -131,7 +134,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
-| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. |
+| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 
@@ -142,6 +145,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; optional `category`; used by balance calculation)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
+- **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` — net balance per member (Total Paid − Total Owed), then greedy match debtors to creditors; outputs `List<Debt>`. Used by Group Detail **Balances** section.
 
 ---
 
@@ -167,6 +171,10 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | Body | 17px | — | — |
 | Labels / small | 15px | — | — |
 | Overlines (e.g. “EXPENSE LOG”) | 13px | w500 | 0.3 |
+
+### Branding
+
+- **App logo** — Shown on **splash** only (`assets/images/logoWhiteBg.png`). Not shown in Groups header (avoids white-bg mismatch with app background `#F7F7F8`). Use `logoBlackBg.png` for dark splash if needed.
 
 ### Components
 
@@ -213,8 +221,8 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
 - **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env only; model `llama-3.3-70b-versatile`; system prompt instructs “Financial Data Parser” to return only JSON: amount, description, category, splitType, participants (names from injected member list). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
-- **Success:** Confirmation dialog with amount, description, category, split type, and resolved participant names; on Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
-- **Failure:** Snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
+- **Success:** Confirmation dialog with amount, description, category, split type, and participant chips. If a participant name from the AI cannot be resolved to a phone number, it is shown as a **"Select Member"** chip; the user must tap that chip to pick the correct member from the group list before Confirm is enabled. On Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
+- **Failure:** Only if no number could be extracted (API failed and fallback found no number); snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
 - **Rate limit (429 after retry):** Smart Bar enters a 30s cooldown; use keyboard icon for manual entry; placeholder becomes “AI is cooling down... try manual entry”. **Manual “Add expense manually” remains enabled** so the user can always add expenses.
 
 ### NLP — Who’s involved (ExpenseInput)
@@ -238,8 +246,12 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 ## 7. File layout
 
 ```
+assets/
+  images/
+    logoWhiteBg.png            # App logo on white; used for splash + Groups header
+    logoBlackBg.png            # Logo on black (e.g. dark splash)
 lib/
-  main.dart                    # Routes, initial route logic, Firebase init
+  main.dart                    # Routes, initial route /splash then /, Firebase init
   firebase_app.dart            # firebaseAuthAvailable flag (set by main, read by PhoneAuth)
   firebase_options.dart        # Generated by: dart run flutterfire configure (stub in repo until then)
   models/
@@ -254,7 +266,9 @@ lib/
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
+    settlement_engine.dart    # Debt, SettlementEngine.computeDebts(expenses, members)
   screens/
+    splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart
     onboarding_name.dart
     groups_list.dart

@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/groq_expense_parser_service.dart';
+import '../utils/settlement_engine.dart';
 import 'empty_states.dart';
 
 class GroupDetail extends StatelessWidget {
@@ -234,6 +235,54 @@ class GroupDetail extends StatelessWidget {
                       ),
                     ),
             ),
+            // Balances (who owes whom) — real-time from SettlementEngine
+            if (!isSettled && hasExpenses) ...[
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: const Color(0xFFE5E5E5), width: 1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BALANCES',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF9B9B9B),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...() {
+                      final members = repo.getMembersForGroup(groupId);
+                      final debts = SettlementEngine.computeDebts(expenses, members);
+                      if (debts.isEmpty) {
+                        return [
+                          Text(
+                            'No debts to settle',
+                            style: TextStyle(fontSize: 15, color: const Color(0xFF6B6B6B)),
+                          ),
+                        ];
+                      }
+                      return debts.map((d) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          '${repo.getMemberDisplayName(d.fromPhone)} owes ${repo.getMemberDisplayName(d.toPhone)} ₹${d.amount.toStringAsFixed(0).replaceAllMapped(
+                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                            (Match m) => '${m[1]},',
+                          )}',
+                          style: TextStyle(fontSize: 15, color: const Color(0xFF1A1A1A)),
+                        ),
+                      )).toList();
+                    }(),
+                  ],
+                ),
+              ),
+            ],
             // Recent Expenses
             if (hasExpenses)
               Expanded(
@@ -597,7 +646,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         ? 'Exact'
         : result.splitType == 'exclude'
             ? 'Exclude'
-            : 'Even';
+            : result.splitType == 'percentage'
+                ? 'Percentage'
+                : result.splitType == 'shares'
+                    ? 'Shares'
+                    : 'Even';
 
     // Build slots: each has name, amount, and resolved phone (or null → "Select Member")
     final List<_ParticipantSlot> slots = [];
@@ -612,6 +665,43 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       for (final entry in result.exactAmountsByName.entries) {
         final r = _resolveOneNameToPhoneWithGuess(repo, groupId, entry.key);
         slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, phone: r.phone, isGuessed: r.isGuessed));
+      }
+    } else if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
+      for (final entry in result.percentageByName.entries) {
+        final name = entry.key;
+        final pct = entry.value;
+        final amount = result.amount * (pct / 100);
+        String? phone;
+        String displayName = name;
+        if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
+          phone = repo.currentUserPhone;
+          displayName = repo.getMemberDisplayName(phone);
+        } else {
+          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+          phone = r.phone;
+          displayName = name;
+        }
+        slots.add(_ParticipantSlot(name: displayName, amount: amount, phone: phone, isGuessed: false));
+      }
+    } else if (result.splitType == 'shares' && result.sharesByName.isNotEmpty) {
+      final totalShares = result.sharesByName.values.fold<double>(0.0, (a, b) => a + b);
+      if (totalShares > 0) {
+        for (final entry in result.sharesByName.entries) {
+          final name = entry.key;
+          final personShares = entry.value;
+          final amount = result.amount * (personShares / totalShares);
+          String? phone;
+          String displayName = name;
+          if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
+            phone = repo.currentUserPhone;
+            displayName = repo.getMemberDisplayName(phone);
+          } else {
+            final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+            phone = r.phone;
+            displayName = name;
+          }
+          slots.add(_ParticipantSlot(name: displayName, amount: amount, phone: phone, isGuessed: false));
+        }
       }
     } else {
       // When user didn't say "with X": in a 2-person group default to the other member ("Dinner 2000" → "Dinner – with Prasi"); else payer-only.
@@ -631,8 +721,16 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
         : 0.0;
     const tolerance = 0.01;
-    final exactValid = result.splitType != 'exact' ||
-        (exactSum - result.amount).abs() <= tolerance;
+    final percentageSum = result.splitType == 'percentage' && result.percentageByName.isNotEmpty
+        ? result.percentageByName.values.fold<double>(0.0, (a, b) => a + b)
+        : 0.0;
+    final exactValid = result.splitType == 'exact'
+        ? (exactSum - result.amount).abs() <= tolerance
+        : result.splitType == 'percentage'
+            ? (percentageSum - 100.0).abs() <= tolerance && slots.isNotEmpty
+            : result.splitType == 'shares'
+                ? slots.isNotEmpty
+                : true;
 
     showDialog<void>(
       context: context,
@@ -849,13 +947,17 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       final excludedSet = excludedPhones.toSet();
       participantPhones = widget.allPhones.where((p) => !excludedSet.contains(p)).toList();
       if (participantPhones.isEmpty) participantPhones = [widget.payerPhone];
-    } else if (widget.splitTypeCap == 'Exact') {
+    } else if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') {
+      // Percentage and shares are converted to exact amounts for persistence
       exactAmountsByPhone = {for (final s in slots) s.phone!: s.amount};
       participantPhones = exactAmountsByPhone.keys.toList();
     } else {
       participantPhones = slots.map((s) => s.phone!).toList();
     }
 
+    final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
+        ? 'Exact'
+        : widget.splitTypeCap;
     try {
       repo.addExpenseFromMagicBar(
         groupId,
@@ -864,7 +966,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         amount: widget.result.amount,
         date: 'Today',
         payerPhone: widget.payerPhone,
-        splitType: widget.splitTypeCap,
+        splitType: persistSplitType,
         participantPhones: participantPhones,
         excludedPhones: excludedPhones,
         exactAmountsByPhone: exactAmountsByPhone,
