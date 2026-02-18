@@ -24,7 +24,6 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
     FirebaseAuth.instance.currentUser?.updateDisplayName(name);
-    // Home route (/) will rebuild and show GroupsList; name persists via Firebase for next launch.
   }
 
   @override

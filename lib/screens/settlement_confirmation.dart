@@ -19,7 +19,6 @@ class SettlementConfirmation extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -52,7 +51,6 @@ class SettlementConfirmation extends StatelessWidget {
                 ],
               ),
             ),
-            // Confirmation Content
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

@@ -13,7 +13,6 @@ class CycleSettled extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -46,7 +45,6 @@ class CycleSettled extends StatelessWidget {
                 ],
               ),
             ),
-            // Settled State
             Expanded(
               child: Center(
                 child: Padding(

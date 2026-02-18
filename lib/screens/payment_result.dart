@@ -27,7 +27,6 @@ class PaymentResult extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon
                   Container(
                     width: 64,
                     height: 64,
@@ -46,7 +45,6 @@ class PaymentResult extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Message
                   Column(
                     children: [
                       Text(
@@ -109,7 +107,6 @@ class PaymentResult extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 48),
-                  // Action Button
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pushReplacementNamed(

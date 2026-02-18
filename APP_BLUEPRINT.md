@@ -69,7 +69,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/groups` | GroupsList | List of groups; **swipe left** = Pin/Unpin (max 3, user preference); **swipe right** = Delete (creator only, confirm). Pinned groups at top. **Only the black FAB** creates a group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Group name, **28px** pending amount, **Settle now** + **Pay via UPI**, **Balances** section (who owes whom, from SettlementEngine), expense log, **Smart Bar** at bottom (natural language → Groq/Llama 3 → confirm; keyboard icon for manual entry). |
+| `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. Haptics: light impact on AI success, manual confirm, and on groups list swipe actions (Pin/Delete). |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -145,7 +145,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; optional `category`; used by balance calculation)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
-- **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` — net balance per member (Total Paid − Total Owed), then greedy match debtors to creditors; outputs `List<Debt>`. Used by Group Detail **Balances** section.
+- **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (phone → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
 
 ---
 
@@ -266,7 +266,7 @@ lib/
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
-    settlement_engine.dart    # Debt, SettlementEngine.computeDebts(expenses, members)
+    settlement_engine.dart    # Debt, computeDebts, computeNetBalances
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart

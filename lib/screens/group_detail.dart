@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shimmer/shimmer.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
@@ -486,15 +485,26 @@ class _DecisionClarityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-          child: isEmpty
-              ? _buildEmptyState(context)
-              : _buildContent(
-                  context,
-                  cycleTotal: cycleTotal,
-                  spentByYou: spentByYou,
-                  myNet: myNet,
-                  isCredit: isCredit,
-                ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: isEmpty
+                ? KeyedSubtree(
+                    key: const ValueKey('empty'),
+                    child: _buildEmptyState(context),
+                  )
+                : KeyedSubtree(
+                    key: const ValueKey('content'),
+                    child: _buildContent(
+                      context,
+                      cycleTotal: cycleTotal,
+                      spentByYou: spentByYou,
+                      myNet: myNet,
+                      isCredit: isCredit,
+                    ),
+                  ),
+          ),
         ),
       ),
     );
@@ -1061,6 +1071,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   void _onConfirm() {
     if (!_canConfirm) return;
+    HapticFeedback.lightImpact();
     final repo = widget.repo;
     final groupId = widget.groupId;
     List<String> participantPhones;

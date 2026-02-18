@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
@@ -160,6 +161,7 @@ class _GroupsListState extends State<GroupsList> {
                                     children: [
                                       SlidableAction(
                                         onPressed: (_) async {
+                                          HapticFeedback.lightImpact();
                                           if (!isPinned && !pinService.canPinMore) {
                                             if (context.mounted) {
                                               ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +188,10 @@ class _GroupsListState extends State<GroupsList> {
                                           extentRatio: 0.25,
                                           children: [
                                             SlidableAction(
-                                              onPressed: (_) => _confirmDeleteGroup(context, group),
+                                              onPressed: (_) {
+                                                HapticFeedback.lightImpact();
+                                                _confirmDeleteGroup(context, group);
+                                              },
                                               backgroundColor: const Color(0xFFC62828),
                                               foregroundColor: Colors.white,
                                               icon: Icons.delete_outline,

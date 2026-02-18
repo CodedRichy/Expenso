@@ -1,6 +1,4 @@
-// Generated for Firebase project Expenso (expenso-e138a).
-// Android and iOS configs downloaded via Firebase CLI; Dart file created manually
-// after FlutterFire CLI hit "UnsupportedError not found" on this environment.
+// Generated for Firebase (expenso-e138a). Config from CLI; Dart file created manually after FlutterFire CLI issue.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;

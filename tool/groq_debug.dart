@@ -1,5 +1,4 @@
-// Run: dart tool/groq_debug.dart "Dinner 500"
-// Paste the output so we can fix the parser. Delete this file after.
+// Run: dart tool/groq_debug.dart "Dinner 500" — paste output to fix parser.
 
 import 'dart:convert';
 import 'dart:io';

@@ -20,7 +20,6 @@ class GroupMembers extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
                   child: Column(
@@ -61,7 +60,6 @@ class GroupMembers extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Members List
                 Expanded(
                   child: listMembers.isEmpty
                       ? Center(

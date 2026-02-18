@@ -54,7 +54,7 @@ class _EditExpenseState extends State<EditExpense> {
 
     _groupId = groupId;
     _expenseId = expenseId;
-    // Creator (group.creatorId) can always edit — "God Mode" even when cycle is Settling.
+    // Creator can always edit (even when cycle is settling).
     _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);

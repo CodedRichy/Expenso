@@ -67,7 +67,6 @@ class _CreateGroupState extends State<CreateGroup> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -100,14 +99,12 @@ class _CreateGroupState extends State<CreateGroup> {
                 ],
               ),
             ),
-            // Form
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Group Name
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -157,7 +154,6 @@ class _CreateGroupState extends State<CreateGroup> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    // Settlement Rhythm
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -188,7 +184,6 @@ class _CreateGroupState extends State<CreateGroup> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    // Settlement Day
                     if (rhythm != 'trip') ...[
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,7 +230,6 @@ class _CreateGroupState extends State<CreateGroup> {
                       ),
                       const SizedBox(height: 32),
                     ],
-                    // Preview
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -256,7 +250,6 @@ class _CreateGroupState extends State<CreateGroup> {
                 ),
               ),
             ),
-            // Create Button
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(

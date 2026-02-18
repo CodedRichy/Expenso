@@ -26,7 +26,6 @@ class FirestoreService {
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-  // ---------- Users ----------
   /// Set or merge user profile. Document ID = [uid].
   Future<void> setUser(String uid, {
     String? displayName,
@@ -55,7 +54,6 @@ class FirestoreService {
     });
   }
 
-  // ---------- Groups ----------
   /// Create a group. [groupId] e.g. g_xxx. [creatorId] = Firebase UID.
   Future<void> createGroup(String groupId, {
     required String groupName,
@@ -155,7 +153,6 @@ class FirestoreService {
     });
   }
 
-  // ---------- Expenses (current cycle: under group) ----------
   /// Add expense to group's current cycle (subcollection expenses).
   Future<void> addExpense(String groupId, Map<String, dynamic> expenseData) async {
     final id = expenseData['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
@@ -195,7 +192,6 @@ class FirestoreService {
         });
   }
 
-  // ---------- Settled cycles (archive) ----------
   /// Write a settled cycle doc and copy current-cycle expenses into it; then clear current expenses.
   /// [cycleId] = group's current activeCycleId. Caller must set group's new activeCycleId and cycleStatus after.
   Future<void> archiveCycleExpenses(

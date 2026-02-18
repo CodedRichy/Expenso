@@ -48,13 +48,10 @@ class _UndoExpenseState extends State<UndoExpense> {
 
   void handleUndo() {
     timer?.cancel();
-    // onUndo callback would go here
     handleDismiss();
   }
 
-  void handleDismiss() {
-    // onDismiss callback would go here
-  }
+  void handleDismiss() {}
 
   @override
   void dispose() {

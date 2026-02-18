@@ -21,7 +21,6 @@ class CycleHistoryDetail extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -62,7 +61,6 @@ class CycleHistoryDetail extends StatelessWidget {
                 ],
               ),
             ),
-            // Summary
             Container(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
               decoration: BoxDecoration(
@@ -100,7 +98,6 @@ class CycleHistoryDetail extends StatelessWidget {
                 ],
               ),
             ),
-            // Expenses
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

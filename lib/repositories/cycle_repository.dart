@@ -542,7 +542,6 @@ class CycleRepository extends ChangeNotifier {
         splitsByPhone[p] = perShare;
       }
     } else {
-      // Even (or fallback): split among participantPhones; if empty, payer only
       phonesInSplit = participantPhones.isNotEmpty
           ? participantPhones
           : [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];

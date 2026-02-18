@@ -22,7 +22,6 @@ class ErrorStates extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon
                     Container(
                       width: 64,
                       height: 64,
@@ -37,7 +36,6 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // Message
                     Text(
                       'Connection unavailable',
                       textAlign: TextAlign.center,
@@ -59,7 +57,6 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 48),
-                    // Action Button
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
@@ -103,7 +100,6 @@ class ErrorStates extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon
                     Container(
                       width: 64,
                       height: 64,
@@ -118,7 +114,6 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // Message
                     Text(
                       'Session expired',
                       textAlign: TextAlign.center,
@@ -140,7 +135,6 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 48),
-                    // Action Button
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/');
@@ -184,7 +178,6 @@ class ErrorStates extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon
                     Container(
                       width: 64,
                       height: 64,
@@ -199,7 +192,6 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // Message
                     Text(
                       'Payment service unavailable',
                       textAlign: TextAlign.center,
@@ -221,13 +213,10 @@ class ErrorStates extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 48),
-                    // Actions
                     Column(
                       children: [
                         ElevatedButton(
-                          onPressed: () {
-                            // onRetry callback would go here
-                          },
+                          onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1A1A1A),
                             foregroundColor: Colors.white,
@@ -280,7 +269,6 @@ class ErrorStates extends StatelessWidget {
       );
     }
 
-    // Generic error
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -292,7 +280,6 @@ class ErrorStates extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon
                   Container(
                     width: 64,
                     height: 64,
@@ -307,7 +294,6 @@ class ErrorStates extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Message
                   Text(
                     'Something went wrong',
                     textAlign: TextAlign.center,
@@ -329,11 +315,8 @@ class ErrorStates extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  // Action Button
                   ElevatedButton(
-                    onPressed: () {
-                      // onRetry callback would go here
-                    },
+                    onPressed: () {},
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A1A1A),
                       foregroundColor: Colors.white,

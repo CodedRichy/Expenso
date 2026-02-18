@@ -1,5 +1,3 @@
-// Validation helpers for expense data. Used before persisting to Firestore.
-
 /// Returns an error message if the amount is invalid, otherwise null.
 String? validateExpenseAmount(double amount) {
   if (amount.isNaN) return 'Amount is not a valid number.';

@@ -1,5 +1,3 @@
-// Shared data models for the Expenso app
-
 class Group {
   final String id;
   final String name;

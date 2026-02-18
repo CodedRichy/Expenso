@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Fade in done at 700ms; hold; then fade out (reverse), then navigate
+      // 700ms fade in, hold, then fade out and navigate
       Future.delayed(_animDuration + _holdDuration, () {
         if (!mounted) return;
         _controller.reverse();
