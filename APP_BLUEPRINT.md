@@ -322,6 +322,8 @@ test/
 The following are **not built yet**. Each feature has a **verdict**, **why it matters**, and **when to add** so you can come back later and implement in the right order.  
 **Status** = Not implemented until you ship it.
 
+**User research:** Feature requests from the Jan 2026 Expenso idea survey are summarized in **docs/SURVEY_FEATURE_REQUESTS.md** (reminders, “I paid don’t worry”, reports, UPI, receipts, unequal split).
+
 ---
 
 ### 9.1 “Polished Local” suite (no server)
