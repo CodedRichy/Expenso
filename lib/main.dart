@@ -97,11 +97,14 @@ class MyApp extends StatelessWidget {
               repo.clearAuth();
               return const PhoneAuth();
             }
-            repo.setAuthFromFirebaseUser(
+            repo.setAuthFromFirebaseUserSync(
               user.uid,
               user.phoneNumber,
               user.displayName,
             );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              repo.continueAuthFromFirebaseUser();
+            });
             return ListenableBuilder(
               listenable: repo,
               builder: (context, _) {

@@ -42,7 +42,7 @@ The home route `/` uses **Firebase Auth state** first, then repo state:
 
 1. **StreamBuilder** on `PhoneAuthService.instance.authStateChanges`.
 2. If **user == null** → repo is cleared and **PhoneAuth** (login) is shown.
-3. If **user != null** → repo is synced from Firebase (`setAuthFromFirebaseUser(uid, phone, displayName)`), then:
+3. If **user != null** → repo is synced in-memory (`setAuthFromFirebaseUserSync(uid, phone, displayName)`), then after the frame `continueAuthFromFirebaseUser()` runs (writes `users/{uid}`, starts Firestore listeners). Then:
    - If `currentUserName.isEmpty` → **OnboardingNameScreen**
    - Else → **GroupsList** (ledger).
 
@@ -70,7 +70,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
-| `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. Haptics: light impact on AI success, manual confirm, and on groups list swipe actions (Pin/Delete). |
+| `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -136,7 +136,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 | Area | Details |
 |------|---------|
-| **Identity** | `setAuthFromFirebaseUser` writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
+| **Identity** | `setAuthFromFirebaseUserSync` sets in-memory state; `continueAuthFromFirebaseUser()` (post-frame) writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
 | **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to Groq for Magic Bar fuzzy matching. |

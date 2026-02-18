@@ -21,11 +21,11 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 |------|-------------|
 | **Groups** | Create groups via FAB; add members by phone or contacts. List shows all groups; pin/unpin (max 3); delete (creator only). |
 | **Creator** | One creator per group; only creator can Settle, Start New Cycle, and Delete group. |
-| **Expenses** | Add via Smart Bar (natural language, parsed by optional Groq/Llama integration) or manual form. Edit/undo; description, date, amount; splits: Even, Exact, or Exclude. Light haptic on AI parse success and on manual confirm. |
+| **Expenses** | Add via Smart Bar (natural language, parsed by optional Groq/Llama integration) or manual form. Edit/undo; description, date, amount; splits: Even, Exact, or Exclude. Confirmation dialog validates amount, description, and split total; grey Confirm + red message when invalid; heavy haptic on invalid confirm tap, light on success. Gibberish in Magic Bar falls back to first number as amount and "Expense" when needed. |
 | **Summary card** | Group detail shows a “Decision Clarity” card: cycle total, spent by you, your status (credit/debt). Empty cycle shows “Zero-Waste Cycle” and a prompt to use the Magic Bar. |
 | **Profile** | From Groups header: tap avatar to open Profile. Set display name (same name used for Magic Bar fuzzy matching), upload avatar (Firebase Storage), and save UPI ID for payments. |
 | **Balances** | Per-group “who owes whom” from the settlement engine; shown when the cycle has expenses. |
-| **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Optional “Pay via UPI” flow. |
+| **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Both require a confirmation dialog (Justice Guard). Optional “Pay via UPI” flow. |
 | **Auth & data** | Firebase Phone Auth (OTP). Cloud Firestore for users, groups, expenses, and settled cycles. |
 
 ---
@@ -63,6 +63,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 3. **Firebase**
    - Run `dart run flutterfire configure`.
    - Enable **Phone** in Authentication → Sign-in method.
+   - **Storage**: In Console → Build → Storage → Get started (required for profile avatar uploads). If you see "Upload failed" or 404 when setting a profile photo, enable Storage and set rules (e.g. allow authenticated users to read/write `users/{userId}/**`).
    - Use Test Mode or configure Firestore rules as needed.
 
 ### Run

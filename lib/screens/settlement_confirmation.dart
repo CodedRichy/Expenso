@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/route_args.dart';
 
 class SettlementConfirmation extends StatelessWidget {
   final String method; // 'system' or 'upi'
@@ -12,7 +13,11 @@ class SettlementConfirmation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final group = ModalRoute.of(context)!.settings.arguments as Group;
+    final group = RouteArgs.getGroup(context);
+    if (group == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -75,7 +80,7 @@ class SettlementConfirmation extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Settlement amount',
+                        'Cycle total',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 17,

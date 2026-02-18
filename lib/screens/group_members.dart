@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/route_args.dart';
 import '../widgets/member_avatar.dart';
 
 class GroupMembers extends StatelessWidget {
@@ -8,7 +9,11 @@ class GroupMembers extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final group = ModalRoute.of(context)!.settings.arguments as Group;
+    final group = RouteArgs.getGroup(context);
+    if (group == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
     final repo = CycleRepository.instance;
 
     return ListenableBuilder(
@@ -122,7 +127,7 @@ class GroupMembers extends StatelessWidget {
                                       children: [
                                         MemberAvatar(
                                           displayName: repo.getMemberDisplayName(member.phone),
-                                          photoURL: member.photoURL,
+                                          photoURL: repo.getMemberPhotoURL(member.id),
                                           size: 44,
                                         ),
                                         const SizedBox(width: 14),

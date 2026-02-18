@@ -3,8 +3,6 @@
 **Source:** Expenso App Idea — Reducing Shared Money Awkwardness (Form Responses).  
 **When:** Jan 26–28, 2026. Real responses (~40).
 
-**Proof / raw data:** [Expenso_Survey_Form_Responses_Jan2026.pdf](Expenso_Survey_Form_Responses_Jan2026.pdf) — exported form responses (this doc is a summary).
-
 Question asked: *“If this app existed today, what is the one feature you would most want in it?”*
 
 Below are the requested features, grouped by theme for product/backlog reference.

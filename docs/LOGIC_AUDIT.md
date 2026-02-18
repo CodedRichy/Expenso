@@ -35,6 +35,32 @@ Summary of logical errors and edge cases found across the project. Items marked 
 
 ---
 
+## Firestore: "This document does not exist"
+
+**What you see:** In the Firestore console, a document under `groups` (e.g. `g_1771258278101`) shows **"This document does not exist, it will not appear in queries or snapshots"** but may still list subcollections (e.g. `settled_cycles`).
+
+**Why it happens:** In Firestore, a document "exists" only if it has at least one field. You can have a *path* because of subcollections (e.g. `groups/g_xxx/settled_cycles`) while the parent document itself has no fields. That usually means either:
+
+1. The group document was **deleted** before the full-delete fix (e.g. via the app’s "Delete group" when the app only removed the document and left subcollections). Those orphaned paths can still appear in the console. *Now*, deleting a group from the app removes the group and all its data (see "Fixed: Delete group leaves subcollections").
+2. Something wrote only to a subcollection and never created the group document (e.g. a script or an old flow). The app’s `createGroup` does a full `set()` with fields, so new groups created in the app should not end up in this state.
+
+**Impact:** The app’s `groupsStream(uid)` query uses `where('members', arrayContains: uid)`. It only returns documents that **exist**. So a group with no document will not appear in the app; you only see it in the console when opening that path.
+
+**What to do:**
+
+- **Clean up:** In the console, open the non-existent document’s subcollections and delete them if you don’t need the data (e.g. delete `settled_cycles` and any `expenses` under the group). That removes the orphaned path. You cannot "delete" the document itself because it doesn’t exist.
+- **Recover:** If you want the group to appear again, use **"+ Add field"** on that document and add the required fields (`groupName`, `members`, `creatorId`, `activeCycleId`, `cycleStatus`) so the document exists and matches what the app expects. Prefer fixing data in the app (e.g. re-create the group) if you’re unsure of correct values.
+
+---
+
+## Fixed: Delete group leaves subcollections (firestore_service.dart)
+
+**Issue:** `deleteGroup(groupId)` only deleted the group document. Subcollections `expenses` and `settled_cycles` (and nested `settled_cycles/{id}/expenses`) remained, so the group path still appeared in the Firestore console and "This document does not exist" could show for the parent path.
+
+**Fix:** `deleteGroup` now removes all group data: (1) all documents in `groups/{groupId}/expenses`, (2) for each settled cycle, all documents in `groups/{groupId}/settled_cycles/{cycleId}/expenses` then the cycle document, (3) the group document. Deletion uses batched deletes (500 per batch) to stay within Firestore limits. The group and its path are fully removed from the database.
+
+---
+
 ## Settlement confirmation: "Settlement amount" label (settlement_confirmation.dart)
 
 **Issue:** The screen shows `group.amount` (cycle total) with the label "Settlement amount". That's the **total** cycle amount, not the amount the current user owes or is owed.

@@ -18,6 +18,32 @@ class CycleRepository extends ChangeNotifier {
     return '${months[d.month - 1]} ${d.day}';
   }
 
+  static int _dateStringToSortKey(String date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    switch (date) {
+      case 'Today':
+        return today.millisecondsSinceEpoch;
+      case 'Yesterday':
+        return today.subtract(const Duration(days: 1)).millisecondsSinceEpoch;
+      default:
+        final parsed = DateTime.tryParse(date);
+        if (parsed != null) return parsed.millisecondsSinceEpoch;
+        final match = RegExp(r'(\w+)\s+(\d+)').firstMatch(date);
+        if (match != null) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          final monthName = match.group(1)!;
+          final day = int.tryParse(match.group(2)!);
+          final month = months.indexOf(monthName) + 1;
+          if (month >= 1 && month <= 12 && day != null && day >= 1 && day <= 31) {
+            final d = DateTime(now.year, month, day);
+            return d.millisecondsSinceEpoch;
+          }
+        }
+        return today.millisecondsSinceEpoch;
+    }
+  }
+
   static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
 
   /// Current user id; used as creator id when creating a group. From Firebase Auth UID only (no mock).
@@ -47,14 +73,18 @@ class CycleRepository extends ChangeNotifier {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
     if (authUserId != null && authUserId.isNotEmpty) _currentUserId = authUserId;
-    if (_currentUserId.isNotEmpty) _writeCurrentUserProfile();
+    if (_currentUserId.isNotEmpty) {
+      _writeCurrentUserProfile().catchError((e, st) {
+        debugPrint('CycleRepository.setGlobalProfile write failed: $e');
+        if (kDebugMode) debugPrint(st.toString());
+      });
+    }
     notifyListeners();
   }
 
-  /// Syncs identity from Firebase user (uid, phone, displayName). Call when auth state becomes non-null.
-  /// Writes user profile to Firestore (users/{uid}) and starts listening to groups + expenses.
-  /// Loads photoURL and upiId from Firestore for the current user.
-  void setAuthFromFirebaseUser(String uid, String? phone, String? displayName) {
+  /// Sets in-memory identity from Firebase user. Call during build; does not notify.
+  /// Use _continueAuthFromFirebaseUser() after the frame for Firestore write/listen.
+  void setAuthFromFirebaseUserSync(String uid, String? phone, String? displayName) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
     if (displayName != null && displayName.isNotEmpty) _currentUserName = displayName.trim();
@@ -62,12 +92,24 @@ class CycleRepository extends ChangeNotifier {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
     };
+  }
+
+  /// Runs Firestore write, profile load, and listeners. Call after build (e.g. addPostFrameCallback).
+  void continueAuthFromFirebaseUser() {
+    if (_currentUserId.isEmpty) return;
+    _writeCurrentUserProfile().catchError((e, st) {
+      debugPrint('CycleRepository.continueAuthFromFirebaseUser write failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
+    });
+    _loadCurrentUserProfileFromFirestore();
+    _startListening();
     notifyListeners();
-    if (_currentUserId.isNotEmpty) {
-      _writeCurrentUserProfile();
-      _loadCurrentUserProfileFromFirestore();
-      _startListening();
-    }
+  }
+
+  /// Refreshes current user profile (photoURL, upiId) from Firestore. Call when opening Profile so avatar persists after app restart.
+  Future<void> refreshCurrentUserProfile() async {
+    if (_currentUserId.isEmpty) return;
+    await _loadCurrentUserProfileFromFirestore();
   }
 
   Future<void> _loadCurrentUserProfileFromFirestore() async {
@@ -87,28 +129,33 @@ class CycleRepository extends ChangeNotifier {
   }
 
   Future<void> _writeCurrentUserProfile() async {
-    try {
-      final cache = _userCache[_currentUserId];
-      await FirestoreService.instance.setUser(
-        _currentUserId,
-        displayName: _currentUserName,
-        phoneNumber: _currentUserPhone,
-        photoURL: cache?['photoURL'] as String?,
-        upiId: cache?['upiId'] as String?,
-      );
-    } catch (e, st) {
-      debugPrint('CycleRepository._writeCurrentUserProfile failed: $e');
-      if (kDebugMode) debugPrint(st.toString());
-    }
+    final cache = _userCache[_currentUserId];
+    await FirestoreService.instance.setUser(
+      _currentUserId,
+      displayName: _currentUserName,
+      phoneNumber: _currentUserPhone,
+      photoURL: cache?['photoURL'] as String?,
+      upiId: cache?['upiId'] as String?,
+    );
   }
 
   /// Updates current user photo URL (e.g. after upload). Persists to Firestore.
+  /// Throws if the Firestore write fails so the UI can show an error.
   Future<void> updateCurrentUserPhotoURL(String? photoURL) async {
     if (_currentUserId.isEmpty) return;
     _userCache[_currentUserId] ??= <String, dynamic>{};
+    final previous = _userCache[_currentUserId]!['photoURL'];
     _userCache[_currentUserId]!['photoURL'] = photoURL;
-    await _writeCurrentUserProfile();
-    notifyListeners();
+    try {
+      await _writeCurrentUserProfile();
+      notifyListeners();
+    } catch (e, st) {
+      _userCache[_currentUserId]!['photoURL'] = previous;
+      notifyListeners();
+      debugPrint('CycleRepository.updateCurrentUserPhotoURL write failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
+      rethrow;
+    }
   }
 
   /// Updates current user UPI ID. Persists to Firestore.
@@ -360,7 +407,10 @@ class CycleRepository extends ChangeNotifier {
     if (_currentUserId.isEmpty) return;
     final groupId = group.id;
     FirestoreService.instance.createGroup(groupId, groupName: group.name, creatorId: _currentUserId);
-    _writeCurrentUserProfile();
+    _writeCurrentUserProfile().catchError((e, st) {
+      debugPrint('CycleRepository.addGroup write failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
+    });
   }
 
   Group? getGroup(String id) {
@@ -548,6 +598,7 @@ class CycleRepository extends ChangeNotifier {
       'splits': splits.map((k, v) => MapEntry(k, v)),
       'description': expense.description,
       'date': expense.date,
+      'dateSortKey': _dateStringToSortKey(expense.date),
       if (expense.category.isNotEmpty) 'category': expense.category,
     };
     FirestoreService.instance.addExpense(groupId, data);
@@ -623,6 +674,7 @@ class CycleRepository extends ChangeNotifier {
       'splits': splits.map((k, v) => MapEntry(k, v)),
       'description': description,
       'date': date,
+      'dateSortKey': _dateStringToSortKey(date),
       if (category.isNotEmpty) 'category': category,
     };
     FirestoreService.instance.addExpense(groupId, data);
@@ -681,6 +733,7 @@ class CycleRepository extends ChangeNotifier {
       'amount': updatedExpense.amount,
       'description': updatedExpense.description,
       'date': updatedExpense.date,
+      'dateSortKey': _dateStringToSortKey(updatedExpense.date),
       'payerId': payerId,
       'splitType': splitType,
       'splits': splits.map((k, v) => MapEntry(k, v)),

@@ -90,9 +90,38 @@ class FirestoreService {
     return _firestore.doc(FirestorePaths.groupDoc(groupId)).get();
   }
 
-  /// Delete a group document. Only the creator should call this. Subcollections (expenses, settled_cycles) are not deleted.
+  static const int _deleteBatchSize = 500;
+
+  /// Deletes all documents in [ref] in batches (Firestore batch limit 500).
+  Future<void> _deleteCollection(CollectionReference<Map<String, dynamic>> ref) async {
+    Query<Map<String, dynamic>> query = ref.limit(_deleteBatchSize);
+    while (true) {
+      final snap = await query.get();
+      if (snap.docs.isEmpty) break;
+      final batch = _firestore.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      if (snap.docs.length < _deleteBatchSize) break;
+    }
+  }
+
+  /// Deletes the group and all its data: current expenses, all settled cycles and their expenses, then the group document.
+  /// Only the creator should call this.
   Future<void> deleteGroup(String groupId) async {
-    await _firestore.doc(FirestorePaths.groupDoc(groupId)).delete();
+    final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
+    await _deleteCollection(_firestore.collection(FirestorePaths.groupExpenses(groupId)));
+    final settledSnap = await _firestore
+        .doc(FirestorePaths.groupDoc(groupId))
+        .collection(FirestorePaths.settledCycles)
+        .get();
+    for (final cycleDoc in settledSnap.docs) {
+      await _deleteCollection(_firestore.collection(
+          FirestorePaths.groupSettledCycleExpenses(groupId, cycleDoc.id)));
+      await cycleDoc.reference.delete();
+    }
+    await groupRef.delete();
   }
 
   /// Update group fields (e.g. cycleStatus, activeCycleId).
@@ -178,7 +207,7 @@ class FirestoreService {
         .delete();
   }
 
-  /// Stream of current-cycle expenses for a group. Sorted by date in memory to avoid index.
+  /// Stream of current-cycle expenses for a group. Sorted by dateSortKey (then date string) in memory.
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> expensesStream(String groupId) {
     return _firestore
         .collection(FirestorePaths.groupExpenses(groupId))
@@ -186,6 +215,11 @@ class FirestoreService {
         .map((s) {
           final docs = s.docs;
           docs.sort((a, b) {
+            final ka = a.data()['dateSortKey'] as int?;
+            final kb = b.data()['dateSortKey'] as int?;
+            if (ka != null && kb != null) return ka.compareTo(kb);
+            if (ka != null) return -1;
+            if (kb != null) return 1;
             final da = a.data()['date'] as String? ?? '';
             final db = b.data()['date'] as String? ?? '';
             return da.compareTo(db);
@@ -237,6 +271,11 @@ class FirestoreService {
         .get();
     final docs = snap.docs;
     docs.sort((a, b) {
+      final ka = a.data()['dateSortKey'] as int?;
+      final kb = b.data()['dateSortKey'] as int?;
+      if (ka != null && kb != null) return ka.compareTo(kb);
+      if (ka != null) return -1;
+      if (kb != null) return 1;
       final da = a.data()['date'] as String? ?? '';
       final db = b.data()['date'] as String? ?? '';
       return da.compareTo(db);

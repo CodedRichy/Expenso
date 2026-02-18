@@ -115,6 +115,26 @@ class GroupDetail extends StatelessWidget {
                   onPressed: () async {
                     if (isPassive) {
                       if (repo.isCurrentUserCreator(groupId)) {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Start new cycle?'),
+                            content: const Text(
+                              'This will archive current expenses and start a fresh cycle.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Confirm'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true || !context.mounted) return;
                         try {
                           await repo.archiveAndRestart(groupId);
                           if (context.mounted) {
@@ -179,6 +199,17 @@ class GroupDetail extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: TextButton(
                   onPressed: () {
+                    final upiId = repo.currentUserUpiId?.trim();
+                    if (upiId == null || upiId.isEmpty) {
+                      Navigator.pushNamed(context, '/profile');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Set your UPI ID to enable easy payments.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.pushNamed(
                       context,
                       '/settlement-confirmation',
@@ -462,6 +493,7 @@ class GroupDetail extends StatelessWidget {
 }
 
 String _fmtRupee(double value) {
+  if (value.isNaN || value.isInfinite) return '0';
   return value.toStringAsFixed(0).replaceAllMapped(
     RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
     (Match m) => '${m[1]},',
@@ -497,8 +529,10 @@ class _DecisionClarityCard extends StatelessWidget {
     final spentByYou = expenses
         .where((e) => e.paidByPhone == myPhone)
         .fold<double>(0.0, (s, e) => s + e.amount);
-    final myNet = netBalances[myPhone] ?? 0.0;
+    double myNet = netBalances[myPhone] ?? 0.0;
+    if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final isCredit = myNet >= 0;
+    final isNetClear = (netBalances[myPhone] ?? 0.0).isNaN || (netBalances[myPhone] ?? 0.0).isInfinite;
 
     return Container(
       constraints: const BoxConstraints(minHeight: _minHeight),
@@ -538,6 +572,7 @@ class _DecisionClarityCard extends StatelessWidget {
                       spentByYou: spentByYou,
                       myNet: myNet,
                       isCredit: isCredit,
+                      isNetClear: isNetClear,
                     ),
                   ),
           ),
@@ -580,6 +615,7 @@ class _DecisionClarityCard extends StatelessWidget {
     required double spentByYou,
     required double myNet,
     required bool isCredit,
+    bool isNetClear = false,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -638,11 +674,11 @@ class _DecisionClarityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${myNet >= 0 ? '+' : ''}₹${_fmtRupee(myNet.abs())}',
+                    isNetClear ? 'Balance Clear' : '${myNet >= 0 ? '+' : ''}₹${_fmtRupee(myNet.abs())}',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: isCredit ? Colors.greenAccent : Colors.redAccent,
+                      color: isNetClear ? Colors.white70 : (isCredit ? Colors.greenAccent : Colors.redAccent),
                     ),
                   ),
                 ],
@@ -792,11 +828,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Couldn\'t parse that. Try a clearer format like "Dinner 500".',
-          ),
+        SnackBar(
+          content: Text(e is Exception ? e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '') : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1063,9 +1098,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
 class _ParticipantSlot {
   final String name;
-  final double amount;
+  double amount;
   String? phone;
-  final bool isGuessed; // fuzzy match — show in confirmation for verification
+  final bool isGuessed;
   _ParticipantSlot({required this.name, required this.amount, this.phone, this.isGuessed = false});
 }
 
@@ -1098,15 +1133,48 @@ class _ExpenseConfirmDialog extends StatefulWidget {
 
 class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   late List<_ParticipantSlot> slots;
+  List<TextEditingController>? _amountControllers;
+
+  static String _formatAmountForEdit(double v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
 
   @override
   void initState() {
     super.initState();
     slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, phone: s.phone, isGuessed: s.isGuessed)).toList();
+    if (widget.splitTypeCap == 'Exact') {
+      _amountControllers = List.generate(slots.length, (i) => TextEditingController(text: _formatAmountForEdit(slots[i].amount)));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _amountControllers ?? <TextEditingController>[]) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   bool get _allResolved => slots.every((s) => s.phone != null && s.phone!.isNotEmpty);
-  bool get _canConfirm => widget.exactValid && _allResolved;
+
+  double get _totalSplit => slots.fold<double>(0.0, (sum, slot) => sum + slot.amount);
+
+  static const double _splitTolerance = 0.01;
+
+  bool get _isReadyToConfirm {
+    final amount = widget.result.amount;
+    final description = widget.result.description.trim();
+    final splitMatches = (_totalSplit - amount).abs() < _splitTolerance;
+    return amount > 0 && description.isNotEmpty && splitMatches && _allResolved;
+  }
+
+  String? get _notReadyReason {
+    if (widget.result.amount <= 0) return 'Amount must be greater than 0.';
+    if (widget.result.description.trim().isEmpty) return 'Description is required.';
+    if ((_totalSplit - widget.result.amount).abs() >= _splitTolerance) return 'Split doesn\'t match total.';
+    if (!_allResolved) return 'Select a member for each slot.';
+    return null;
+  }
 
   void _pickMember(int slotIndex) {
     final repo = widget.repo;
@@ -1140,7 +1208,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   }
 
   void _onConfirm() {
-    if (!_canConfirm) return;
+    if (!_isReadyToConfirm) {
+      HapticFeedback.heavyImpact();
+      return;
+    }
     HapticFeedback.lightImpact();
     final repo = widget.repo;
     final groupId = widget.groupId;
@@ -1180,6 +1251,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       );
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
     } on ArgumentError catch (e) {
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message ?? 'Invalid expense.'),
@@ -1225,6 +1297,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
             ),
             Text('Split: ${widget.splitTypeCap}', style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
+            if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
+              const SizedBox(height: 4),
+              Text(
+                'Total: ₹${widget.result.amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                style: TextStyle(fontSize: 13, color: const Color(0xFF6B6B6B)),
+              ),
+            ],
             if (!widget.exactValid) ...[
               const SizedBox(height: 8),
               Container(
@@ -1245,13 +1324,14 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               runSpacing: 6,
               children: List.generate(slots.length, (i) {
                 final slot = slots[i];
+                final isPlaceholder = slot.phone == null || slot.phone!.isEmpty;
+                final isGuessed = slot.isGuessed && !isPlaceholder;
+                final isExactEditable = widget.splitTypeCap == 'Exact' && _amountControllers != null && i < _amountControllers!.length;
                 final label = slot.phone != null && slot.phone!.isNotEmpty
                     ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
                     : 'Select Member  ₹${slot.amount.toStringAsFixed(0)}';
-                final isPlaceholder = slot.phone == null || slot.phone!.isEmpty;
-                final isGuessed = slot.isGuessed && !isPlaceholder;
                 return GestureDetector(
-                  onTap: isPlaceholder ? () => _pickMember(i) : null,
+                  onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -1270,22 +1350,63 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isPlaceholder
-                                ? const Color(0xFF5B7C99)
-                                : isGuessed
-                                    ? const Color(0xFFE65100)
-                                    : const Color(0xFF1A1A1A),
-                            fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                        if (isExactEditable) ...[
+                          GestureDetector(
+                            onTap: isPlaceholder ? () => _pickMember(i) : null,
+                            child: Text(
+                              slot.phone != null && slot.phone!.isNotEmpty
+                                  ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}'
+                                  : 'Select Member',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isPlaceholder ? const Color(0xFF5B7C99) : (isGuessed ? const Color(0xFFE65100) : const Color(0xFF1A1A1A)),
+                                fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                              ),
+                            ),
                           ),
-                        ),
-                        if (isPlaceholder) const SizedBox(width: 4),
-                        if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
-                        if (isGuessed) const SizedBox(width: 2),
-                        if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            width: 64,
+                            child: TextField(
+                              controller: _amountControllers![i],
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              onChanged: (v) {
+                                final n = double.tryParse(v);
+                                slots[i].amount = n ?? 0;
+                                setState(() {});
+                              },
+                              decoration: InputDecoration(
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                hintText: '₹',
+                                border: const OutlineInputBorder(),
+                                errorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC62828))),
+                              ),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          if (isPlaceholder) const SizedBox(width: 4),
+                          if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                          if (isGuessed) const SizedBox(width: 2),
+                          if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                        ] else ...[
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isPlaceholder
+                                  ? const Color(0xFF5B7C99)
+                                  : isGuessed
+                                      ? const Color(0xFFE65100)
+                                      : const Color(0xFF1A1A1A),
+                              fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                            ),
+                          ),
+                          if (isPlaceholder) const SizedBox(width: 4),
+                          if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                          if (isGuessed) const SizedBox(width: 2),
+                          if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                        ],
                       ],
                     ),
                   ),
@@ -1299,6 +1420,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 style: TextStyle(fontSize: 12, color: const Color(0xFF9B9B9B), fontStyle: FontStyle.italic),
               ),
             ],
+            if (_notReadyReason != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _notReadyReason!,
+                style: const TextStyle(fontSize: 13, color: Color(0xFFC62828)),
+              ),
+            ],
           ],
         ),
       ),
@@ -1308,13 +1436,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
           child: Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF5B7C99))),
         ),
         TextButton(
-          onPressed: _canConfirm ? _onConfirm : null,
+          onPressed: _onConfirm,
           child: Text(
             'Confirm',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: _canConfirm ? const Color(0xFF1A1A1A) : const Color(0xFFB0B0B0),
+              color: _isReadyToConfirm ? const Color(0xFF1A1A1A) : const Color(0xFFB0B0B0),
             ),
           ),
         ),

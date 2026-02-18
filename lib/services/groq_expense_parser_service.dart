@@ -415,9 +415,11 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
   /// Fallback: extract first number from input and return minimal ParsedExpenseResult if valid.
   static ParsedExpenseResult? _fallbackParse(String userInput) {
     final amount = _extractAmountFromText(userInput);
-    if (amount == null || amount <= 0) return null;
+    if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite) return null;
     final trimmed = userInput.trim();
-    final description = trimmed.isEmpty ? 'Expense' : (trimmed.length > 80 ? '${trimmed.substring(0, 80)}…' : trimmed);
+    final description = trimmed.isEmpty
+        ? 'Expense'
+        : (trimmed.length > 80 ? '${trimmed.substring(0, 80)}…' : trimmed);
     return ParsedExpenseResult(
       amount: amount,
       description: description,
@@ -427,9 +429,9 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
     );
   }
 
-  /// Extracts the first numeric amount from text (handles "500", "1,200", "₹500").
+  /// Extracts the first numeric amount from text (handles "500", "1,200", "99.50", "₹500", gibberish with digits).
   static double? _extractAmountFromText(String text) {
-    final match = RegExp(r'[\d,]+').firstMatch(text);
+    final match = RegExp(r'[\d,]+\.?\d*').firstMatch(text);
     if (match == null) return null;
     final cleaned = match.group(0)!.replaceAll(',', '');
     return double.tryParse(cleaned);

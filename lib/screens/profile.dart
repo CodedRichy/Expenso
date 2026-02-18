@@ -34,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _upiController.text = repo.currentUserUpiId ?? '';
     _nameController.addListener(() => setState(() => _nameDirty = true));
     _upiController.addListener(() => setState(() => _upiDirty = true));
+    repo.refreshCurrentUserProfile();
   }
 
   @override
@@ -54,10 +55,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final file = File(xFile.path);
       final url = await ProfileService.instance.uploadAvatar(repo.currentUserId, file);
       if (url != null && mounted) {
-        await repo.updateCurrentUserPhotoURL(url);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo updated'), behavior: SnackBarBehavior.floating),
+        );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload failed'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Upload failed. Enable Firebase Storage in Console (Build → Storage) for profile photos.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     } finally {
