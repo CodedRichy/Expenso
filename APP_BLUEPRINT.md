@@ -87,7 +87,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/settlement-confirmation` | SettlementConfirmation | Confirm settlement; "Close Cycle" only for creator. |
+| `/settlement-confirmation` | SettlementConfirmation | Confirm settlement; label "Cycle total"; "Close Cycle" only for creator. |
 | `/payment-result` | PaymentResult | After payment. |
 | `/cycle-settled` | CycleSettled | Cycle settled. |
 | `/cycle-history` | CycleHistory | Past cycles. |
@@ -116,7 +116,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 - **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`, `upiId`.
 - **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
-- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`, optional `category`.
+- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`, `dateSortKey` (milliseconds since epoch for chronological sort), optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
 
 **Archive logic:** Settle (Phase 1) sets `cycleStatus` to `settling`. Archive (Phase 2, creator-only) copies current-cycle expenses into `settled_cycles/{cycleId}/expenses`, deletes from current `expenses`, then sets new `activeCycleId` and `cycleStatus: 'active'`.
@@ -275,7 +275,8 @@ lib/
     profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
-    settlement_engine.dart    # Debt, computeDebts, computeNetBalances
+    route_args.dart          # RouteArgs.getGroup, getMap — safe route arguments (avoids crash on missing/wrong type)
+    settlement_engine.dart   # Debt, computeDebts, computeNetBalances
   widgets/
     member_avatar.dart        # Letter avatar or CachedNetworkImage from photoURL (Deep Navy/Slate)
   screens/

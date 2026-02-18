@@ -76,20 +76,30 @@ class _EditExpenseState extends State<EditExpense> {
     final amountStr = amountController.text.trim();
     if (desc.isEmpty || amountStr.isEmpty) return;
 
-    final amount = double.tryParse(amountStr) ?? 0.0;
     final repo = CycleRepository.instance;
     final existing = repo.getExpense(groupId, expenseId);
+    if (existing == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Expense not found. It may have been deleted.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+      return;
+    }
 
+    final amount = double.tryParse(amountStr) ?? 0.0;
     try {
       final updatedExpense = Expense(
         id: expenseId,
         description: desc,
         amount: amount,
-        date: existing?.date ?? 'Today',
-        participantPhones: existing?.participantPhones ?? [],
-        paidByPhone: existing?.paidByPhone ?? CycleRepository.instance.currentUserPhone,
-        splitAmountsByPhone: existing?.splitAmountsByPhone,
-        category: existing?.category ?? '',
+        date: existing.date,
+        participantPhones: existing.participantPhones,
+        paidByPhone: existing.paidByPhone,
+        splitAmountsByPhone: existing.splitAmountsByPhone,
+        category: existing.category,
       );
       repo.updateExpense(groupId, updatedExpense);
       Navigator.pop(context);

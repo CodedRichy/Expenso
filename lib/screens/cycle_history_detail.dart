@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import '../models/cycle.dart';
+import '../utils/route_args.dart';
 
 class CycleHistoryDetail extends StatelessWidget {
   const CycleHistoryDetail({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    final cycle = args['cycle'] as Cycle;
-    final groupName = args['groupName'] as String;
+    final args = RouteArgs.getMap(context);
+    if (args == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final cycleData = args['cycle'];
+    final groupName = args['groupName'] as String?;
+    if (cycleData is! Cycle || groupName == null || groupName.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final cycle = cycleData as Cycle;
     final startDate = cycle.startDate ?? '–';
     final endDate = cycle.endDate ?? '–';
     final cycleDate = '$startDate – $endDate';

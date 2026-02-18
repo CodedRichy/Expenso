@@ -61,33 +61,27 @@ Summary of logical errors and edge cases found across the project. Items marked 
 
 ---
 
-## Settlement confirmation: "Settlement amount" label (settlement_confirmation.dart)
+## Fixed: Settlement confirmation label (settlement_confirmation.dart)
 
-**Issue:** The screen shows `group.amount` (cycle total) with the label "Settlement amount". That's the **total** cycle amount, not the amount the current user owes or is owed.
+**Issue:** The screen showed `group.amount` (cycle total) with the label "Settlement amount". That's the **total** cycle amount, not the amount the current user owes or is owed.
 
-**Impact:** Possible user confusion ("Is this what I pay?"). Not a logic bug, but a UX/copy clarity issue.
-
-**Suggestion:** If the screen is meant to show "total cycle amount being closed", consider wording like "Cycle total" or "Total being settled". If you want "amount you owe", compute and show the user's share from balances.
+**Fix:** Label changed to "Cycle total" so it's clear this is the total being closed.
 
 ---
 
-## Route arguments contract
+## Fixed: Route arguments contract
 
-**Issue:** Several screens use `ModalRoute.of(context)!.settings.arguments as Group` (or similar) without checking for null or wrong type. If a route is ever opened without arguments or with the wrong type, this will throw.
+**Issue:** Several screens used `ModalRoute.of(context)!.settings.arguments as Group` (or similar) without checking for null or wrong type. If a route was opened without arguments or with the wrong type, the app would throw.
 
-**Impact:** Crash if navigation is triggered incorrectly (e.g. from a deep link or a mistaken `pushNamed` without arguments).
-
-**Suggestion:** Use safe casts and null checks, or a small helper that returns a nullable `Group` / shows an error and pops if missing.
+**Fix:** Added `lib/utils/route_args.dart` with `RouteArgs.getGroup(context)` and `RouteArgs.getMap(context)` for safe casts. Screens that require a `Group` or map (group_members, settlement_confirmation, payment_result, cycle_settled, cycle_history_detail, expense_input) use these helpers and pop if arguments are missing or wrong type.
 
 ---
 
-## Edit expense when expense no longer exists (edit_expense.dart)
+## Fixed: Edit expense when expense no longer exists (edit_expense.dart)
 
-**Issue:** If the user opens Edit Expense and the expense is deleted (e.g. by another device or a previous action), `existing` can be null when loading. On save, we still call `repo.updateExpense(groupId, updatedExpense)` using `existing?.date ?? 'Today'`, etc. The Firestore update may fail (document not found).
+**Issue:** If the user opened Edit Expense and the expense was deleted (e.g. by another device or a previous action), `existing` could be null on save. The code still called `repo.updateExpense` with `existing?.date ?? 'Today'`, etc., and the Firestore update could fail.
 
-**Impact:** User might see a generic error. Not a logic bug in the sense of wrong data, but the screen could validate that `existing != null` before enabling save or show "Expense not found" and pop.
-
-**Suggestion:** Before calling `updateExpense`, check `existing != null` and handle the "expense deleted" case (e.g. show message and pop).
+**Fix:** Before calling `updateExpense`, the screen now checks `existing != null`. If the expense was deleted, it shows a SnackBar "Expense not found. It may have been deleted." and pops.
 
 ---
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../utils/route_args.dart';
 
 class PaymentResult extends StatelessWidget {
   final String status; // 'success', 'failed', 'cancelled'
@@ -15,7 +16,11 @@ class PaymentResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final group = ModalRoute.of(context)!.settings.arguments as Group;
+    final group = RouteArgs.getGroup(context);
+    if (group == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
