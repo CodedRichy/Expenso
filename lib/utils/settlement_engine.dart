@@ -20,9 +20,14 @@ class SettlementEngine {
 
   static const double _tolerance = 0.01;
 
-  /// Given [expenses] and [members], returns a list of [Debt] (fromPhone, toPhone, amount).
+  /// Returns net balance per phone: positive = owed to them (credit), negative = they owe (debt).
   /// Only includes members that appear in [members] (by phone).
-  static List<Debt> computeDebts(List<Expense> expenses, List<Member> members) {
+  static Map<String, double> computeNetBalances(List<Expense> expenses, List<Member> members) {
+    final net = _buildNetBalances(expenses, members);
+    return Map.unmodifiable(Map.from(net));
+  }
+
+  static Map<String, double> _buildNetBalances(List<Expense> expenses, List<Member> members) {
     final phones = members.map((m) => m.phone).toSet();
     final Map<String, double> net = {};
     for (final phone in phones) {
@@ -53,6 +58,14 @@ class SettlementEngine {
         }
       }
     }
+    return net;
+  }
+
+  /// Given [expenses] and [members], returns a list of [Debt] (fromPhone, toPhone, amount).
+  /// Only includes members that appear in [members] (by phone).
+  static List<Debt> computeDebts(List<Expense> expenses, List<Member> members) {
+    final net = _buildNetBalances(expenses, members);
+    final phones = members.map((m) => m.phone).toSet();
 
     final debtors = net.entries
         .where((e) => e.value < -_tolerance)

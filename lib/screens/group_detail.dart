@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
@@ -30,7 +32,7 @@ class GroupDetail extends StatelessWidget {
       listenable: repo,
       builder: (context, _) {
         final defaultGroup = repo.getGroup(groupId) ?? resolvedGroup;
-        // Single lookup at start of builder; getActiveCycle may create a cycle if none exists.
+        // getActiveCycle may create a cycle if none exists; single lookup here.
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
         final pendingAmount = expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
@@ -45,197 +47,140 @@ class GroupDetail extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Main content (scrollable area + fills space so Smart Bar stays at bottom)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(8, 40, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: const Color(0xFF1A1A1A),
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/group-members',
-                            arguments: defaultGroup,
-                          );
-                        },
-                        icon: const Icon(Icons.people_outline, size: 24),
-                        color: const Color(0xFF1A1A1A),
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerRight,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.chevron_left, size: 24),
+                    color: const Color(0xFF1A1A1A),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    defaultGroup.name,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
-                      letterSpacing: -0.5,
+                  Expanded(
+                    child: Text(
+                      defaultGroup.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/group-members',
+                        arguments: defaultGroup,
+                      );
+                    },
+                    icon: const Icon(Icons.people_outline, size: 24),
+                    color: const Color(0xFF1A1A1A),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                 ],
               ),
             ),
-            // Amount Summary
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: const Color(0xFFE5E5E5),
-                    width: 1,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: _DecisionClarityCard(
+                repo: repo,
+                groupId: groupId,
+                expenses: expenses,
+                isSettled: isSettled,
+                isPassive: isPassive,
+              ),
+            ),
+            if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (isPassive) {
+                      if (repo.isCurrentUserCreator(groupId)) {
+                        repo.archiveAndRestart(groupId);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Only the group creator can start a new cycle.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } else {
+                      final isLeader = repo.isCurrentUserCreator(groupId);
+                      if (isLeader) {
+                        _showSettleConfirmDialog(context, repo, groupId);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Request sent to group leader.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 0),
+                  ),
+                  child: Text(
+                    isPassive
+                        ? (repo.isCurrentUserCreator(groupId) ? 'Start New Cycle' : 'Waiting for creator to restart')
+                        : 'Settle now',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
-              child: !isSettled
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '₹${pendingAmount.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                            (Match m) => '${m[1]},',
-                          )}',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: isPassive ? const Color(0xFF9B9B9B) : const Color(0xFF1A1A1A),
-                            letterSpacing: -0.5,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isPassive ? 'Cycle Settled - Pending Restart' : 'pending',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isPassive ? const Color(0xFF9B9B9B) : const Color(0xFF6B6B6B),
-                          ),
-                        ),
-                        if (!isPassive) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            defaultGroup.statusLine,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
-                              fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                        if (repo.getGroupPendingAmount(groupId) > 0 || isPassive) ...[
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {
-                              if (isPassive) {
-                                if (repo.isCurrentUserCreator(groupId)) {
-                                  repo.archiveAndRestart(groupId);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Only the group creator can start a new cycle.'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              } else {
-                                final isLeader = repo.isCurrentUserCreator(groupId);
-                                if (isLeader) {
-                                  _showSettleConfirmDialog(context, repo, groupId);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Request sent to group leader.'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1A1A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                              minimumSize: const Size(double.infinity, 0),
-                            ),
-                            child: Text(
-                              isPassive
-                                  ? (repo.isCurrentUserCreator(groupId) ? 'Start New Cycle' : 'Waiting for creator to restart')
-                                  : 'Settle now',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/settlement-confirmation',
-                                arguments: defaultGroup,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text(
-                              'Pay via UPI',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF5B7C99),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                      ],
-                    )
-                  : Text(
-                      'All balances cleared',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFF6B6B6B),
-                      ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/settlement-confirmation',
+                      arguments: defaultGroup,
+                    );
+                  },
+                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                  child: const Text(
+                    'Pay via UPI',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF5B7C99),
                     ),
-            ),
-            // Balances (who owes whom) — real-time from SettlementEngine
+                  ),
+                ),
+              ),
+            ],
             if (!isSettled && hasExpenses) ...[
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
@@ -283,7 +228,6 @@ class GroupDetail extends StatelessWidget {
                 ),
               ),
             ],
-            // Recent Expenses
             if (hasExpenses)
               Expanded(
                 child: Column(
@@ -340,7 +284,6 @@ class GroupDetail extends StatelessWidget {
                                         Text(
                                             () {
                                             final d = expense.description;
-                                            // No "— with X" when no other participants (empty or only payer in split, e.g. "dinner 2000").
                                             final others = expense.participantPhones
                                                 .where((p) => p != expense.paidByPhone)
                                                 .toList();
@@ -398,7 +341,6 @@ class GroupDetail extends StatelessWidget {
                 ],
               ),
             ),
-            // Smart Bar at bottom (hidden when passive)
             if (!isSettled && !isPassive)
               _SmartBarSection(group: defaultGroup),
           ],
@@ -480,6 +422,189 @@ class GroupDetail extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+String _fmtRupee(double value) {
+  return value.toStringAsFixed(0).replaceAllMapped(
+    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+    (Match m) => '${m[1]},',
+  );
+}
+
+class _DecisionClarityCard extends StatelessWidget {
+  final CycleRepository repo;
+  final String groupId;
+  final List<Expense> expenses;
+  final bool isSettled;
+  final bool isPassive;
+
+  const _DecisionClarityCard({
+    required this.repo,
+    required this.groupId,
+    required this.expenses,
+    required this.isSettled,
+    required this.isPassive,
+  });
+
+  static const double _minHeight = 132.0;
+  static const Color _deepNavy = Color(0xFF1A2332);
+  static const Color _slate = Color(0xFF2D3A4F);
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = expenses.isEmpty;
+    final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
+    final members = repo.getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(expenses, members);
+    final myPhone = repo.currentUserPhone;
+    final spentByYou = expenses
+        .where((e) => e.paidByPhone == myPhone)
+        .fold<double>(0.0, (s, e) => s + e.amount);
+    final myNet = netBalances[myPhone] ?? 0.0;
+    final isCredit = myNet >= 0;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: _minHeight),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1A1A1A).withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_deepNavy, _slate],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          child: isEmpty
+              ? _buildEmptyState(context)
+              : _buildContent(
+                  context,
+                  cycleTotal: cycleTotal,
+                  spentByYou: spentByYou,
+                  myNet: myNet,
+                  isCredit: isCredit,
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Zero-Waste Cycle',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.95),
+            letterSpacing: -0.4,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.35,
+            color: Colors.white.withValues(alpha: 0.75),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context, {
+    required double cycleTotal,
+    required double spentByYou,
+    required double myNet,
+    required bool isCredit,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Cycle Total: ₹${_fmtRupee(cycleTotal)}',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.98),
+            letterSpacing: -0.5,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Spent by You',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '₹${_fmtRupee(spentByYou)}',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Status',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${myNet >= 0 ? '+' : ''}₹${_fmtRupee(myNet.abs())}',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: isCredit ? Colors.greenAccent : Colors.redAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -604,6 +729,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       setState(() => _loading = false);
       _controller.clear();
       setState(() => _sendAllowed = false);
+      HapticFeedback.lightImpact();
       _showConfirmationDialog(repo, result);
     } on GroqRateLimitException catch (_) {
       if (!mounted) return;
@@ -652,7 +778,6 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                     ? 'Shares'
                     : 'Even';
 
-    // Build slots: each has name, amount, and resolved phone (or null → "Select Member")
     final List<_ParticipantSlot> slots = [];
     final bool isExclude = result.splitType == 'exclude';
 
@@ -704,7 +829,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         }
       }
     } else {
-      // When user didn't say "with X": in a 2-person group default to the other member ("Dinner 2000" → "Dinner – with Prasi"); else payer-only.
+      // 2-person group with no "with X": default to the other member; else payer-only.
       List<String> names = result.participantNames;
       if (names.isEmpty && members.length == 2) {
         final others = allPhones.where((p) => p != repo.currentUserPhone).toList();
@@ -860,7 +985,7 @@ class _ParticipantSlot {
   final String name;
   final double amount;
   String? phone;
-  final bool isGuessed; // true when resolved via fuzzy/partial match — highlight in confirmation
+  final bool isGuessed; // fuzzy match — show in confirmation for verification
   _ParticipantSlot({required this.name, required this.amount, this.phone, this.isGuessed = false});
 }
 
@@ -948,7 +1073,6 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       participantPhones = widget.allPhones.where((p) => !excludedSet.contains(p)).toList();
       if (participantPhones.isEmpty) participantPhones = [widget.payerPhone];
     } else if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') {
-      // Percentage and shares are converted to exact amounts for persistence
       exactAmountsByPhone = {for (final s in slots) s.phone!: s.amount};
       participantPhones = exactAmountsByPhone.keys.toList();
     } else {

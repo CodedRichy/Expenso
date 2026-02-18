@@ -155,7 +155,6 @@ class _InviteMembersState extends State<InviteMembers> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -196,7 +195,6 @@ class _InviteMembersState extends State<InviteMembers> {
                 ],
               ),
             ),
-            // Invite Link
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
@@ -253,7 +251,6 @@ class _InviteMembersState extends State<InviteMembers> {
                 ],
               ),
             ),
-            // Add by Phone
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
@@ -490,7 +487,6 @@ class _InviteMembersState extends State<InviteMembers> {
                 ],
               ),
             ),
-            // Members List
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -559,7 +555,6 @@ class _InviteMembersState extends State<InviteMembers> {
                 ),
               ),
             ),
-            // Done Button
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(

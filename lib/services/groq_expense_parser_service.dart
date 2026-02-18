@@ -68,7 +68,6 @@ class ParsedExpenseResult {
                 : split == 'shares'
                     ? 'shares'
                     : 'even';
-    // Accept "participants" or "participant" (some models use singular)
     final parts = json['participants'] ?? json['participant'];
     List<String> names = [];
     if (parts is List) {
@@ -152,11 +151,7 @@ class GroqExpenseParserService {
     return key.trim();
   }
 
-  // --- Expenso Secret Formula ---
-  // This prompt + few-shot examples are the app's core IP: the rules and training data
-  // that turn casual speech into structured expenses (amount, description, splitType,
-  // participants, payer). Treat as proprietary. When improving, preserve the
-  // splitType decision order (exact → percentage → shares → exclude → even) and disambiguation examples.
+  // Prompt + few-shot = core IP; preserve splitType order: exact → percentage → shares → exclude → even.
   static String _buildSystemPrompt(String memberList) {
     return '''
 You are an expense parser. You turn casual user messages into exactly one JSON expense object. Works for any locale and currency. Reply with ONLY that JSON. No other text, no markdown, no explanation.
@@ -374,7 +369,6 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
         throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
       }
 
-      // Partial success: valid amount is enough; ensure description is non-empty for persistence.
       if (result.amount > 0) {
         final desc = result.description.trim();
         if (desc.isEmpty) {
@@ -432,14 +426,12 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
   /// Tries to decode a JSON object from LLM output. Tries strict parse first,
   /// then normalizes smart quotes, then single-quoted style (common with Groq/Llama).
   static Map<String, dynamic>? _tryDecodeJson(String raw) {
-    // 1) Strict parse
     try {
       final value = jsonDecode(raw);
       if (value is Map<String, dynamic>) return value;
     } catch (e) {
       if (kDebugMode) debugPrint('Groq JSON strict decode failed: $e');
     }
-    // 2) Normalize smart/curly quotes to straight
     String normalized = raw
         .replaceAll('\u201c', '"')
         .replaceAll('\u201d', '"')
@@ -449,12 +441,10 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
       final value = jsonDecode(normalized);
       if (value is Map<String, dynamic>) return value;
     } catch (_) {}
-    // 3) LLM often returns single-quoted JSON; try replacing ' with "
     try {
       final value = jsonDecode(normalized.replaceAll("'", '"'));
       if (value is Map<String, dynamic>) return value;
     } catch (_) {}
-    // 4) Some models return unquoted keys (e.g. {amount: 200}); try quoting keys
     try {
       final fixed = normalized.replaceAllMapped(
         RegExp(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:'),
@@ -469,10 +459,8 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
   /// Extracts a JSON object from raw text (handles markdown, leading/trailing text).
   static String _extractJson(String raw) {
     raw = raw.trim();
-    // Strip markdown code block if present
     final codeBlockMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
     if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
-    // Find first { and last }; use that as the JSON object
     final start = raw.indexOf('{');
     final end = raw.lastIndexOf('}');
     if (start != -1 && end != -1 && end > start) {
@@ -483,7 +471,6 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
 
   /// Fixes common JSON issues from LLM output (trailing commas, etc.).
   static String _fixCommonJsonIssues(String raw) {
-    // Remove trailing commas before } or ]
     raw = raw.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
     return raw;
   }

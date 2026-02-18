@@ -38,7 +38,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   ParsedExpense parseExpense(String text) {
-    // Parse amount: allow digits with optional commas (e.g. "1200" or "1,200")
     final amountPart = RegExp(r'[\d,]+').firstMatch(text);
     final amountStr = amountPart?.group(0)?.replaceAll(',', '') ?? '';
     final amount = amountStr.isNotEmpty ? (double.tryParse(amountStr) ?? 0.0) : 0.0;
@@ -313,7 +312,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
                 child: Column(
@@ -344,7 +342,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ],
                 ),
               ),
-              // Confirmation Content
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
@@ -410,7 +407,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ),
                 ),
               ),
-              // Actions
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -480,7 +476,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               child: Column(
@@ -513,7 +508,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 ],
               ),
             ),
-            // Amount Summary
             Container(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               decoration: BoxDecoration(
@@ -551,7 +545,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 ],
               ),
             ),
-            // Input Section
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Column(
@@ -633,7 +626,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 ],
               ),
             ),
-            // Help Text
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Text(
