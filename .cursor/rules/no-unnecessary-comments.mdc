@@ -1,0 +1,10 @@
+---
+description: Keep code clean—no unnecessary comments; codebase neat and crisp
+alwaysApply: true
+---
+
+# Clean, Crisp Code
+
+- **Do not add unnecessary comments.** Prefer self-explanatory names and clear structure. Only add comments when they explain *why* something non-obvious is done, not *what* the code does.
+- **Avoid**: Redundant comments that restate the code, commented-out code, or long block comments for obvious logic.
+- **Keep the codebase neat**: Remove dead code, avoid noise, and write concise, readable code. When editing, leave the file cleaner than you found it.

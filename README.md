@@ -23,6 +23,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 | **Creator** | One creator per group; only creator can Settle, Start New Cycle, and Delete group. |
 | **Expenses** | Add via Smart Bar (natural language, parsed by optional Groq/Llama integration) or manual form. Edit/undo; description, date, amount; splits: Even, Exact, or Exclude. Light haptic on AI parse success and on manual confirm. |
 | **Summary card** | Group detail shows a “Decision Clarity” card: cycle total, spent by you, your status (credit/debt). Empty cycle shows “Zero-Waste Cycle” and a prompt to use the Magic Bar. |
+| **Profile** | From Groups header: tap avatar to open Profile. Set display name (same name used for Magic Bar fuzzy matching), upload avatar (Firebase Storage), and save UPI ID for payments. |
 | **Balances** | Per-group “who owes whom” from the settlement engine; shown when the cycle has expenses. |
 | **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Optional “Pay via UPI” flow. |
 | **Auth & data** | Firebase Phone Auth (OTP). Cloud Firestore for users, groups, expenses, and settled cycles. |

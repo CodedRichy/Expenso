@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/pinned_groups_service.dart';
+import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
 import 'group_list_skeleton.dart';
 
@@ -130,16 +131,30 @@ class _GroupsListState extends State<GroupsList> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
-                            child: Text(
-                              'Groups',
-                              style: TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A1A),
-                                letterSpacing: -0.6,
-                              ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 40, 16, 32),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Groups',
+                                    style: TextStyle(
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1A1A),
+                                      letterSpacing: -0.6,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                                  child: MemberAvatar(
+                                    displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
+                                    photoURL: repo.currentUserPhotoURL,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Expanded(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/member_avatar.dart';
 
 class GroupMembers extends StatelessWidget {
   const GroupMembers({super.key});
@@ -119,6 +120,12 @@ class GroupMembers extends StatelessWidget {
                                     ),
                                     child: Row(
                                       children: [
+                                        MemberAvatar(
+                                          displayName: repo.getMemberDisplayName(member.phone),
+                                          photoURL: member.photoURL,
+                                          size: 44,
+                                        ),
+                                        const SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,

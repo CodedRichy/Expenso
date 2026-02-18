@@ -3,7 +3,8 @@
 **Use this as the primary reference for all future logic and UI changes.**
 
 **Sections 1–8** describe the **current implementation** (what is built and live).  
-**Section 9** lists **planned features** (not implemented yet), grouped into three suites for later prioritization.
+**Section 9** lists **planned features** (not implemented yet), grouped into three suites for later prioritization.  
+**Logic audit:** See **docs/LOGIC_AUDIT.md** for a list of logical errors found and fixed (e.g. `_membersById` in cycle_repository) and follow-up items (undo screen, date sort, route args).
 
 ---
 
@@ -66,7 +67,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 |-------|--------|--------|
 | `/splash` | SplashScreen | Shown first; logo then navigates to `/`. |
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
-| `/groups` | GroupsList | List of groups; **swipe left** = Pin/Unpin (max 3, user preference); **swipe right** = Delete (creator only, confirm). Pinned groups at top. **Only the black FAB** creates a group. |
+| `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
 | `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. Haptics: light impact on AI success, manual confirm, and on groups list swipe actions (Pin/Delete). |
@@ -92,6 +93,12 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/cycle-history` | CycleHistory | Past cycles. |
 | `/cycle-history-detail` | CycleHistoryDetail | One past cycle. |
 
+### Profile
+
+| Route | Screen | Notes |
+|-------|--------|--------|
+| `/profile` | ProfileScreen | Identity: avatar (upload via ProfileService), display name (synced to Firestore + Groq fuzzy matching). Payment Settings: UPI ID. Deep Navy & Slate card theme. |
+
 ### Utility
 
 | Route | Screen |
@@ -107,7 +114,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 03218).
 
-- **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`.
+- **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`, `upiId`.
 - **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
 - **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`, optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
@@ -116,7 +123,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### FirestoreService
 
-**Location:** `lib/services/firestore_service.dart` — Singleton. Low-level Firestore: `setUser`, `createGroup`, `deleteGroup`, `groupsStream(uid)`, `expensesStream(groupId)`, `addExpense`, `updateExpense`, `deleteExpense`, `archiveCycleExpenses`, `getSettledCycles`, `getSettledCycleExpenses`.
+**Location:** `lib/services/firestore_service.dart` — Singleton. Low-level Firestore: `setUser(uid, displayName?, phoneNumber?, photoURL?, upiId?)`, `getUser`, `userStream`, `createGroup`, `deleteGroup`, `groupsStream(uid)`, `expensesStream(groupId)`, `addExpense`, `updateExpense`, `deleteExpense`, `archiveCycleExpenses`, `getSettledCycles`, `getSettledCycleExpenses`.
 
 ### GroqExpenseParserService
 
@@ -132,7 +139,8 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Identity** | `setAuthFromFirebaseUser` writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
 | **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
-| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. |
+| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to Groq for Magic Bar fuzzy matching. |
+| **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`. `setGlobalProfile` persists name to Firestore so profile name = NLP name. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. |
@@ -142,7 +150,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member`, `Expense` (optional `splitAmountsByPhone` for per-person shares; optional `category`; used by balance calculation)
+- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 - **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (phone → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
@@ -264,9 +272,12 @@ lib/
     firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles; deleteGroup (creator-only)
     pinned_groups_service.dart # User pin preference (max 3 groups); SharedPreferences
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
+    profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
     settlement_engine.dart    # Debt, computeDebts, computeNetBalances
+  widgets/
+    member_avatar.dart        # Letter avatar or CachedNetworkImage from photoURL (Deep Navy/Slate)
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart
@@ -286,6 +297,7 @@ lib/
     cycle_settled.dart
     cycle_history.dart
     cycle_history_detail.dart
+    profile.dart
     empty_states.dart
     error_states.dart
 test/
@@ -305,8 +317,11 @@ test/
 | `firebase_core` | Required for Firebase. Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` (stub in repo is replaced). |
 | `firebase_auth` | Phone (OTP) sign-in when Firebase is configured. |
 | `cloud_firestore` | Groups, expenses, settled_cycles; Test Mode. All writes use real User.uid. |
+| `firebase_storage` | Profile avatar uploads (users/{uid}/avatar.jpg). |
 | `flutter_dotenv` | Loads `.env`; **GROQ_API_KEY** required for Magic Bar AI parsing. |
 | `http` | Groq API requests (chat completions). |
+| `cached_network_image` | MemberAvatar: load and cache profile photos. |
+| `image_picker` | Profile screen: pick photo from gallery for avatar. |
 | `flutter_slidable` | Swipe actions on GroupsList (Pin left, Delete right). |
 | `shared_preferences` | User pin preference (pinned group IDs, max 3). |
 

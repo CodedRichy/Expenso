@@ -80,6 +80,17 @@ class _ExpenseInputState extends State<ExpenseInput> {
             paidByPhone: payerPhone,
           );
           CycleRepository.instance.addExpense(group.id, expense);
+          setState(() {
+            input = '';
+            parsedData = null;
+            showConfirmation = false;
+            selectedMemberPhones.clear();
+            _paidByPhone = CycleRepository.instance.currentUserPhone;
+          });
+          if (context.mounted) {
+            Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
+          }
+          return;
         } on ArgumentError catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

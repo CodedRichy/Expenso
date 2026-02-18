@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             'assets/images/logoTransparent.png',
             height: _logoHeight,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Text(
+            errorBuilder: (_, error, stackTrace) => const Text(
               'Expenso',
               style: TextStyle(
                 fontSize: 28,

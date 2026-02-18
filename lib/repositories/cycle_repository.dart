@@ -35,16 +35,25 @@ class CycleRepository extends ChangeNotifier {
   /// True if the current user is the creator of the group (for Settle & Restart, etc.).
   bool isCurrentUserCreator(String groupId) => isCreator(groupId, _currentUserId);
 
+  /// Current user profile photo URL (from Firestore). Same value used for NLP display name matching.
+  String? get currentUserPhotoURL => _userCache[_currentUserId]?['photoURL'] as String?;
+
+  /// Current user UPI ID for payments.
+  String? get currentUserUpiId => _userCache[_currentUserId]?['upiId'] as String?;
+
   /// Updates the global profile (phone, name, and optionally auth user id). Notifies listeners.
+  /// Persists to Firestore when [_currentUserId] is set so displayName stays in sync with Groq fuzzy matching.
   void setGlobalProfile(String phone, String name, {String? authUserId}) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
     if (authUserId != null && authUserId.isNotEmpty) _currentUserId = authUserId;
+    if (_currentUserId.isNotEmpty) _writeCurrentUserProfile();
     notifyListeners();
   }
 
   /// Syncs identity from Firebase user (uid, phone, displayName). Call when auth state becomes non-null.
   /// Writes user profile to Firestore (users/{uid}) and starts listening to groups + expenses.
+  /// Loads photoURL and upiId from Firestore for the current user.
   void setAuthFromFirebaseUser(String uid, String? phone, String? displayName) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
@@ -56,21 +65,65 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
     if (_currentUserId.isNotEmpty) {
       _writeCurrentUserProfile();
+      _loadCurrentUserProfileFromFirestore();
       _startListening();
+    }
+  }
+
+  Future<void> _loadCurrentUserProfileFromFirestore() async {
+    try {
+      final u = await FirestoreService.instance.getUser(_currentUserId);
+      if (u != null && _userCache.containsKey(_currentUserId)) {
+        final cur = Map<String, dynamic>.from(_userCache[_currentUserId]!);
+        if (u['photoURL'] != null) cur['photoURL'] = u['photoURL'];
+        if (u['upiId'] != null) cur['upiId'] = u['upiId'];
+        _userCache[_currentUserId] = cur;
+        notifyListeners();
+      }
+    } catch (e, st) {
+      debugPrint('CycleRepository._loadCurrentUserProfileFromFirestore failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
     }
   }
 
   Future<void> _writeCurrentUserProfile() async {
     try {
+      final cache = _userCache[_currentUserId];
       await FirestoreService.instance.setUser(
         _currentUserId,
         displayName: _currentUserName,
         phoneNumber: _currentUserPhone,
+        photoURL: cache?['photoURL'] as String?,
+        upiId: cache?['upiId'] as String?,
       );
     } catch (e, st) {
       debugPrint('CycleRepository._writeCurrentUserProfile failed: $e');
       if (kDebugMode) debugPrint(st.toString());
     }
+  }
+
+  /// Updates current user photo URL (e.g. after upload). Persists to Firestore.
+  Future<void> updateCurrentUserPhotoURL(String? photoURL) async {
+    if (_currentUserId.isEmpty) return;
+    _userCache[_currentUserId] ??= <String, dynamic>{};
+    _userCache[_currentUserId]!['photoURL'] = photoURL;
+    await _writeCurrentUserProfile();
+    notifyListeners();
+  }
+
+  /// Updates current user UPI ID. Persists to Firestore.
+  Future<void> updateCurrentUserUpiId(String? upiId) async {
+    if (_currentUserId.isEmpty) return;
+    _userCache[_currentUserId] ??= <String, dynamic>{};
+    _userCache[_currentUserId]!['upiId'] = upiId;
+    await _writeCurrentUserProfile();
+    notifyListeners();
+  }
+
+  /// Returns profile photo URL for a member (by uid). Null for pending members or when not set.
+  String? getMemberPhotoURL(String memberId) {
+    if (memberId.startsWith('p_')) return null;
+    return _userCache[memberId]?['photoURL'] as String?;
   }
 
   /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.
@@ -133,6 +186,7 @@ class CycleRepository extends ChangeNotifier {
 
     _groups.clear();
     _groupMeta.clear();
+    _membersById.clear();
     for (final doc in docs) {
       final data = doc.data();
       final groupId = doc.id;
@@ -165,7 +219,6 @@ class CycleRepository extends ChangeNotifier {
         memberIds: memberIds,
       ));
 
-      _membersById.clear();
       for (final g in _groups) {
         final meta = _groupMeta[g.id];
         if (meta == null) continue;
@@ -176,6 +229,7 @@ class CycleRepository extends ChangeNotifier {
               id: uid,
               phone: u['phoneNumber'] as String? ?? '',
               name: u['displayName'] as String? ?? '',
+              photoURL: u['photoURL'] as String?,
             );
           }
         }
@@ -222,6 +276,7 @@ class CycleRepository extends ChangeNotifier {
               id: uid,
               phone: u['phoneNumber'] as String? ?? '',
               name: u['displayName'] as String? ?? '',
+              photoURL: u['photoURL'] as String?,
             );
           }
         }
@@ -637,10 +692,27 @@ class CycleRepository extends ChangeNotifier {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
   }
 
-  /// Deletes the group from Firestore. Only the creator can delete. Listeners will update when the groups stream emits.
+  /// Deletes the group from Firestore. Only the creator can delete.
+  /// Removes the group from local state immediately so the UI updates without waiting for the stream.
   Future<void> deleteGroup(String groupId) async {
-    if (!canDeleteGroup(groupId, _currentUserId)) return;
+    if (!canDeleteGroup(groupId, _currentUserId)) {
+      throw StateError('Only the group creator can delete this group.');
+    }
     await FirestoreService.instance.deleteGroup(groupId);
+    _removeGroupLocally(groupId);
+  }
+
+  /// Removes a group from in-memory state so the list updates immediately after delete.
+  void _removeGroupLocally(String groupId) {
+    final meta = _groupMeta[groupId];
+    _groups.removeWhere((g) => g.id == groupId);
+    _groupMeta.remove(groupId);
+    _expenseSubs[groupId]?.cancel();
+    _expenseSubs.remove(groupId);
+    if (meta != null) {
+      _expensesByCycleId.remove(meta.activeCycleId);
+    }
+    notifyListeners();
   }
 
   Map<String, double> calculateBalances(String groupId) {
@@ -715,10 +787,15 @@ class CycleRepository extends ChangeNotifier {
 
   /// Archive & Restart: Moves current cycle expenses to settled_cycles, then starts new cycle. Creator-only.
   /// Works whether cycle is 'active' (e.g. from Settle now dialog) or 'settling' (e.g. after Pay via UPI).
+  /// Throws if not creator or group meta missing so the UI can show an error.
   Future<void> archiveAndRestart(String groupId) async {
-    if (!isCreator(groupId, _currentUserId)) return;
+    if (!isCreator(groupId, _currentUserId)) {
+      throw StateError('Only the group creator can settle and start a new cycle.');
+    }
     final meta = _groupMeta[groupId];
-    if (meta == null) return;
+    if (meta == null) {
+      throw StateError('Group data not loaded. Pull to refresh or try again.');
+    }
     final now = DateTime.now();
     final endStr = _formatDate(now);
     final startStr = meta.activeCycleId.startsWith('c_')

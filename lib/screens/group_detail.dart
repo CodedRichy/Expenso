@@ -34,9 +34,7 @@ class GroupDetail extends StatelessWidget {
         // getActiveCycle may create a cycle if none exists; single lookup here.
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
-        final pendingAmount = expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
         final isPassive = activeCycle.status == CycleStatus.settling;
-        final isClosing = activeCycle.status == CycleStatus.settling || defaultGroup.status == 'closing';
         final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty;
 
@@ -114,10 +112,29 @@ class GroupDetail extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (isPassive) {
                       if (repo.isCurrentUserCreator(groupId)) {
-                        repo.archiveAndRestart(groupId);
+                        try {
+                          await repo.archiveAndRestart(groupId);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('New cycle started.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -408,7 +425,26 @@ class GroupDetail extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await repo.archiveAndRestart(groupId);
+              try {
+                await repo.archiveAndRestart(groupId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cycle settled. New cycle started.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Could not settle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
             },
             child: Text(
               'Confirm',
@@ -448,8 +484,8 @@ class _DecisionClarityCard extends StatelessWidget {
   });
 
   static const double _minHeight = 132.0;
-  static const Color _deepNavy = Color(0xFF1A2332);
-  static const Color _slate = Color(0xFF2D3A4F);
+  static const Color _blackGradientStart = Color(0xFF0D0D0D);
+  static const Color _blackGradientEnd = Color(0xFF1A1A1A);
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +514,7 @@ class _DecisionClarityCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_deepNavy, _slate],
+          colors: [_blackGradientStart, _blackGradientEnd],
         ),
       ),
       child: ClipRRect(
@@ -767,7 +803,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     }
   }
 
-  void _showConfirmationDialog(CycleRepository repo, ParsedExpenseResult result) {
+  Future<void> _showConfirmationDialog(CycleRepository repo, ParsedExpenseResult result) async {
     final groupId = widget.group.id;
     final members = repo.getMembersForGroup(groupId);
     final allPhones = members.map((m) => m.phone).toList();
@@ -867,7 +903,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 ? slots.isNotEmpty
                 : true;
 
-    showDialog<void>(
+    final undoResult = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => _ExpenseConfirmDialog(
         repo: repo,
@@ -881,6 +917,21 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         exactValid: exactValid,
       ),
     );
+    if (!context.mounted) return;
+    if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
+      final gid = undoResult['groupId'] as String;
+      final eid = undoResult['expenseId'] as String;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Expense added'),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => repo.deleteExpense(gid, eid),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -909,12 +960,31 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             IconButton(
-              onPressed: () {
-                Navigator.pushNamed(
+              onPressed: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/expense-input',
                   arguments: widget.group,
                 );
+                if (!context.mounted) return;
+                final map = result as Map<String, dynamic>?;
+                if (map != null && map['groupId'] != null && map['expenseId'] != null) {
+                  final repo = CycleRepository.instance;
+                  final groupId = map['groupId'] as String;
+                  final expenseId = map['expenseId'] as String;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Expense added'),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () {
+                          repo.deleteExpense(groupId, expenseId);
+                        },
+                      ),
+                    ),
+                  );
+                }
               },
               icon: Icon(
                 Icons.keyboard_alt_outlined,
@@ -1093,10 +1163,11 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
         ? 'Exact'
         : widget.splitTypeCap;
+    final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
     try {
       repo.addExpenseFromMagicBar(
         groupId,
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: expenseId,
         description: widget.result.description,
         amount: widget.result.amount,
         date: 'Today',
@@ -1107,7 +1178,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         exactAmountsByPhone: exactAmountsByPhone,
         category: widget.result.category,
       );
-      Navigator.pop(context);
+      Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
     } on ArgumentError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -31,12 +31,14 @@ class FirestoreService {
     String? displayName,
     String? phoneNumber,
     String? photoURL,
+    String? upiId,
   }) async {
     final ref = _firestore.collection(FirestorePaths.users).doc(uid);
     final data = <String, dynamic>{};
     if (displayName != null) data['displayName'] = displayName;
     if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
     if (photoURL != null) data['photoURL'] = photoURL;
+    if (upiId != null) data['upiId'] = upiId;
     if (data.isEmpty) return;
     await ref.set(data, SetOptions(merge: true));
   }

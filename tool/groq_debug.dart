@@ -9,7 +9,7 @@ void main(List<String> args) async {
   final env = _loadEnv();
   final apiKey = env['GROQ_API_KEY']?.trim();
   if (apiKey == null || apiKey.isEmpty) {
-    print('Set GROQ_API_KEY in .env');
+    stdout.writeln('Set GROQ_API_KEY in .env');
     exit(1);
   }
   final input = args.isEmpty ? 'Dinner 500' : args.join(' ');
@@ -40,19 +40,24 @@ Member list for names:$memberList
     }),
   );
 
-  print('Status: ${res.statusCode}\n');
+  stdout.writeln('Status: ${res.statusCode}\n');
   if (res.statusCode != 200) {
-    print(res.body);
+    stdout.writeln(res.body);
     return;
   }
   final map = jsonDecode(res.body) as Map<String, dynamic>?;
-  final content = (map?['choices'] as List?)?.isNotEmpty == true
-      ? ((map!['choices']![0] as Map)['message'] as Map?)?['content']
-      : null;
-  final raw = (content is String) ? content.trim() : '';
-  print('--- Raw content from Groq (this is what we try to parse) ---');
-  print(raw);
-  print('--- End ---');
+  final choices = map?['choices'];
+  final bool hasContent = choices is List && choices.isNotEmpty;
+  Object? content;
+  if (hasContent) {
+    final first = choices[0];
+    final message = (first is Map<String, dynamic>) ? first['message'] : null;
+    content = (message is Map<String, dynamic>) ? message['content'] : null;
+  }
+  final String raw = (content is String) ? content.trim() : '';
+  stdout.writeln('--- Raw content from Groq (this is what we try to parse) ---');
+  stdout.writeln(raw);
+  stdout.writeln('--- End ---');
 }
 
 Map<String, String> _loadEnv() {

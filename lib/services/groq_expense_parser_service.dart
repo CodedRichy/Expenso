@@ -54,7 +54,7 @@ class ParsedExpenseResult {
   static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
     final amountRaw = json['amount'] ?? json['amt'];
     final amount = (amountRaw is num)
-        ? (amountRaw as num).toDouble()
+        ? (amountRaw).toDouble()
         : double.tryParse(amountRaw?.toString() ?? '') ?? 0.0;
     final desc = ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
     final category = (json['category'] as String?)?.trim() ?? '';
@@ -141,6 +141,17 @@ class ParsedExpenseResult {
 /// GROQ_API_KEY must be set in .env.
 class GroqExpenseParserService {
   GroqExpenseParserService._();
+
+  /// Returns an error message if [result] is invalid (amount not positive or not finite); null if valid.
+  static String? validateResult(ParsedExpenseResult result) {
+    if (result.amount.isNaN || result.amount.isInfinite) {
+      return 'Amount must be a valid number.';
+    }
+    if (result.amount <= 0) {
+      return 'Amount must be greater than 0.';
+    }
+    return null;
+  }
 
   static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
   static const String _model = 'llama-3.3-70b-versatile';
@@ -369,28 +380,29 @@ Reply with nothing except the single JSON object. Double-quoted keys and strings
         throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
       }
 
-      if (result.amount > 0) {
-        final desc = result.description.trim();
-        if (desc.isEmpty) {
-          result = ParsedExpenseResult(
-            amount: result.amount,
-            description: 'Expense',
-            category: result.category,
-            splitType: result.splitType,
-            participantNames: result.participantNames,
-            payerName: result.payerName,
-            excludedNames: result.excludedNames,
-            exactAmountsByName: result.exactAmountsByName,
-            percentageByName: result.percentageByName,
-            sharesByName: result.sharesByName,
-          );
-        }
-        return result;
+      final validationError = validateResult(result);
+      if (validationError != null) {
+        final fallback = _fallbackParse(userInput);
+        if (fallback != null) return fallback;
+        throw Exception(validationError);
       }
 
-      final fallback = _fallbackParse(userInput);
-      if (fallback != null) return fallback;
-      throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
+      final desc = result.description.trim();
+      if (desc.isEmpty) {
+        result = ParsedExpenseResult(
+          amount: result.amount,
+          description: 'Expense',
+          category: result.category,
+          splitType: result.splitType,
+          participantNames: result.participantNames,
+          payerName: result.payerName,
+          excludedNames: result.excludedNames,
+          exactAmountsByName: result.exactAmountsByName,
+          percentageByName: result.percentageByName,
+          sharesByName: result.sharesByName,
+        );
+      }
+      return result;
     } on GroqRateLimitException {
       rethrow;
     } catch (e) {

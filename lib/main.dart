@@ -26,6 +26,7 @@ import 'screens/cycle_history.dart';
 import 'screens/cycle_history_detail.dart';
 import 'screens/empty_states.dart';
 import 'screens/error_states.dart';
+import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -127,6 +128,7 @@ class MyApp extends StatelessWidget {
         '/cycle-history-detail': (context) => const CycleHistoryDetail(),
         '/empty-states': (context) => const EmptyStates(),
         '/error-states': (context) => const ErrorStates(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }

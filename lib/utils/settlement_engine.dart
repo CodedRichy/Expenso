@@ -65,7 +65,6 @@ class SettlementEngine {
   /// Only includes members that appear in [members] (by phone).
   static List<Debt> computeDebts(List<Expense> expenses, List<Member> members) {
     final net = _buildNetBalances(expenses, members);
-    final phones = members.map((m) => m.phone).toSet();
 
     final debtors = net.entries
         .where((e) => e.value < -_tolerance)
