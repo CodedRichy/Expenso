@@ -22,7 +22,7 @@ StreamBuilder.build
 - **main.dart:** When `user != null`, call `setAuthFromFirebaseUserSync(...)` during build, then `WidgetsBinding.instance.addPostFrameCallback((_) => repo.continueAuthFromFirebaseUser())` so notification happens after the frame.
 - **main.dart (follow-up):** When `user == null`, `clearAuth()` was also called during build and calls `notifyListeners()`. Deferred: `WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth())` so no notification during build.
 
-**Status:** Fixed in code. Verify by running app and confirming no "setState during build" in console.
+**Status:** Fixed in code. Instrumentation removed after verification.
 
 ---
 
@@ -33,17 +33,31 @@ StreamBuilder.build
 - `groups/...` and `groups/.../expenses` listen: PERMISSION_DENIED
 - `CycleRepository._loadCurrentUserProfileFromFirestore` and `_writeCurrentUserProfile` failed
 
-**Cause:** Firestore Security Rules (or auth context) blocking these operations. No `firestore.rules` file in repo; rules are in Firebase Console.
+**Cause:** Firestore Security Rules (or auth context) blocking these operations.
 
-**Fix:** In Firebase Console → Firestore → Rules:
-- Allow authenticated users to read/write their own `users/{userId}` document.
-- Allow authenticated members to read/listen `groups` (e.g. `where('members', arrayContains: request.auth.uid)`) and subcollection `groups/{groupId}/expenses` as used by the app.
+**Fix:** Use the repo’s `firestore.rules` and deploy it.
+- **Option A (Firebase Console):** Open [Firebase Console](https://console.firebase.google.com) → your project → Firestore → Rules. Replace the rules with the contents of `firestore.rules`, then **Publish**.
+- **Option B (CLI):** If you use Firebase CLI, run `firebase deploy --only firestore` from the project root (ensure `firebase.json` has `"firestore": { "rules": "firestore.rules" }`).
 
-**Status:** Documented. No code change; rules must be updated in Console.
+Rules in the file: users (own doc); groups (members only); `groups/{id}/expenses` and settled_cycles (group members only).
+
+**Status:** `firestore.rules` added; deploy via Console or CLI.
+
+**Follow-up (stream errors):** When rules still deny, Firestore snapshot streams throw `permission-denied` and crashed the app (unhandled exception). **Fix:** `cycle_repository.dart` — added `onError` to `groupsStream` and `expensesStream` subscriptions so errors are logged and (for groups) loading state is cleared; no more unhandled exceptions.
 
 ---
 
-## 3. Firebase Storage object-not-found (404) on avatar upload — **Done before** (terminal analysis) → **Config / path**
+## 3. RenderFlex overflow on group detail (keyboard open) — **New** → **Fixed**
+
+**Evidence:** `A RenderFlex overflowed by 6.0 pixels on the bottom` at `group_detail.dart:280` (Column for EXPENSE LOG). Occurs when keyboard is open and remaining height is small.
+
+**Fix:** Replaced the `Column` (header + `Expanded`/`ListView.builder`) with a `CustomScrollView` using `SliverPadding`, `SliverToBoxAdapter` for the "EXPENSE LOG" header, and `SliverList` for the expense items. Content scrolls when space is tight instead of overflowing.
+
+**Status:** Fixed in code.
+
+---
+
+## 4. Firebase Storage object-not-found (404) on avatar upload — **Done before** (terminal analysis) → **Config / path**
 
 **Evidence (from terminal):**
 - `ProfileService.uploadAvatar failed: [firebase_storage/object-not-found] No object exists at the desired reference.`
@@ -61,7 +75,7 @@ StreamBuilder.build
 
 ---
 
-## 4. Other terminal messages (not app bugs) — **Done before**
+## 5. Other terminal messages (not app bugs) — **Done before**
 
 - **Nothing phone:** `Invalid resource ID 0x0`, `NothingExperience.getAppName` — device/vendor SDK.
 - **GoogleApiManager / FlagRegistrar:** `DEVELOPER_ERROR`, "Unknown calling package name" — often debug build / SHA-1 / package name in Firebase/Play.

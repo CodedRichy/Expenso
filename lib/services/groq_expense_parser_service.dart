@@ -162,10 +162,20 @@ class GroqExpenseParserService {
     return key.trim();
   }
 
-  // Prompt + few-shot = core IP; preserve splitType order: exact → percentage → shares → exclude → even.
+  /// System prompt for expense parsing. When a parse error occurs: document it in
+  /// docs/GROQ_PROMPT_REFINEMENT.md and add a rule, anti-pattern in COMMON MISTAKES,
+  /// or few-shot example to the prompt. Preserve splitType order: exact → percentage → shares → exclude → even.
   static String _buildSystemPrompt(String memberList) {
     return '''
 You are an expense parser. You turn casual user messages into exactly one JSON expense object. Works for any locale and currency. Reply with ONLY that JSON. No other text, no markdown, no explanation.
+
+--- SCENARIO DECISION (infer in this order) ---
+Before outputting JSON, mentally decide:
+1) WHO PAID? If the user says "X paid", "paid by X", "X bought", "X got", "X covered" -> payer is X. Otherwise payer is the current user (omit "payer" key).
+2) WHO SHARES THE COST? If user says "with X", "with X and Y", "for me and X" -> participants = [X] or [X,Y] (never include "me"). If user says "everyone"/"all"/"the group" OR names a payer but does NOT say who to split with -> participants = [] (meaning: split among ALL people in the group, including the payer and current user). Only use [] for "everyone" or "no one named to split with".
+3) SPLIT TYPE? If user gives per-person amounts -> exact. Percentages -> percentage. Share counts (nights, etc.) -> shares. Someone excluded -> exclude. Otherwise -> even.
+
+Critical: "X paid 200" with no "with Y" = payer:X, participants:[], splitType:even (the whole group splits it; everyone in the group owes an equal share). "200 with X" = participants:[X], even (split between current user and X only).
 
 --- OUTPUT SCHEMA ---
 Required in every response:
@@ -173,7 +183,7 @@ Required in every response:
   "description" (string): short phrase, 1-3 words
   "category" (string): e.g. Food, Transport, Utilities, or ""
   "splitType" (string): one of "even" | "exact" | "exclude" | "percentage" | "shares"
-  "participants" (array of strings): names from member list who share the cost; use [] for "everyone" or when only payer is involved
+  "participants" (array of strings): names from member list who share the cost; use [] for "everyone" OR when user names a payer but does not say "with X" (then the whole group shares)
 
 Conditional keys (include only when applicable):
   "payer" (string): include only when user explicitly says someone else paid. Omit when user implies they paid ("I paid", "paid by me").
@@ -209,21 +219,28 @@ Match typos, nicknames, and partials to this list (e.g. "al" -> Alice, "bob" -> 
 
 Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or "50% me 50% Bob" = percentage. "Airbnb 500, Alice 2 nights Bob 3" = shares.
 
-5) participants
+5) participants (who shares the cost besides the current user)
 - "everyone" / "all" / "all of us" / "the group" -> [] (split among all in group).
+- "X paid 200" / "paid by X 200" with no "with Y" -> [] (split among everyone in the group; X and current user and anyone else in the group).
 - "me and X" / "me and X and Y" -> [X] or [X, Y]; never include "me" in the array.
-- "w/", "with", "for", "&", "and" introduce participant names. Match each to member list; output exact spellings only.
+- "w/", "with", "for", "&", "and" introduce participant names -> list those names only. E.g. "600 with Bob" -> [Bob] (split between current user and Bob).
 - If no one mentioned to split with, use [].
 
 6) payer
-- Add "payer":"<name>" only when user clearly says another person paid: "X paid", "paid by X", "X bought", "X got", "X settled", "X covered the bill".
-- Omit payer when: "I paid", "I bought", "paid by me", "my treat", "I got the tickets", or no payer mentioned (default = current user).
+- Add "payer":"<name>" when user says another person paid: "X paid", "paid by X", "X bought", "X got", "X settled", "X covered", "X paid for me". Match X to member list (any spelling/nickname).
+- Omit payer when: "I paid", "I bought", "paid by me", "my treat", or no payer mentioned (default = current user).
 
 --- EDGE CASES ---
+- Member list is supplied at runtime (names from the group). Same rules: match "X paid amount" to payer X, participants [].
 - If a name cannot be matched to the member list, still include it as the user wrote it (or best guess from list).
 - If amount is ambiguous, use the main/total number stated.
 - When in doubt between even and exact, prefer even unless per-person amounts are clearly given.
 - Always output valid JSON: double-quoted keys and strings, no trailing commas.
+
+--- COMMON MISTAKES (avoid these) ---
+- "X paid 200" with no "with Y" -> WRONG: participants:[X]. RIGHT: participants:[] (everyone in the group shares).
+- "200 with X" -> WRONG: participants:[]. RIGHT: participants:[X] (only current user and X share).
+- User says another person paid -> WRONG: omit "payer". RIGHT: include "payer":"<name>" matching member list.
 
 --- EXAMPLES (member list: Alice, Bob, Carol) ---
 "ght biriyani 200 with al" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["Alice"]}
@@ -263,6 +280,8 @@ Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or 
 "Carol settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"Carol"}
 "Paid by Bob 600" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"Bob"}
 "Alice paid for snacks 450" -> {"amount":450,"description":"Snacks","category":"Food","splitType":"even","participants":[],"payer":"Alice"}
+"Bob paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"Bob"}
+"Carol paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"Carol"}
 "half and half 400" -> {"amount":400,"description":"Expense","category":"","splitType":"even","participants":[]}
 "50-50 600 with Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["Bob"]}
 "split between me and Alice 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":["Alice"]}

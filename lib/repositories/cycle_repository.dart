@@ -208,7 +208,15 @@ class CycleRepository extends ChangeNotifier {
     _groupsSub?.cancel();
     _groupsLoading = true;
     notifyListeners();
-    _groupsSub = FirestoreService.instance.groupsStream(_currentUserId).listen(_onGroupsSnapshot);
+    _groupsSub = FirestoreService.instance.groupsStream(_currentUserId).listen(
+      _onGroupsSnapshot,
+      onError: (e, st) {
+        debugPrint('CycleRepository groupsStream error: $e');
+        if (kDebugMode && st != null) debugPrint(st.toString());
+        _groupsLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
   void _stopListening() {
@@ -296,9 +304,13 @@ class CycleRepository extends ChangeNotifier {
       }
 
       if (!_expenseSubs.containsKey(groupId)) {
-        _expenseSubs[groupId] = FirestoreService.instance.expensesStream(groupId).listen((expDocs) {
-          _onExpensesSnapshot(groupId, expDocs);
-        });
+        _expenseSubs[groupId] = FirestoreService.instance.expensesStream(groupId).listen(
+          (expDocs) => _onExpensesSnapshot(groupId, expDocs),
+          onError: (e, st) {
+            debugPrint('CycleRepository expensesStream($groupId) error: $e');
+            if (kDebugMode && st != null) debugPrint(st.toString());
+          },
+        );
       }
     }
 
@@ -565,7 +577,7 @@ class CycleRepository extends ChangeNotifier {
     return null;
   }
 
-  void addExpense(String groupId, Expense expense) {
+  Future<void> addExpense(String groupId, Expense expense) async {
     final amountError = validateExpenseAmount(expense.amount);
     if (amountError != null) throw ArgumentError(amountError);
     final descError = validateExpenseDescription(expense.description);
@@ -573,11 +585,17 @@ class CycleRepository extends ChangeNotifier {
 
     final meta = _groupMeta[groupId];
     final cycleId = meta?.activeCycleId;
-    if (cycleId == null) return;
+    if (cycleId == null) {
+      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+    }
     final payerId = _uidForPhone(expense.paidByPhone.isEmpty ? _currentUserPhone : expense.paidByPhone) ?? _currentUserId;
+    final members = getMembersForGroup(groupId);
+    final allPhones = members.map((m) => m.phone).toList();
     final participants = expense.participantPhones.isNotEmpty
         ? expense.participantPhones
-        : [expense.paidByPhone.isNotEmpty ? expense.paidByPhone : _currentUserPhone];
+        : allPhones.isNotEmpty
+            ? allPhones
+            : [expense.paidByPhone.isNotEmpty ? expense.paidByPhone : _currentUserPhone];
     final uids = <String>[];
     for (final p in participants) {
       final uid = _uidForPhone(p);
@@ -601,12 +619,12 @@ class CycleRepository extends ChangeNotifier {
       'dateSortKey': _dateStringToSortKey(expense.date),
       if (expense.category.isNotEmpty) 'category': expense.category,
     };
-    FirestoreService.instance.addExpense(groupId, data);
+    await FirestoreService.instance.addExpense(groupId, data);
   }
 
   /// Adds an expense from the Magic Bar confirmation flow. Ensures splits map contains
   /// every member of the split. splitType: Even | Exact | Exclude.
-  void addExpenseFromMagicBar(
+  Future<void> addExpenseFromMagicBar(
     String groupId, {
     required String id,
     required String description,
@@ -618,7 +636,7 @@ class CycleRepository extends ChangeNotifier {
     List<String>? excludedPhones,
     Map<String, double>? exactAmountsByPhone,
     String category = '',
-  }) {
+  }) async {
     final amountError = validateExpenseAmount(amount);
     if (amountError != null) throw ArgumentError(amountError);
     final descError = validateExpenseDescription(description);
@@ -626,7 +644,9 @@ class CycleRepository extends ChangeNotifier {
 
     final meta = _groupMeta[groupId];
     final cycleId = meta?.activeCycleId;
-    if (cycleId == null) return;
+    if (cycleId == null) {
+      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+    }
     final payerId = _uidForPhone(payerPhone.isEmpty ? _currentUserPhone : payerPhone) ?? _currentUserId;
     final members = getMembersForGroup(groupId);
     final allPhones = members.map((m) => m.phone).toList();
@@ -650,7 +670,8 @@ class CycleRepository extends ChangeNotifier {
     } else {
       phonesInSplit = participantPhones.isNotEmpty
           ? participantPhones
-          : [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
+          : allPhones;
+      if (phonesInSplit.isEmpty) phonesInSplit = [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
       final perShare = amount / phonesInSplit.length;
       for (final p in phonesInSplit) {
         splitsByPhone[p] = perShare;
@@ -677,7 +698,7 @@ class CycleRepository extends ChangeNotifier {
       'dateSortKey': _dateStringToSortKey(date),
       if (category.isNotEmpty) 'category': category,
     };
-    FirestoreService.instance.addExpense(groupId, data);
+    await FirestoreService.instance.addExpense(groupId, data);
   }
 
   Expense? getExpense(String groupId, String expenseId) {
@@ -781,7 +802,7 @@ class CycleRepository extends ChangeNotifier {
       net[payer] = (net[payer] ?? 0) + expense.amount;
       final participants = expense.participantPhones.isNotEmpty
           ? expense.participantPhones
-          : [payer];
+          : members.map((m) => m.phone).toList();
       if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
         for (final entry in expense.splitAmountsByPhone!.entries) {
           net[entry.key] = (net[entry.key] ?? 0) - entry.value;

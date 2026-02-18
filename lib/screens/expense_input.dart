@@ -65,7 +65,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
     });
   }
 
-  void handleConfirm() {
+  Future<void> handleConfirm() async {
     final payerPhone = _paidByPhone ?? CycleRepository.instance.currentUserPhone;
     if (payerPhone.isEmpty) return;
     if (parsedData != null) {
@@ -80,7 +80,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
             participantPhones: selectedMemberPhones.toList(),
             paidByPhone: payerPhone,
           );
-          CycleRepository.instance.addExpense(group.id, expense);
+          await CycleRepository.instance.addExpense(group.id, expense);
+          if (!context.mounted) return;
           setState(() {
             input = '';
             parsedData = null;
@@ -88,17 +89,27 @@ class _ExpenseInputState extends State<ExpenseInput> {
             selectedMemberPhones.clear();
             _paidByPhone = CycleRepository.instance.currentUserPhone;
           });
-          if (context.mounted) {
-            Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
-          }
+          Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
           return;
         } on ArgumentError catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message ?? 'Invalid expense.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.message ?? 'Invalid expense.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not save expense. Try again.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
           return;
         }
       }
@@ -110,7 +121,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
       selectedMemberPhones.clear();
       _paidByPhone = CycleRepository.instance.currentUserPhone;
     });
-    Navigator.pop(context);
+    if (context.mounted) Navigator.pop(context);
   }
 
   void handleEdit() {

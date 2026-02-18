@@ -277,26 +277,25 @@ class GroupDetail extends StatelessWidget {
             ],
             if (hasExpenses)
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
                       padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      child: Text(
-                        'EXPENSE LOG',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF9B9B9B),
-                          letterSpacing: 0.3,
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'EXPENSE LOG',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF9B9B9B),
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: expenses.length,
-                        itemBuilder: (context, index) {
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
                           final expense = expenses[index];
                           return InkWell(
                             onTap: isPassive
@@ -327,6 +326,7 @@ class GroupDetail extends StatelessWidget {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                             () {
@@ -378,6 +378,7 @@ class GroupDetail extends StatelessWidget {
                             ),
                           );
                         },
+                        childCount: expenses.length,
                       ),
                     ),
                   ],
@@ -524,11 +525,19 @@ class _DecisionClarityCard extends StatelessWidget {
     final isEmpty = expenses.isEmpty;
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
     final members = repo.getMembersForGroup(groupId);
+    final memberCount = members.length;
     final netBalances = SettlementEngine.computeNetBalances(expenses, members);
     final myPhone = repo.currentUserPhone;
-    final spentByYou = expenses
-        .where((e) => e.paidByPhone == myPhone)
-        .fold<double>(0.0, (s, e) => s + e.amount);
+    double yourShare = 0.0;
+    for (final e in expenses) {
+      if (e.splitAmountsByPhone != null && e.splitAmountsByPhone!.containsKey(myPhone)) {
+        yourShare += e.splitAmountsByPhone![myPhone]!;
+      } else if (e.participantPhones.contains(myPhone)) {
+        yourShare += e.amount / e.participantPhones.length;
+      } else if (e.participantPhones.isEmpty && memberCount > 0) {
+        yourShare += e.amount / memberCount;
+      }
+    }
     double myNet = netBalances[myPhone] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final isCredit = myNet >= 0;
@@ -569,7 +578,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     child: _buildContent(
                       context,
                       cycleTotal: cycleTotal,
-                      spentByYou: spentByYou,
+                      yourShare: yourShare,
                       myNet: myNet,
                       isCredit: isCredit,
                       isNetClear: isNetClear,
@@ -612,7 +621,7 @@ class _DecisionClarityCard extends StatelessWidget {
   Widget _buildContent(
     BuildContext context, {
     required double cycleTotal,
-    required double spentByYou,
+    required double yourShare,
     required double myNet,
     required bool isCredit,
     bool isNetClear = false,
@@ -639,7 +648,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Spent by You',
+                    'Your share',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -649,7 +658,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '₹${_fmtRupee(spentByYou)}',
+                    '₹${_fmtRupee(yourShare)}',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -910,16 +919,19 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         }
       }
     } else {
-      // 2-person group with no "with X": default to the other member; else payer-only.
       List<String> names = result.participantNames;
-      if (names.isEmpty && members.length == 2) {
-        final others = allPhones.where((p) => p != repo.currentUserPhone).toList();
-        if (others.isNotEmpty) names = [repo.getMemberDisplayName(others.first)];
-      }
-      final perShare = names.isNotEmpty ? result.amount / names.length : result.amount;
-      for (final name in names) {
-        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
-        slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
+      if (names.isEmpty) {
+        for (final m in members) {
+          final displayName = repo.getMemberDisplayName(m.phone);
+          final perShare = members.isNotEmpty ? result.amount / members.length : result.amount;
+          slots.add(_ParticipantSlot(name: displayName, amount: perShare, phone: m.phone, isGuessed: false));
+        }
+      } else {
+        final perShare = result.amount / names.length;
+        for (final name in names) {
+          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+          slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
+        }
       }
     }
 
@@ -960,6 +972,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         SnackBar(
           content: const Text('Expense added'),
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => repo.deleteExpense(gid, eid),
@@ -1011,6 +1024,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                     SnackBar(
                       content: const Text('Expense added'),
                       behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 3),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
@@ -1207,7 +1221,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     );
   }
 
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     if (!_isReadyToConfirm) {
       HapticFeedback.heavyImpact();
       return;
@@ -1236,7 +1250,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         : widget.splitTypeCap;
     final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
     try {
-      repo.addExpenseFromMagicBar(
+      await repo.addExpenseFromMagicBar(
         groupId,
         id: expenseId,
         description: widget.result.description,
@@ -1249,15 +1263,28 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         exactAmountsByPhone: exactAmountsByPhone,
         category: widget.result.category,
       );
+      if (!context.mounted) return;
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
     } on ArgumentError catch (e) {
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? 'Invalid expense.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'Invalid expense.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      HapticFeedback.heavyImpact();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not save expense. Try again.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

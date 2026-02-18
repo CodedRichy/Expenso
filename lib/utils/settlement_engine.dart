@@ -41,7 +41,7 @@ class SettlementEngine {
       }
       final participants = expense.participantPhones.isNotEmpty
           ? expense.participantPhones
-          : (payer.isNotEmpty ? [payer] : <String>[]);
+          : members.map((m) => m.phone).toList();
       if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
         for (final entry in expense.splitAmountsByPhone!.entries) {
           if (phones.contains(entry.key)) {
