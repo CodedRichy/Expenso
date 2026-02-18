@@ -94,7 +94,7 @@ class MyApp extends StatelessWidget {
             final user = snapshot.data;
             final repo = CycleRepository.instance;
             if (user == null) {
-              repo.clearAuth();
+              WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
               return const PhoneAuth();
             }
             repo.setAuthFromFirebaseUserSync(

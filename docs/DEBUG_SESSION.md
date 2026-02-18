@@ -20,6 +20,7 @@ StreamBuilder.build
 **Fix (code):**
 - **cycle_repository.dart:** Split into `setAuthFromFirebaseUserSync(uid, phone, displayName)` (in-memory only, no `notifyListeners`) and `continueAuthFromFirebaseUser()` (Firestore write, load profile, start listeners, then `notifyListeners`).
 - **main.dart:** When `user != null`, call `setAuthFromFirebaseUserSync(...)` during build, then `WidgetsBinding.instance.addPostFrameCallback((_) => repo.continueAuthFromFirebaseUser())` so notification happens after the frame.
+- **main.dart (follow-up):** When `user == null`, `clearAuth()` was also called during build and calls `notifyListeners()`. Deferred: `WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth())` so no notification during build.
 
 **Status:** Fixed in code. Verify by running app and confirming no "setState during build" in console.
 
