@@ -97,6 +97,7 @@ Tests cover expense validation and the Groq `ParsedExpenseResult` parser.
 ## Documentation
 
 - **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)** — Routes, screens, data layer, design system, conventions, and file layout. Primary reference for implementation and contributions.
+- **[docs/V1_RELEASE.md](docs/V1_RELEASE.md)** — V1 Release Document: Magic Bar contract, Decision Clarity UI, Authority model, SettlementEngine, quality bar, philosophy, and V2 “Not Now” list.
 
 ---
 
