@@ -816,11 +816,14 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Deletes the group from Firestore. Only the creator can delete.
-  /// Removes the group from local state immediately so the UI updates without waiting for the stream.
+  /// Cancels the group's expense subscription first so no pending writes can recreate an empty group doc after delete.
+  /// Removes the group from local state after delete so the UI updates.
   Future<void> deleteGroup(String groupId) async {
     if (!canDeleteGroup(groupId, _currentUserId)) {
       throw StateError('Only the group creator can delete this group.');
     }
+    _expenseSubs[groupId]?.cancel();
+    _expenseSubs.remove(groupId);
     await FirestoreService.instance.deleteGroup(groupId);
     _removeGroupLocally(groupId);
   }

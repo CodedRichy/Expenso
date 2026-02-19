@@ -108,6 +108,9 @@ class FirestoreService {
   }
 
   /// Deletes the group and all its data: current expenses, all settled cycles and their expenses, then the group document.
+  /// Group document must be deleted last because security rules use get() on the group doc for subcollection access.
+  /// To avoid an empty document reappearing: Firestore creates a parent doc implicitly when writing to a subcollection;
+  /// ensure no pending writes (e.g. addExpense) for this group when deleting (caller should cancel subscriptions first).
   /// Only the creator should call this.
   Future<void> deleteGroup(String groupId) async {
     final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
