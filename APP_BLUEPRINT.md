@@ -70,7 +70,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). Invite link: `expenso://join/<groupId>` generated and copied to clipboard. Contacts: permission-denial message; suggestions deduped against existing + pending members. |
-| `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
+| `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Settle up**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
 ### Expense and members
@@ -87,7 +87,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/settlement-confirmation` | SettlementConfirmation | Confirm settlement; label "Cycle total"; "Close Cycle" only for creator. |
+| `/settlement-confirmation` | SettlementConfirmation | Args: `Group` or `{ group, method }` (method: `'system'` \| `'upi'` \| `'razorpay'`). When method is **razorpay**: shows current user's dues (from `getSettlementTransfersForCurrentUser`), "Pay ₹X" opens Razorpay Checkout; success → `/payment-result`. When system/upi: "Cycle total", "Close Cycle" (creator only). |
 | `/payment-result` | PaymentResult | After payment. |
 | `/cycle-settled` | CycleSettled | Cycle settled. |
 | `/cycle-history` | CycleHistory | Past cycles. |
@@ -142,7 +142,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to Groq for Magic Bar fuzzy matching. |
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`. `setGlobalProfile` persists name to Firestore so profile name = NLP name. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
-| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
+| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor, for Razorpay settlement. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 | **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
@@ -152,7 +152,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`)
+- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 - **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (phone → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
@@ -209,10 +209,10 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 - **CycleStatus:** `active` → **settling** (Phase 1: freeze) → **closed** + new active (Phase 2: archive & restart).
 - **Phase 1 — Freeze:** “Settle now” (leader) → dialog with `getSettlementInstructions` → on Confirm call `repo.settleAndRestartCycle(groupId)`. This only sets the current cycle to `CycleStatus.settling`; no new cycle yet. **Phase 2 — Archive & Restart:** When cycle is **settling** (passive), show “Start New Cycle” button; on tap call `repo.archiveAndRestart(groupId)` to close the settling cycle and create a new active cycle at ₹0.
-- **Passive state (`isPassive = activeCycle.status == CycleStatus.settling`):** Amount and status use muted gray (0xFF9B9B9B); status text “Cycle Settled - Pending Restart”. Hide “Add expense” row. Disable expense log item taps (no navigation to edit). “Pay via UPI” remains visible. Only “Start New Cycle” performs the wipe.
+- **Passive state (`isPassive = activeCycle.status == CycleStatus.settling`):** Amount and status use muted gray (0xFF9B9B9B); status text “Cycle Settled - Pending Restart”. Hide “Add expense” row. Disable expense log item taps (no navigation to edit). “Settle up” remains visible. Only “Start New Cycle” performs the wipe.
 - **Permissions:** `canEditCycle` returns false when cycle is **settling** for everyone (including leader). Edit screen and add expense are read-only / hidden.
 - **If member:** “Settle now” → snackbar “Request sent to group leader.”
-- **“Pay via UPI”** (secondary): navigates to settlement-confirmation. Design: primary button black, borderRadius 8, no elevation; balanced vertical padding before Expense Log.
+- **“Pay via UPI”** (secondary): navigates to settlement-confirmation with `{ group, method: 'razorpay' }`. User sees their dues and can pay via Razorpay Checkout. Design: primary button black, borderRadius 8, no elevation; balanced vertical padding before Expense Log.
 
 ### Recording vs settlement (we only mark it down)
 
@@ -280,6 +280,7 @@ lib/
     pinned_groups_service.dart # User pin preference (max 3 groups); SharedPreferences
     groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
     profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
+    razorpay_order_service.dart       # createRazorpayOrder(amountPaise) via Cloud Function → orderId, keyId
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
     route_args.dart          # RouteArgs.getGroup, getMap — safe route arguments (avoids crash on missing/wrong type)
@@ -332,6 +333,8 @@ test/
 | `image_picker` | Profile screen: pick photo from gallery for avatar. |
 | `flutter_slidable` | Swipe actions on GroupsList (Pin left, Delete right). |
 | `shared_preferences` | User pin preference (pinned group IDs, max 3). |
+| `razorpay_flutter` | In-app settlement: open Razorpay Checkout with order from Cloud Function. |
+| `cloud_functions` | Call `createRazorpayOrder` (asia-south1) to create Razorpay order; returns orderId and keyId. |
 
 **Permissions:**
 

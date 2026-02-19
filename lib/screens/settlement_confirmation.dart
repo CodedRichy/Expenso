@@ -1,15 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/razorpay_order_service.dart';
 import '../utils/route_args.dart';
 
-class SettlementConfirmation extends StatelessWidget {
-  final String method; // 'system' or 'upi'
+class SettlementConfirmation extends StatefulWidget {
+  const SettlementConfirmation({super.key});
 
-  const SettlementConfirmation({
-    super.key,
-    this.method = 'system',
-  });
+  @override
+  State<SettlementConfirmation> createState() => _SettlementConfirmationState();
+}
+
+class _SettlementConfirmationState extends State<SettlementConfirmation> {
+  late final Razorpay _razorpay;
+  bool _paymentInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    if (!mounted) return;
+    setState(() => _paymentInProgress = false);
+    final group = RouteArgs.getGroup(context);
+    if (group != null) {
+      Navigator.pushReplacementNamed(context, '/payment-result', arguments: group);
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    if (!mounted) return;
+    setState(() => _paymentInProgress = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(response.message ?? 'Payment failed'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _startRazorpayCheckout(Group group, int amountPaise) async {
+    setState(() => _paymentInProgress = true);
+    try {
+      final result = await createRazorpayOrder(
+        amountPaise: amountPaise,
+        receipt: 'expenso_${group.id}_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      final options = {
+        'key': result.keyId,
+        'amount': amountPaise,
+        'currency': 'INR',
+        'name': 'Expenso',
+        'order_id': result.orderId,
+      };
+      _razorpay.open(options);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _paymentInProgress = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  static String _formatAmount(double n) {
+    return n.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +91,13 @@ class SettlementConfirmation extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
+    final method = RouteArgs.getSettlementMethod(context) ?? 'system';
+    final isRazorpay = method == 'razorpay';
+    final repo = CycleRepository.instance;
+    final transfers = isRazorpay ? repo.getSettlementTransfersForCurrentUser(group.id) : null;
+    final totalDue = transfers != null ? transfers.fold<double>(0, (s, t) => s + t.amount) : 0.0;
+    final hasDues = totalDue >= 0.01;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -30,9 +110,7 @@ class SettlementConfirmation extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.chevron_left, size: 24),
                     color: const Color(0xFF1A1A1A),
                     padding: EdgeInsets.zero,
@@ -46,10 +124,10 @@ class SettlementConfirmation extends StatelessWidget {
                   const SizedBox(height: 20),
                   Text(
                     group.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: Color(0xFF1A1A1A),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -65,121 +143,198 @@ class SettlementConfirmation extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
-                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                          (Match m) => '${m[1]},',
-                        )}',
+                        '₹${isRazorpay && hasDues ? _formatAmount(totalDue) : _formatAmount(group.amount)}',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 52,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1A1A1A),
+                          color: Color(0xFF1A1A1A),
                           letterSpacing: -1.2,
                           height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Cycle total',
+                        isRazorpay && hasDues ? 'Your dues' : 'Cycle total',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 17,
-                          color: const Color(0xFF6B6B6B),
+                          color: Color(0xFF6B6B6B),
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        method == 'upi'
-                            ? 'You will be redirected to complete payment via UPI.'
-                            : 'This will close the current cycle. All pending balances will be cleared.',
+                        _subtitleText(method, isRazorpay, hasDues),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
-                          color: const Color(0xFF6B6B6B),
+                          color: Color(0xFF6B6B6B),
                           height: 1.5,
                         ),
                       ),
-                      _buildPendingSettlements(group.id),
-                      const SizedBox(height: 48),
-                        Column(
-                          children: [
-                            if (CycleRepository.instance.isCurrentUserCreator(group.id))
-                              ElevatedButton(
-                              onPressed: () {
-                                CycleRepository.instance.settleAndRestartCycle(group.id);
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  '/payment-result',
-                                  arguments: group,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A1A1A),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                method == 'upi' ? 'Continue to Payment' : 'Close Cycle',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            )
-                            else
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  'Only the group creator can close the cycle.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
+                      if (isRazorpay && transfers != null && transfers.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        ...transfers.map(
+                          (t) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  t.creditorDisplayName,
+                                  style: const TextStyle(
                                     fontSize: 15,
-                                    color: const Color(0xFF6B6B6B),
+                                    color: Color(0xFF1A1A1A),
                                   ),
                                 ),
-                              ),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1A1A1A),
-                                side: const BorderSide(color: Color(0xFFE5E5E5)),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                Text(
+                                  '₹${_formatAmount(t.amount)}',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF1A1A1A),
+                                  ),
                                 ),
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
-                    ),
+                      _buildPendingSettlements(group.id, isRazorpay),
+                      const SizedBox(height: 48),
+                      _buildActions(
+                        context,
+                        group: group,
+                        method: method,
+                        isRazorpay: isRazorpay,
+                        hasDues: hasDues,
+                        totalDue: totalDue,
+                        onPayPressed: () => _startRazorpayCheckout(group, (totalDue * 100).round()),
+                      ),
+                    ],
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPendingSettlements(String groupId) {
+  String _subtitleText(String method, bool isRazorpay, bool hasDues) {
+    if (isRazorpay) {
+      if (hasDues) return 'Pay securely via card, UPI, or net banking.';
+      return 'You have nothing to pay this cycle.';
+    }
+    if (method == 'upi') return 'You will be redirected to complete payment via UPI.';
+    return 'This will close the current cycle. All pending balances will be cleared.';
+  }
+
+  Widget _buildActions(
+    BuildContext context, {
+    required Group group,
+    required String method,
+    required bool isRazorpay,
+    required bool hasDues,
+    required double totalDue,
+    required VoidCallback onPayPressed,
+  }) {
+    final isCreator = CycleRepository.instance.isCurrentUserCreator(group.id);
+
+    if (isRazorpay) {
+      return Column(
+        children: [
+          if (hasDues)
+            ElevatedButton(
+              onPressed: _paymentInProgress ? null : onPayPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A1A1A),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+                minimumSize: const Size(double.infinity, 0),
+              ),
+              child: Text(
+                _paymentInProgress ? 'Opening…' : 'Pay ₹${_formatAmount(totalDue)}',
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+              ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'You’re all settled for this cycle.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+              ),
+            ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF1A1A1A),
+              side: const BorderSide(color: Color(0xFFE5E5E5)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              minimumSize: const Size(double.infinity, 0),
+            ),
+            child: const Text('Back', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        if (isCreator)
+          ElevatedButton(
+            onPressed: () {
+              CycleRepository.instance.settleAndRestartCycle(group.id);
+              Navigator.pushReplacementNamed(context, '/payment-result', arguments: group);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A1A1A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+              minimumSize: const Size(double.infinity, 0),
+            ),
+            child: Text(
+              method == 'upi' ? 'Continue to Payment' : 'Close Cycle',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+            ),
+          )
+        else
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Only the group creator can close the cycle.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+            ),
+          ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1A1A1A),
+            side: const BorderSide(color: Color(0xFFE5E5E5)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            minimumSize: const Size(double.infinity, 0),
+          ),
+          child: const Text('Cancel', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPendingSettlements(String groupId, bool isRazorpay) {
     final instructions = CycleRepository.instance.getSettlementInstructions(groupId);
     if (instructions.isEmpty) return const SizedBox.shrink();
     return Padding(

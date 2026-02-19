@@ -337,26 +337,15 @@ class GroupDetail extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: TextButton(
                   onPressed: () {
-                    final upiId = repo.currentUserUpiId?.trim();
-                    if (upiId == null || upiId.isEmpty) {
-                      Navigator.pushNamed(context, '/profile');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Set your UPI ID to enable easy payments.'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                      return;
-                    }
                     Navigator.pushNamed(
                       context,
                       '/settlement-confirmation',
-                      arguments: defaultGroup,
+                      arguments: {'group': defaultGroup, 'method': 'razorpay'},
                     );
                   },
                   style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
                   child: const Text(
-                    'Pay via UPI',
+                    'Settle up',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,

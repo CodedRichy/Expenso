@@ -13,14 +13,15 @@ Future<RazorpayOrderResult> createRazorpayOrder({
 }) async {
   final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
       .httpsCallable('createRazorpayOrder');
-  final result = await callable.call<Map<dynamic, dynamic>>({
+  final result = await callable.call({
     'amountPaise': amountPaise,
     if (receipt != null) 'receipt': receipt,
   });
   final data = result.data;
-  if (data == null) throw Exception('No response from server.');
-  final orderId = data['orderId'] as String?;
-  final keyId = data['keyId'] as String?;
+  if (data == null || data is! Map) throw Exception('No response from server.');
+  final map = Map<String, dynamic>.from(data as Map);
+  final orderId = map['orderId'] as String?;
+  final keyId = map['keyId'] as String?;
   if (orderId == null || orderId.isEmpty || keyId == null || keyId.isEmpty) {
     throw Exception('Invalid order response.');
   }

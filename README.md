@@ -25,7 +25,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 | **Summary card** | Group detail shows a “Decision Clarity” card: cycle total, spent by you, your status (credit/debt). Empty cycle shows “Zero-Waste Cycle” and a prompt to use the Magic Bar. |
 | **Profile** | From Groups header: tap avatar to open Profile. Set display name (same name used for Magic Bar fuzzy matching), upload avatar (Firebase Storage), and save UPI ID for payments. |
 | **Balances** | Per-group “who owes whom” from the settlement engine; shown when the cycle has expenses. |
-| **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Both require a confirmation dialog (Justice Guard). Optional “Pay via UPI” flow. |
+| **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Both require a confirmation dialog (Justice Guard). **Settle up** opens Razorpay Checkout for in-app payment of your dues. |
 | **Auth & data** | Firebase Phone Auth (OTP). Cloud Firestore for users, groups, expenses, and settled cycles. |
 
 ---
@@ -33,7 +33,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 ## Tech stack
 
 - **Flutter** (Dart), **Material 3**
-- **Firebase:** Auth (phone/OTP), Cloud Firestore
+- **Firebase:** Auth (phone/OTP), Cloud Firestore, Cloud Functions (Razorpay order creation)
 - **Smart Bar:** Groq API (Llama 3.3) for parsing natural-language expenses (optional; requires `GROQ_API_KEY`)
 - **Local:** SharedPreferences (pinned groups), `flutter_contacts` (invite suggestions), `flutter_dotenv` (env)
 
@@ -64,6 +64,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
    - Run `dart run flutterfire configure`.
    - Enable **Phone** in Authentication → Sign-in method.
    - **Storage**: In Console → Build → Storage → Get started (required for profile avatar uploads). If you see "Upload failed" or 404 when setting a profile photo, enable Storage and set rules (e.g. allow authenticated users to read/write `users/{userId}/**`).
+   - **Functions** (for Settle up): Deploy `functions/` with `firebase deploy --only functions`. Set env vars `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in Firebase Console → Functions → createRazorpayOrder (or via `firebase functions:config:set` and read in function). See `functions/README.md`.
    - Use Test Mode or configure Firestore rules as needed.
 
 ### Run
@@ -81,7 +82,7 @@ For phone auth in development, the app supports a test-number hint (code `123456
 | Item | Purpose |
 |------|---------|
 | `.env` | `GROQ_API_KEY` — used by Smart Bar for expense parsing (optional). |
-| Firebase | Phone Auth + Firestore; config via `flutterfire configure` and Console. |
+| Firebase | Phone Auth + Firestore; config via `flutterfire configure` and Console. Functions: Razorpay keys for `createRazorpayOrder`. |
 | Pinned groups | Stored in SharedPreferences (max 3 per user). |
 
 ---
