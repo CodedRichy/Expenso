@@ -8,6 +8,144 @@ import '../services/groq_expense_parser_service.dart';
 import '../utils/settlement_engine.dart';
 import 'empty_states.dart';
 
+void _showUndoExpenseOverlay(
+  BuildContext context, {
+  required String groupId,
+  required String expenseId,
+  required String description,
+  required double amount,
+}) {
+  final repo = CycleRepository.instance;
+  showDialog(
+    context: context,
+    barrierColor: Colors.transparent,
+    barrierDismissible: false,
+    builder: (ctx) => _UndoExpenseOverlayContent(
+      description: description,
+      amount: amount,
+      onUndo: () {
+        repo.deleteExpense(groupId, expenseId);
+        repo.clearLastAdded();
+        Navigator.pop(ctx);
+      },
+      onDismiss: () {
+        repo.clearLastAdded();
+        Navigator.pop(ctx);
+      },
+    ),
+  );
+}
+
+class _UndoExpenseOverlayContent extends StatefulWidget {
+  final String description;
+  final double amount;
+  final VoidCallback onUndo;
+  final VoidCallback onDismiss;
+
+  const _UndoExpenseOverlayContent({
+    required this.description,
+    required this.amount,
+    required this.onUndo,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_UndoExpenseOverlayContent> createState() => _UndoExpenseOverlayContentState();
+}
+
+class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> {
+  static const int _countdownSeconds = 5;
+  int _timeLeft = _countdownSeconds;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_timeLeft <= 0) {
+        _timer?.cancel();
+        widget.onDismiss();
+      } else {
+        setState(() => _timeLeft--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          Positioned(
+            bottom: 32,
+            left: 24,
+            right: 24,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 430),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Expense added',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${widget.description} · ₹${widget.amount.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: const Color(0xFFB0B0B0),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  TextButton.icon(
+                    onPressed: () {
+                      _timer?.cancel();
+                      widget.onUndo();
+                    },
+                    icon: const Icon(Icons.refresh, size: 16, color: Colors.white),
+                    label: Text(
+                      'Undo',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class GroupDetail extends StatelessWidget {
   final Group? group;
 
@@ -899,7 +1037,14 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           slots.add(_ParticipantSlot(name: displayName, amount: perShare, phone: m.phone, isGuessed: false));
         }
       } else {
-        final perShare = result.amount / names.length;
+        final splitCount = names.length + 1;
+        final perShare = result.amount / splitCount;
+        slots.add(_ParticipantSlot(
+          name: repo.getMemberDisplayName(repo.currentUserPhone),
+          amount: perShare,
+          phone: repo.currentUserPhone,
+          isGuessed: false,
+        ));
         for (final name in names) {
           final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
           slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
@@ -940,12 +1085,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
       final gid = undoResult['groupId'] as String;
       final eid = undoResult['expenseId'] as String;
-      await Navigator.pushNamed(context, '/undo-expense', arguments: {
-        'groupId': gid,
-        'expenseId': eid,
-        'description': repo.lastAddedDescription ?? '',
-        'amount': repo.lastAddedAmount ?? 0.0,
-      });
+      _showUndoExpenseOverlay(context, groupId: gid, expenseId: eid, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0);
     }
   }
 
@@ -988,12 +1128,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   final groupId = map['groupId'] as String;
                   final expenseId = map['expenseId'] as String;
                   if (!context.mounted) return;
-                  await Navigator.pushNamed(context, '/undo-expense', arguments: {
-                    'groupId': groupId,
-                    'expenseId': expenseId,
-                    'description': repo.lastAddedDescription ?? '',
-                    'amount': repo.lastAddedAmount ?? 0.0,
-                  });
+                  _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0);
                 }
               },
               icon: Icon(
