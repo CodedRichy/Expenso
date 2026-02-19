@@ -127,5 +127,19 @@ void main() {
       expect(result.splitType, 'shares');
       expect(result.sharesByName, {'Alice': 2.0, 'Bob': 3.0});
     });
+
+    test('even with one participant: split between me and them (e.g. dinner with Rockey 300)', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 300,
+        'description': 'Dinner',
+        'category': 'Food',
+        'splitType': 'even',
+        'participants': ['Rockey'],
+      });
+      expect(result.amount, 300.0);
+      expect(result.splitType, 'even');
+      expect(result.participantNames, ['Rockey']);
+      expect(result.payerName, isNull);
+    });
   });
 }
