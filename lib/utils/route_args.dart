@@ -8,7 +8,20 @@ class RouteArgs {
 
   static Group? getGroup(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
-    return args is Group ? args : null;
+    if (args is Group) return args;
+    if (args is Map<String, dynamic>) {
+      final g = args['group'];
+      return g is Group ? g : null;
+    }
+    return null;
+  }
+
+  static String? getSettlementMethod(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      return args['method'] as String?;
+    }
+    return null;
   }
 
   static Map<String, dynamic>? getMap(BuildContext context) {

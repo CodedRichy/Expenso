@@ -899,6 +899,42 @@ class CycleRepository extends ChangeNotifier {
     return result;
   }
 
+  /// Settlement transfers for the current user as debtor: (creditor, amount) pairs and total.
+  /// Empty list and 0 if current user owes nothing.
+  List<SettlementTransfer> getSettlementTransfersForCurrentUser(String groupId) {
+    final balances = calculateBalances(groupId);
+    final debtors = balances.entries
+        .where((e) => e.value < -0.01)
+        .map((e) => _BalanceEntry(e.key, -e.value))
+        .toList();
+    final creditors = balances.entries
+        .where((e) => e.value > 0.01)
+        .map((e) => _BalanceEntry(e.key, e.value))
+        .toList();
+    debtors.sort((a, b) => b.amount.compareTo(a.amount));
+    creditors.sort((a, b) => b.amount.compareTo(a.amount));
+    final List<SettlementTransfer> result = [];
+    int d = 0, c = 0;
+    while (d < debtors.length && c < creditors.length) {
+      final debtor = debtors[d];
+      final creditor = creditors[c];
+      final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
+      if (amount < 0.01) break;
+      if (debtor.phone == _currentUserPhone) {
+        result.add(SettlementTransfer(
+          creditorPhone: creditor.phone,
+          creditorDisplayName: getMemberDisplayName(creditor.phone),
+          amount: amount,
+        ));
+      }
+      debtor.amount -= amount;
+      creditor.amount -= amount;
+      if (debtor.amount < 0.01) d++;
+      if (creditor.amount < 0.01) c++;
+    }
+    return result;
+  }
+
   /// Phase 1 (Freeze): Sets the current cycle's status to settling. Creator-only.
   /// Makes the group passive immediately (cycle settling) and writes to Firestore.
   void settleAndRestartCycle(String groupId) {
