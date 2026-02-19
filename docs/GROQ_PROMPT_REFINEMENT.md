@@ -2,6 +2,8 @@
 
 When the Magic Bar produces a **wrong parse** (wrong payer, participants, split type, amount, or description), fix it by updating the prompt and recording the change here. The prompt lives in `lib/services/groq_expense_parser_service.dart` (`_buildSystemPrompt`).
 
+**Comprehensive research:** See **docs/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md** for a full literature summary (structured output, few-shot, error-driven refinement, ambiguity, temperature, negative constraints, evaluation, Groq-specific guidance).
+
 ---
 
 ## Process (every time we hit an error)
