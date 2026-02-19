@@ -407,11 +407,11 @@ class CycleRepository extends ChangeNotifier {
     final amount = (data['amount'] is num) ? (data['amount'] as num).toDouble() : 0.0;
     final payerId = data['payerId'] as String? ?? '';
     final splits = data['splits'] as Map<String, dynamic>?;
-    String paidByPhone = _currentUserPhone;
+    String paidByPhone = '';
     if (payerId == _currentUserId) {
       paidByPhone = _currentUserPhone;
-    } else if (_userCache.containsKey(payerId)) {
-      paidByPhone = _userCache[payerId]!['phoneNumber'] as String? ?? '';
+    } else if (payerId.isNotEmpty) {
+      paidByPhone = _membersById[payerId]?.phone ?? _userCache[payerId]?['phoneNumber'] as String? ?? '';
     }
     final participantPhones = <String>[];
     final splitAmountsByPhone = <String, double>{};
