@@ -185,8 +185,36 @@ class CycleRepository extends ChangeNotifier {
     _expensesByCycleId.clear();
     _groupMeta.clear();
     _userCache.clear();
+    _clearLastAdded();
+    _streamError = null;
     notifyListeners();
   }
+
+  String? _lastAddedGroupId;
+  String? _lastAddedExpenseId;
+  String? _lastAddedDescription;
+  double? _lastAddedAmount;
+
+  String? get lastAddedGroupId => _lastAddedGroupId;
+  String? get lastAddedExpenseId => _lastAddedExpenseId;
+  String? get lastAddedDescription => _lastAddedDescription;
+  double? get lastAddedAmount => _lastAddedAmount;
+
+  void _setLastAdded(String groupId, String expenseId, String description, double amount) {
+    _lastAddedGroupId = groupId;
+    _lastAddedExpenseId = expenseId;
+    _lastAddedDescription = description;
+    _lastAddedAmount = amount;
+  }
+
+  void _clearLastAdded() {
+    _lastAddedGroupId = null;
+    _lastAddedExpenseId = null;
+    _lastAddedDescription = null;
+    _lastAddedAmount = null;
+  }
+
+  void clearLastAdded() => _clearLastAdded();
 
   final List<Group> _groups = [];
   final Map<String, Member> _membersById = {};
@@ -203,8 +231,17 @@ class CycleRepository extends ChangeNotifier {
   bool get groupsLoading => _groupsLoading;
   bool _groupsLoading = false;
 
+  String? _streamError;
+  String? get streamError => _streamError;
+  void clearStreamError() {
+    if (_streamError == null) return;
+    _streamError = null;
+    notifyListeners();
+  }
+
   void _startListening() {
     if (_currentUserId.isEmpty) return;
+    _streamError = null;
     _groupsSub?.cancel();
     _groupsLoading = true;
     notifyListeners();
@@ -214,6 +251,7 @@ class CycleRepository extends ChangeNotifier {
         debugPrint('CycleRepository groupsStream error: $e');
         if (kDebugMode && st != null) debugPrint(st.toString());
         _groupsLoading = false;
+        _streamError = e.toString();
         notifyListeners();
       },
     );
@@ -227,6 +265,12 @@ class CycleRepository extends ChangeNotifier {
       sub.cancel();
     }
     _expenseSubs.clear();
+  }
+
+  void restartListening() {
+    clearStreamError();
+    _stopListening();
+    _startListening();
   }
 
   void _onGroupsSnapshot(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
@@ -309,6 +353,8 @@ class CycleRepository extends ChangeNotifier {
           onError: (e, st) {
             debugPrint('CycleRepository expensesStream($groupId) error: $e');
             if (kDebugMode && st != null) debugPrint(st.toString());
+            _streamError = e.toString();
+            notifyListeners();
           },
         );
       }
@@ -620,6 +666,7 @@ class CycleRepository extends ChangeNotifier {
       if (expense.category.isNotEmpty) 'category': expense.category,
     };
     await FirestoreService.instance.addExpense(groupId, data);
+    _setLastAdded(groupId, expense.id, expense.description, expense.amount);
   }
 
   /// Adds an expense from the Magic Bar confirmation flow. Ensures splits map contains
@@ -699,6 +746,7 @@ class CycleRepository extends ChangeNotifier {
       if (category.isNotEmpty) 'category': category,
     };
     await FirestoreService.instance.addExpense(groupId, data);
+    _setLastAdded(groupId, id, description, amount);
   }
 
   Expense? getExpense(String groupId, String expenseId) {
@@ -764,6 +812,7 @@ class CycleRepository extends ChangeNotifier {
 
   void deleteExpense(String groupId, String expenseId) {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
+    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) _clearLastAdded();
   }
 
   /// Deletes the group from Firestore. Only the creator can delete.

@@ -57,10 +57,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
       },
       onError: (String message) {
         if (!mounted) return;
-        setState(() {
-          _loading = false;
-          _errorMessage = message;
-        });
+        setState(() => _loading = false);
+        Navigator.of(context).pushReplacementNamed('/error-states', arguments: {'type': 'generic'});
       },
       onCodeSent: (String verificationId, int? resendToken) {
         if (!mounted) return;
@@ -106,7 +104,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
     }
     final verificationId = _verificationId;
     if (verificationId == null) {
-      setState(() => _errorMessage = 'Session expired. Change number and try again.');
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/error-states', arguments: {'type': 'session-expired'});
       return;
     }
     setState(() {

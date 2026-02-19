@@ -1,22 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-
-class ExpenseData {
-  final String description;
-  final double amount;
-
-  ExpenseData({
-    required this.description,
-    required this.amount,
-  });
-}
+import '../repositories/cycle_repository.dart';
 
 class UndoExpense extends StatefulWidget {
-  final ExpenseData? expense;
+  final String? groupId;
+  final String? expenseId;
+  final String? description;
+  final double? amount;
 
   const UndoExpense({
     super.key,
-    this.expense,
+    this.groupId,
+    this.expenseId,
+    this.description,
+    this.amount,
   });
 
   @override
@@ -24,48 +21,53 @@ class UndoExpense extends StatefulWidget {
 }
 
 class _UndoExpenseState extends State<UndoExpense> {
-  int timeLeft = 5;
-  Timer? timer;
+  static const int _countdownSeconds = 5;
+  int _timeLeft = _countdownSeconds;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    startTimer();
-  }
-
-  void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (timeLeft == 0) {
-        timer.cancel();
-        handleDismiss();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_timeLeft <= 0) {
+        _timer?.cancel();
+        _dismiss();
       } else {
-        setState(() {
-          timeLeft--;
-        });
+        setState(() => _timeLeft--);
       }
     });
   }
 
-  void handleUndo() {
-    timer?.cancel();
-    handleDismiss();
+  void _undo() {
+    _timer?.cancel();
+    final repo = CycleRepository.instance;
+    final gid = widget.groupId ?? repo.lastAddedGroupId;
+    final eid = widget.expenseId ?? repo.lastAddedExpenseId;
+    if (gid != null && eid != null) {
+      repo.deleteExpense(gid, eid);
+      repo.clearLastAdded();
+    }
+    _dismiss();
   }
 
-  void handleDismiss() {}
+  void _dismiss() {
+    if (!mounted) return;
+    CycleRepository.instance.clearLastAdded();
+    Navigator.of(context).pop();
+  }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final defaultExpense = widget.expense ??
-        ExpenseData(
-          description: 'Dinner at Bistro 42',
-          amount: 1200,
-        );
+    final repo = CycleRepository.instance;
+    final description = widget.description ?? repo.lastAddedDescription ?? '';
+    final amount = widget.amount ?? repo.lastAddedAmount ?? 0.0;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -99,7 +101,7 @@ class _UndoExpenseState extends State<UndoExpense> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${defaultExpense.description} · ₹${defaultExpense.amount.toStringAsFixed(0)}',
+                          '$description · ₹${amount.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 14,
                             color: const Color(0xFFB0B0B0),
@@ -110,7 +112,7 @@ class _UndoExpenseState extends State<UndoExpense> {
                   ),
                   const SizedBox(width: 16),
                   TextButton.icon(
-                    onPressed: handleUndo,
+                    onPressed: _undo,
                     icon: const Icon(
                       Icons.refresh,
                       size: 16,

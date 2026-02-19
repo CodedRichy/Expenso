@@ -4,12 +4,12 @@ Cross-check of the "what is not done" list (from external review of APP_BLUEPRIN
 
 ## CRITICAL
 
-### 1. UndoExpense not wired
+### 1. UndoExpense not wired — **FIXED**
 - **Screen exists:** Yes (`lib/screens/undo_expense.dart`).
-- **Logic exists:** Partially — SnackBar "Undo" in group_detail calls `repo.deleteExpense(gid, eid)` and is functional.
-- **UndoExpense screen:** Never navigated to; `handleUndo` / `handleDismiss` are no-ops; no timer effect.
+- **Logic exists:** Partially — SnackBar "Undo" in group_detail called `repo.deleteExpense(gid, eid)` and was functional.
+- **UndoExpense screen:** Never navigated to; `handleUndo` / `handleDismiss` were no-ops; no timer effect.
 - **Repo:** No `lastAddedExpenseId` / last-added snapshot stored.
-- **Verdict:** **Accurate.** Undo works via SnackBar only; the UndoExpense screen and repo last-added state are not wired.
+- **Verdict:** **Was accurate.** Implemented: repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount` after add; GroupDetail pushes `/undo-expense` after add (expense input + Magic Bar); UndoExpense screen has 5s timer, Undo → delete from Firestore + clearLastAdded + pop, timeout → pop.
 
 ### 2. EmptyStates not actually used
 - **EmptyStates screen:** Exists and is used.

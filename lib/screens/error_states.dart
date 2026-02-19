@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../repositories/cycle_repository.dart';
 
 class ErrorStates extends StatelessWidget {
   final String type; // 'network', 'session-expired', 'payment-unavailable', 'generic'
@@ -59,6 +60,7 @@ class ErrorStates extends StatelessWidget {
                     const SizedBox(height: 48),
                     ElevatedButton(
                       onPressed: () {
+                        CycleRepository.instance.restartListening();
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
@@ -316,7 +318,10 @@ class ErrorStates extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      CycleRepository.instance.restartListening();
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A1A1A),
                       foregroundColor: Colors.white,

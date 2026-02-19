@@ -86,6 +86,14 @@ class _GroupsListState extends State<GroupsList> {
       builder: (context, _) {
         final groups = _sortedGroups(repo.groups, pinService.pinnedIds);
         final loading = repo.groupsLoading && groups.isEmpty;
+        if (repo.streamError != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+            if (CycleRepository.instance.streamError == null) return;
+            Navigator.of(context).pushNamed('/error-states', arguments: {'type': 'network'});
+            CycleRepository.instance.clearStreamError();
+          });
+        }
         return Scaffold(
           backgroundColor: const Color(0xFFF7F7F8),
           floatingActionButton: !loading && groups.isNotEmpty

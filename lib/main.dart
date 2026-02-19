@@ -119,7 +119,15 @@ class MyApp extends StatelessWidget {
         '/invite-members': (context) => const InviteMembers(),
         '/group-detail': (context) => const GroupDetail(),
         '/expense-input': (context) => const ExpenseInput(),
-        '/undo-expense': (context) => const UndoExpense(),
+        '/undo-expense': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return UndoExpense(
+            groupId: args?['groupId'] as String?,
+            expenseId: args?['expenseId'] as String?,
+            description: args?['description'] as String?,
+            amount: (args?['amount'] as num?)?.toDouble(),
+          );
+        },
         '/edit-expense': (context) => const EditExpense(),
         '/group-members': (context) => const GroupMembers(),
         '/member-change': (context) => const MemberChange(),
@@ -130,7 +138,10 @@ class MyApp extends StatelessWidget {
         '/cycle-history': (context) => const CycleHistory(),
         '/cycle-history-detail': (context) => const CycleHistoryDetail(),
         '/empty-states': (context) => const EmptyStates(),
-        '/error-states': (context) => const ErrorStates(),
+        '/error-states': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return ErrorStates(type: args?['type'] as String? ?? 'generic');
+        },
         '/profile': (context) => const ProfileScreen(),
       },
     );

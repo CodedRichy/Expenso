@@ -968,17 +968,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
       final gid = undoResult['groupId'] as String;
       final eid = undoResult['expenseId'] as String;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Expense added'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => repo.deleteExpense(gid, eid),
-          ),
-        ),
-      );
+      await Navigator.pushNamed(context, '/undo-expense', arguments: {
+        'groupId': gid,
+        'expenseId': eid,
+        'description': repo.lastAddedDescription ?? '',
+        'amount': repo.lastAddedAmount ?? 0.0,
+      });
     }
   }
 
@@ -1020,19 +1015,13 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   final repo = CycleRepository.instance;
                   final groupId = map['groupId'] as String;
                   final expenseId = map['expenseId'] as String;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Expense added'),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                      action: SnackBarAction(
-                        label: 'Undo',
-                        onPressed: () {
-                          repo.deleteExpense(groupId, expenseId);
-                        },
-                      ),
-                    ),
-                  );
+                  if (!context.mounted) return;
+                  await Navigator.pushNamed(context, '/undo-expense', arguments: {
+                    'groupId': groupId,
+                    'expenseId': expenseId,
+                    'description': repo.lastAddedDescription ?? '',
+                    'amount': repo.lastAddedAmount ?? 0.0,
+                  });
                 }
               },
               icon: Icon(

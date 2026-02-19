@@ -78,7 +78,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | Route | Screen | Notes |
 |-------|--------|--------|
 | `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. |
-| `/undo-expense` | UndoExpense | Undo last expense. |
+| `/undo-expense` | UndoExpense | Shown after add (expense input or Magic Bar). Args: `groupId`, `expenseId`, `description`, `amount`. 5s timer then auto-dismiss; Undo deletes from Firestore and pops. |
 | `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. |
 | `/member-change` | MemberChange | Change one member. |
 | `/delete-group` | DeleteGroup | Confirm delete. |
@@ -145,6 +145,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
+| **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
 
 ### Models
 
