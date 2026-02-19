@@ -11,27 +11,22 @@ Cross-check of the "what is not done" list (from external review of APP_BLUEPRIN
 - **Repo:** No `lastAddedExpenseId` / last-added snapshot stored.
 - **Verdict:** **Was accurate.** Implemented: repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount` after add; GroupDetail pushes `/undo-expense` after add (expense input + Magic Bar); UndoExpense screen has 5s timer, Undo → delete from Firestore + clearLastAdded + pop, timeout → pop.
 
-### 2. EmptyStates not actually used
+### 2. EmptyStates not actually used — **FIXED**
 - **EmptyStates screen:** Exists and is used.
 - **GroupsList:** Uses `EmptyStates(type: 'no-groups')` when no groups (not inline).
-- **GroupDetail:** Uses `EmptyStates(type: 'no-expenses-new-cycle')` when expenses empty.
-- **Verdict:** **Partially accurate.** EmptyStates is used in both places. "New cycle" empty copy exists as separate types in EmptyStates (`new-cycle`, `no-expenses-new-cycle`); no major duplication elsewhere.
+- **GroupDetail:** Uses `EmptyStates(type: 'no-expenses-new-cycle')` when expenses empty; Decision Clarity card now uses `EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)` instead of inline `_buildEmptyState`. Inline empty UI removed; all empty copy centralized in EmptyStates.
 
-### 3. ErrorStates never reachable
-- **Screen/route:** Exists; no `Navigator.pushNamed(context, '/error-states')` (or equivalent) anywhere.
-- **Errors:** Auth shows in-screen message; Firestore stream `onError` only `debugPrint`; Groq shows snackbar.
-- **Verdict:** **Accurate.** ErrorStates is never pushed; no global or targeted route on auth/Firestore/Groq hard failure.
+### 3. ErrorStates never reachable — **FIXED**
+- **Screen/route:** Exists; route accepts args `type`.
+- **Now pushed from:** (1) GroupsList when `CycleRepository.streamError != null` (Firestore groups/expenses stream error) → type `network`. (2) PhoneAuth when session expired (verificationId null) → `pushReplacementNamed` with type `session-expired`. ErrorStates "Try Again" (network/generic) calls `CycleRepository.restartListening()` and pop.
 
-### 4. Contacts syncing incomplete
-- **flutter_contacts:** Used in InviteMembers; permission requested and state tracked.
-- **Permission denial:** UI shows "Access Contacts" when not granted; no dedicated denial/explanation flow.
-- **Search/dedupe:** No indexing or debounce for large lists; no explicit dedupe of contacts vs existing/pending members; no UID resolution when user joins later.
-- **Verdict:** **Accurate.**
+### 4. Contacts syncing incomplete — **PARTIALLY FIXED**
+- **Permission denial:** InviteMembers now shows message: "Contacts access was denied. You can still add members by entering a number below." plus "Access Contacts" button.
+- **Dedupe:** Contact suggestions exclude phones that are already members or pending (`_getFilteredContacts(existingPhones)`). UID resolution when user joins later and large-list performance remain as future work.
 
-### 5. Group invite link logic UI-only
-- **InviteMembers:** "Copy invite link" runs `handleCopyLink()` which only sets `linkCopied = true`; no `Clipboard.setData`, no link generation, no revocation, no deep link handling.
-- **pendingMembers:** Stored in Firestore and used; lifecycle (invite → join) not tied to any link.
-- **Verdict:** **Accurate.** Link is visual only; no generation/revoke/deep link.
+### 5. Group invite link logic UI-only — **PARTIALLY FIXED**
+- **Invite link:** `handleCopyLink()` now builds `expenso://join/<groupId>` and copies to clipboard via `Clipboard.setData`. Link generation + copy done.
+- **Revocation / deep link / pending lifecycle:** Not implemented (link is stable per group; no token revocation or incoming deep-link handling yet).
 
 ---
 
@@ -69,11 +64,11 @@ Cross-check of the "what is not done" list (from external review of APP_BLUEPRIN
 
 ## Summary
 
-| Item | Verdict |
-|------|--------|
-| 1 UndoExpense | Accurate — wiring and repo state missing |
-| 2 EmptyStates | Partially accurate — already used; could centralize types |
-| 3 ErrorStates | Accurate — never pushed |
-| 4 Contacts | Accurate |
-| 5 Invite link | Accurate |
-| 6–15 | Accurate |
+| Item | Verdict | Status |
+|------|--------|--------|
+| 1 UndoExpense | Was accurate | **FIXED** (repo last-added, UndoExpense screen wired) |
+| 2 EmptyStates | Partially accurate | **FIXED** (zero-waste-cycle in EmptyStates; inline removed) |
+| 3 ErrorStates | Was accurate | **FIXED** (Firestore + auth session-expired → route) |
+| 4 Contacts | Was accurate | **PARTIALLY FIXED** (denial message + dedupe) |
+| 5 Invite link | Was accurate | **PARTIALLY FIXED** (generate + copy; no revoke/deep link) |
+| 6–15 | Accurate | Not yet addressed |

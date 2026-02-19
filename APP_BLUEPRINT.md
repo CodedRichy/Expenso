@@ -69,7 +69,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
 | `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
-| `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). |
+| `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). Invite link: `expenso://join/<groupId>` generated and copied to clipboard. Contacts: permission-denial message; suggestions deduped against existing + pending members. |
 | `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Pay via UPI**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
@@ -103,8 +103,8 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen |
 |-------|--------|
-| `/empty-states` | EmptyStates |
-| `/error-states` | ErrorStates |
+| `/empty-states` | EmptyStates. Types: `no-groups`, `no-expenses`, `new-cycle`, `no-expenses-new-cycle`, `zero-waste-cycle` (optional `forDarkCard` for Decision Clarity card). |
+| `/error-states` | ErrorStates. Args: `type` ('network', 'session-expired', 'generic'). Pushed on Firestore stream error (GroupsList), auth session expired (PhoneAuth). "Try Again" calls `CycleRepository.restartListening()` and pop. |
 
 ---
 
@@ -146,6 +146,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 | **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
+| **Stream error / ErrorStates** | `streamError` set when groups or expenses stream `onError`; `clearStreamError()`, `restartListening()`. GroupsList pushes `/error-states` (type `network`) when `streamError != null`; ErrorStates "Try Again" calls `restartListening()` and pop. |
 
 ### Models
 

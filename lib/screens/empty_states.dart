@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 class EmptyStates extends StatelessWidget {
-  final String type; // 'no-groups', 'no-expenses', 'new-cycle', 'no-expenses-new-cycle'
-  /// For 'no-groups': called when the main action button is pressed. If null, navigates to '/create-group'.
+  final String type; // 'no-groups', 'no-expenses', 'new-cycle', 'no-expenses-new-cycle', 'zero-waste-cycle'
   final VoidCallback? onActionPressed;
-  /// When false, 'no-groups' returns only the inner content (no Scaffold) for use as body of parent Scaffold.
   final bool wrapInScaffold;
+  final bool forDarkCard;
 
   const EmptyStates({
     super.key,
     this.type = 'no-groups',
     this.onActionPressed,
     this.wrapInScaffold = true,
+    this.forDarkCard = false,
   });
 
   @override
@@ -201,6 +201,36 @@ class EmptyStates extends StatelessWidget {
             ),
           ),
         );
+    }
+
+    if (type == 'zero-waste-cycle') {
+      final titleColor = forDarkCard ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1A1A1A);
+      final bodyColor = forDarkCard ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF6B6B6B);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Zero-Waste Cycle',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.35,
+              color: bodyColor,
+            ),
+          ),
+        ],
+      );
     }
 
     return const SizedBox.shrink();

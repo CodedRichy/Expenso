@@ -571,7 +571,7 @@ class _DecisionClarityCard extends StatelessWidget {
             child: isEmpty
                 ? KeyedSubtree(
                     key: const ValueKey('empty'),
-                    child: _buildEmptyState(context),
+                    child: EmptyStates(type: 'zero-waste-cycle', forDarkCard: true),
                   )
                 : KeyedSubtree(
                     key: const ValueKey('content'),
@@ -587,34 +587,6 @@ class _DecisionClarityCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Zero-Waste Cycle',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.95),
-            letterSpacing: -0.4,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.35,
-            color: Colors.white.withValues(alpha: 0.75),
-          ),
-        ),
-      ],
     );
   }
 

@@ -80,11 +80,14 @@ class _InviteMembersState extends State<InviteMembers> {
     return digits;
   }
 
-  List<fc.Contact> get _filteredContacts {
+  List<fc.Contact> _getFilteredContacts(Set<String> existingPhones) {
     final nameLower = name.trim().toLowerCase();
     final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
     if (nameLower.isEmpty && phoneDigits.isEmpty) return [];
     return _allContacts.where((c) {
+      for (final p in c.phones) {
+        if (existingPhones.contains(_normalizePhone(p.number))) return false;
+      }
       if (nameLower.isNotEmpty && c.displayName.toLowerCase().contains(nameLower)) return true;
       for (final p in c.phones) {
         final numDigits = p.number.replaceAll(RegExp(r'\D'), '');
@@ -107,16 +110,15 @@ class _InviteMembersState extends State<InviteMembers> {
     });
   }
 
-  void handleCopyLink() {
-    setState(() {
-      linkCopied = true;
-    });
+  Future<void> handleCopyLink() async {
+    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    if (group == null) return;
+    final link = 'expenso://join/${group.id}';
+    await Clipboard.setData(ClipboardData(text: link));
+    if (!mounted) return;
+    setState(() => linkCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          linkCopied = false;
-        });
-      }
+      if (mounted) setState(() => linkCopied = false);
     });
   }
 
@@ -149,6 +151,16 @@ class _InviteMembersState extends State<InviteMembers> {
       listenable: repo,
       builder: (context, _) {
         final listMembers = groupArg != null ? repo.getMembersForGroup(groupArg.id) : <Member>[];
+        final existingPhones = <String>{};
+        for (final m in listMembers) {
+          existingPhones.add(_normalizePhone(m.phone));
+        }
+        if (groupArg != null) {
+          for (final id in groupArg.memberIds) {
+            if (id.startsWith('p_')) existingPhones.add(_normalizePhone(id.substring(2)));
+          }
+        }
+        final filteredContacts = _getFilteredContacts(existingPhones);
         return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
@@ -295,6 +307,17 @@ class _InviteMembersState extends State<InviteMembers> {
                   const SizedBox(height: 12),
                   if (!_contactsPermissionGranted && _contactsPermissionChecked) ...[
                     Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Contacts access was denied. You can still add members by entering a number below.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: const Color(0xFF6B6B6B),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: TextButton.icon(
                         onPressed: _requestContactsAndLoad,
@@ -408,7 +431,7 @@ class _InviteMembersState extends State<InviteMembers> {
                         border: Border.all(color: const Color(0xFFE5E5E5)),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: _filteredContacts.isEmpty
+                      child: filteredContacts.isEmpty
                           ? Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
@@ -422,9 +445,9 @@ class _InviteMembersState extends State<InviteMembers> {
                           : ListView.builder(
                               shrinkWrap: true,
                               padding: EdgeInsets.zero,
-                              itemCount: _filteredContacts.length,
+                              itemCount: filteredContacts.length,
                               itemBuilder: (context, index) {
-                                final c = _filteredContacts[index];
+                                final c = filteredContacts[index];
                                 final primaryPhone = c.phones.isNotEmpty
                                     ? _normalizePhone(c.phones.first.number)
                                     : '';

@@ -57,8 +57,10 @@ class _PhoneAuthState extends State<PhoneAuth> {
       },
       onError: (String message) {
         if (!mounted) return;
-        setState(() => _loading = false);
-        Navigator.of(context).pushReplacementNamed('/error-states', arguments: {'type': 'generic'});
+        setState(() {
+          _loading = false;
+          _errorMessage = message;
+        });
       },
       onCodeSent: (String verificationId, int? resendToken) {
         if (!mounted) return;
