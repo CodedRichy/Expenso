@@ -220,10 +220,11 @@ Match typos, nicknames, and partials to this list (e.g. "al" -> Alice, "bob" -> 
 Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or "50% me 50% Bob" = percentage. "Airbnb 500, Alice 2 nights Bob 3" = shares.
 
 5) participants (who shares the cost besides the current user)
+- participants lists ONLY the other people; the app adds the current user, so total people = 1 + participants.length. Never include "me" in the array.
 - "everyone" / "all" / "all of us" / "the group" -> [] (split among all in group).
 - "X paid 200" / "paid by X 200" with no "with Y" -> [] (split among everyone in the group; X and current user and anyone else in the group).
-- "me and X" / "me and X and Y" -> [X] or [X, Y]; never include "me" in the array.
-- "w/", "with", "for", "&", "and" introduce participant names -> list those names only. E.g. "600 with Bob" -> [Bob] (split between current user and Bob).
+- "me and X" / "me and X and Y" -> [X] or [X, Y].
+- "w/", "with", "for", "&", "and" introduce participant names -> list those names only. E.g. "600 with Bob" -> [Bob] (2 people: current user + Bob). "dinner 300 with Rockey" -> [Rockey].
 - If no one mentioned to split with, use [].
 
 6) payer
@@ -237,10 +238,11 @@ Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or 
 - When in doubt between even and exact, prefer even unless per-person amounts are clearly given.
 - Always output valid JSON: double-quoted keys and strings, no trailing commas.
 
---- COMMON MISTAKES (avoid these) ---
+--- COMMON MISTAKES (wrong -> right) ---
 - "X paid 200" with no "with Y" -> WRONG: participants:[X]. RIGHT: participants:[] (everyone in the group shares).
-- "200 with X" -> WRONG: participants:[]. RIGHT: participants:[X] (only current user and X share).
+- "200 with X" or "dinner 300 with X" -> WRONG: participants:[] or participants:["me","X"]. RIGHT: participants:[X] (app splits between current user and X; total 2 people).
 - User says another person paid -> WRONG: omit "payer". RIGHT: include "payer":"<name>" matching member list.
+- "amount with A and B" -> WRONG: participants:["me","A","B"]. RIGHT: participants:["A","B"] (app adds current user; total 3 people).
 
 --- EXAMPLES (member list: Alice, Bob, Carol) ---
 "ght biriyani 200 with al" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["Alice"]}
@@ -287,6 +289,7 @@ Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or 
 "split between me and Alice 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":["Alice"]}
 "600 with Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["Bob"]}
 "500 for me and Carol" -> {"amount":500,"description":"Expense","category":"","splitType":"even","participants":["Carol"]}
+"dinner with Alice 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["Alice"]}
 "1000 split between me Alice and Bob" -> {"amount":1000,"description":"Expense","category":"","splitType":"even","participants":["Alice","Bob"]}
 "600: 400 me 200 Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"Bob":200}}
 "900 total I pay 500 Alice 400" -> {"amount":900,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"Alice":400}}
