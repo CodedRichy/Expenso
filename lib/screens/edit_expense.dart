@@ -15,9 +15,14 @@ class _EditExpenseState extends State<EditExpense> {
   late TextEditingController amountController;
   String? _groupId;
   String? _expenseId;
+  Expense? _expense;
+  String _selectedDate = 'Today';
+  String _selectedPayerPhone = '';
   bool _canEdit = true;
   bool _hasInitialized = false;
   bool _expenseNotFound = false;
+
+  static const List<String> _dateOptions = ['Today', 'Yesterday'];
 
   @override
   void initState() {
@@ -54,11 +59,45 @@ class _EditExpenseState extends State<EditExpense> {
 
     _groupId = groupId;
     _expenseId = expenseId;
-    // Creator can always edit (even when cycle is settling).
+    _expense = expense;
+    _selectedDate = expense.date;
+    _selectedPayerPhone = expense.paidByPhone.isNotEmpty ? expense.paidByPhone : repo.currentUserPhone;
     _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);
     setState(() {});
+  }
+
+  void _pickPayer() {
+    if (_groupId == null) return;
+    final repo = CycleRepository.instance;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Who paid?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+              ),
+            ),
+            ...repo.getMembersForGroup(_groupId!).map((m) {
+              final displayName = repo.getMemberDisplayName(m.phone);
+              return ListTile(
+                title: Text(displayName),
+                onTap: () {
+                  setState(() => _selectedPayerPhone = m.phone);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -95,9 +134,9 @@ class _EditExpenseState extends State<EditExpense> {
         id: expenseId,
         description: desc,
         amount: amount,
-        date: existing.date,
+        date: _selectedDate,
         participantPhones: existing.participantPhones,
-        paidByPhone: existing.paidByPhone,
+        paidByPhone: _selectedPayerPhone,
         splitAmountsByPhone: existing.splitAmountsByPhone,
         category: existing.category,
       );
@@ -144,6 +183,14 @@ class _EditExpenseState extends State<EditExpense> {
                     _buildDescriptionField(readOnly: !canEdit),
                     const SizedBox(height: 24),
                     _buildAmountField(readOnly: !canEdit),
+                    if (_expense != null) ...[
+                      const SizedBox(height: 24),
+                      _buildDateField(canEdit),
+                      const SizedBox(height: 24),
+                      _buildPayerField(canEdit),
+                      const SizedBox(height: 24),
+                      _buildSplitAndPeopleSection(),
+                    ],
                     if (canEdit) ...[
                       const SizedBox(height: 32),
                       OutlinedButton.icon(
@@ -399,6 +446,172 @@ class _EditExpenseState extends State<EditExpense> {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildDateField(bool canEdit) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'DATE',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (canEdit)
+          DropdownButtonFormField<String>(
+            value: _selectedDate.isEmpty ? 'Today' : _selectedDate,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            items: [
+              ..._dateOptions.map((d) => DropdownMenuItem(value: d, child: Text(d))),
+              if (!_dateOptions.contains(_selectedDate) && _selectedDate.isNotEmpty)
+                DropdownMenuItem(value: _selectedDate, child: Text(_selectedDate)),
+            ],
+            onChanged: (v) => setState(() => _selectedDate = v ?? 'Today'),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFE5E5E5)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _selectedDate,
+              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPayerField(bool canEdit) {
+    final repo = CycleRepository.instance;
+    final displayName = repo.getMemberDisplayName(_selectedPayerPhone);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PAID BY',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (canEdit)
+          InkWell(
+            onTap: _pickPayer,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFD0D0D0)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    displayName,
+                    style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.arrow_drop_down, color: const Color(0xFF6B6B6B)),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFE5E5E5)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              displayName,
+              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSplitAndPeopleSection() {
+    final expense = _expense!;
+    final repo = CycleRepository.instance;
+    final isExact = expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty;
+    final splitLabel = isExact ? 'Exact' : 'Even';
+    final participants = isExact
+        ? expense.splitAmountsByPhone!.entries.toList()
+        : expense.participantPhones.map((p) => MapEntry(p, expense.amount / (expense.participantPhones.isEmpty ? 1 : expense.participantPhones.length))).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SPLIT',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          splitLabel,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'PEOPLE INVOLVED',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF9B9B9B),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...participants.map((e) {
+          final name = repo.getMemberDisplayName(e.key);
+          final amt = e.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(fontSize: 15, color: const Color(0xFF1A1A1A)),
+                ),
+                Text(
+                  '₹${amt.toStringAsFixed(0)}',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }

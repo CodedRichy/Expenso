@@ -1109,6 +1109,9 @@ class _ExpenseConfirmDialog extends StatefulWidget {
 class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   late List<_ParticipantSlot> slots;
   List<TextEditingController>? _amountControllers;
+  late TextEditingController _descriptionController;
+  late TextEditingController _amountController;
+  late String _payerPhone;
 
   static String _formatAmountForEdit(double v) =>
       v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
@@ -1117,6 +1120,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   void initState() {
     super.initState();
     slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, phone: s.phone, isGuessed: s.isGuessed)).toList();
+    _descriptionController = TextEditingController(text: widget.result.description);
+    _amountController = TextEditingController(text: _formatAmountForEdit(widget.result.amount));
+    _payerPhone = widget.payerPhone;
     if (widget.splitTypeCap == 'Exact') {
       _amountControllers = List.generate(slots.length, (i) => TextEditingController(text: _formatAmountForEdit(slots[i].amount)));
     }
@@ -1124,6 +1130,8 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   @override
   void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
     for (final c in _amountControllers ?? <TextEditingController>[]) {
       c.dispose();
     }
@@ -1136,19 +1144,66 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   static const double _splitTolerance = 0.01;
 
+  double? get _editedAmount {
+    final v = double.tryParse(_amountController.text.trim());
+    return v != null && v > 0 ? v : null;
+  }
+
   bool get _isReadyToConfirm {
-    final amount = widget.result.amount;
-    final description = widget.result.description.trim();
-    final splitMatches = (_totalSplit - amount).abs() < _splitTolerance;
-    return amount > 0 && description.isNotEmpty && splitMatches && _allResolved;
+    final amount = _editedAmount;
+    final description = _descriptionController.text.trim();
+    final splitMatches = amount != null && (_totalSplit - amount).abs() < _splitTolerance;
+    return amount != null && amount > 0 && description.isNotEmpty && splitMatches && _allResolved;
   }
 
   String? get _notReadyReason {
-    if (widget.result.amount <= 0) return 'Amount must be greater than 0.';
-    if (widget.result.description.trim().isEmpty) return 'Description is required.';
-    if ((_totalSplit - widget.result.amount).abs() >= _splitTolerance) return 'Split doesn\'t match total.';
+    final amount = _editedAmount;
+    if (amount == null || amount <= 0) return 'Amount must be greater than 0.';
+    if (_descriptionController.text.trim().isEmpty) return 'Description is required.';
+    if ((_totalSplit - amount).abs() >= _splitTolerance) return 'Split doesn\'t match total.';
     if (!_allResolved) return 'Select a member for each slot.';
     return null;
+  }
+
+  void _redistributeEvenAmount() {
+    final amount = _editedAmount;
+    if (amount == null || slots.isEmpty || widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') return;
+    final perShare = amount / slots.length;
+    for (var i = 0; i < slots.length; i++) {
+      slots[i] = _ParticipantSlot(name: slots[i].name, amount: perShare, phone: slots[i].phone, isGuessed: slots[i].isGuessed);
+    }
+    setState(() {});
+  }
+
+  void _pickPayer() {
+    final repo = widget.repo;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Who paid?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+              ),
+            ),
+            ...repo.getMembersForGroup(widget.groupId).map((m) {
+              final displayName = repo.getMemberDisplayName(m.phone);
+              return ListTile(
+                title: Text(displayName),
+                onTap: () {
+                  setState(() => _payerPhone = m.phone);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
   }
 
   void _pickMember(int slotIndex) {
@@ -1210,14 +1265,16 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         ? 'Exact'
         : widget.splitTypeCap;
     final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
+    final amount = _editedAmount ?? widget.result.amount;
+    final description = _descriptionController.text.trim();
     try {
       await repo.addExpenseFromMagicBar(
         groupId,
         id: expenseId,
-        description: widget.result.description,
-        amount: widget.result.amount,
+        description: description,
+        amount: amount,
         date: 'Today',
-        payerPhone: widget.payerPhone,
+        payerPhone: _payerPhone,
         splitType: persistSplitType,
         participantPhones: participantPhones,
         excludedPhones: excludedPhones,
@@ -1267,32 +1324,71 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '₹${widget.result.amount.toStringAsFixed(0).replaceAllMapped(
-                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                (Match m) => '${m[1]},',
-              )}',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+              'AMOUNT',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
             ),
-            const SizedBox(height: 8),
-            Text(widget.result.description, style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A))),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('₹', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A))),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => _redistributeEvenAmount(),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: const OutlineInputBorder(),
+                      hintText: '0',
+                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'DESCRIPTION',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _descriptionController,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: const OutlineInputBorder(),
+                hintText: 'What was it for?',
+              ),
+              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+            ),
             if (widget.result.category.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(widget.result.category, style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
             ],
-            const SizedBox(height: 4),
-            Text(
-              'Paid by ${repo.getMemberDisplayName(widget.payerPhone)}',
-              style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: _pickPayer,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'Paid by ${repo.getMemberDisplayName(_payerPhone)}',
+                  style: TextStyle(fontSize: 14, color: const Color(0xFF5B7C99), fontWeight: FontWeight.w500),
+                ),
+              ),
             ),
             Text('Split: ${widget.splitTypeCap}', style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
             if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
               const SizedBox(height: 4),
               Text(
-                'Total: ₹${widget.result.amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                'Total: ₹${(_editedAmount ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
                 style: TextStyle(fontSize: 13, color: const Color(0xFF6B6B6B)),
               ),
             ],
-            if (!widget.exactValid) ...[
+            if (_editedAmount != null && (_totalSplit - _editedAmount!).abs() >= _splitTolerance && (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1301,7 +1397,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'Exact split total (₹${exactSum.toStringAsFixed(0)}) does not match expense amount (₹${widget.result.amount.toStringAsFixed(0)}).',
+                  'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
                   style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
                 ),
               ),
