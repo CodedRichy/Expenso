@@ -1306,6 +1306,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     }
   }
 
+  static const Color _dialogGradientStart = Color(0xFF0D0D0D);
+  static const Color _dialogGradientEnd = Color(0xFF1A1A1A);
+
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
@@ -1313,100 +1316,228 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
         : 0.0;
 
-    return AlertDialog(
-      title: Text(
-        'Confirm expense',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
-      ),
-      content: SingleChildScrollView(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F8),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1A1A1A).withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'AMOUNT',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text('₹', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A))),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (_) => _redistributeEvenAmount(),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: const OutlineInputBorder(),
-                      hintText: '0',
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_dialogGradientStart, _dialogGradientEnd],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Confirm expense',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.95),
                     ),
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'DESCRIPTION',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: const OutlineInputBorder(),
-                hintText: 'What was it for?',
-              ),
-              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
-            ),
-            if (widget.result.category.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(widget.result.category, style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
-            ],
-            const SizedBox(height: 10),
-            InkWell(
-              onTap: _pickPayer,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  'Paid by ${repo.getMemberDisplayName(_payerPhone)}',
-                  style: TextStyle(fontSize: 14, color: const Color(0xFF5B7C99), fontWeight: FontWeight.w500),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '₹${(_editedAmount ?? widget.result.amount).toStringAsFixed(0).replaceAllMapped(
+                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                      (Match m) => '${m[1]},',
+                    )}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  if (_descriptionController.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _descriptionController.text.trim(),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
             ),
-            Text('Split: ${widget.splitTypeCap}', style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
-            if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
-              const SizedBox(height: 4),
-              Text(
-                'Total: ₹${(_editedAmount ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-                style: TextStyle(fontSize: 13, color: const Color(0xFF6B6B6B)),
-              ),
-            ],
-            if (_editedAmount != null && (_totalSplit - _editedAmount!).abs() >= _splitTolerance && (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEE),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
-                  style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: List.generate(slots.length, (i) {
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AMOUNT',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFFE5E5E5)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF6B6B6B))),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _amountController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (_) => _redistributeEvenAmount(),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              hintText: '0',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                              ),
+                            ),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'DESCRIPTION',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _descriptionController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        hintText: 'What was it for?',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                        ),
+                      ),
+                      style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                    ),
+                    if (widget.result.category.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(widget.result.category, style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
+                    ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'PAID BY',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _pickPayer,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xFFE5E5E5)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              repo.getMemberDisplayName(_payerPhone),
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+                            ),
+                            const Spacer(),
+                            Icon(Icons.arrow_drop_down, color: const Color(0xFF6B6B6B)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Split: ${widget.splitTypeCap}',
+                      style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
+                    ),
+                    if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Total: ₹${(_editedAmount ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                        style: TextStyle(fontSize: 13, color: const Color(0xFF6B6B6B)),
+                      ),
+                    ],
+                    if (_editedAmount != null && (_totalSplit - _editedAmount!).abs() >= _splitTolerance && (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
+                          style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'PEOPLE',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: List.generate(slots.length, (i) {
                 final slot = slots[i];
                 final isPlaceholder = slot.phone == null || slot.phone!.isEmpty;
                 final isGuessed = slot.isGuessed && !isPlaceholder;
@@ -1414,123 +1545,149 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 final label = slot.phone != null && slot.phone!.isNotEmpty
                     ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
                     : 'Select Member  ₹${slot.amount.toStringAsFixed(0)}';
-                return GestureDetector(
-                  onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isPlaceholder
-                          ? const Color(0xFFE8E8E8)
-                          : isGuessed
-                              ? const Color(0xFFFFF8E1)
-                              : const Color(0xFFE5E5E5),
-                      borderRadius: BorderRadius.circular(6),
-                      border: isPlaceholder
-                          ? Border.all(color: const Color(0xFF5B7C99), width: 1)
-                          : isGuessed
-                              ? Border.all(color: const Color(0xFFF9A825), width: 1.5)
-                              : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isExactEditable) ...[
-                          GestureDetector(
-                            onTap: isPlaceholder ? () => _pickMember(i) : null,
-                            child: Text(
-                              slot.phone != null && slot.phone!.isNotEmpty
-                                  ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}'
-                                  : 'Select Member',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isPlaceholder ? const Color(0xFF5B7C99) : (isGuessed ? const Color(0xFFE65100) : const Color(0xFF1A1A1A)),
-                                fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          SizedBox(
-                            width: 64,
-                            child: TextField(
-                              controller: _amountControllers![i],
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              onChanged: (v) {
-                                final n = double.tryParse(v);
-                                slots[i].amount = n ?? 0;
-                                setState(() {});
-                              },
-                              decoration: InputDecoration(
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                hintText: '₹',
-                                border: const OutlineInputBorder(),
-                                errorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC62828))),
-                              ),
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ),
-                          if (isPlaceholder) const SizedBox(width: 4),
-                          if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
-                          if (isGuessed) const SizedBox(width: 2),
-                          if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
-                        ] else ...[
-                          Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 14,
+                        return GestureDetector(
+                          onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
                               color: isPlaceholder
-                                  ? const Color(0xFF5B7C99)
+                                  ? const Color(0xFFE8E8E8)
                                   : isGuessed
-                                      ? const Color(0xFFE65100)
-                                      : const Color(0xFF1A1A1A),
-                              fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                                      ? const Color(0xFFFFF8E1)
+                                      : const Color(0xFFE5E5E5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: isPlaceholder
+                                  ? Border.all(color: const Color(0xFF5B7C99), width: 1)
+                                  : isGuessed
+                                      ? Border.all(color: const Color(0xFFF9A825), width: 1.5)
+                                      : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isExactEditable) ...[
+                                  GestureDetector(
+                                    onTap: isPlaceholder ? () => _pickMember(i) : null,
+                                    child: Text(
+                                      slot.phone != null && slot.phone!.isNotEmpty
+                                          ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}'
+                                          : 'Select Member',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isPlaceholder ? const Color(0xFF5B7C99) : (isGuessed ? const Color(0xFFE65100) : const Color(0xFF1A1A1A)),
+                                        fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SizedBox(
+                                    width: 64,
+                                    child: TextField(
+                                      controller: _amountControllers![i],
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      onChanged: (v) {
+                                        final n = double.tryParse(v);
+                                        slots[i].amount = n ?? 0;
+                                        setState(() {});
+                                      },
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                        hintText: '₹',
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFC62828))),
+                                      ),
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                  if (isPlaceholder) const SizedBox(width: 4),
+                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                                  if (isGuessed) const SizedBox(width: 2),
+                                  if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                                ] else ...[
+                                  Text(
+                                    label,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isPlaceholder
+                                          ? const Color(0xFF5B7C99)
+                                          : isGuessed
+                                              ? const Color(0xFFE65100)
+                                              : const Color(0xFF1A1A1A),
+                                      fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                                    ),
+                                  ),
+                                  if (isPlaceholder) const SizedBox(width: 4),
+                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                                  if (isGuessed) const SizedBox(width: 2),
+                                  if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                                ],
+                              ],
                             ),
                           ),
-                          if (isPlaceholder) const SizedBox(width: 4),
-                          if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
-                          if (isGuessed) const SizedBox(width: 2),
-                          if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
-                        ],
-                      ],
+                        );
+                      }),
+                    ),
+                    if (slots.any((s) => s.isGuessed && s.phone != null)) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Highlighted names are best guesses — verify before confirming.',
+                        style: TextStyle(fontSize: 12, color: const Color(0xFF9B9B9B), fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                    if (_notReadyReason != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _notReadyReason!,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFFC62828)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F8),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6B6B6B),
+                        side: const BorderSide(color: Color(0xFFE5E5E5)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Cancel'),
                     ),
                   ),
-                );
-              }),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isReadyToConfirm ? _onConfirm : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A1A1A),
+                        disabledBackgroundColor: const Color(0xFFE5E5E5),
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: const Color(0xFFB0B0B0),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      child: const Text('Confirm'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            if (slots.any((s) => s.isGuessed && s.phone != null)) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Highlighted names are best guesses — verify before confirming.',
-                style: TextStyle(fontSize: 12, color: const Color(0xFF9B9B9B), fontStyle: FontStyle.italic),
-              ),
-            ],
-            if (_notReadyReason != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _notReadyReason!,
-                style: const TextStyle(fontSize: 13, color: Color(0xFFC62828)),
-              ),
-            ],
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF5B7C99))),
-        ),
-        TextButton(
-          onPressed: _onConfirm,
-          child: Text(
-            'Confirm',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: _isReadyToConfirm ? const Color(0xFF1A1A1A) : const Color(0xFFB0B0B0),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
