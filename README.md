@@ -1,108 +1,49 @@
 # Expenso
 
-**Group expense tracking with settlement cycles and one creator per group.** Most expense apps never close the loop: you see who owes what, but there’s no clear “we’re settled” moment, and anyone can change the group. Expenso gives each group a single creator, explicit **Settlement** and **Start New Cycle** actions, and live balances so groups can close cycles and start fresh without ambiguity.
+Group expense tracking with **settlement cycles** and **one creator per group**. Track who paid what, see live “who owes whom,” and close the loop with **Settle** → **Start New Cycle**. Optional **Magic Bar** (natural language) for quick entry.
 
----
-
-## Why this design
-
-Typical split apps keep one endless ledger. That leads to drift (old debts mixed with new), unclear ownership of the group, and no built-in way to say “this period is done.” Expenso addresses that with:
-
-- **Settlement cycles** — The creator can **Settle** (freeze the current cycle) and **Start New Cycle** to archive expenses and begin a new period. Past cycles stay in history; the active view is always the current cycle only.
-- **Single group creator** — One creator per group (shown in the UI). Only the creator can Settle, Start New Cycle, and delete the group. No committee, no confusion about who can close a cycle.
-
-The rest of the app is built around that: per-group expense log, real-time “who owes whom” from a deterministic settlement engine, and optional natural-language entry (Magic Bar) for faster input.
+*This repo is my implementation; shared to show the work.*
 
 ---
 
 ## What it does
 
-| Area | Description |
-|------|-------------|
-| **Groups** | Create groups via FAB; add members by phone or contacts. List shows all groups; pin/unpin (max 3); delete (creator only). |
-| **Creator** | One creator per group; only creator can Settle, Start New Cycle, and Delete group. |
-| **Expenses** | Add via Magic Bar (natural language, parsed by optional Groq/Llama) or manual form. Edit/undo (overlay after add); description, date, amount. Splits: **Even** (current user + named participants, N+1 way), **Exact**, **Exclude**, **Percentage**, **Shares**. Confirmation dialog validates amount, description, and split total; grey Confirm + red message when invalid; heavy haptic on invalid confirm tap, light on success. Gibberish in Magic Bar falls back to first number and "Expense" when needed. |
-| **Summary card** | Group detail shows a “Decision Clarity” card: cycle total, spent by you, your status (credit/debt). Empty cycle shows “Zero-Waste Cycle” and a prompt to use the Magic Bar. |
-| **Profile** | From Groups header: tap avatar to open Profile. Set display name (same name used for Magic Bar fuzzy matching), upload avatar (Firebase Storage), and save UPI ID for payments. |
-| **Balances** | Per-group “who owes whom” from the settlement engine; shown when the cycle has expenses. |
-| **Settlement** | Two steps: **Settle** (cycle status → “Settling”), then **Start New Cycle** (creator only) to archive and start a new cycle. Both require a confirmation dialog (Justice Guard). **Settle up** opens Razorpay Checkout for in-app payment of your dues. |
-| **Auth & data** | Firebase Phone Auth (OTP). Cloud Firestore for users, groups, expenses, and settled cycles. |
+- **Groups** — Create, add members by phone/contacts, pin (max 3), delete (creator only).
+- **Expenses** — Add via Magic Bar (Groq/Llama) or manual form. Splits: Even, Exact, Exclude, Percentage, Shares. Decision Clarity card: cycle total, spent by you, your status.
+- **Settlement** — Settle (freeze cycle) → Start New Cycle (creator). Settle up via Razorpay Checkout for in-app payment of dues.
+- **Profile** — Display name, avatar (Firebase Storage), UPI ID.
 
 ---
 
 ## Tech stack
 
-- **Flutter** (Dart), **Material 3**
-- **Firebase:** Auth (phone/OTP), Cloud Firestore, Cloud Functions (Razorpay order creation)
-- **Magic Bar:** Groq API (Llama 3.3) for parsing natural-language expenses (optional; requires `GROQ_API_KEY`)
-- **Local:** SharedPreferences (pinned groups), `flutter_contacts` (invite suggestions), `flutter_dotenv` (env)
+- **Flutter** (Dart), Material 3
+- **Firebase** — Phone Auth, Cloud Firestore, Cloud Functions (Razorpay order), Storage (avatars)
+- **Magic Bar** — Groq API (Llama 3.3) for NL expense parsing (optional)
+- **Local** — SharedPreferences (pinned groups), `flutter_contacts`, `flutter_dotenv`
 
 ---
 
-## Getting started
+## Run locally
 
-### Prerequisites
-
-- Flutter SDK (see `pubspec.yaml` for Dart constraint)
-- Firebase project with Phone sign-in and Firestore enabled
-- [FlutterFire CLI](https://firebase.flutter.dev/docs/overview): `dart run flutterfire configure`
-
-### Setup
-
-1. **Clone and install**
-   ```bash
-   git clone https://github.com/<your-org>/Expenso.git
-   cd Expenso
-   flutter pub get
-   ```
-
-2. **Environment**
-   - Create a `.env` in the project root (gitignored).
-   - Add `GROQ_API_KEY=<your-groq-api-key>` for the Magic Bar (optional; manual expense entry works without it).
-
-3. **Firebase**
-   - Run `dart run flutterfire configure`.
-   - Enable **Phone** in Authentication → Sign-in method.
-   - **Firestore**: Deploy rules so group delete and subcollection access work correctly: `firebase deploy --only firestore:rules`. Rules allow subcollection create/update only when the group document exists (avoids empty docs after delete).
-   - **Storage**: In Console → Build → Storage → Get started (required for profile avatar uploads). If you see "Upload failed" or 404 when setting a profile photo, enable Storage and set rules (e.g. allow authenticated users to read/write `users/{userId}/**`).
-   - **Functions** (for Settle up): Deploy `functions/` with `firebase deploy --only functions`. Set env vars `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in Firebase Console → Functions → createRazorpayOrder (or via `firebase functions:config:set` and read in function). See `functions/README.md`.
-
-### Run
+Requires Flutter, a Firebase project (Phone Auth, Firestore, optional Storage & Functions), and optionally `.env` with `GROQ_API_KEY` for the Magic Bar.
 
 ```bash
+flutter pub get
 flutter run
 ```
 
-For phone auth in development, the app supports a test-number hint (code `123456`) when configured.
+Full setup (Firebase config, Firestore rules, Razorpay keys, etc.) is in **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)** and **docs/** if you want to run or extend it.
 
 ---
 
-## Configuration
-
-| Item | Purpose |
-|------|---------|
-| `.env` | `GROQ_API_KEY` — used by Magic Bar for expense parsing (optional). |
-| Firebase | Phone Auth + Firestore; config via `flutterfire configure` and Console. Functions: Razorpay keys for `createRazorpayOrder`. |
-| Pinned groups | Stored in SharedPreferences (max 3 per user). |
-
----
-
-## Testing
+## Tests
 
 ```bash
 flutter test
 ```
 
-Tests cover expense validation, Groq `ParsedExpenseResult` (even/exact/exclude/percentage/shares, participants semantics), and the settlement engine (net balances, debts).
-
----
-
-## Documentation
-
-- **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)** — Routes, screens, data layer, design system, conventions, and file layout. Primary reference for implementation and contributions.
-- **[docs/V1_RELEASE.md](docs/V1_RELEASE.md)** — V1 Release: Magic Bar contract, Decision Clarity UI, Authority model, SettlementEngine, quality bar, and V2 “Not Now” list.
-- **[docs/GROQ_PROMPT_REFINEMENT.md](docs/GROQ_PROMPT_REFINEMENT.md)** — Process for fixing Magic Bar parse errors (changelog, prompt sections, research notes).
-- **[docs/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md](docs/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md)** — Research summary on structured output, few-shot, error-driven refinement, and evaluation for the expense parser.
+Covers expense validation, parser (splits, participants), and settlement engine.
 
 ---
 
