@@ -107,24 +107,24 @@ class FirestoreService {
     }
   }
 
-  /// Deletes the group and all its data: current expenses, all settled cycles and their expenses, then the group document.
-  /// Group document must be deleted last because security rules use get() on the group doc for subcollection access.
-  /// To avoid an empty document reappearing: Firestore creates a parent doc implicitly when writing to a subcollection;
-  /// ensure no pending writes (e.g. addExpense) for this group when deleting (caller should cancel subscriptions first).
+  /// Deletes the group and all its data. Group document is deleted first so that any late or
+  /// pending write to a subcollection is rejected by rules (create/update allowed only when group
+  /// exists), preventing an empty document from being recreated. Then subcollections are deleted
+  /// (rules allow read/delete when group does not exist for cleanup).
   /// Only the creator should call this.
   Future<void> deleteGroup(String groupId) async {
     final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await _deleteCollection(_firestore.collection(FirestorePaths.groupExpenses(groupId)));
     final settledSnap = await _firestore
         .doc(FirestorePaths.groupDoc(groupId))
         .collection(FirestorePaths.settledCycles)
         .get();
+    await groupRef.delete();
+    await _deleteCollection(_firestore.collection(FirestorePaths.groupExpenses(groupId)));
     for (final cycleDoc in settledSnap.docs) {
       await _deleteCollection(_firestore.collection(
           FirestorePaths.groupSettledCycleExpenses(groupId, cycleDoc.id)));
       await cycleDoc.reference.delete();
     }
-    await groupRef.delete();
   }
 
   /// Update group fields (e.g. cycleStatus, activeCycleId).

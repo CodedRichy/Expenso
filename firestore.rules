@@ -1,8 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function groupExists(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId));
+    }
     function isGroupMember(groupId) {
-      return request.auth != null
+      return request.auth != null && groupExists(groupId)
         && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
     }
 
@@ -17,15 +20,18 @@ service cloud.firestore {
     }
 
     match /groups/{groupId}/expenses/{expenseId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow create, update: if isGroupMember(groupId);
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow create, update: if isGroupMember(groupId);
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId}/expenses/{expenseId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow create, update: if isGroupMember(groupId);
     }
   }
 }
