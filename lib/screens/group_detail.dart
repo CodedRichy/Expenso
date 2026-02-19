@@ -1037,7 +1037,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           slots.add(_ParticipantSlot(name: displayName, amount: perShare, phone: m.phone, isGuessed: false));
         }
       } else {
-        final splitCount = names.length + 1;
+        final splitCount = names.length + 1; // participantNames = others; total people = me + names
         final perShare = result.amount / splitCount;
         slots.add(_ParticipantSlot(
           name: repo.getMemberDisplayName(repo.currentUserPhone),

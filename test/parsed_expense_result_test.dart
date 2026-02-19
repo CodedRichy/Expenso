@@ -141,5 +141,23 @@ void main() {
       expect(result.participantNames, ['Rockey']);
       expect(result.payerName, isNull);
     });
+
+    test('even split general rule: N participantNames => N+1 people, perShare = amount/(N+1)', () {
+      const amount = 900.0;
+      for (final n in [1, 2, 3, 5]) {
+        final names = List.generate(n, (i) => 'Person${i + 1}');
+        final result = ParsedExpenseResult.fromJson({
+          'amount': amount,
+          'description': 'Split test',
+          'splitType': 'even',
+          'participants': names,
+        });
+        expect(result.participantNames.length, n);
+        final splitCount = result.participantNames.length + 1;
+        final perShare = amount / splitCount;
+        expect(splitCount, n + 1);
+        expect(perShare, amount / (n + 1));
+      }
+    });
   });
 }
