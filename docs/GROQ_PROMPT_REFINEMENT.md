@@ -24,8 +24,8 @@ When the Magic Bar produces a **wrong parse** (wrong payer, participants, split 
 
 | Date       | User input (example) | Wrong behavior | Fix applied |
 |------------|----------------------|----------------|-------------|
-| 2025-02-18 | "X paid 200" (2-person group) | participants = [X] only; only payer in split | SCENARIO DECISION + FIELD RULES: when payer is named but no "with Y", participants = [] (everyone). EXAMPLES: added "Bob paid 200", "Carol paid 500 for dinner" with payer + participants:[]. Repo/dialog also fixed to treat [] as all members. |
-| 2025-02-18 | "dinner with X amount" / even split with participants | Parser must output participants = others only (app uses total = 1 + participants.length) | RESEARCH: FIELD RULES 5 — participants = only others; app adds current user. COMMON MISTAKES — WRONG→RIGHT for "200 with X" (participants:[X]) and "amount with A and B" (participants:["A","B"]). EXAMPLES: "dinner with Alice 300" -> participants:["Alice"]. |
+| 2025-02-18 | "X paid 200" (2-person group) | participants = [X] only; only payer in split | SCENARIO DECISION + FIELD RULES: when payer is named but no "with Y", participants = [] (everyone). EXAMPLES: added "B paid 200", "C paid 500 for dinner" with payer + participants:[]. Repo/dialog also fixed to treat [] as all members. |
+| 2025-02-18 | "dinner with X amount" / even split with participants | Parser must output participants = others only (app uses total = 1 + participants.length) | RESEARCH: FIELD RULES 5 — participants = only others; app adds current user. COMMON MISTAKES — WRONG→RIGHT for "200 with X" (participants:[X]) and "amount with A and B" (participants:["A","B"]). EXAMPLES: "dinner with B 300" -> participants:["B"]. |
 | (future)   | … | … | … |
 
 Add new rows when you fix a parse error. Keep the table concise; details can live in commit messages or DEBUG_SESSION.md if needed.

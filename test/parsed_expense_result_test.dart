@@ -9,13 +9,13 @@ void main() {
         'description': 'Dinner',
         'category': 'Food',
         'splitType': 'even',
-        'participants': ['Alice', 'Bob'],
+        'participants': ['A', 'B'],
       });
       expect(result.amount, 600.0);
       expect(result.description, 'Dinner');
       expect(result.category, 'Food');
       expect(result.splitType, 'even');
-      expect(result.participantNames, ['Alice', 'Bob']);
+      expect(result.participantNames, ['A', 'B']);
       expect(result.payerName, isNull);
       expect(result.excludedNames, isEmpty);
       expect(result.exactAmountsByName, isEmpty);
@@ -28,11 +28,11 @@ void main() {
         'category': 'Food',
         'splitType': 'exact',
         'participants': [],
-        'exactAmounts': {'Alice': 200, 'Bob': 300},
+        'exactAmounts': {'A': 200, 'B': 300},
       });
       expect(result.amount, 500.0);
       expect(result.splitType, 'exact');
-      expect(result.exactAmountsByName, {'Alice': 200.0, 'Bob': 300.0});
+      expect(result.exactAmountsByName, {'A': 200.0, 'B': 300.0});
     });
 
     test('parses exclude split with excluded list', () {
@@ -41,12 +41,12 @@ void main() {
         'description': 'Taxi',
         'category': 'Transport',
         'splitType': 'exclude',
-        'participants': ['Alice', 'Bob', 'Carol'],
-        'excluded': ['Carol'],
+        'participants': ['A', 'B', 'C'],
+        'excluded': ['C'],
       });
       expect(result.amount, 900.0);
       expect(result.splitType, 'exclude');
-      expect(result.excludedNames, ['Carol']);
+      expect(result.excludedNames, ['C']);
     });
 
     test('parses payer when set', () {
@@ -56,9 +56,9 @@ void main() {
         'category': 'Food',
         'splitType': 'even',
         'participants': [],
-        'payer': 'Pradhyun',
+        'payer': 'B',
       });
-      expect(result.payerName, 'Pradhyun');
+      expect(result.payerName, 'B');
     });
 
     test('defaults to even when splitType unknown', () {
@@ -107,11 +107,11 @@ void main() {
         'category': '',
         'splitType': 'percentage',
         'participants': [],
-        'percentageAmounts': {'Alice': 60, 'Bob': 40},
+        'percentageAmounts': {'A': 60, 'B': 40},
       });
       expect(result.amount, 1000.0);
       expect(result.splitType, 'percentage');
-      expect(result.percentageByName, {'Alice': 60.0, 'Bob': 40.0});
+      expect(result.percentageByName, {'A': 60.0, 'B': 40.0});
     });
 
     test('parses shares split with sharesAmounts', () {
@@ -121,24 +121,24 @@ void main() {
         'category': '',
         'splitType': 'shares',
         'participants': [],
-        'sharesAmounts': {'Alice': 2, 'Bob': 3},
+        'sharesAmounts': {'A': 2, 'B': 3},
       });
       expect(result.amount, 1500.0);
       expect(result.splitType, 'shares');
-      expect(result.sharesByName, {'Alice': 2.0, 'Bob': 3.0});
+      expect(result.sharesByName, {'A': 2.0, 'B': 3.0});
     });
 
-    test('even with one participant: split between me and them (e.g. dinner with Rockey 300)', () {
+    test('even with one participant: split between me and them (e.g. dinner with B 300)', () {
       final result = ParsedExpenseResult.fromJson({
         'amount': 300,
         'description': 'Dinner',
         'category': 'Food',
         'splitType': 'even',
-        'participants': ['Rockey'],
+        'participants': ['B'],
       });
       expect(result.amount, 300.0);
       expect(result.splitType, 'even');
-      expect(result.participantNames, ['Rockey']);
+      expect(result.participantNames, ['B']);
       expect(result.payerName, isNull);
     });
 

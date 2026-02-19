@@ -194,7 +194,7 @@ Conditional keys (include only when applicable):
 
 --- MEMBER LIST (use ONLY these spellings for any name in participants, payer, excluded, exactAmounts) ---
 $memberList
-Match typos, nicknames, and partials to this list (e.g. "al" -> Alice, "bob" -> Bob). Output the exact spelling from the list only.
+Match typos, nicknames, and partials to this list (e.g. "al" -> A, "b" -> B). Output the exact spelling from the list only.
 
 --- FIELD RULES ---
 
@@ -211,20 +211,20 @@ Match typos, nicknames, and partials to this list (e.g. "al" -> Alice, "bob" -> 
 - Infer when obvious: Food (dinner, lunch, snacks, coffee, pizza, etc.), Transport (taxi, uber, auto, petrol), Utilities, etc. Leave "" if unclear.
 
 4) splitType (decide in this order; first match wins)
-  a) EXACT: User states a specific amount per person ("400 me 600 Bob", "Alice 200 Carol 300", "Bob owes 800"). Output "exact" and "exactAmounts"; never put "me" in exactAmounts.
-  b) PERCENTAGE: User gives percentages per person ("60-40", "50% me 50% Bob", "Alice 30% Bob 70%", "split by percentage"). Output "percentage" and "percentageAmounts" (name -> 0-100). Percentages should sum to 100. Can include "me" if user says it.
-  c) SHARES: User gives share counts or units ("2 nights Alice 3 nights Bob", "Alice 2 shares Bob 3", "split by nights", "rent 3000, I stayed 2 nights Carol 4 nights"). Output "shares" and "sharesAmounts" (name -> number of shares). Each person pays total * (their shares / total shares).
+  a) EXACT: User states a specific amount per person ("400 me 600 B", "A 200 C 300", "B owes 800"). Output "exact" and "exactAmounts"; never put "me" in exactAmounts.
+  b) PERCENTAGE: User gives percentages per person ("60-40", "50% me 50% B", "A 30% B 70%", "split by percentage"). Output "percentage" and "percentageAmounts" (name -> 0-100). Percentages should sum to 100. Can include "me" if user says it.
+  c) SHARES: User gives share counts or units ("2 nights A 3 nights B", "A 2 shares B 3", "split by nights", "rent 3000, I stayed 2 nights C 4 nights"). Output "shares" and "sharesAmounts" (name -> number of shares). Each person pays total * (their shares / total shares).
   d) EXCLUDE: User says someone is left out. Triggers: except X, exclude X, not X, skip X, minus X, bar X, didn't eat, "only for me and Y". Output "exclude" and "excluded". participants stays [].
-  e) EVEN: Default. Equal split. Use for "600 with Bob", "500 for me and Carol", "everyone", "50-50", "half and half", or when no amounts/percentages/shares/exclusion stated.
+  e) EVEN: Default. Equal split. Use for "600 with B", "500 for me and C", "everyone", "50-50", "half and half", or when no amounts/percentages/shares/exclusion stated.
 
-Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or "50% me 50% Bob" = percentage. "Airbnb 500, Alice 2 nights Bob 3" = shares.
+Critical: "600 with B" = even. "600: 400 me 200 B" = exact. "Rent 60-40" or "50% me 50% B" = percentage. "Airbnb 500, A 2 nights B 3" = shares.
 
 5) participants (who shares the cost besides the current user)
 - participants lists ONLY the other people; the app adds the current user, so total people = 1 + participants.length. Never include "me" in the array.
 - "everyone" / "all" / "all of us" / "the group" -> [] (split among all in group).
 - "X paid 200" / "paid by X 200" with no "with Y" -> [] (split among everyone in the group; X and current user and anyone else in the group).
 - "me and X" / "me and X and Y" -> [X] or [X, Y].
-- "w/", "with", "for", "&", "and" introduce participant names -> list those names only. E.g. "600 with Bob" -> [Bob] (2 people: current user + Bob). "dinner 300 with Rockey" -> [Rockey].
+- "w/", "with", "for", "&", "and" introduce participant names -> list those names only. E.g. "600 with B" -> [B] (2 people: current user + B). "dinner 300 with B" -> [B].
 - If no one mentioned to split with, use [].
 
 6) payer
@@ -240,68 +240,68 @@ Critical: "600 with Bob" = even. "600: 400 me 200 Bob" = exact. "Rent 60-40" or 
 
 --- COMMON MISTAKES (wrong -> right) ---
 - "X paid 200" with no "with Y" -> WRONG: participants:[X]. RIGHT: participants:[] (everyone in the group shares).
-- "200 with X" or "dinner 300 with X" -> WRONG: participants:[] or participants:["me","X"]. RIGHT: participants:[X] (app splits between current user and X; total 2 people).
+- "200 with X" or "dinner 300 with B" -> WRONG: participants:[] or participants:["me","X"]. RIGHT: participants:[X] (app splits between current user and X; total 2 people).
 - User says another person paid -> WRONG: omit "payer". RIGHT: include "payer":"<name>" matching member list.
 - "amount with A and B" -> WRONG: participants:["me","A","B"]. RIGHT: participants:["A","B"] (app adds current user; total 3 people).
 
---- EXAMPLES (member list: Alice, Bob, Carol) ---
-"ght biriyani 200 with al" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["Alice"]}
-"dinr 450 w bob" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["Bob"]}
-"pd 120 for chai w carol" -> {"amount":120,"description":"Chai","category":"Food","splitType":"even","participants":["Carol"]}
-"tkt for 1200 movies with al" -> {"amount":1200,"description":"Movie Tickets","category":"","splitType":"even","participants":["Alice"]}
+--- EXAMPLES (member list: A, B, C) ---
+"ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}
+"dinr 450 w b" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+"pd 120 for chai w c" -> {"amount":120,"description":"Chai","category":"Food","splitType":"even","participants":["C"]}
+"tkt for 1200 movies with a" -> {"amount":1200,"description":"Movie Tickets","category":"","splitType":"even","participants":["A"]}
 "bt groceries 800 w everyone" -> {"amount":800,"description":"Groceries","category":"Food","splitType":"even","participants":[]}
-"snks 150 for alice and bob" -> {"amount":150,"description":"Snacks","category":"Food","splitType":"even","participants":["Alice","Bob"]}
-"cff 300 w/ bob" -> {"amount":300,"description":"Coffee","category":"Food","splitType":"even","participants":["Bob"]}
-"at 150 auto w carol" -> {"amount":150,"description":"Auto","category":"Transport","splitType":"even","participants":["Carol"]}
-"pkd 500 for lunch w al" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"even","participants":["Alice"]}
-"ice cream 200 w bob" -> {"amount":200,"description":"Ice Cream","category":"Food","splitType":"even","participants":["Bob"]}
-"Dinner 2000 split all except Carol" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["Carol"]}
-"1500 for pizza exclude Bob" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["Bob"]}
-"Bowling 3000 but not Alice" -> {"amount":3000,"description":"Bowling","category":"","splitType":"exclude","participants":[],"excluded":["Alice"]}
-"Groceries 1000 Carol didn't eat" -> {"amount":1000,"description":"Groceries","category":"Food","splitType":"exclude","participants":[],"excluded":["Carol"]}
-"Uber 400 for everyone bar Bob" -> {"amount":400,"description":"Uber","category":"Transport","splitType":"exclude","participants":[],"excluded":["Bob"]}
-"Rent 12000 except Alice" -> {"amount":12000,"description":"Rent","category":"","splitType":"exclude","participants":[],"excluded":["Alice"]}
-"Movie 800 minus Carol" -> {"amount":800,"description":"Movie","category":"","splitType":"exclude","participants":[],"excluded":["Carol"]}
-"Water 200 only for me and Bob" -> {"amount":200,"description":"Water","category":"","splitType":"exclude","participants":[],"excluded":["Alice","Carol"]}
-"1000 total 400 for me 600 for Bob" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"Bob":600}}
-"Lunch 500 Alice 200 Carol 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"Alice":200,"Carol":300}}
-"600 auto 200 for Bob 400 for me" -> {"amount":600,"description":"Auto","category":"Transport","splitType":"exact","participants":[],"exactAmounts":{"Bob":200}}
-"Bill 1200 Alice 500 Carol 700" -> {"amount":1200,"description":"Bill","category":"","splitType":"exact","participants":[],"exactAmounts":{"Alice":500,"Carol":700}}
-"Rent split 5000 for me 7000 for Bob" -> {"amount":12000,"description":"Rent","category":"","splitType":"exact","participants":[],"exactAmounts":{"Bob":7000}}
-"300 snacks 100 me 100 Alice 100 Carol" -> {"amount":300,"description":"Snacks","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"Alice":100,"Carol":100}}
-"Tickets 2000 1500 for me 500 for Bob" -> {"amount":2000,"description":"Tickets","category":"","splitType":"exact","participants":[],"exactAmounts":{"Bob":500}}
-"Dinner 1500 Bob owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"Bob":800}}
-"Chai 100 40 Alice 60 me" -> {"amount":100,"description":"Chai","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"Alice":40}}
-"Uber 500 250 each for me and Carol" -> {"amount":500,"description":"Uber","category":"Transport","splitType":"exact","participants":[],"exactAmounts":{"Carol":250}}
+"snks 150 for a and b" -> {"amount":150,"description":"Snacks","category":"Food","splitType":"even","participants":["A","B"]}
+"cff 300 w/ b" -> {"amount":300,"description":"Coffee","category":"Food","splitType":"even","participants":["B"]}
+"at 150 auto w c" -> {"amount":150,"description":"Auto","category":"Transport","splitType":"even","participants":["C"]}
+"pkd 500 for lunch w a" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"even","participants":["A"]}
+"ice cream 200 w b" -> {"amount":200,"description":"Ice Cream","category":"Food","splitType":"even","participants":["B"]}
+"Dinner 2000 split all except C" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"1500 for pizza exclude B" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["B"]}
+"Bowling 3000 but not A" -> {"amount":3000,"description":"Bowling","category":"","splitType":"exclude","participants":[],"excluded":["A"]}
+"Groceries 1000 C didn't eat" -> {"amount":1000,"description":"Groceries","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"Uber 400 for everyone bar B" -> {"amount":400,"description":"Uber","category":"Transport","splitType":"exclude","participants":[],"excluded":["B"]}
+"Rent 12000 except A" -> {"amount":12000,"description":"Rent","category":"","splitType":"exclude","participants":[],"excluded":["A"]}
+"Movie 800 minus C" -> {"amount":800,"description":"Movie","category":"","splitType":"exclude","participants":[],"excluded":["C"]}
+"Water 200 only for me and B" -> {"amount":200,"description":"Water","category":"","splitType":"exclude","participants":[],"excluded":["A","C"]}
+"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":600}}
+"Lunch 500 A 200 C 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":200,"C":300}}
+"600 auto 200 for B 400 for me" -> {"amount":600,"description":"Auto","category":"Transport","splitType":"exact","participants":[],"exactAmounts":{"B":200}}
+"Bill 1200 A 500 C 700" -> {"amount":1200,"description":"Bill","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":500,"C":700}}
+"Rent split 5000 for me 7000 for B" -> {"amount":12000,"description":"Rent","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":7000}}
+"300 snacks 100 me 100 A 100 C" -> {"amount":300,"description":"Snacks","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":100,"C":100}}
+"Tickets 2000 1500 for me 500 for B" -> {"amount":2000,"description":"Tickets","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":500}}
+"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"B":800}}
+"Chai 100 40 A 60 me" -> {"amount":100,"description":"Chai","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":40}}
+"Uber 500 250 each for me and C" -> {"amount":500,"description":"Uber","category":"Transport","splitType":"exact","participants":[],"exactAmounts":{"C":250}}
 "I bought pizza for 800" -> {"amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
-"Bob paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"Bob"}
+"B paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
 "Paid 300 for coffee" -> {"amount":300,"description":"Coffee","category":"Food","splitType":"even","participants":[]}
-"Alice paid for me 1200" -> {"amount":1200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"Alice"}
+"A paid for me 1200" -> {"amount":1200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"A"}
 "I got the tickets for 2500" -> {"amount":2500,"description":"Tickets","category":"","splitType":"even","participants":[]}
 "Spent 400 on auto" -> {"amount":400,"description":"Auto","category":"Transport","splitType":"even","participants":[]}
-"Carol settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"Carol"}
-"Paid by Bob 600" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"Bob"}
-"Alice paid for snacks 450" -> {"amount":450,"description":"Snacks","category":"Food","splitType":"even","participants":[],"payer":"Alice"}
-"Bob paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"Bob"}
-"Carol paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"Carol"}
+"C settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"C"}
+"Paid by B 600" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}
+"A paid for snacks 450" -> {"amount":450,"description":"Snacks","category":"Food","splitType":"even","participants":[],"payer":"A"}
+"B paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}
+"C paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"C"}
 "half and half 400" -> {"amount":400,"description":"Expense","category":"","splitType":"even","participants":[]}
-"50-50 600 with Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["Bob"]}
-"split between me and Alice 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":["Alice"]}
-"600 with Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["Bob"]}
-"500 for me and Carol" -> {"amount":500,"description":"Expense","category":"","splitType":"even","participants":["Carol"]}
-"dinner with Alice 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["Alice"]}
-"1000 split between me Alice and Bob" -> {"amount":1000,"description":"Expense","category":"","splitType":"even","participants":["Alice","Bob"]}
-"600: 400 me 200 Bob" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"Bob":200}}
-"900 total I pay 500 Alice 400" -> {"amount":900,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"Alice":400}}
-"Dinner 800 not Carol" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["Carol"]}
-"800 skip Alice and Bob" -> {"amount":800,"description":"Expense","category":"","splitType":"exclude","participants":[],"excluded":["Alice","Bob"]}
-"Snacks 500 could not make it Carol" -> {"amount":500,"description":"Snacks","category":"Food","splitType":"exclude","participants":[],"excluded":["Carol"]}
-"Rent 10000 split 60-40 with Bob" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"Alice":60,"Bob":40}}
-"Dinner 500 50% me 50% Carol" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"percentage","participants":[],"percentageAmounts":{"Alice":50,"Carol":50}}
-"Bill 1200 Alice 30% Bob 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"Alice":30,"Bob":70}}
-"Airbnb 1500 Alice 2 nights Bob 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"Alice":2,"Bob":3}}
-"Rent 3000 I stayed 2 Carol 4 nights" -> {"amount":3000,"description":"Rent","category":"","splitType":"shares","participants":[],"sharesAmounts":{"Alice":2,"Carol":4}}
-"Trip 600 split by shares Alice 1 Bob 2 Carol 3" -> {"amount":600,"description":"Trip","category":"","splitType":"shares","participants":[],"sharesAmounts":{"Alice":1,"Bob":2,"Carol":3}}
+"50-50 600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
+"split between me and A 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":["A"]}
+"600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
+"500 for me and C" -> {"amount":500,"description":"Expense","category":"","splitType":"even","participants":["C"]}
+"dinner with A 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["A"]}
+"1000 split between me A and B" -> {"amount":1000,"description":"Expense","category":"","splitType":"even","participants":["A","B"]}
+"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":200}}
+"900 total I pay 500 A 400" -> {"amount":900,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400}}
+"Dinner 800 not C" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"800 skip A and B" -> {"amount":800,"description":"Expense","category":"","splitType":"exclude","participants":[],"excluded":["A","B"]}
+"Snacks 500 could not make it C" -> {"amount":500,"description":"Snacks","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"Rent 10000 split 60-40 with B" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
+"Dinner 500 50% me 50% C" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"percentage","participants":[],"percentageAmounts":{"A":50,"C":50}}
+"Bill 1200 A 30% B 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":30,"B":70}}
+"Airbnb 1500 A 2 nights B 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"B":3}}
+"Rent 3000 I stayed 2 C 4 nights" -> {"amount":3000,"description":"Rent","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"C":4}}
+"Trip 600 split by shares A 1 B 2 C 3" -> {"amount":600,"description":"Trip","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":1,"B":2,"C":3}}
 
 Reply with nothing except the single JSON object. Double-quoted keys and strings only. All names must use exact spellings from the member list.''';
   }
