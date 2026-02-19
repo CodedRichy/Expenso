@@ -11,7 +11,7 @@ Typical split apps keep one endless ledger. That leads to drift (old debts mixed
 - **Settlement cycles** — The creator can **Settle** (freeze the current cycle) and **Start New Cycle** to archive expenses and begin a new period. Past cycles stay in history; the active view is always the current cycle only.
 - **Single group creator** — One creator per group (shown in the UI). Only the creator can Settle, Start New Cycle, and delete the group. No committee, no confusion about who can close a cycle.
 
-The rest of the app is built around that: per-group expense log, real-time “who owes whom” from a deterministic settlement engine, and optional natural-language entry (Smart Bar) for faster input.
+The rest of the app is built around that: per-group expense log, real-time “who owes whom” from a deterministic settlement engine, and optional natural-language entry (Magic Bar) for faster input.
 
 ---
 
@@ -21,7 +21,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 |------|-------------|
 | **Groups** | Create groups via FAB; add members by phone or contacts. List shows all groups; pin/unpin (max 3); delete (creator only). |
 | **Creator** | One creator per group; only creator can Settle, Start New Cycle, and Delete group. |
-| **Expenses** | Add via Smart Bar (natural language, parsed by optional Groq/Llama integration) or manual form. Edit/undo; description, date, amount; splits: Even, Exact, or Exclude. Confirmation dialog validates amount, description, and split total; grey Confirm + red message when invalid; heavy haptic on invalid confirm tap, light on success. Gibberish in Magic Bar falls back to first number as amount and "Expense" when needed. |
+| **Expenses** | Add via Magic Bar (natural language, parsed by optional Groq/Llama) or manual form. Edit/undo (overlay after add); description, date, amount. Splits: **Even** (current user + named participants, N+1 way), **Exact**, **Exclude**, **Percentage**, **Shares**. Confirmation dialog validates amount, description, and split total; grey Confirm + red message when invalid; heavy haptic on invalid confirm tap, light on success. Gibberish in Magic Bar falls back to first number and "Expense" when needed. |
 | **Summary card** | Group detail shows a “Decision Clarity” card: cycle total, spent by you, your status (credit/debt). Empty cycle shows “Zero-Waste Cycle” and a prompt to use the Magic Bar. |
 | **Profile** | From Groups header: tap avatar to open Profile. Set display name (same name used for Magic Bar fuzzy matching), upload avatar (Firebase Storage), and save UPI ID for payments. |
 | **Balances** | Per-group “who owes whom” from the settlement engine; shown when the cycle has expenses. |
@@ -34,7 +34,7 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 
 - **Flutter** (Dart), **Material 3**
 - **Firebase:** Auth (phone/OTP), Cloud Firestore, Cloud Functions (Razorpay order creation)
-- **Smart Bar:** Groq API (Llama 3.3) for parsing natural-language expenses (optional; requires `GROQ_API_KEY`)
+- **Magic Bar:** Groq API (Llama 3.3) for parsing natural-language expenses (optional; requires `GROQ_API_KEY`)
 - **Local:** SharedPreferences (pinned groups), `flutter_contacts` (invite suggestions), `flutter_dotenv` (env)
 
 ---
@@ -58,14 +58,14 @@ The rest of the app is built around that: per-group expense log, real-time “wh
 
 2. **Environment**
    - Create a `.env` in the project root (gitignored).
-   - Add `GROQ_API_KEY=<your-groq-api-key>` for the Smart Bar (optional; manual expense entry works without it).
+   - Add `GROQ_API_KEY=<your-groq-api-key>` for the Magic Bar (optional; manual expense entry works without it).
 
 3. **Firebase**
    - Run `dart run flutterfire configure`.
    - Enable **Phone** in Authentication → Sign-in method.
+   - **Firestore**: Deploy rules so group delete and subcollection access work correctly: `firebase deploy --only firestore:rules`. Rules allow subcollection create/update only when the group document exists (avoids empty docs after delete).
    - **Storage**: In Console → Build → Storage → Get started (required for profile avatar uploads). If you see "Upload failed" or 404 when setting a profile photo, enable Storage and set rules (e.g. allow authenticated users to read/write `users/{userId}/**`).
    - **Functions** (for Settle up): Deploy `functions/` with `firebase deploy --only functions`. Set env vars `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in Firebase Console → Functions → createRazorpayOrder (or via `firebase functions:config:set` and read in function). See `functions/README.md`.
-   - Use Test Mode or configure Firestore rules as needed.
 
 ### Run
 
@@ -81,7 +81,7 @@ For phone auth in development, the app supports a test-number hint (code `123456
 
 | Item | Purpose |
 |------|---------|
-| `.env` | `GROQ_API_KEY` — used by Smart Bar for expense parsing (optional). |
+| `.env` | `GROQ_API_KEY` — used by Magic Bar for expense parsing (optional). |
 | Firebase | Phone Auth + Firestore; config via `flutterfire configure` and Console. Functions: Razorpay keys for `createRazorpayOrder`. |
 | Pinned groups | Stored in SharedPreferences (max 3 per user). |
 
@@ -93,14 +93,16 @@ For phone auth in development, the app supports a test-number hint (code `123456
 flutter test
 ```
 
-Tests cover expense validation and the Groq `ParsedExpenseResult` parser.
+Tests cover expense validation, Groq `ParsedExpenseResult` (even/exact/exclude/percentage/shares, participants semantics), and the settlement engine (net balances, debts).
 
 ---
 
 ## Documentation
 
 - **[APP_BLUEPRINT.md](APP_BLUEPRINT.md)** — Routes, screens, data layer, design system, conventions, and file layout. Primary reference for implementation and contributions.
-- **[docs/V1_RELEASE.md](docs/V1_RELEASE.md)** — V1 Release Document: Magic Bar contract, Decision Clarity UI, Authority model, SettlementEngine, quality bar, philosophy, and V2 “Not Now” list.
+- **[docs/V1_RELEASE.md](docs/V1_RELEASE.md)** — V1 Release: Magic Bar contract, Decision Clarity UI, Authority model, SettlementEngine, quality bar, and V2 “Not Now” list.
+- **[docs/GROQ_PROMPT_REFINEMENT.md](docs/GROQ_PROMPT_REFINEMENT.md)** — Process for fixing Magic Bar parse errors (changelog, prompt sections, research notes).
+- **[docs/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md](docs/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md)** — Research summary on structured output, few-shot, error-driven refinement, and evaluation for the expense parser.
 
 ---
 
