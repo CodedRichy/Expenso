@@ -214,6 +214,11 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - **If member:** “Settle now” → snackbar “Request sent to group leader.”
 - **“Pay via UPI”** (secondary): navigates to settlement-confirmation. Design: primary button black, borderRadius 8, no elevation; balanced vertical padding before Expense Log.
 
+### Recording vs settlement (we only mark it down)
+
+- **Expenses we record** (e.g. “A paid 300”, “B paid 75”) are **real-world payments that already happened**. The app does **not** process or collect those amounts; we only **note them down** (who paid, amount, split). No money flows through the app for the original expense.
+- **Settlement** (who pays whom to clear the books) is **derived** from those records. E.g. B owes A 75, C owes 100 to A and 25 to B. Any in-app payment facilitation (UPI deep link, Razorpay collect-and-disburse, etc.) applies **only to these settlement flows**, not to the original “A paid 300” / “B paid 75”.
+
 ### Phone format
 
 - Store/display as `+91 XXXXX XXXXX` (10 digits).
