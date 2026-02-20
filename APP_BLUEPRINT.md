@@ -292,6 +292,7 @@ lib/
     phone_auth.dart
     onboarding_name.dart
     groups_list.dart
+    group_list_skeleton.dart   # Shimmer skeleton while groups load
     create_group.dart
     invite_members.dart
     group_detail.dart

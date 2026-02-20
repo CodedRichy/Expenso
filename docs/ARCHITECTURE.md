@@ -89,7 +89,7 @@ Snapshots at tagged or sampled revisions:
 ### At 1e72e6d (2026-02-16)
 
 - **Total files:** 165
-- **Top-level directories:** .cursor, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
+- **Top-level directories:** .cursor, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
 
 - `.cursor/` — 1 files
 - `.gitignore/` — 1 files
