@@ -985,6 +985,64 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     return (id: null, isGuessed: false);
   }
 
+  /// At confirmation time (for any split type): fill any unresolved slot that has exactly one
+  /// unassigned member matching the slot's name (display or contact). Repeats until no such slot exists.
+  void _resolveUnresolvedSlotsAtConfirmation(
+    List<_ParticipantSlot> slots,
+    List<Member> members,
+    CycleRepository repo,
+    Map<String, List<String>>? contactNameToNormalizedPhones,
+  ) {
+    Map<String, String>? phoneToContactName;
+    if (contactNameToNormalizedPhones != null) {
+      phoneToContactName = {};
+      for (final entry in contactNameToNormalizedPhones.entries) {
+        for (final p in entry.value) {
+          phoneToContactName[p] = entry.key;
+        }
+      }
+    }
+
+    Set<String> _assignedIds() =>
+        slots.where((s) => s.id != null && s.id!.isNotEmpty).map((s) => s.id!).toSet();
+    List<Member> _unassigned(Set<String> assigned) =>
+        members.where((m) => !assigned.contains(m.id)).toList();
+
+    Set<String> _memberIdsMatchingName(String name, List<Member> candidates) {
+      final n = name.trim().toLowerCase();
+      if (n.isEmpty) return {};
+      final ids = <String>{};
+      for (final m in candidates) {
+        final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+        if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) ids.add(m.id);
+        final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
+        if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) ids.add(m.id);
+      }
+      return ids;
+    }
+
+    bool changed = true;
+    while (changed) {
+      changed = false;
+      final assigned = _assignedIds();
+      final unassigned = _unassigned(assigned);
+      for (var i = 0; i < slots.length; i++) {
+        if (slots[i].id != null && slots[i].id!.isNotEmpty) continue;
+        final matchIds = _memberIdsMatchingName(slots[i].name, unassigned);
+        if (matchIds.length == 1) {
+          slots[i] = _ParticipantSlot(
+            name: slots[i].name,
+            amount: slots[i].amount,
+            id: matchIds.single,
+            isGuessed: true,
+          );
+          changed = true;
+          break;
+        }
+      }
+    }
+  }
+
   Future<void> _submit() async {
     final input = _controller.text.trim();
     if (input.isEmpty || _loading || !_sendAllowed || _inCooldown) return;
@@ -1148,18 +1206,8 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       }
     }
 
-    final assignedIds = slots.where((s) => s.id != null && s.id!.isNotEmpty).map((s) => s.id!).toSet();
-    final unassignedMembers = members.where((m) => !assignedIds.contains(m.id)).toList();
-    final unresolvedCount = slots.where((s) => s.id == null || s.id!.isEmpty).length;
-    if (unresolvedCount == 1 && unassignedMembers.length == 1) {
-      final member = unassignedMembers.single;
-      for (var i = 0; i < slots.length; i++) {
-        if (slots[i].id == null || slots[i].id!.isEmpty) {
-          slots[i] = _ParticipantSlot(name: slots[i].name, amount: slots[i].amount, id: member.id, isGuessed: true);
-          break;
-        }
-      }
-    }
+    // Fill unresolved slots by name match (all split types: even, exact, percentage, shares, exclude).
+    _resolveUnresolvedSlotsAtConfirmation(slots, members, repo, contactMap);
 
     final exactSum = result.splitType == 'exact'
         ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)

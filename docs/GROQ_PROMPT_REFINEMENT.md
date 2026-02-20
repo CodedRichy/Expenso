@@ -26,6 +26,7 @@ When the Magic Bar produces a **wrong parse** (wrong payer, participants, split 
 |------------|----------------------|----------------|-------------|
 | 2025-02-18 | "X paid 200" (2-person group) | participants = [X] only; only payer in split | SCENARIO DECISION + FIELD RULES: when payer is named but no "with Y", participants = [] (everyone). EXAMPLES: added "B paid 200", "C paid 500 for dinner" with payer + participants:[]. Repo/dialog also fixed to treat [] as all members. |
 | 2025-02-18 | "dinner with X amount" / even split with participants | Parser must output participants = others only (app uses total = 1 + participants.length) | RESEARCH: FIELD RULES 5 — participants = only others; app adds current user. COMMON MISTAKES — WRONG→RIGHT for "200 with X" (participants:[X]) and "amount with A and B" (participants:["A","B"]). EXAMPLES: "dinner with B 300" -> participants:["B"]. |
+| 2025-02-20 | Prompt optimization (structure, concision, tokens) | N/A | Schema-first: OUTPUT SCHEMA + example shape moved to top (Groq: lead with must-do). Tightened SCENARIO and FIELD RULES; condensed COMMON MISTAKES. Curated EXAMPLES (56→22) for diversity and failure patterns; temperature 0 for extraction. See RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md. |
 | (future)   | … | … | … |
 
 Add new rows when you fix a parse error. Keep the table concise; details can live in commit messages or DEBUG_SESSION.md if needed.
@@ -34,13 +35,13 @@ Add new rows when you fix a parse error. Keep the table concise; details can liv
 
 ## Prompt sections (quick reference)
 
-- **SCENARIO DECISION** – Order of inference: who paid → who shares → split type. Critical line for "X paid amount" vs "amount with X".
-- **OUTPUT SCHEMA** – Required and conditional JSON keys.
+- **OUTPUT SCHEMA** – Required and conditional keys; one example shape (schema-first for format lock).
+- **SCENARIO** – Order of inference: who paid → who shares → split type. Critical: "X paid amount" vs "amount with X".
 - **MEMBER LIST** – Injected at runtime; names must match.
-- **FIELD RULES** – 1) amount 2) description 3) category 4) splitType 5) participants 6) payer.
-- **EDGE CASES** – Ambiguity, member list, JSON validity.
-- **COMMON MISTAKES** – Short wrong→right lines (error-reflection style).
-- **EXAMPLES** – Few-shot list; add examples that match new failure patterns.
+- **FIELD RULES** – amount, description, category, splitType, participants, payer (concise bullets).
+- **EDGE CASES** – Ambiguity, JSON validity.
+- **COMMON MISTAKES** – Wrong→right lines (error-reflection style).
+- **EXAMPLES** – Curated few-shot; add examples that match new failure patterns.
 
 ---
 
