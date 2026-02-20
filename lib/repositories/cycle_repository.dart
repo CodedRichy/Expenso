@@ -419,7 +419,9 @@ class CycleRepository extends ChangeNotifier {
       for (final entry in splits.entries) {
         final uid = entry.key;
         final amt = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
-        final phone = uid == _currentUserId ? _currentUserPhone : (_userCache[uid]?['phoneNumber'] as String? ?? '');
+        final phone = uid == _currentUserId
+            ? _currentUserPhone
+            : (_membersById[uid]?.phone ?? _userCache[uid]?['phoneNumber'] as String? ?? '');
         if (phone.isNotEmpty) {
           participantPhones.add(phone);
           splitAmountsByPhone[phone] = amt;
@@ -850,8 +852,10 @@ class CycleRepository extends ChangeNotifier {
       net[phone] = 0.0;
     }
     for (final expense in cycle.expenses) {
-      final payer = expense.paidByPhone.isNotEmpty ? expense.paidByPhone : currentUserPhone;
-      net[payer] = (net[payer] ?? 0) + expense.amount;
+      final payer = expense.paidByPhone;
+      if (payer.isNotEmpty && phones.contains(payer)) {
+        net[payer] = (net[payer] ?? 0) + expense.amount;
+      }
       final participants = expense.participantPhones.isNotEmpty
           ? expense.participantPhones
           : members.map((m) => m.phone).toList();
