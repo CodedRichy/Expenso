@@ -925,7 +925,15 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     return r.id;
   }
 
-  /// Like [_resolveOneNameToId] but also returns whether the match was fuzzy (user should verify).
+  static bool _nameSimilar(String parsedLower, String otherLower) {
+    if (parsedLower == otherLower) return true;
+    if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower)) return true;
+    if (otherLower.startsWith(parsedLower) || parsedLower.startsWith(otherLower)) return true;
+    return false;
+  }
+
+  /// Resolves a parsed participant name to a group member: match against each member's
+  /// display name and (if available) contact name; exact match wins, else one similar match.
   ({String? id, bool isGuessed}) _resolveOneNameToIdWithGuess(
     CycleRepository repo,
     String groupId,
@@ -940,53 +948,40 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
       return (id: currentId.isNotEmpty ? currentId : null, isGuessed: false);
     }
+
+    Map<String, String>? phoneToContactName;
     if (contactNameToNormalizedPhones != null) {
-      final phoneToContactName = <String, String>{};
+      phoneToContactName = {};
       for (final entry in contactNameToNormalizedPhones.entries) {
         for (final p in entry.value) {
           phoneToContactName[p] = entry.key;
         }
       }
-      for (final m in members) {
-        final contactName = phoneToContactName[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-        if (contactName != null && contactName == n) return (id: m.id, isGuessed: true);
-      }
     }
+
     String? exactMatch;
-    List<String> partialMatches = [];
+    final similarMatchIds = <String>{};
     for (final m in members) {
-      final display = repo.getMemberDisplayNameById(m.id).toLowerCase();
-      if (display == n) {
-        exactMatch = m.id;
-        break;
+      final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
+        if (displayLower == n) {
+          exactMatch = m.id;
+          break;
+        }
+        similarMatchIds.add(m.id);
       }
-      if (display.contains(n) || n.contains(display) ||
-          display.startsWith(n) || n.startsWith(display)) {
-        partialMatches.add(m.id);
+      if (exactMatch != null) break;
+      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
+      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) {
+        if (contactLower == n) {
+          exactMatch = m.id;
+          break;
+        }
+        similarMatchIds.add(m.id);
       }
     }
     if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (partialMatches.length == 1) return (id: partialMatches.single, isGuessed: true);
-
-    if (contactNameToNormalizedPhones != null) {
-      final candidatePhones = <String>[];
-      for (final entry in contactNameToNormalizedPhones.entries) {
-        final key = entry.key;
-        if (key == n || key.contains(n) || n.contains(key)) {
-          candidatePhones.addAll(entry.value);
-        }
-      }
-      if (candidatePhones.isNotEmpty) {
-        final groupNormalized = members.map((m) => _normalizePhoneForMatch(m.phone)).toSet();
-        final matched = candidatePhones.where((p) => groupNormalized.contains(p)).toSet().toList();
-        if (matched.length == 1) {
-          final norm = matched.single;
-          for (final m in members) {
-            if (_normalizePhoneForMatch(m.phone) == norm) return (id: m.id, isGuessed: true);
-          }
-        }
-      }
-    }
+    if (similarMatchIds.length == 1) return (id: similarMatchIds.single, isGuessed: true);
     return (id: null, isGuessed: false);
   }
 
