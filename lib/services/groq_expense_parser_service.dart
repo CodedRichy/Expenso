@@ -243,6 +243,7 @@ Critical: "600 with B" = even. "600: 400 me 200 B" = exact. "Rent 60-40" or "50%
 - "200 with X" or "dinner 300 with B" -> WRONG: participants:[] or participants:["me","X"]. RIGHT: participants:[X] (app splits between current user and X; total 2 people).
 - User says another person paid -> WRONG: omit "payer". RIGHT: include "payer":"<name>" matching member list.
 - "amount with A and B" -> WRONG: participants:["me","A","B"]. RIGHT: participants:["A","B"] (app adds current user; total 3 people).
+- "I had dinner with X 200" or "dinner with X 200" -> WRONG: participants:[]. RIGHT: participants:[X] (2 people: current user + X; use exact spelling from member list).
 
 --- EXAMPLES (member list: A, B, C) ---
 "ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}

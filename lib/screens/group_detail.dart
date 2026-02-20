@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
@@ -818,6 +819,51 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   static const Duration _debounceDuration = Duration(milliseconds: 500);
   static const Duration _cooldownDuration = Duration(seconds: 30);
 
+  Map<String, String>? _phoneToContactName;
+  Map<String, List<String>>? _contactNameToNormalizedPhones;
+  bool _contactCacheLoaded = false;
+
+  static String _normalizePhoneForMatch(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    return digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
+  }
+
+  Future<void> _ensureContactCache() async {
+    if (_contactCacheLoaded) return;
+    final perm = await fc.FlutterContacts.requestPermission();
+    if (!perm || !mounted) return;
+    final contacts = await fc.FlutterContacts.getContacts(withProperties: true);
+    if (!mounted) return;
+    final phoneToName = <String, String>{};
+    final nameToPhones = <String, List<String>>{};
+    for (final c in contacts) {
+      final name = c.displayName.trim();
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      final phones = c.phones
+          .map((p) => _normalizePhoneForMatch(p.number))
+          .where((s) => s.length >= 10)
+          .toSet()
+          .toList();
+      if (phones.isNotEmpty) {
+        nameToPhones.putIfAbsent(key, () => []).addAll(phones);
+      }
+      for (final p in c.phones) {
+        final norm = _normalizePhoneForMatch(p.number);
+        if (norm.length >= 10 && !phoneToName.containsKey(norm)) {
+          phoneToName[norm] = name;
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _phoneToContactName = phoneToName;
+        _contactNameToNormalizedPhones = nameToPhones;
+        _contactCacheLoaded = true;
+      });
+    }
+  }
+
   bool get _inCooldown =>
       _cooldownUntil != null && DateTime.now().isBefore(_cooldownUntil!);
 
@@ -864,8 +910,18 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   }
 
   /// Resolves a single name to one phone, or null if ambiguous/unmatched.
-  String? _resolveOneNameToPhone(CycleRepository repo, String groupId, String name) {
-    final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+  String? _resolveOneNameToPhone(
+    CycleRepository repo,
+    String groupId,
+    String name, {
+    Map<String, List<String>>? contactNameToNormalizedPhones,
+  }) {
+    final r = _resolveOneNameToPhoneWithGuess(
+      repo,
+      groupId,
+      name,
+      contactNameToNormalizedPhones: contactNameToNormalizedPhones,
+    );
     return r.phone;
   }
 
@@ -873,8 +929,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   ({String? phone, bool isGuessed}) _resolveOneNameToPhoneWithGuess(
     CycleRepository repo,
     String groupId,
-    String name,
-  ) {
+    String name, {
+    Map<String, List<String>>? contactNameToNormalizedPhones,
+  }) {
     final n = name.trim().toLowerCase();
     if (n.isEmpty) return (phone: null, isGuessed: false);
     final members = repo.getMembersForGroup(groupId);
@@ -898,6 +955,26 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     }
     if (exactMatch != null) return (phone: exactMatch, isGuessed: false);
     if (partialMatches.length == 1) return (phone: partialMatches.single, isGuessed: true);
+
+    if (contactNameToNormalizedPhones != null) {
+      final candidatePhones = <String>[];
+      for (final entry in contactNameToNormalizedPhones.entries) {
+        final key = entry.key;
+        if (key == n || key.contains(n) || n.contains(key)) {
+          candidatePhones.addAll(entry.value);
+        }
+      }
+      if (candidatePhones.isNotEmpty) {
+        final groupNormalized = members.map((m) => _normalizePhoneForMatch(m.phone)).toSet();
+        final matched = candidatePhones.where((p) => groupNormalized.contains(p)).toSet().toList();
+        if (matched.length == 1) {
+          final norm = matched.single;
+          for (final m in members) {
+            if (_normalizePhoneForMatch(m.phone) == norm) return (phone: m.phone, isGuessed: true);
+          }
+        }
+      }
+    }
     return (phone: null, isGuessed: false);
   }
 
@@ -907,10 +984,23 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     final repo = CycleRepository.instance;
     final groupId = widget.group.id;
     final members = repo.getMembersForGroup(groupId);
-    final memberNames = members.map((m) => repo.getMemberDisplayName(m.phone)).toList();
 
     setState(() => _loading = true);
     try {
+      await _ensureContactCache();
+      if (!mounted) return;
+      final memberNames = members.map((m) {
+        final name = repo.getMemberDisplayName(m.phone);
+        final looksLikePhone = name.isEmpty ||
+            RegExp(r'\+|\d{8,}').hasMatch(name.replaceAll(RegExp(r'\s'), ''));
+        if (looksLikePhone && _phoneToContactName != null) {
+          final norm = _normalizePhoneForMatch(m.phone);
+          final contactName = _phoneToContactName![norm];
+          if (contactName != null && contactName.trim().isNotEmpty) return contactName;
+        }
+        return name;
+      }).toList();
+
       final result = await GroqExpenseParserService.parse(
         userInput: input,
         groupMemberNames: memberNames,
@@ -920,7 +1010,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       _controller.clear();
       setState(() => _sendAllowed = false);
       HapticFeedback.lightImpact();
-      _showConfirmationDialog(repo, result);
+      _showConfirmationDialog(repo, result, contactNameToNormalizedPhones: _contactNameToNormalizedPhones);
     } on GroqRateLimitException catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -946,14 +1036,23 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     }
   }
 
-  Future<void> _showConfirmationDialog(CycleRepository repo, ParsedExpenseResult result) async {
+  Future<void> _showConfirmationDialog(
+    CycleRepository repo,
+    ParsedExpenseResult result, {
+    Map<String, List<String>>? contactNameToNormalizedPhones,
+  }) async {
     final groupId = widget.group.id;
     final members = repo.getMembersForGroup(groupId);
     final allPhones = members.map((m) => m.phone).toList();
 
     String payerPhone = repo.currentUserPhone;
     if (result.payerName != null && result.payerName!.trim().isNotEmpty) {
-      final p = _resolveOneNameToPhone(repo, groupId, result.payerName!.trim());
+      final p = _resolveOneNameToPhone(
+        repo,
+        groupId,
+        result.payerName!.trim(),
+        contactNameToNormalizedPhones: contactNameToNormalizedPhones,
+      );
       if (p != null) payerPhone = p;
     }
 
@@ -970,14 +1069,15 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     final List<_ParticipantSlot> slots = [];
     final bool isExclude = result.splitType == 'exclude';
 
+    final contactMap = contactNameToNormalizedPhones;
     if (result.splitType == 'exclude' && result.excludedNames.isNotEmpty) {
       for (final name in result.excludedNames) {
-        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
         slots.add(_ParticipantSlot(name: name, amount: 0, phone: r.phone, isGuessed: r.isGuessed));
       }
     } else if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
       for (final entry in result.exactAmountsByName.entries) {
-        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, entry.key);
+        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, entry.key, contactNameToNormalizedPhones: contactMap);
         slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, phone: r.phone, isGuessed: r.isGuessed));
       }
     } else if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
@@ -991,7 +1091,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           phone = repo.currentUserPhone;
           displayName = repo.getMemberDisplayName(phone);
         } else {
-          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
           phone = r.phone;
           displayName = name;
         }
@@ -1010,7 +1110,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
             phone = repo.currentUserPhone;
             displayName = repo.getMemberDisplayName(phone);
           } else {
-            final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+            final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
             phone = r.phone;
             displayName = name;
           }
@@ -1035,7 +1135,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           isGuessed: false,
         ));
         for (final name in names) {
-          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name);
+          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
           slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
         }
       }
