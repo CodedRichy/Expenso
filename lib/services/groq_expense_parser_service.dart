@@ -68,7 +68,7 @@ class ParsedExpenseResult {
                 : split == 'shares'
                     ? 'shares'
                     : 'even';
-    final parts = json['participants'] ?? json['participant'];
+    final parts = json['participants'] ?? json['participant'] ?? json['members'];
     List<String> names = [];
     if (parts is List) {
       for (final p in parts) {
