@@ -6,8 +6,9 @@ const admin = require('firebase-admin');
 if (!admin.apps.length) admin.initializeApp();
 
 function deriveKey(prefix, id) {
-  const master = process.env.DATA_ENCRYPTION_MASTER_KEY;
-  if (!master) return null;
+  const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
+  if (!raw) return null;
+  const master = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'utf8');
   return crypto.createHmac('sha256', master, prefix + ':' + id).digest('base64');
 }
 
