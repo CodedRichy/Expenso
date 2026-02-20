@@ -1,9 +1,5 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { defineString } = require('firebase-functions/params');
 const Razorpay = require('razorpay');
-
-const razorpayKeyId = defineString('RAZORPAY_KEY_ID', { description: 'Razorpay API Key ID (test or live)' });
-const razorpayKeySecret = defineString('RAZORPAY_KEY_SECRET', { description: 'Razorpay API Key Secret' });
 
 const createRazorpayOrder = onCall(
   { region: 'asia-south1' },
@@ -11,8 +7,8 @@ const createRazorpayOrder = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Must be signed in.');
     }
-    const keyId = razorpayKeyId.value();
-    const keySecret = razorpayKeySecret.value();
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
       throw new HttpsError('failed-precondition', 'Razorpay not configured.');
     }
