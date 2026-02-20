@@ -10,18 +10,18 @@ void main() {
   Expense expense({
     required String id,
     required double amount,
-    required String paidByPhone,
-    List<String>? participantPhones,
-    Map<String, double>? splitAmountsByPhone,
+    required String paidById,
+    List<String>? participantIds,
+    Map<String, double>? splitAmountsById,
   }) {
     return Expense(
       id: id,
       description: 'Test',
       amount: amount,
       date: 'Today',
-      participantPhones: participantPhones ?? [],
-      paidByPhone: paidByPhone,
-      splitAmountsByPhone: splitAmountsByPhone,
+      participantIds: participantIds ?? [],
+      paidById: paidById,
+      splitAmountsById: splitAmountsById,
     );
   }
 
@@ -31,29 +31,29 @@ void main() {
         expense(
           id: 'e1',
           amount: 300,
-          paidByPhone: 'p_rishi',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 150, 'p_rockey': 150},
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['p_rishi'], 150);
-      expect(net['p_rockey'], -150);
+      expect(net['u1'], 150);
+      expect(net['u2'], -150);
     });
 
-    test('empty participantPhones uses all members (even split)', () {
+    test('empty participantIds uses all members (even split)', () {
       final expenses = [
         expense(
           id: 'e1',
           amount: 40,
-          paidByPhone: 'p_rockey',
-          participantPhones: [],
-          splitAmountsByPhone: null,
+          paidById: 'u2',
+          participantIds: [],
+          splitAmountsById: null,
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['p_rishi'], -20);
-      expect(net['p_rockey'], 20);
+      expect(net['u1'], -20);
+      expect(net['u2'], 20);
     });
 
     test('exact split: amounts match total', () {
@@ -61,14 +61,14 @@ void main() {
         expense(
           id: 'e1',
           amount: 500,
-          paidByPhone: 'p_rishi',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 200, 'p_rockey': 300},
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 200, 'u2': 300},
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['p_rishi'], 300);
-      expect(net['p_rockey'], -300);
+      expect(net['u1'], 300);
+      expect(net['u2'], -300);
     });
 
     test('multiple expenses net correctly', () {
@@ -76,21 +76,21 @@ void main() {
         expense(
           id: 'e1',
           amount: 100,
-          paidByPhone: 'p_rishi',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 50, 'p_rockey': 50},
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 50, 'u2': 50},
         ),
         expense(
           id: 'e2',
           amount: 100,
-          paidByPhone: 'p_rockey',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 50, 'p_rockey': 50},
+          paidById: 'u2',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 50, 'u2': 50},
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['p_rishi'], 0);
-      expect(net['p_rockey'], 0);
+      expect(net['u1'], 0);
+      expect(net['u2'], 0);
     });
   });
 
@@ -100,15 +100,15 @@ void main() {
         expense(
           id: 'e1',
           amount: 300,
-          paidByPhone: 'p_rishi',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 150, 'p_rockey': 150},
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
         ),
       ];
       final debts = SettlementEngine.computeDebts(expenses, members);
       expect(debts.length, 1);
-      expect(debts[0].fromPhone, 'p_rockey');
-      expect(debts[0].toPhone, 'p_rishi');
+      expect(debts[0].fromId, 'u2');
+      expect(debts[0].toId, 'u1');
       expect(debts[0].amount, closeTo(150, 0.01));
     });
 
@@ -117,16 +117,16 @@ void main() {
         expense(
           id: 'e1',
           amount: 200,
-          paidByPhone: 'p_rishi',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 100, 'p_rockey': 100},
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 100, 'u2': 100},
         ),
         expense(
           id: 'e2',
           amount: 200,
-          paidByPhone: 'p_rockey',
-          participantPhones: ['p_rishi', 'p_rockey'],
-          splitAmountsByPhone: {'p_rishi': 100, 'p_rockey': 100},
+          paidById: 'u2',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 100, 'u2': 100},
         ),
       ];
       final debts = SettlementEngine.computeDebts(expenses, members);

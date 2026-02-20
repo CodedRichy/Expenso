@@ -4,16 +4,24 @@
 
 You need to give your Cloud Functions the secret key so they can derive user/group keys. **Do not put this key in code or commit it.**
 
-### Option A: Firebase Console (for production)
+### Option A: Google Cloud Console (for production)
 
-1. Open [Firebase Console](https://console.firebase.google.com/) and select your Expenso project.
-2. Go to **Build** → **Functions**.
-3. Click the **Environment variables** or **Secrets** tab (depends on your Firebase version).
-4. Add a new variable/secret:
+Firebase Functions (v2) run as Google Cloud Functions. Set the key in the same project:
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. **Select the same project** as your Firebase app (top bar: click the project name → pick your Expenso project).
+3. In the left menu go to **Cloud Run** (or search “Cloud Run” in the top search).
+4. You’ll see one or more services (e.g. each callable can be a service). Click the **service name** that backs your functions (often something like `getuserencryptionkey` or a shared service name).
+5. At the top click **Edit & deploy new revision**.
+6. Open the **Variables & secrets** tab.
+7. Under **Environment variables** click **Add variable**:
    - **Name:** `DATA_ENCRYPTION_MASTER_KEY`
    - **Value:** `9f3c7a1d8b4e2f0c6a5d91e7b2c8f403a6e94d5b0f1c2873e9a4b6d2c5f8e01`
-5. Save.  
-   **Note:** If you use **Secrets**, create the secret first, then in Functions config reference it. Newer projects often use **Environment variables** in the Functions dashboard.
+8. Click **Deploy** (bottom of the page). Wait for the new revision to be live.
+
+**If you don’t see Cloud Run:** Go to **Cloud Functions** (left menu) → click your function (e.g. `getUserEncryptionKey`) → **Edit** → **Runtime, build, connections and security** → **Runtime environment variables** → Add `DATA_ENCRYPTION_MASTER_KEY` and the value → **Next** → **Deploy**.
+
+**Note:** You must add the same env var to **every** Cloud Run service / function that uses it (e.g. the one for `getUserEncryptionKey` and the one for `getGroupEncryptionKey`), or deploy once with the var so all functions in that service get it. With Firebase’s default deploy, all callables often share one service, so adding the variable once may be enough.
 
 ### Option B: Local only (emulator)
 
