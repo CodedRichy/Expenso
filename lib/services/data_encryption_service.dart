@@ -105,7 +105,7 @@ class DataEncryptionService {
     return out;
   }
 
-  Future<Map<String, dynamic>> _decryptMap(List<int>? key, Map<String, dynamic> data, List<String> fields, Map<String, dynamic> Function(String, String) typeRestore) async {
+  Future<Map<String, dynamic>> _decryptMap(List<int>? key, Map<String, dynamic> data, List<String> fields, dynamic Function(String, String) typeRestore) async {
     if (key == null) return _restoreTypes(data, fields, typeRestore);
     final out = Map<String, dynamic>.from(data);
     for (final k in fields) {
@@ -118,7 +118,7 @@ class DataEncryptionService {
     return _restoreTypes(out, fields, typeRestore);
   }
 
-  Map<String, dynamic> _restoreTypes(Map<String, dynamic> data, List<String> fields, Map<String, dynamic> Function(String, String) typeRestore) {
+  Map<String, dynamic> _restoreTypes(Map<String, dynamic> data, List<String> fields, dynamic Function(String, String) typeRestore) {
     final out = Map<String, dynamic>.from(data);
     for (final k in fields) {
       if (!out.containsKey(k)) continue;

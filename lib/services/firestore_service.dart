@@ -70,9 +70,11 @@ class FirestoreService {
     if (data.isEmpty) return;
     if (_encryption != null) {
       await _encryption!.ensureUserKey();
-      data = await _encryption!.encryptUserData(data);
     }
-    await ref.set(data, SetOptions(merge: true));
+    final toSet = _encryption != null
+        ? await _encryption!.encryptUserData(data)
+        : data;
+    await ref.set(toSet, SetOptions(merge: true));
   }
 
   /// Get user doc. Returns null if missing.
