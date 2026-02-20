@@ -17,7 +17,7 @@ class _EditExpenseState extends State<EditExpense> {
   String? _expenseId;
   Expense? _expense;
   String _selectedDate = 'Today';
-  String _selectedPayerPhone = '';
+  String _selectedPayerId = '';
   bool _canEdit = true;
   bool _hasInitialized = false;
   bool _expenseNotFound = false;
@@ -61,7 +61,7 @@ class _EditExpenseState extends State<EditExpense> {
     _expenseId = expenseId;
     _expense = expense;
     _selectedDate = expense.date;
-    _selectedPayerPhone = expense.paidByPhone.isNotEmpty ? expense.paidByPhone : repo.currentUserPhone;
+    _selectedPayerId = expense.paidById.isNotEmpty ? expense.paidById : repo.currentUserId;
     _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);
@@ -84,12 +84,12 @@ class _EditExpenseState extends State<EditExpense> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
               ),
             ),
-            ...repo.getMembersForGroup(_groupId!).map((m) {
-              final displayName = repo.getMemberDisplayName(m.phone);
+            ...repo.getMembersForGroup(_groupId!).where((m) => !m.id.startsWith('p_')).map((m) {
+              final displayName = repo.getMemberDisplayNameById(m.id);
               return ListTile(
                 title: Text(displayName),
                 onTap: () {
-                  setState(() => _selectedPayerPhone = m.phone);
+                  setState(() => _selectedPayerId = m.id);
                   Navigator.pop(ctx);
                 },
               );
@@ -135,9 +135,9 @@ class _EditExpenseState extends State<EditExpense> {
         description: desc,
         amount: amount,
         date: _selectedDate,
-        participantPhones: existing.participantPhones,
-        paidByPhone: _selectedPayerPhone,
-        splitAmountsByPhone: existing.splitAmountsByPhone,
+        participantIds: existing.participantIds,
+        paidById: _selectedPayerId,
+        splitAmountsById: existing.splitAmountsById,
         category: existing.category,
         splitType: existing.splitType,
       );
@@ -503,7 +503,7 @@ class _EditExpenseState extends State<EditExpense> {
 
   Widget _buildPayerField(bool canEdit) {
     final repo = CycleRepository.instance;
-    final displayName = repo.getMemberDisplayName(_selectedPayerPhone);
+    final displayName = repo.getMemberDisplayNameById(_selectedPayerId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -559,11 +559,11 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildSplitAndPeopleSection() {
     final expense = _expense!;
     final repo = CycleRepository.instance;
-    final isExact = expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty;
+    final isExact = expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty;
     final splitLabel = expense.splitType.isNotEmpty ? expense.splitType : (isExact ? 'Exact' : 'Even');
     final participants = isExact
-        ? expense.splitAmountsByPhone!.entries.toList()
-        : expense.participantPhones.map((p) => MapEntry(p, expense.amount / (expense.participantPhones.isEmpty ? 1 : expense.participantPhones.length))).toList();
+        ? expense.splitAmountsById!.entries.toList()
+        : expense.participantIds.map((id) => MapEntry(id, expense.amount / (expense.participantIds.isEmpty ? 1 : expense.participantIds.length))).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,7 +594,7 @@ class _EditExpenseState extends State<EditExpense> {
         ),
         const SizedBox(height: 8),
         ...participants.map((e) {
-          final name = repo.getMemberDisplayName(e.key);
+          final name = repo.getMemberDisplayNameById(e.key);
           final amt = e.value;
           return Padding(
             padding: const EdgeInsets.only(bottom: 6),

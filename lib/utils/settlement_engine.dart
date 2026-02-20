@@ -1,59 +1,58 @@
 import '../models/models.dart';
 
-/// A single debt: [fromPhone] owes [toPhone] [amount].
+/// A single debt: [fromId] owes [toId] [amount].
 class Debt {
-  final String fromPhone;
-  final String toPhone;
+  final String fromId;
+  final String toId;
   final double amount;
 
   const Debt({
-    required this.fromPhone,
-    required this.toPhone,
+    required this.fromId,
+    required this.toId,
     required this.amount,
   });
 }
 
 /// Computes who owes whom from expenses and members.
-/// Net balance = Total Paid - Total Owed per member; then matches debtors to creditors.
+/// Net balance = Total Paid - Total Owed per member (by id); then matches debtors to creditors.
 class SettlementEngine {
   SettlementEngine._();
 
   static const double _tolerance = 0.01;
 
-  /// Returns net balance per phone: positive = owed to them (credit), negative = they owe (debt).
-  /// Only includes members that appear in [members] (by phone).
+  /// Returns net balance per member id: positive = owed to them (credit), negative = they owe (debt).
   static Map<String, double> computeNetBalances(List<Expense> expenses, List<Member> members) {
     final net = _buildNetBalances(expenses, members);
     return Map.unmodifiable(Map.from(net));
   }
 
   static Map<String, double> _buildNetBalances(List<Expense> expenses, List<Member> members) {
-    final phones = members.map((m) => m.phone).toSet();
+    final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
     final Map<String, double> net = {};
-    for (final phone in phones) {
-      net[phone] = 0.0;
+    for (final id in ids) {
+      net[id] = 0.0;
     }
 
     for (final expense in expenses) {
-      final payer = expense.paidByPhone.isNotEmpty ? expense.paidByPhone : '';
-      if (payer.isNotEmpty && phones.contains(payer)) {
-        net[payer] = (net[payer] ?? 0) + expense.amount;
+      final payerId = expense.paidById.isNotEmpty ? expense.paidById : '';
+      if (payerId.isNotEmpty && ids.contains(payerId)) {
+        net[payerId] = (net[payerId] ?? 0) + expense.amount;
       }
-      final participants = expense.participantPhones.isNotEmpty
-          ? expense.participantPhones
-          : members.map((m) => m.phone).toList();
-      if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
-        for (final entry in expense.splitAmountsByPhone!.entries) {
-          if (phones.contains(entry.key)) {
+      final participantIds = expense.participantIds.isNotEmpty
+          ? expense.participantIds
+          : ids.toList();
+      if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
+        for (final entry in expense.splitAmountsById!.entries) {
+          if (!entry.key.startsWith('p_') && ids.contains(entry.key)) {
             net[entry.key] = (net[entry.key] ?? 0) - entry.value;
           }
         }
       } else {
-        if (participants.isEmpty) continue;
-        final perShare = expense.amount / participants.length;
-        for (final phone in participants) {
-          if (phones.contains(phone)) {
-            net[phone] = (net[phone] ?? 0) - perShare;
+        if (participantIds.isEmpty) continue;
+        final perShare = expense.amount / participantIds.length;
+        for (final uid in participantIds) {
+          if (!uid.startsWith('p_') && ids.contains(uid)) {
+            net[uid] = (net[uid] ?? 0) - perShare;
           }
         }
       }
@@ -61,8 +60,7 @@ class SettlementEngine {
     return net;
   }
 
-  /// Given [expenses] and [members], returns a list of [Debt] (fromPhone, toPhone, amount).
-  /// Only includes members that appear in [members] (by phone).
+  /// Returns a list of [Debt] (fromId, toId, amount).
   static List<Debt> computeDebts(List<Expense> expenses, List<Member> members) {
     final net = _buildNetBalances(expenses, members);
 
@@ -84,7 +82,7 @@ class SettlementEngine {
       final creditor = creditors[c];
       final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
       if (amount < _tolerance) break;
-      result.add(Debt(fromPhone: debtor.phone, toPhone: creditor.phone, amount: amount));
+      result.add(Debt(fromId: debtor.id, toId: creditor.id, amount: amount));
       debtor.amount -= amount;
       creditor.amount -= amount;
       if (debtor.amount < _tolerance) d++;
@@ -95,7 +93,7 @@ class SettlementEngine {
 }
 
 class _BalanceEntry {
-  final String phone;
+  final String id;
   double amount;
-  _BalanceEntry(this.phone, this.amount);
+  _BalanceEntry(this.id, this.amount);
 }

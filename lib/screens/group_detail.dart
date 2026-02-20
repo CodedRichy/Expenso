@@ -391,7 +391,7 @@ class GroupDetail extends StatelessWidget {
                       return debts.map((d) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          '${repo.getMemberDisplayName(d.fromPhone)} owes ${repo.getMemberDisplayName(d.toPhone)} ₹${d.amount.toStringAsFixed(0).replaceAllMapped(
+                          '${repo.getMemberDisplayNameById(d.fromId)} owes ${repo.getMemberDisplayNameById(d.toId)} ₹${d.amount.toStringAsFixed(0).replaceAllMapped(
                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                             (Match m) => '${m[1]},',
                           )}',
@@ -459,12 +459,12 @@ class GroupDetail extends StatelessWidget {
                                         Text(
                                             () {
                                             final d = expense.description;
-                                            final others = expense.participantPhones
-                                                .where((p) => p != expense.paidByPhone)
+                                            final others = expense.participantIds
+                                                .where((id) => id != expense.paidById)
                                                 .toList();
                                             if (others.isEmpty) return d;
                                             final names = others
-                                                .map((p) => repo.getMemberDisplayName(p))
+                                                .map((id) => repo.getMemberDisplayNameById(id))
                                                 .toList();
                                             final dLower = d.toLowerCase();
                                             final notInDescription = names
@@ -655,21 +655,21 @@ class _DecisionClarityCard extends StatelessWidget {
     final members = repo.getMembersForGroup(groupId);
     final memberCount = members.length;
     final netBalances = SettlementEngine.computeNetBalances(expenses, members);
-    final myPhone = repo.currentUserPhone;
+    final myId = repo.currentUserId;
     double yourShare = 0.0;
     for (final e in expenses) {
-      if (e.splitAmountsByPhone != null && e.splitAmountsByPhone!.containsKey(myPhone)) {
-        yourShare += e.splitAmountsByPhone![myPhone]!;
-      } else if (e.participantPhones.contains(myPhone)) {
-        yourShare += e.amount / e.participantPhones.length;
-      } else if (e.participantPhones.isEmpty && memberCount > 0) {
+      if (e.splitAmountsById != null && e.splitAmountsById!.containsKey(myId)) {
+        yourShare += e.splitAmountsById![myId]!;
+      } else if (e.participantIds.contains(myId)) {
+        yourShare += e.amount / e.participantIds.length;
+      } else if (e.participantIds.isEmpty && memberCount > 0) {
         yourShare += e.amount / memberCount;
       }
     }
-    double myNet = netBalances[myPhone] ?? 0.0;
+    double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final isCredit = myNet >= 0;
-    final isNetClear = (netBalances[myPhone] ?? 0.0).isNaN || (netBalances[myPhone] ?? 0.0).isInfinite;
+    final isNetClear = (netBalances[myId] ?? 0.0).isNaN || (netBalances[myId] ?? 0.0).isInfinite;
 
     return Container(
       constraints: const BoxConstraints(minHeight: _minHeight),

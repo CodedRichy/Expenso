@@ -17,6 +17,10 @@ const createRazorpayOrder = onCall(
     if (!Number.isInteger(amount) || amount < 100) {
       throw new HttpsError('invalid-argument', 'amountPaise must be an integer >= 100.');
     }
+    const MAX_PAISE = 10_00_000;
+    if (amount > MAX_PAISE) {
+      throw new HttpsError('invalid-argument', 'amountPaise exceeds maximum allowed.');
+    }
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
     const order = await razorpay.orders.create({
       amount,

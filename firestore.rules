@@ -20,17 +20,17 @@ service cloud.firestore {
     }
 
     match /groups/{groupId}/expenses/{expenseId} {
-      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow read, delete: if isGroupMember(groupId);
       allow create, update: if isGroupMember(groupId);
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId} {
-      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow read, delete: if isGroupMember(groupId);
       allow create, update: if isGroupMember(groupId);
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId}/expenses/{expenseId} {
-      allow read, delete: if request.auth != null && (isGroupMember(groupId) || !groupExists(groupId));
+      allow read, delete: if isGroupMember(groupId);
       allow create, update: if isGroupMember(groupId);
     }
   }

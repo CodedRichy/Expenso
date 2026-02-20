@@ -112,11 +112,13 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 ### Cloud Firestore (Test Mode)
 
+**Security rules** (`firestore.rules`): Users can read/write only their own `users/{uid}`. Groups, expenses, and settled_cycles (and subcollections) are readable/writable only by group members (`isGroupMember`). No access to other groups or to orphaned data after group delete. Deploy with `firebase deploy --only firestore`.
+
 All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 03218).
 
 - **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`, `upiId`.
 - **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
-- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `participantIds` (list of UIDs in the split; source of truth so "people involved" is never lost), `splits` (map uid → amount_owed), `description`, `date`, `dateSortKey` (milliseconds since epoch for chronological sort), optional `category`.
+- **groups/{groupId}/expenses** — Current-cycle expenses. All person references are by member id (uid). Fields: `groupId`, `amount`, `payerId`, `splitType`, `participantIds`, `splits` (uid → amount_owed), `description`, `date`, `dateSortKey`, optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
 
 **Archive logic:** Settle (Phase 1) sets `cycleStatus` to `settling`. Archive (Phase 2, creator-only) copies current-cycle expenses into `settled_cycles/{cycleId}/expenses`, deletes from current `expenses`, then sets new `activeCycleId` and `cycleStatus: 'active'`.
@@ -152,10 +154,10 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`, `splitType`: Even | Exact | Exclude from parser/Firestore), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount)
+- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (participantIds, paidById, splitAmountsById; category; splitType. All person references use member id, not phone.), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount — phone/name filled from uid for display)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
-- **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (phone → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
+- **utils/settlement_engine.dart** — `Debt` (fromId, toId, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (member id → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
 
 ---
 

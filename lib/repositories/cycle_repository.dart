@@ -420,32 +420,18 @@ class CycleRepository extends ChangeNotifier {
             .toList() ??
         splits?.keys.toList() ??
         [];
-    String paidByPhone = '';
-    if (payerId == _currentUserId) {
-      paidByPhone = _currentUserPhone;
-    } else if (payerId.isNotEmpty) {
-      paidByPhone = _phoneForUid(payerId);
-    }
-    final participantPhones = <String>[];
-    final splitAmountsByPhone = <String, double>{};
+    final splitAmountsById = <String, double>{};
     for (final uid in participantIds) {
       final amt = splits != null && splits.containsKey(uid)
           ? ((splits[uid] is num) ? (splits[uid] as num).toDouble() : double.tryParse(splits[uid]?.toString() ?? '') ?? 0.0)
           : 0.0;
-      final phone = _phoneForUid(uid);
-      final key = phone.isNotEmpty ? phone : uid;
-      participantPhones.add(key);
-      splitAmountsByPhone[key] = amt;
+      splitAmountsById[uid] = amt;
     }
-    if (participantPhones.isEmpty && splits != null) {
+    if (splitAmountsById.isEmpty && splits != null) {
       for (final entry in splits.entries) {
-        final uid = entry.key;
-        final amt = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
-        final phone = _phoneForUid(uid);
-        if (phone.isNotEmpty) {
-          participantPhones.add(phone);
-          splitAmountsByPhone[phone] = amt;
-        }
+        splitAmountsById[entry.key as String] = (entry.value is num)
+            ? (entry.value as num).toDouble()
+            : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
       }
     }
     final splitType = (data['splitType'] as String?)?.trim().isNotEmpty == true
@@ -456,9 +442,9 @@ class CycleRepository extends ChangeNotifier {
       description: data['description'] as String? ?? '',
       amount: amount,
       date: data['date'] as String? ?? 'Today',
-      participantPhones: participantPhones,
-      paidByPhone: paidByPhone,
-      splitAmountsByPhone: splitAmountsByPhone.isEmpty ? null : splitAmountsByPhone,
+      participantIds: participantIds,
+      paidById: payerId,
+      splitAmountsById: splitAmountsById.isEmpty ? null : splitAmountsById,
       category: data['category'] as String? ?? '',
       splitType: splitType,
     );
@@ -520,9 +506,23 @@ class CycleRepository extends ChangeNotifier {
         .toList();
   }
 
+  String getMemberDisplayNameById(String uid) {
+    if (uid.isEmpty) return '';
+    if (uid == _currentUserId) return _currentUserName.isNotEmpty ? _currentUserName : 'You';
+    final m = _membersById[uid];
+    if (m != null) return m.name.isNotEmpty ? m.name : _formatPhone(m.phone);
+    final u = _userCache[uid];
+    if (u != null) {
+      final name = u['displayName'] as String? ?? '';
+      final phone = u['phoneNumber'] as String? ?? '';
+      return name.isNotEmpty ? name : _formatPhone(phone);
+    }
+    return 'Unknown';
+  }
+
   String getMemberDisplayName(String phoneOrUid) {
     if (phoneOrUid.isEmpty) return '';
-    if (_looksLikeUid(phoneOrUid)) return 'Unknown';
+    if (_looksLikeUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
     if (_normalizePhone(phoneOrUid) == _normalizePhone(_currentUserPhone)) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
     }
@@ -682,25 +682,26 @@ class CycleRepository extends ChangeNotifier {
     if (cycleId == null) {
       throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
     }
-    final payerId = _uidForPhone(expense.paidByPhone.isEmpty ? _currentUserPhone : expense.paidByPhone) ?? _currentUserId;
+    final payerId = expense.paidById.isNotEmpty ? expense.paidById : _currentUserId;
     final members = getMembersForGroup(groupId);
-    final allPhones = members.map((m) => m.phone).toList();
-    final participants = expense.participantPhones.isNotEmpty
-        ? expense.participantPhones
-        : allPhones.isNotEmpty
-            ? allPhones
-            : [expense.paidByPhone.isNotEmpty ? expense.paidByPhone : _currentUserPhone];
-    final uids = <String>[];
-    for (final p in participants) {
-      final uid = _uidForPhone(p);
-      if (uid != null) uids.add(uid);
-    }
-    if (uids.isEmpty) uids.add(_currentUserId);
-    final perShare = expense.amount / uids.length;
+    final realMemberIds = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+    final participantIds = expense.participantIds.isNotEmpty
+        ? expense.participantIds
+        : (realMemberIds.isNotEmpty ? realMemberIds : [_currentUserId]);
     final splits = <String, double>{};
-    for (final uid in uids) {
-      splits[uid] = perShare;
+    if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
+      for (final e in expense.splitAmountsById!.entries) {
+        if (!e.key.startsWith('p_')) splits[e.key] = e.value;
+      }
     }
+    if (splits.isEmpty) {
+      final perShare = expense.amount / participantIds.length;
+      for (final uid in participantIds) {
+        if (!uid.startsWith('p_')) splits[uid] = perShare;
+      }
+    }
+    if (splits.isEmpty) splits[payerId] = expense.amount;
+    final uids = splits.keys.toList();
     final data = {
       'id': expense.id,
       'groupId': groupId,
@@ -820,36 +821,24 @@ class CycleRepository extends ChangeNotifier {
 
     final meta = _groupMeta[groupId];
     if (meta == null) return;
-    final payerId = _uidForPhone(updatedExpense.paidByPhone.isEmpty ? _currentUserPhone : updatedExpense.paidByPhone) ?? _currentUserId;
+    final payerId = updatedExpense.paidById.isNotEmpty ? updatedExpense.paidById : _currentUserId;
 
     final Map<String, double> splits;
     final String splitType;
     List<String> participantIds;
-    if (updatedExpense.splitAmountsByPhone != null && updatedExpense.splitAmountsByPhone!.isNotEmpty) {
-      splits = <String, double>{};
-      for (final entry in updatedExpense.splitAmountsByPhone!.entries) {
-        final uid = _looksLikeUid(entry.key) ? entry.key : _uidForPhone(entry.key);
-        if (uid != null) splits[uid] = entry.value;
-      }
-      if (splits.isEmpty) {
-        splits[payerId] = updatedExpense.amount;
-      }
+    if (updatedExpense.splitAmountsById != null && updatedExpense.splitAmountsById!.isNotEmpty) {
+      splits = Map.from(updatedExpense.splitAmountsById!);
+      if (splits.isEmpty) splits[payerId] = updatedExpense.amount;
       splitType = updatedExpense.splitType;
       participantIds = splits.keys.toList();
     } else {
-      final participants = updatedExpense.participantPhones.isNotEmpty
-          ? updatedExpense.participantPhones
-          : [updatedExpense.paidByPhone.isNotEmpty ? updatedExpense.paidByPhone : _currentUserPhone];
-      final uids = <String>[];
-      for (final p in participants) {
-        final uid = _looksLikeUid(p) ? p : _uidForPhone(p);
-        if (uid != null) uids.add(uid);
-      }
-      if (uids.isEmpty) uids.add(_currentUserId);
-      final perShare = updatedExpense.amount / uids.length;
-      splits = {for (final uid in uids) uid: perShare};
+      final ids = updatedExpense.participantIds.isNotEmpty
+          ? updatedExpense.participantIds
+          : [payerId];
+      final perShare = updatedExpense.amount / ids.length;
+      splits = {for (final uid in ids) uid: perShare};
       splitType = updatedExpense.splitType;
-      participantIds = uids;
+      participantIds = ids;
     }
 
     FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
@@ -901,30 +890,25 @@ class CycleRepository extends ChangeNotifier {
     final members = getMembersForGroup(groupId);
     final Map<String, double> net = {};
     for (final m in members) {
-      final key = _normalizePhone(m.phone);
-      if (key.isNotEmpty) net[key] = 0.0;
+      if (!m.id.startsWith('p_')) net[m.id] = 0.0;
     }
     for (final expense in cycle.expenses) {
-      final payer = expense.paidByPhone;
-      if (payer.isNotEmpty) {
-        final pKey = _normalizePhone(payer);
-        if (pKey.isNotEmpty) net[pKey] = (net[pKey] ?? 0) + expense.amount;
-      }
-      final participants = expense.participantPhones.isNotEmpty
-          ? expense.participantPhones
-          : members.map((m) => m.phone).toList();
-      if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
-        for (final entry in expense.splitAmountsByPhone!.entries) {
-          final phone = _looksLikeUid(entry.key) ? _phoneForUid(entry.key) : entry.key;
-          if (phone.isEmpty) continue;
-          final k = _normalizePhone(phone);
-          if (k.isNotEmpty) net[k] = (net[k] ?? 0) - entry.value;
+      final payerId = expense.paidById.isNotEmpty ? expense.paidById : _currentUserId;
+      if (net.containsKey(payerId)) net[payerId] = (net[payerId] ?? 0) + expense.amount;
+      final participantIds = expense.participantIds.isNotEmpty
+          ? expense.participantIds
+          : members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+      if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
+        for (final entry in expense.splitAmountsById!.entries) {
+          if (entry.key.startsWith('p_')) continue;
+          if (net.containsKey(entry.key)) net[entry.key] = (net[entry.key] ?? 0) - entry.value;
         }
       } else {
-        final perShare = expense.amount / participants.length;
-        for (final phone in participants) {
-          final k = _normalizePhone(phone);
-          if (k.isNotEmpty) net[k] = (net[k] ?? 0) - perShare;
+        if (participantIds.isEmpty) continue;
+        final perShare = expense.amount / participantIds.length;
+        for (final uid in participantIds) {
+          if (uid.startsWith('p_')) continue;
+          if (net.containsKey(uid)) net[uid] = (net[uid] ?? 0) - perShare;
         }
       }
     }
@@ -951,7 +935,7 @@ class CycleRepository extends ChangeNotifier {
       final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
       if (amount < 0.01) break;
       result.add(
-        '${getMemberDisplayName(debtor.phone)} owes ${getMemberDisplayName(creditor.phone)} ₹${amount.round()}',
+        '${getMemberDisplayNameById(debtor.id)} owes ${getMemberDisplayNameById(creditor.id)} ₹${amount.round()}',
       );
       debtor.amount -= amount;
       creditor.amount -= amount;
@@ -982,10 +966,10 @@ class CycleRepository extends ChangeNotifier {
       final creditor = creditors[c];
       final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
       if (amount < 0.01) break;
-      if (debtor.phone == _normalizePhone(_currentUserPhone)) {
+      if (debtor.id == _currentUserId) {
         result.add(SettlementTransfer(
-          creditorPhone: creditor.phone,
-          creditorDisplayName: getMemberDisplayName(creditor.phone),
+          creditorPhone: _phoneForUid(creditor.id),
+          creditorDisplayName: getMemberDisplayNameById(creditor.id),
           amount: amount,
         ));
       }
@@ -1080,7 +1064,7 @@ class _GroupMeta {
 }
 
 class _BalanceEntry {
-  final String phone;
+  final String id;
   double amount;
-  _BalanceEntry(this.phone, this.amount);
+  _BalanceEntry(this.id, this.amount);
 }

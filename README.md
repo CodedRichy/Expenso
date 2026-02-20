@@ -81,7 +81,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status & Roadmap
 
-**Current status:** v1 stable. Core flows (groups, expenses, splits, settlement cycles, Magic Bar, Razorpay settlement, profile) are implemented and documented. Firestore runs in Test Mode; production use would require hardening (e.g. security rules, auth checks).
+**Current status:** v1 stable. Core flows (groups, expenses, splits, settlement cycles, Magic Bar, Razorpay settlement, profile) are implemented and documented. Firestore rules enforce auth and member-only access for groups, expenses, and settled cycles; Cloud Function `createRazorpayOrder` requires auth and caps order amount.
 
 **Roadmap:** Planned work is listed in APP_BLUEPRINT.md Section 9 (planned features). No timeline commitments; priorities are set as needed.
 

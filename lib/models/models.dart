@@ -38,13 +38,11 @@ class Expense {
   final String description;
   final double amount;
   final String date;
-  final List<String> participantPhones;
-  final String paidByPhone;
-  /// Per-person share (phone -> amount). When non-null, balances use these; else equal split.
-  final Map<String, double>? splitAmountsByPhone;
-  /// Optional category (e.g. Food, Transport). Persisted in Firestore.
+  final List<String> participantIds;
+  final String paidById;
+  /// Per-person share (member id -> amount). When non-null, balances use these; else equal split.
+  final Map<String, double>? splitAmountsById;
   final String category;
-  /// How the expense was split: "Even" | "Exact" | "Exclude" (and optionally "Percentage" | "Shares"). From parser / Firestore.
   final String splitType;
 
   Expense({
@@ -52,12 +50,12 @@ class Expense {
     required this.description,
     required this.amount,
     required this.date,
-    List<String>? participantPhones,
-    this.paidByPhone = '',
-    this.splitAmountsByPhone,
+    List<String>? participantIds,
+    this.paidById = '',
+    this.splitAmountsById,
     this.category = '',
     this.splitType = 'Even',
-  }) : participantPhones = participantPhones ?? [];
+  }) : participantIds = participantIds ?? [];
 }
 
 /// One transfer from current user (debtor) to a creditor for settlement.

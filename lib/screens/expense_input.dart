@@ -29,13 +29,13 @@ class _ExpenseInputState extends State<ExpenseInput> {
   String input = '';
   bool showConfirmation = false;
   ParsedExpense? parsedData;
-  final Set<String> selectedMemberPhones = {};
-  String? _paidByPhone;
+  final Set<String> selectedMemberIds = {};
+  String? _paidById;
 
   @override
   void initState() {
     super.initState();
-    _paidByPhone = CycleRepository.instance.currentUserPhone;
+    _paidById = CycleRepository.instance.currentUserId;
   }
 
   ParsedExpense parseExpense(String text) {
@@ -66,28 +66,33 @@ class _ExpenseInputState extends State<ExpenseInput> {
   }
 
   Future<void> handleConfirm() async {
-    final payerPhone = _paidByPhone ?? CycleRepository.instance.currentUserPhone;
-    if (payerPhone.isEmpty) return;
+    final payerId = _paidById ?? CycleRepository.instance.currentUserId;
+    if (payerId.isEmpty) return;
     if (parsedData != null) {
       final group = ModalRoute.of(context)?.settings.arguments as Group?;
       if (group != null) {
         try {
+          final repo = CycleRepository.instance;
+          final List<String> participantIds = selectedMemberIds.isNotEmpty
+              ? selectedMemberIds.toList()
+              : repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+          if (participantIds.isEmpty) participantIds.add(repo.currentUserId);
           final expense = Expense(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             description: parsedData!.description,
             amount: parsedData!.amount,
             date: 'Today',
-            participantPhones: selectedMemberPhones.toList(),
-            paidByPhone: payerPhone,
+            participantIds: participantIds,
+            paidById: payerId,
           );
-          await CycleRepository.instance.addExpense(group.id, expense);
+          await repo.addExpense(group.id, expense);
           if (!context.mounted) return;
           setState(() {
             input = '';
             parsedData = null;
             showConfirmation = false;
-            selectedMemberPhones.clear();
-            _paidByPhone = CycleRepository.instance.currentUserPhone;
+            selectedMemberIds.clear();
+            _paidById = repo.currentUserId;
           });
           Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
           return;
@@ -118,8 +123,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
       input = '';
       parsedData = null;
       showConfirmation = false;
-      selectedMemberPhones.clear();
-      _paidByPhone = CycleRepository.instance.currentUserPhone;
+      selectedMemberIds.clear();
+      _paidById = CycleRepository.instance.currentUserId;
     });
     if (context.mounted) Navigator.pop(context);
   }
@@ -140,7 +145,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
   /// As user types, if any word in the input matches a member's display name, auto-add that member to Who's Involved.
   void _syncSelectedMembersFromInput(Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id);
+    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_'));
     if (members.isEmpty) return;
     final words = input
         .split(RegExp(r'[\s,]+'))
@@ -148,19 +153,19 @@ class _ExpenseInputState extends State<ExpenseInput> {
         .where((s) => s.isNotEmpty)
         .toSet();
     for (final member in members) {
-      final displayName = repo.getMemberDisplayName(member.phone);
-      if (displayName.isEmpty) continue;
+      final displayName = repo.getMemberDisplayNameById(member.id);
+      if (displayName.isEmpty || displayName == 'Unknown') continue;
       final nameLower = displayName.trim().toLowerCase();
       final matches = words.contains(nameLower) || input.toLowerCase().contains(nameLower);
       if (matches) {
-        selectedMemberPhones.add(member.phone);
+        selectedMemberIds.add(member.id);
       }
     }
   }
 
   Widget _buildWhoPaid(BuildContext context, Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id);
+    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
     if (members.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,13 +184,13 @@ class _ExpenseInputState extends State<ExpenseInput> {
           spacing: 8,
           runSpacing: 8,
           children: members.map((member) {
-            final isSelected = _paidByPhone == member.phone;
-            final displayName = repo.getMemberDisplayName(member.phone);
+            final isSelected = _paidById == member.id;
+            final displayName = repo.getMemberDisplayNameById(member.id);
             return ChoiceChip(
               label: Text(displayName),
               selected: isSelected,
               onSelected: (selected) {
-                if (selected) setState(() => _paidByPhone = member.phone);
+                if (selected) setState(() => _paidById = member.id);
               },
               selectedColor: const Color(0xFF1A1A1A),
               labelStyle: TextStyle(
@@ -205,10 +210,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   Widget _buildWhoIsInvolved(BuildContext context, Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id);
+    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
     if (members.isEmpty) return const SizedBox.shrink();
-    final allPhones = members.map((m) => m.phone).toSet();
-    final allSelected = allPhones.isNotEmpty && selectedMemberPhones.containsAll(allPhones);
+    final allIds = members.map((m) => m.id).toSet();
+    final allSelected = allIds.isNotEmpty && selectedMemberIds.containsAll(allIds);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -226,9 +231,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
           onTap: () {
             setState(() {
               if (allSelected) {
-                selectedMemberPhones.removeAll(allPhones);
+                selectedMemberIds.removeAll(allIds);
               } else {
-                selectedMemberPhones.addAll(allPhones);
+                selectedMemberIds.addAll(allIds);
               }
             });
           },
@@ -245,9 +250,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     onChanged: (_) {
                       setState(() {
                         if (allSelected) {
-                          selectedMemberPhones.removeAll(allPhones);
+                          selectedMemberIds.removeAll(allIds);
                         } else {
-                          selectedMemberPhones.addAll(allPhones);
+                          selectedMemberIds.addAll(allIds);
                         }
                       });
                     },
@@ -271,15 +276,15 @@ class _ExpenseInputState extends State<ExpenseInput> {
           ),
         ),
         ...members.map((member) {
-          final isSelected = selectedMemberPhones.contains(member.phone);
-          final displayName = repo.getMemberDisplayName(member.phone);
+          final isSelected = selectedMemberIds.contains(member.id);
+          final displayName = repo.getMemberDisplayNameById(member.id);
           return InkWell(
             onTap: () {
               setState(() {
                 if (isSelected) {
-                  selectedMemberPhones.remove(member.phone);
+                  selectedMemberIds.remove(member.id);
                 } else {
-                  selectedMemberPhones.add(member.phone);
+                  selectedMemberIds.add(member.id);
                 }
               });
             },
@@ -295,9 +300,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       onChanged: (_) {
                         setState(() {
                           if (isSelected) {
-                            selectedMemberPhones.remove(member.phone);
+                            selectedMemberIds.remove(member.id);
                           } else {
-                            selectedMemberPhones.add(member.phone);
+                            selectedMemberIds.add(member.id);
                           }
                         });
                       },
@@ -396,23 +401,23 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           color: const Color(0xFF1A1A1A),
                         ),
                       ),
-                      if (_paidByPhone != null && _paidByPhone!.isNotEmpty) ...[
+                      if (_paidById != null && _paidById!.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'Paid by ${CycleRepository.instance.getMemberDisplayName(_paidByPhone!)}',
+                          'Paid by ${CycleRepository.instance.getMemberDisplayNameById(_paidById!)}',
                           style: TextStyle(
                             fontSize: 15,
                             color: const Color(0xFF6B6B6B),
                           ),
                         ),
                       ],
-                      if (selectedMemberPhones.isNotEmpty) ...[
+                      if (selectedMemberIds.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: selectedMemberPhones.map((phone) {
-                            final displayName = CycleRepository.instance.getMemberDisplayName(phone);
+                          children: selectedMemberIds.map((id) {
+                            final displayName = CycleRepository.instance.getMemberDisplayNameById(id);
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
@@ -447,8 +452,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 child: Column(
                   children: [
                     ElevatedButton(
-                      onPressed: (_paidByPhone != null &&
-                              _paidByPhone!.isNotEmpty &&
+                      onPressed: (_paidById != null &&
+                              _paidById!.isNotEmpty &&
                               parsedData != null &&
                               parsedData!.amount > 0)
                           ? handleConfirm
