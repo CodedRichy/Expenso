@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/expense_validation.dart';
 
@@ -95,8 +96,16 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Runs Firestore write, profile load, and listeners. Call after build (e.g. addPostFrameCallback).
-  void continueAuthFromFirebaseUser() {
+  Future<void> continueAuthFromFirebaseUser() async {
     if (_currentUserId.isEmpty) return;
+    _encryption = DataEncryptionService(region: 'asia-south1');
+    try {
+      await _encryption!.ensureUserKey();
+    } catch (e) {
+      debugPrint('CycleRepository encryption key fetch failed: $e');
+      _encryption = null;
+    }
+    FirestoreService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
       debugPrint('CycleRepository.continueAuthFromFirebaseUser write failed: $e');
       if (kDebugMode) debugPrint(st.toString());
@@ -173,9 +182,14 @@ class CycleRepository extends ChangeNotifier {
     return _userCache[memberId]?['photoURL'] as String?;
   }
 
+  DataEncryptionService? _encryption;
+
   /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.
   void clearAuth() {
     _stopListening();
+    _encryption?.clearKeys();
+    _encryption = null;
+    FirestoreService.instance.setEncryptionService(null);
     _groupsLoading = false;
     _currentUserId = '';
     _currentUserPhone = '';
@@ -224,8 +238,8 @@ class CycleRepository extends ChangeNotifier {
   final Map<String, _GroupMeta> _groupMeta = {};
   final Map<String, Map<String, dynamic>> _userCache = {};
 
-  StreamSubscription<List<QueryDocumentSnapshot<Map<String, dynamic>>>>? _groupsSub;
-  final Map<String, StreamSubscription<List<QueryDocumentSnapshot<Map<String, dynamic>>>>> _expenseSubs = {};
+  StreamSubscription<List<DocView>>? _groupsSub;
+  final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
 
   /// True while waiting for the first Firestore groups snapshot (for skeleton UX).
   bool get groupsLoading => _groupsLoading;
@@ -273,7 +287,7 @@ class CycleRepository extends ChangeNotifier {
     _startListening();
   }
 
-  void _onGroupsSnapshot(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+  void _onGroupsSnapshot(List<DocView> docs) {
     _groupsLoading = false;
     final newIds = docs.map((d) => d.id).toSet();
     for (final id in _expenseSubs.keys.toList()) {
@@ -332,7 +346,7 @@ class CycleRepository extends ChangeNotifier {
             );
           }
         }
-        final groupData = docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>().where((d) => d.id == g.id);
+        final groupData = docs.where((d) => d.id == g.id);
         if (groupData.isEmpty) continue;
         final d = groupData.first.data();
         final pending = (d['pendingMembers'] as List?)
@@ -364,7 +378,7 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadUsersForMembers(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+  Future<void> _loadUsersForMembers(List<DocView> docs) async {
     final uids = <String>{};
     for (final doc in docs) {
       final members = List<String>.from(doc.data()['members'] as List? ?? []);
@@ -393,7 +407,7 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _onExpensesSnapshot(String groupId, List<QueryDocumentSnapshot<Map<String, dynamic>>> expDocs) {
+  void _onExpensesSnapshot(String groupId, List<DocView> expDocs) {
     final meta = _groupMeta[groupId];
     if (meta == null) return;
     final cycleId = meta.activeCycleId;

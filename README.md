@@ -57,6 +57,7 @@ flutter pub get
 - **Firebase:** Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` and link Android/iOS. Enable Phone sign-in in Firebase Console. Deploy Firestore rules from `firestore.rules` (Console or `firebase deploy --only firestore`).
 - **Environment:** Create a `.env` in the project root (listed in `pubspec.yaml` assets). Set `GROQ_API_KEY` for Magic Bar; omit for manual-only expense entry.
 - **Razorpay:** Configure key/secret in Firebase Functions (e.g. `firebase functions:config:set razorpay.key_id="..." razorpay.key_secret="..."` or env vars in Console). See `functions/README.md` for the callable setup.
+- **Data encryption (optional):** To encrypt sensitive data at rest, set `DATA_ENCRYPTION_MASTER_KEY` in Firebase Functions config (e.g. a 32-byte value as base64). Deploy `getUserEncryptionKey` and `getGroupEncryptionKey`; the app will encrypt/decrypt automatically when the key is available.
 
 ### Running locally
 
@@ -81,7 +82,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status & Roadmap
 
-**Current status:** v1 stable. Core flows (groups, expenses, splits, settlement cycles, Magic Bar, Razorpay settlement, profile) are implemented and documented. Firestore rules enforce auth and member-only access for groups, expenses, and settled cycles; Cloud Function `createRazorpayOrder` requires auth and caps order amount.
+**Current status:** v1 stable. Core flows (groups, expenses, splits, settlement cycles, Magic Bar, Razorpay settlement, profile) are implemented and documented. Firestore rules enforce auth and member-only access; optional application-level encryption (sensitive fields encrypted with server-derived keys) protects data if the DB is exposed. Cloud Function `createRazorpayOrder` requires auth and caps order amount.
 
 **Roadmap:** Planned work is listed in APP_BLUEPRINT.md Section 9 (planned features). No timeline commitments; priorities are set as needed.
 

@@ -22,6 +22,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
@@ -50,28 +51,44 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     );
   }
 
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    if (!mounted) return;
+    setState(() => _paymentInProgress = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opened ${response.walletName ?? 'external app'}. Complete payment there.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _startRazorpayCheckout(Group group, int amountPaise) async {
+    const minPaise = 100;
+    final safeAmountPaise = amountPaise < minPaise ? minPaise : amountPaise;
     setState(() => _paymentInProgress = true);
     try {
       final result = await createRazorpayOrder(
-        amountPaise: amountPaise,
+        amountPaise: safeAmountPaise,
         receipt: 'expenso_${group.id}_${DateTime.now().millisecondsSinceEpoch}',
       );
-      final options = {
+      final options = <String, dynamic>{
         'key': result.keyId,
-        'amount': amountPaise,
+        'amount': safeAmountPaise,
         'currency': 'INR',
         'name': 'Expenso',
+        'description': 'Settlement',
         'order_id': result.orderId,
       };
       _razorpay.open(options);
     } catch (e) {
       if (!mounted) return;
       setState(() => _paymentInProgress = false);
+      final msg = e.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text('Could not open payment: $msg'),
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
         ),
       );
     }

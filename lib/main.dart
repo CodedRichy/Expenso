@@ -102,8 +102,8 @@ class MyApp extends StatelessWidget {
               user.phoneNumber,
               user.displayName,
             );
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              repo.continueAuthFromFirebaseUser();
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await repo.continueAuthFromFirebaseUser();
             });
             return ListenableBuilder(
               listenable: repo,

@@ -1,5 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'data_encryption_service.dart';
+
+abstract class DocView {
+  String get id;
+  Map<String, dynamic> data();
+}
+
+class _SnapshotDocView implements DocView {
+  _SnapshotDocView(this._doc);
+  final QueryDocumentSnapshot<Map<String, dynamic>> _doc;
+  @override
+  String get id => _doc.id;
+  @override
+  Map<String, dynamic> data() => _doc.data();
+}
+
+class _DecryptedDocView implements DocView {
+  _DecryptedDocView(this.id, this._data);
+  @override
+  final String id;
+  final Map<String, dynamic> _data;
+  @override
+  Map<String, dynamic> data() => _data;
+}
+
 /// Firestore collection and field names. Test mode; all writes use real User.uid.
 class FirestorePaths {
   static const String users = 'users';
@@ -24,6 +49,9 @@ class FirestoreService {
 
   static FirestoreService get instance => _instance;
 
+  DataEncryptionService? _encryption;
+  void setEncryptionService(DataEncryptionService? s) => _encryption = s;
+
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   /// Set or merge user profile. Document ID = [uid].
@@ -40,19 +68,33 @@ class FirestoreService {
     if (photoURL != null) data['photoURL'] = photoURL;
     if (upiId != null) data['upiId'] = upiId;
     if (data.isEmpty) return;
+    if (_encryption != null) {
+      await _encryption!.ensureUserKey();
+      data = await _encryption!.encryptUserData(data);
+    }
     await ref.set(data, SetOptions(merge: true));
   }
 
   /// Get user doc. Returns null if missing.
   Future<Map<String, dynamic>?> getUser(String uid) async {
     final snap = await _firestore.collection(FirestorePaths.users).doc(uid).get();
-    return snap.exists ? snap.data() : null;
+    final raw = snap.exists ? snap.data() : null;
+    if (raw != null && _encryption != null) {
+      await _encryption!.ensureUserKey();
+      return _encryption!.decryptUserData(raw);
+    }
+    return raw;
   }
 
   /// Stream of a single user (for display name / phone).
   Stream<Map<String, dynamic>?> userStream(String uid) {
-    return _firestore.collection(FirestorePaths.users).doc(uid).snapshots().map((s) {
-      return s.exists ? s.data() : null;
+    return _firestore.collection(FirestorePaths.users).doc(uid).snapshots().asyncMap((s) async {
+      final raw = s.exists ? s.data() : null;
+      if (raw != null && _encryption != null) {
+        await _encryption!.ensureUserKey();
+        return _encryption!.decryptUserData(raw);
+      }
+      return raw;
     });
   }
 
@@ -77,12 +119,23 @@ class FirestoreService {
   static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
 
   /// Stream of groups where [uid] is in members.
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> groupsStream(String uid) {
+  Stream<List<DocView>> groupsStream(String uid) {
     return _firestore
         .collection(FirestorePaths.groups)
         .where('members', arrayContains: uid)
         .snapshots()
-        .map((s) => s.docs);
+        .asyncMap((s) async {
+          final docs = s.docs;
+          if (_encryption != null && docs.isNotEmpty) {
+            await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
+            final decryptedDocs = await Future.wait(docs.map((d) async {
+              final decrypted = await _encryption!.decryptGroupData(d.data(), d.id);
+              return _DecryptedDocView(d.id, decrypted) as DocView;
+            }));
+            return decryptedDocs;
+          }
+          return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+        });
   }
 
   /// Get a single group doc.
@@ -129,7 +182,12 @@ class FirestoreService {
 
   /// Update group fields (e.g. cycleStatus, activeCycleId).
   Future<void> updateGroup(String groupId, Map<String, dynamic> updates) async {
-    await _firestore.doc(FirestorePaths.groupDoc(groupId)).update(updates);
+    Map<String, dynamic> toWrite = updates;
+    if (_encryption != null && updates.isNotEmpty) {
+      await _encryption!.ensureGroupKey(groupId);
+      toWrite = await _encryption!.encryptGroupDataWithKey(groupId, updates);
+    }
+    await _firestore.doc(FirestorePaths.groupDoc(groupId)).update(toWrite);
   }
 
   /// Add [uid] to group.members if not already present.
@@ -154,12 +212,17 @@ class FirestoreService {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
       final data = snap.data()!;
-      final list = List<Map<String, dynamic>>.from(
+      List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(
         (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
       );
       if (!list.any((e) => e['phone'] == phone)) {
         list.add({'phone': phone, 'name': name});
-        tx.update(ref, {'pendingMembers': list});
+        Map<String, dynamic> toWrite = {'pendingMembers': list};
+        if (_encryption != null) {
+          await _encryption!.ensureGroupKey(groupId);
+          toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
+        }
+        tx.update(ref, toWrite);
       }
     });
   }
@@ -183,23 +246,38 @@ class FirestoreService {
         (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
       );
       list.removeWhere((e) => e['phone'] == phone);
-      tx.update(ref, {'pendingMembers': list});
+      Map<String, dynamic> toWrite = {'pendingMembers': list};
+      if (_encryption != null) {
+        await _encryption!.ensureGroupKey(groupId);
+        toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
+      }
+      tx.update(ref, toWrite);
     });
   }
 
   /// Add expense to group's current cycle (subcollection expenses).
   Future<void> addExpense(String groupId, Map<String, dynamic> expenseData) async {
     final id = expenseData['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
+    Map<String, dynamic> toWrite = {...expenseData, 'id': id};
+    if (_encryption != null) {
+      await _encryption!.ensureGroupKey(groupId);
+      toWrite = await _encryption!.encryptExpenseData(groupId, toWrite);
+    }
     final ref = _firestore.collection(FirestorePaths.groupExpenses(groupId)).doc(id);
-    await ref.set({...expenseData, 'id': id});
+    await ref.set(toWrite);
   }
 
   /// Update expense in current cycle.
   Future<void> updateExpense(String groupId, String expenseId, Map<String, dynamic> updates) async {
+    Map<String, dynamic> toWrite = updates;
+    if (_encryption != null && updates.isNotEmpty) {
+      await _encryption!.ensureGroupKey(groupId);
+      toWrite = await _encryption!.encryptExpenseData(groupId, updates);
+    }
     await _firestore
         .collection(FirestorePaths.groupExpenses(groupId))
         .doc(expenseId)
-        .update(updates);
+        .update(toWrite);
   }
 
   /// Delete expense from current cycle.
@@ -211,24 +289,36 @@ class FirestoreService {
   }
 
   /// Stream of current-cycle expenses for a group. Sorted by dateSortKey (then date string) in memory.
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> expensesStream(String groupId) {
+  Stream<List<DocView>> expensesStream(String groupId) {
     return _firestore
         .collection(FirestorePaths.groupExpenses(groupId))
         .snapshots()
-        .map((s) {
+        .asyncMap((s) async {
           final docs = s.docs;
-          docs.sort((a, b) {
-            final ka = a.data()['dateSortKey'] as int?;
-            final kb = b.data()['dateSortKey'] as int?;
-            if (ka != null && kb != null) return ka.compareTo(kb);
-            if (ka != null) return -1;
-            if (kb != null) return 1;
-            final da = a.data()['date'] as String? ?? '';
-            final db = b.data()['date'] as String? ?? '';
-            return da.compareTo(db);
-          });
-          return docs;
+          if (_encryption != null && docs.isNotEmpty) {
+            await _encryption!.ensureGroupKey(groupId);
+            final decrypted = await Future.wait(docs.map((d) async {
+              final data = await _encryption!.decryptExpenseData(d.data(), groupId);
+              return _DecryptedDocView(d.id, data) as DocView;
+            }));
+            decrypted.sort((a, b) => _compareExpenseDocs(a, b));
+            return decrypted;
+          }
+          final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+          list.sort((a, b) => _compareExpenseDocs(a, b));
+          return list;
         });
+  }
+
+  static int _compareExpenseDocs(DocView a, DocView b) {
+    final ka = a.data()['dateSortKey'] as int?;
+    final kb = b.data()['dateSortKey'] as int?;
+    if (ka != null && kb != null) return ka.compareTo(kb);
+    if (ka != null) return -1;
+    if (kb != null) return 1;
+    final da = a.data()['date'] as String? ?? '';
+    final db = b.data()['date'] as String? ?? '';
+    return da.compareTo(db);
   }
 
   /// Write a settled cycle doc and copy current-cycle expenses into it; then clear current expenses.
@@ -255,17 +345,17 @@ class FirestoreService {
   }
 
   /// List settled cycle docs for a group (for history). Ordered by endDate descending.
-  Future<List<DocumentSnapshot<Map<String, dynamic>>>> getSettledCycles(String groupId) async {
+  Future<List<DocView>> getSettledCycles(String groupId) async {
     final snap = await _firestore
         .doc(FirestorePaths.groupDoc(groupId))
         .collection(FirestorePaths.settledCycles)
         .orderBy('endDate', descending: true)
         .get();
-    return snap.docs;
+    return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
   }
 
   /// Get expenses for a settled cycle.
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getSettledCycleExpenses(
+  Future<List<DocView>> getSettledCycleExpenses(
     String groupId,
     String cycleId,
   ) async {
@@ -273,16 +363,17 @@ class FirestoreService {
         .collection(FirestorePaths.groupSettledCycleExpenses(groupId, cycleId))
         .get();
     final docs = snap.docs;
-    docs.sort((a, b) {
-      final ka = a.data()['dateSortKey'] as int?;
-      final kb = b.data()['dateSortKey'] as int?;
-      if (ka != null && kb != null) return ka.compareTo(kb);
-      if (ka != null) return -1;
-      if (kb != null) return 1;
-      final da = a.data()['date'] as String? ?? '';
-      final db = b.data()['date'] as String? ?? '';
-      return da.compareTo(db);
-    });
-    return docs;
+    if (_encryption != null && docs.isNotEmpty) {
+      await _encryption!.ensureGroupKey(groupId);
+      final decrypted = await Future.wait(docs.map((d) async {
+        final data = await _encryption!.decryptExpenseData(d.data(), groupId);
+        return _DecryptedDocView(d.id, data) as DocView;
+      }));
+      decrypted.sort((a, b) => _compareExpenseDocs(a, b));
+      return decrypted;
+    }
+    final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+    list.sort((a, b) => _compareExpenseDocs(a, b));
+    return list;
   }
 }

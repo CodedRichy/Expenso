@@ -170,9 +170,6 @@ class DataEncryptionService {
     return _decryptMap(_userKey, data, _userFields, (_, v) => v);
   }
 
-  Future<Map<String, dynamic>> encryptGroupData(Map<String, dynamic> data) =>
-      _encryptMap(null, data, _groupFields);
-
   Future<Map<String, dynamic>> encryptGroupDataWithKey(String groupId, Map<String, dynamic> data) async {
     final key = _groupKeys[groupId];
     return _encryptMap(key, data, _groupFields);

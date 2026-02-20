@@ -4,7 +4,7 @@
 |----------|---------|
 | [APP_BLUEPRINT.md](../APP_BLUEPRINT.md) | Primary reference for implementation (routes, data layer, logic). Lives at repo root. |
 | [V1_RELEASE.md](V1_RELEASE.md) | V1 release contract: parser rules, Decision Clarity, authority, SettlementEngine, quality bar. |
-| [V2_RELEASE.md](V2_RELEASE.md) | V2 scope: profile pictures, UPI deep-linking, push notifications; settlement consistency; V3 deferrals. |
+| [V2_RELEASE.md](V2_RELEASE.md) | V2 current state: profile pictures, UPI deep-linking, push; settlement consistency; V3 deferrals. |
 | [LOGIC_AUDIT.md](LOGIC_AUDIT.md) | Logical errors found/fixed and follow-up items. |
 | [EXPENSE_SPLIT_USE_CASES.md](EXPENSE_SPLIT_USE_CASES.md) | Split scenarios and who-paid semantics. |
 | [BLUEPRINT_GAPS_VERIFICATION.md](BLUEPRINT_GAPS_VERIFICATION.md) | Gaps between blueprint and implementation. |
