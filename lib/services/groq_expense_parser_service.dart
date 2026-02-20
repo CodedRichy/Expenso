@@ -175,7 +175,7 @@ Before outputting JSON, mentally decide:
 2) WHO SHARES THE COST? If user says "with X", "with X and Y", "for me and X" -> participants = [X] or [X,Y] (never include "me"). If user says "everyone"/"all"/"the group" OR names a payer but does NOT say who to split with -> participants = [] (meaning: split among ALL people in the group, including the payer and current user). Only use [] for "everyone" or "no one named to split with".
 3) SPLIT TYPE? If user gives per-person amounts -> exact. Percentages -> percentage. Share counts (nights, etc.) -> shares. Someone excluded -> exclude. Otherwise -> even.
 
-Critical: "X paid 200" with no "with Y" = payer:X, participants:[], splitType:even (the whole group splits it; everyone in the group owes an equal share). "200 with X" = participants:[X], even (split between current user and X only).
+Critical: "X paid 200" with no "with Y" = payer:X, participants:[], splitType:even (the whole group splits it; everyone in the group owes an equal share). "200 with X" = participants:[X], even (split between current user and X only). "I had dinner with <name> 200" or "dinner with <name> <amount>" = payer omitted (current user), participants:[<name>] using exact spelling from member list, even (2 people: current user + that person).
 
 --- OUTPUT SCHEMA ---
 Required in every response:
@@ -290,6 +290,8 @@ Critical: "600 with B" = even. "600: 400 me 200 B" = exact. "Rent 60-40" or "50%
 "600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
 "500 for me and C" -> {"amount":500,"description":"Expense","category":"","splitType":"even","participants":["C"]}
 "dinner with A 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["A"]}
+"I had dinner with B 200" -> {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+"lunch with C 450" -> {"amount":450,"description":"Lunch","category":"Food","splitType":"even","participants":["C"]}
 "1000 split between me A and B" -> {"amount":1000,"description":"Expense","category":"","splitType":"even","participants":["A","B"]}
 "600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":200}}
 "900 total I pay 500 A 400" -> {"amount":900,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400}}
