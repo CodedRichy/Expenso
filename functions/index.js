@@ -8,7 +8,13 @@ if (!admin.apps.length) admin.initializeApp();
 function deriveKey(prefix, id) {
   const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
   if (!raw) return null;
-  const master = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'utf8');
+  let master;
+  if (/^[0-9a-fA-F]{63,64}$/.test(raw)) {
+    const hex = raw.length === 63 ? '0' + raw : raw;
+    master = Buffer.from(hex, 'hex');
+  } else {
+    master = Buffer.from(raw, 'utf8');
+  }
   return crypto.createHmac('sha256', master, prefix + ':' + id).digest('base64');
 }
 
