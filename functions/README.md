@@ -4,20 +4,37 @@
 
 Creates a Razorpay order for in-app settlement. Called from the Flutter app with `amountPaise` (≥ 100) and optional `receipt`. Returns `orderId` and `keyId` for Razorpay Checkout.
 
-### Setup
+### 1. Install dependencies
 
-1. Install dependencies: `npm install`
-2. Set Razorpay keys (Firebase CLI):
-   - `firebase functions:config:set razorpay.key_id="YOUR_KEY_ID" razorpay.key_secret="YOUR_KEY_SECRET"`
-   - Or use environment in Firebase Console → Functions → createRazorpayOrder → Environment variables: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
-3. For local config (optional): in `index.js` you can read from `functions.config().razorpay?.key_id` if you set config; the code currently uses `process.env.RAZORPAY_KEY_ID` and `process.env.RAZORPAY_KEY_SECRET` (set in Firebase Console or `.env` for emulator).
+From the **project root** (parent of `functions/`):
 
-### Deploy
+```bash
+cd functions
+npm install
+cd ..
+```
 
-From the project root (parent of `functions/`):
+### 2. Set your Razorpay keys
+
+**Option A – .env file (recommended)**  
+In the `functions/` folder, create a file named `.env` (or `.env.<your-firebase-project-id>`). Add:
+
+```
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=your_secret_here
+```
+
+Use your **Test** Key ID and **Test** Key Secret from [Razorpay Dashboard → API Keys](https://dashboard.razorpay.com/app/keys). Do not commit this file (root `.gitignore` already ignores `.env` and `.env.*`).
+
+**Option B – Prompt on deploy**  
+If you don’t create a `.env` file, the Firebase CLI will prompt you for `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` the first time you deploy, and save them to a file under `functions/`.
+
+### 3. Deploy
+
+From the **project root**:
 
 ```bash
 firebase deploy --only functions
 ```
 
-Ensure `firebase.json` includes `"functions": "functions"` and the project is set in `.firebaserc`.
+If you haven’t already, run `firebase use <your-project-id>` so the correct Firebase project is selected.
