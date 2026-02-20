@@ -77,7 +77,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. |
+| `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. Shows description, amount, date, payer, **split type** (Even/Exact/Exclude from Firestore), and **people involved** (from saved `splits`; participant resolution uses normalized phone so parser-derived participants are not dropped). |
 | `/undo-expense` | UndoExpense | Shown after add (expense input or Magic Bar). Args: `groupId`, `expenseId`, `description`, `amount`. 5s timer then auto-dismiss; Undo deletes from Firestore and pops. |
 | `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. |
 | `/member-change` | MemberChange | Change one member. |
@@ -116,7 +116,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 - **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`, `upiId`.
 - **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
-- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `splits` (map uid → amount_owed; **every member of the split** must have an entry, including for Even), `description`, `date`, `dateSortKey` (milliseconds since epoch for chronological sort), optional `category`.
+- **groups/{groupId}/expenses** — Current-cycle expenses. Fields: `groupId`, `amount`, `payerId`, `splitType` ('Even' | 'Exact' | 'Exclude'), `participantIds` (list of UIDs in the split; source of truth so "people involved" is never lost), `splits` (map uid → amount_owed), `description`, `date`, `dateSortKey` (milliseconds since epoch for chronological sort), optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
 
 **Archive logic:** Settle (Phase 1) sets `cycleStatus` to `settling`. Archive (Phase 2, creator-only) copies current-cycle expenses into `settled_cycles/{cycleId}/expenses`, deletes from current `expenses`, then sets new `activeCycleId` and `cycleStatus: 'active'`.
@@ -143,7 +143,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`. `setGlobalProfile` persists name to Firestore so profile name = NLP name. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor, for Razorpay settlement. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
-| **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
+| **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. **Phone→UID** resolution uses `_uidForPhone` with normalized phone (digits, last 10 for IN) so parser-derived participants are not dropped when formats differ. On read, `_expenseFromFirestore` builds `participantPhones` and `splitAmountsByPhone` from `splits` and reads `splitType`; edit expense and balances use this saved data. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 | **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
 | **Stream error / ErrorStates** | `streamError` set when groups or expenses stream `onError`; `clearStreamError()`, `restartListening()`. GroupsList pushes `/error-states` (type `network`) when `streamError != null`; ErrorStates "Try Again" calls `restartListening()` and pop. |
@@ -152,7 +152,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount)
+- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (optional `splitAmountsByPhone`, `category`, `splitType`: Even | Exact | Exclude from parser/Firestore), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 - **utils/settlement_engine.dart** — `Debt` (fromPhone, toPhone, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (phone → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).

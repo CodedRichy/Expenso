@@ -44,6 +44,8 @@ class Expense {
   final Map<String, double>? splitAmountsByPhone;
   /// Optional category (e.g. Food, Transport). Persisted in Firestore.
   final String category;
+  /// How the expense was split: "Even" | "Exact" | "Exclude" (and optionally "Percentage" | "Shares"). From parser / Firestore.
+  final String splitType;
 
   Expense({
     required this.id,
@@ -54,6 +56,7 @@ class Expense {
     this.paidByPhone = '',
     this.splitAmountsByPhone,
     this.category = '',
+    this.splitType = 'Even',
   }) : participantPhones = participantPhones ?? [];
 }
 

@@ -139,6 +139,7 @@ class _EditExpenseState extends State<EditExpense> {
         paidByPhone: _selectedPayerPhone,
         splitAmountsByPhone: existing.splitAmountsByPhone,
         category: existing.category,
+        splitType: existing.splitType,
       );
       repo.updateExpense(groupId, updatedExpense);
       Navigator.pop(context);
@@ -559,7 +560,7 @@ class _EditExpenseState extends State<EditExpense> {
     final expense = _expense!;
     final repo = CycleRepository.instance;
     final isExact = expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty;
-    final splitLabel = isExact ? 'Exact' : 'Even';
+    final splitLabel = expense.splitType.isNotEmpty ? expense.splitType : (isExact ? 'Exact' : 'Even');
     final participants = isExact
         ? expense.splitAmountsByPhone!.entries.toList()
         : expense.participantPhones.map((p) => MapEntry(p, expense.amount / (expense.participantPhones.isEmpty ? 1 : expense.participantPhones.length))).toList();
