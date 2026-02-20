@@ -3,15 +3,20 @@
 ## Problem statement
 
 <!-- One sentence: what is wrong? -->
-
+The Logic
 
 
 ## Expected vs actual
 
-- **Expected:**  
+- **Expected (draft — you said wrong):**  
   Net balances: Alice +180, Bob +30, Carol −210.  
   Balances list: Carol owes Alice ₹180; Carol owes Bob ₹30.  
   Decision Clarity (cycle total ₹470): for Alice “Spent by you” ₹300, “Your status” +180; for Bob ₹120 and +30; for Carol ₹50 and −210.
+
+**Correct expected (type here):**
+
+
+
 
 - **Actual:**
 
