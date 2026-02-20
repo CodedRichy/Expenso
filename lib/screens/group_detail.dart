@@ -909,52 +909,52 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     super.dispose();
   }
 
-  /// Resolves a single name to one phone, or null if ambiguous/unmatched.
-  String? _resolveOneNameToPhone(
+  /// Resolves a single name to one member id, or null if ambiguous/unmatched.
+  String? _resolveOneNameToId(
     CycleRepository repo,
     String groupId,
     String name, {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) {
-    final r = _resolveOneNameToPhoneWithGuess(
+    final r = _resolveOneNameToIdWithGuess(
       repo,
       groupId,
       name,
       contactNameToNormalizedPhones: contactNameToNormalizedPhones,
     );
-    return r.phone;
+    return r.id;
   }
 
-  /// Like [_resolveOneNameToPhone] but also returns whether the match was fuzzy (user should verify).
-  ({String? phone, bool isGuessed}) _resolveOneNameToPhoneWithGuess(
+  /// Like [_resolveOneNameToId] but also returns whether the match was fuzzy (user should verify).
+  ({String? id, bool isGuessed}) _resolveOneNameToIdWithGuess(
     CycleRepository repo,
     String groupId,
     String name, {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) {
     final n = name.trim().toLowerCase();
-    if (n.isEmpty) return (phone: null, isGuessed: false);
-    final members = repo.getMembersForGroup(groupId);
+    if (n.isEmpty) return (id: null, isGuessed: false);
+    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
     final currentName = repo.currentUserName;
-    final currentPhone = repo.currentUserPhone;
+    final currentId = repo.currentUserId;
     if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
-      return (phone: currentPhone.isNotEmpty ? currentPhone : null, isGuessed: false);
+      return (id: currentId.isNotEmpty ? currentId : null, isGuessed: false);
     }
     String? exactMatch;
     List<String> partialMatches = [];
     for (final m in members) {
-      final display = repo.getMemberDisplayName(m.phone).toLowerCase();
+      final display = repo.getMemberDisplayNameById(m.id).toLowerCase();
       if (display == n) {
-        exactMatch = m.phone;
+        exactMatch = m.id;
         break;
       }
       if (display.contains(n) || n.contains(display) ||
           display.startsWith(n) || n.startsWith(display)) {
-        partialMatches.add(m.phone);
+        partialMatches.add(m.id);
       }
     }
-    if (exactMatch != null) return (phone: exactMatch, isGuessed: false);
-    if (partialMatches.length == 1) return (phone: partialMatches.single, isGuessed: true);
+    if (exactMatch != null) return (id: exactMatch, isGuessed: false);
+    if (partialMatches.length == 1) return (id: partialMatches.single, isGuessed: true);
 
     if (contactNameToNormalizedPhones != null) {
       final candidatePhones = <String>[];
@@ -970,12 +970,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         if (matched.length == 1) {
           final norm = matched.single;
           for (final m in members) {
-            if (_normalizePhoneForMatch(m.phone) == norm) return (phone: m.phone, isGuessed: true);
+            if (_normalizePhoneForMatch(m.phone) == norm) return (id: m.id, isGuessed: true);
           }
         }
       }
     }
-    return (phone: null, isGuessed: false);
+    return (id: null, isGuessed: false);
   }
 
   Future<void> _submit() async {
@@ -990,7 +990,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       await _ensureContactCache();
       if (!mounted) return;
       final memberNames = members.map((m) {
-        final name = repo.getMemberDisplayName(m.phone);
+        final name = repo.getMemberDisplayNameById(m.id);
         final looksLikePhone = name.isEmpty ||
             RegExp(r'\+|\d{8,}').hasMatch(name.replaceAll(RegExp(r'\s'), ''));
         if (looksLikePhone && _phoneToContactName != null) {
@@ -1042,18 +1042,18 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) async {
     final groupId = widget.group.id;
-    final members = repo.getMembersForGroup(groupId);
-    final allPhones = members.map((m) => m.phone).toList();
+    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
+    final allIds = members.map((m) => m.id).toList();
 
-    String payerPhone = repo.currentUserPhone;
+    String payerId = repo.currentUserId;
     if (result.payerName != null && result.payerName!.trim().isNotEmpty) {
-      final p = _resolveOneNameToPhone(
+      final pid = _resolveOneNameToId(
         repo,
         groupId,
         result.payerName!.trim(),
         contactNameToNormalizedPhones: contactNameToNormalizedPhones,
       );
-      if (p != null) payerPhone = p;
+      if (pid != null) payerId = pid;
     }
 
     final splitTypeCap = result.splitType == 'exact'
@@ -1072,30 +1072,30 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     final contactMap = contactNameToNormalizedPhones;
     if (result.splitType == 'exclude' && result.excludedNames.isNotEmpty) {
       for (final name in result.excludedNames) {
-        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-        slots.add(_ParticipantSlot(name: name, amount: 0, phone: r.phone, isGuessed: r.isGuessed));
+        final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+        slots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
       }
     } else if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
       for (final entry in result.exactAmountsByName.entries) {
-        final r = _resolveOneNameToPhoneWithGuess(repo, groupId, entry.key, contactNameToNormalizedPhones: contactMap);
-        slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, phone: r.phone, isGuessed: r.isGuessed));
+        final r = _resolveOneNameToIdWithGuess(repo, groupId, entry.key, contactNameToNormalizedPhones: contactMap);
+        slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, id: r.id, isGuessed: r.isGuessed));
       }
     } else if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
       for (final entry in result.percentageByName.entries) {
         final name = entry.key;
         final pct = entry.value;
         final amount = result.amount * (pct / 100);
-        String? phone;
+        String? id;
         String displayName = name;
         if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
-          phone = repo.currentUserPhone;
-          displayName = repo.getMemberDisplayName(phone);
+          id = repo.currentUserId;
+          displayName = repo.getMemberDisplayNameById(id);
         } else {
-          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-          phone = r.phone;
+          final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+          id = r.id;
           displayName = name;
         }
-        slots.add(_ParticipantSlot(name: displayName, amount: amount, phone: phone, isGuessed: false));
+        slots.add(_ParticipantSlot(name: displayName, amount: amount, id: id, isGuessed: false));
       }
     } else if (result.splitType == 'shares' && result.sharesByName.isNotEmpty) {
       final totalShares = result.sharesByName.values.fold<double>(0.0, (a, b) => a + b);
@@ -1104,39 +1104,39 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           final name = entry.key;
           final personShares = entry.value;
           final amount = result.amount * (personShares / totalShares);
-          String? phone;
+          String? id;
           String displayName = name;
           if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
-            phone = repo.currentUserPhone;
-            displayName = repo.getMemberDisplayName(phone);
+            id = repo.currentUserId;
+            displayName = repo.getMemberDisplayNameById(id);
           } else {
-            final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-            phone = r.phone;
+            final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+            id = r.id;
             displayName = name;
           }
-          slots.add(_ParticipantSlot(name: displayName, amount: amount, phone: phone, isGuessed: false));
+          slots.add(_ParticipantSlot(name: displayName, amount: amount, id: id, isGuessed: false));
         }
       }
     } else {
       List<String> names = result.participantNames;
       if (names.isEmpty) {
         for (final m in members) {
-          final displayName = repo.getMemberDisplayName(m.phone);
+          final displayName = repo.getMemberDisplayNameById(m.id);
           final perShare = members.isNotEmpty ? result.amount / members.length : result.amount;
-          slots.add(_ParticipantSlot(name: displayName, amount: perShare, phone: m.phone, isGuessed: false));
+          slots.add(_ParticipantSlot(name: displayName, amount: perShare, id: m.id, isGuessed: false));
         }
       } else {
-        final splitCount = names.length + 1; // participantNames = others; total people = me + names
+        final splitCount = names.length + 1;
         final perShare = result.amount / splitCount;
         slots.add(_ParticipantSlot(
-          name: repo.getMemberDisplayName(repo.currentUserPhone),
+          name: repo.getMemberDisplayNameById(repo.currentUserId),
           amount: perShare,
-          phone: repo.currentUserPhone,
+          id: repo.currentUserId,
           isGuessed: false,
         ));
         for (final name in names) {
-          final r = _resolveOneNameToPhoneWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-          slots.add(_ParticipantSlot(name: name, amount: perShare, phone: r.phone, isGuessed: r.isGuessed));
+          final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+          slots.add(_ParticipantSlot(name: name, amount: perShare, id: r.id, isGuessed: r.isGuessed));
         }
       }
     }
@@ -1162,11 +1162,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         repo: repo,
         groupId: groupId,
         result: result,
-        payerPhone: payerPhone,
+        payerId: payerId,
         splitTypeCap: splitTypeCap,
         initialSlots: slots,
         isExclude: isExclude,
-        allPhones: allPhones,
+        allIds: allIds,
         exactValid: exactValid,
       ),
     );
@@ -1298,31 +1298,31 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 class _ParticipantSlot {
   final String name;
   double amount;
-  String? phone;
+  String? id;
   final bool isGuessed;
-  _ParticipantSlot({required this.name, required this.amount, this.phone, this.isGuessed = false});
+  _ParticipantSlot({required this.name, required this.amount, this.id, this.isGuessed = false});
 }
 
 class _ExpenseConfirmDialog extends StatefulWidget {
   final CycleRepository repo;
   final String groupId;
   final ParsedExpenseResult result;
-  final String payerPhone;
+  final String payerId;
   final String splitTypeCap;
   final List<_ParticipantSlot> initialSlots;
   final bool isExclude;
-  final List<String> allPhones;
+  final List<String> allIds;
   final bool exactValid;
 
   const _ExpenseConfirmDialog({
     required this.repo,
     required this.groupId,
     required this.result,
-    required this.payerPhone,
+    required this.payerId,
     required this.splitTypeCap,
     required this.initialSlots,
     required this.isExclude,
-    required this.allPhones,
+    required this.allIds,
     required this.exactValid,
   });
 
@@ -1335,7 +1335,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   List<TextEditingController>? _amountControllers;
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
-  late String _payerPhone;
+  late String _payerId;
 
   static String _formatAmountForEdit(double v) =>
       v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
@@ -1343,10 +1343,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   @override
   void initState() {
     super.initState();
-    slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, phone: s.phone, isGuessed: s.isGuessed)).toList();
+    slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, id: s.id, isGuessed: s.isGuessed)).toList();
     _descriptionController = TextEditingController(text: widget.result.description);
     _amountController = TextEditingController(text: _formatAmountForEdit(widget.result.amount));
-    _payerPhone = widget.payerPhone;
+    _payerId = widget.payerId;
     if (widget.splitTypeCap == 'Exact') {
       _amountControllers = List.generate(slots.length, (i) => TextEditingController(text: _formatAmountForEdit(slots[i].amount)));
     }
@@ -1362,7 +1362,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     super.dispose();
   }
 
-  bool get _allResolved => slots.every((s) => s.phone != null && s.phone!.isNotEmpty);
+  bool get _allResolved => slots.every((s) => s.id != null && s.id!.isNotEmpty);
 
   double get _totalSplit => slots.fold<double>(0.0, (sum, slot) => sum + slot.amount);
 
@@ -1394,7 +1394,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     if (amount == null || slots.isEmpty || widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') return;
     final perShare = amount / slots.length;
     for (var i = 0; i < slots.length; i++) {
-      slots[i] = _ParticipantSlot(name: slots[i].name, amount: perShare, phone: slots[i].phone, isGuessed: slots[i].isGuessed);
+      slots[i] = _ParticipantSlot(name: slots[i].name, amount: perShare, id: slots[i].id, isGuessed: slots[i].isGuessed);
     }
     setState(() {});
   }
@@ -1414,12 +1414,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
               ),
             ),
-            ...repo.getMembersForGroup(widget.groupId).map((m) {
-              final displayName = repo.getMemberDisplayName(m.phone);
+            ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
+              final displayName = repo.getMemberDisplayNameById(m.id);
               return ListTile(
                 title: Text(displayName),
                 onTap: () {
-                  setState(() => _payerPhone = m.phone);
+                  setState(() => _payerId = m.id);
                   Navigator.pop(ctx);
                 },
               );
@@ -1445,12 +1445,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
               ),
             ),
-            ...repo.getMembersForGroup(widget.groupId).map((m) {
-              final displayName = repo.getMemberDisplayName(m.phone);
+            ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
+              final displayName = repo.getMemberDisplayNameById(m.id);
               return ListTile(
                 title: Text(displayName),
                 onTap: () {
-                  setState(() => slots[slotIndex].phone = m.phone);
+                  setState(() => slots[slotIndex] = _ParticipantSlot(name: slots[slotIndex].name, amount: slots[slotIndex].amount, id: m.id, isGuessed: slots[slotIndex].isGuessed));
                   Navigator.pop(ctx);
                 },
               );
@@ -1469,20 +1469,20 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     HapticFeedback.lightImpact();
     final repo = widget.repo;
     final groupId = widget.groupId;
-    List<String> participantPhones;
-    List<String>? excludedPhones;
-    Map<String, double>? exactAmountsByPhone;
+    List<String> participantIds;
+    List<String>? excludedIds;
+    Map<String, double>? exactAmountsById;
 
     if (widget.isExclude) {
-      excludedPhones = slots.map((s) => s.phone!).toList();
-      final excludedSet = excludedPhones.toSet();
-      participantPhones = widget.allPhones.where((p) => !excludedSet.contains(p)).toList();
-      if (participantPhones.isEmpty) participantPhones = [widget.payerPhone];
+      excludedIds = slots.map((s) => s.id!).toList();
+      final excludedSet = excludedIds.toSet();
+      participantIds = widget.allIds.where((id) => !excludedSet.contains(id)).toList();
+      if (participantIds.isEmpty) participantIds = [widget.payerId];
     } else if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') {
-      exactAmountsByPhone = {for (final s in slots) s.phone!: s.amount};
-      participantPhones = exactAmountsByPhone.keys.toList();
+      exactAmountsById = {for (final s in slots) s.id!: s.amount};
+      participantIds = exactAmountsById.keys.toList();
     } else {
-      participantPhones = slots.map((s) => s.phone!).toList();
+      participantIds = slots.map((s) => s.id!).toList();
     }
 
     final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
@@ -1498,11 +1498,11 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         description: description,
         amount: amount,
         date: 'Today',
-        payerPhone: _payerPhone,
+        payerId: _payerId,
         splitType: persistSplitType,
-        participantPhones: participantPhones,
-        excludedPhones: excludedPhones,
-        exactAmountsByPhone: exactAmountsByPhone,
+        participantIds: participantIds,
+        excludedIds: excludedIds,
+        exactAmountsById: exactAmountsById,
         category: widget.result.category,
       );
       if (!context.mounted) return;
@@ -1717,7 +1717,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         child: Row(
                           children: [
                             Text(
-                              repo.getMemberDisplayName(_payerPhone),
+                              repo.getMemberDisplayNameById(_payerId),
                               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
                             ),
                             const Spacer(),
@@ -1763,11 +1763,11 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       runSpacing: 6,
                       children: List.generate(slots.length, (i) {
                 final slot = slots[i];
-                final isPlaceholder = slot.phone == null || slot.phone!.isEmpty;
+                final isPlaceholder = slot.id == null || slot.id!.isEmpty;
                 final isGuessed = slot.isGuessed && !isPlaceholder;
                 final isExactEditable = widget.splitTypeCap == 'Exact' && _amountControllers != null && i < _amountControllers!.length;
-                final label = slot.phone != null && slot.phone!.isNotEmpty
-                    ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
+                final label = slot.id != null && slot.id!.isNotEmpty
+                    ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
                     : 'Select Member  ₹${slot.amount.toStringAsFixed(0)}';
                         return GestureDetector(
                           onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
@@ -1793,8 +1793,8 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                   GestureDetector(
                                     onTap: isPlaceholder ? () => _pickMember(i) : null,
                                     child: Text(
-                                      slot.phone != null && slot.phone!.isNotEmpty
-                                          ? '${repo.getMemberDisplayName(slot.phone!)}${slot.isGuessed ? '?' : ''}'
+                                      slot.id != null && slot.id!.isNotEmpty
+                                          ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}'
                                           : 'Select Member',
                                       style: TextStyle(
                                         fontSize: 14,
@@ -1852,7 +1852,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         );
                       }),
                     ),
-                    if (slots.any((s) => s.isGuessed && s.phone != null)) ...[
+                    if (slots.any((s) => s.isGuessed && s.id != null)) ...[
                       const SizedBox(height: 8),
                       Text(
                         'Highlighted names are best guesses — verify before confirming.',

@@ -719,19 +719,18 @@ class CycleRepository extends ChangeNotifier {
     _setLastAdded(groupId, expense.id, expense.description, expense.amount);
   }
 
-  /// Adds an expense from the Magic Bar confirmation flow. Ensures splits map contains
-  /// every member of the split. splitType: Even | Exact | Exclude.
+  /// Adds an expense from the Magic Bar confirmation flow. All person references by member id.
   Future<void> addExpenseFromMagicBar(
     String groupId, {
     required String id,
     required String description,
     required double amount,
     required String date,
-    required String payerPhone,
+    required String payerId,
     required String splitType,
-    required List<String> participantPhones,
-    List<String>? excludedPhones,
-    Map<String, double>? exactAmountsByPhone,
+    required List<String> participantIds,
+    List<String>? excludedIds,
+    Map<String, double>? exactAmountsById,
     String category = '',
   }) async {
     final amountError = validateExpenseAmount(amount);
@@ -744,53 +743,51 @@ class CycleRepository extends ChangeNotifier {
     if (cycleId == null) {
       throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
     }
-    final payerId = _uidForPhone(payerPhone.isEmpty ? _currentUserPhone : payerPhone) ?? _currentUserId;
+    final effectivePayerId = payerId.isNotEmpty ? payerId : _currentUserId;
     final members = getMembersForGroup(groupId);
-    final allPhones = members.map((m) => m.phone).toList();
+    final allIds = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
 
-    List<String> phonesInSplit = [];
-    Map<String, double> splitsByPhone = {};
+    List<String> idsInSplit = [];
+    Map<String, double> splitsById = {};
 
-    if (splitType == 'Exact' && exactAmountsByPhone != null && exactAmountsByPhone.isNotEmpty) {
-      phonesInSplit = exactAmountsByPhone.keys.toList();
-      for (final e in exactAmountsByPhone.entries) {
-        splitsByPhone[e.key] = e.value;
+    if (splitType == 'Exact' && exactAmountsById != null && exactAmountsById.isNotEmpty) {
+      idsInSplit = exactAmountsById.keys.where((k) => !k.startsWith('p_')).toList();
+      for (final e in exactAmountsById.entries) {
+        if (!e.key.startsWith('p_')) splitsById[e.key] = e.value;
       }
-    } else if (splitType == 'Exclude' && excludedPhones != null && excludedPhones.isNotEmpty) {
-      final excludedSet = excludedPhones.toSet();
-      phonesInSplit = allPhones.where((p) => !excludedSet.contains(p)).toList();
-      if (phonesInSplit.isEmpty) phonesInSplit = [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
-      final perShare = amount / phonesInSplit.length;
-      for (final p in phonesInSplit) {
-        splitsByPhone[p] = perShare;
+    } else if (splitType == 'Exclude' && excludedIds != null && excludedIds.isNotEmpty) {
+      final excludedSet = excludedIds.toSet();
+      idsInSplit = allIds.where((id) => !excludedSet.contains(id)).toList();
+      if (idsInSplit.isEmpty) idsInSplit = [effectivePayerId];
+      final perShare = amount / idsInSplit.length;
+      for (final uid in idsInSplit) {
+        splitsById[uid] = perShare;
       }
     } else {
-      phonesInSplit = participantPhones.isNotEmpty
-          ? participantPhones
-          : allPhones;
-      if (phonesInSplit.isEmpty) phonesInSplit = [payerPhone.isNotEmpty ? payerPhone : _currentUserPhone];
-      final perShare = amount / phonesInSplit.length;
-      for (final p in phonesInSplit) {
-        splitsByPhone[p] = perShare;
+      idsInSplit = participantIds.isNotEmpty
+          ? participantIds.where((id) => !id.startsWith('p_')).toList()
+          : allIds;
+      if (idsInSplit.isEmpty) idsInSplit = [effectivePayerId];
+      final perShare = amount / idsInSplit.length;
+      for (final uid in idsInSplit) {
+        splitsById[uid] = perShare;
       }
     }
 
     final splits = <String, double>{};
-    for (final phone in phonesInSplit) {
-      final uid = _uidForPhone(phone);
-      final share = splitsByPhone[phone] ?? 0.0;
-      if (uid != null) splits[uid] = share;
+    for (final uid in idsInSplit) {
+      splits[uid] = splitsById[uid] ?? 0.0;
     }
-    if (splits.isEmpty) splits[payerId] = amount;
+    if (splits.isEmpty) splits[effectivePayerId] = amount;
 
-    final participantIds = splits.keys.toList();
+    final writtenParticipantIds = splits.keys.toList();
     final data = {
       'id': id,
       'groupId': groupId,
       'amount': amount,
-      'payerId': payerId,
+      'payerId': effectivePayerId,
       'splitType': splitType,
-      'participantIds': participantIds,
+      'participantIds': writtenParticipantIds,
       'splits': splits.map((k, v) => MapEntry(k, v)),
       'description': description,
       'date': date,
