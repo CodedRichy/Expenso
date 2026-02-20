@@ -626,11 +626,17 @@ class CycleRepository extends ChangeNotifier {
     return list != null ? List.unmodifiable(list) : [];
   }
 
-  /// Resolve phone to UID (current user or from cache).
+  /// Resolve phone to UID (current user or from cache). Uses normalized phone so formats match.
   String? _uidForPhone(String phone) {
-    if (phone == _currentUserPhone) return _currentUserId;
+    if (phone.isEmpty) return null;
+    final n = _normalizePhone(phone);
+    if (n == _normalizePhone(_currentUserPhone)) return _currentUserId;
     for (final e in _userCache.entries) {
-      if (e.value['phoneNumber'] == phone) return e.key;
+      final cached = e.value['phoneNumber'] as String? ?? '';
+      if (_normalizePhone(cached) == n) return e.key;
+    }
+    for (final m in _membersById.values) {
+      if (_normalizePhone(m.phone) == n) return m.id.startsWith('p_') ? null : m.id;
     }
     return null;
   }
