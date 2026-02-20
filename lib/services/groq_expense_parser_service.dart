@@ -162,12 +162,12 @@ class GroqExpenseParserService {
     return key.trim();
   }
 
-  /// System prompt for expense parsing. When a parse error occurs: document it in
-  /// docs/GROQ_PROMPT_REFINEMENT.md and add a rule, anti-pattern in COMMON MISTAKES,
-  /// or few-shot example to the prompt. Preserve splitType order: exact → percentage → shares → exclude → even.
+  /// System prompt for expense parsing. Designed to work with any LLM (model-agnostic).
+  /// When a parse error occurs: document it in docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
+  /// and add a rule, anti-pattern in COMMON MISTAKES, or few-shot example. Preserve splitType order: exact → percentage → shares → exclude → even.
   static String _buildSystemPrompt(String memberList) {
     return '''
-You are an expense parser. Turn the user message into exactly one JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
+You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly one JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
 
 --- OUTPUT SCHEMA (required every time) ---
 amount (number), description (string, 1–3 words), category (string or ""), splitType ("even"|"exact"|"exclude"|"percentage"|"shares"), participants (array of strings from member list; [] = everyone or when only payer is named).

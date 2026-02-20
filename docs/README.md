@@ -10,7 +10,7 @@
 | [DATA_ENCRYPTION_SETUP.md](DATA_ENCRYPTION_SETUP.md) | Step-by-step: set master key, deploy functions, verify. |
 | [EXPENSE_SPLIT_USE_CASES.md](EXPENSE_SPLIT_USE_CASES.md) | Split scenarios and who-paid semantics. |
 | [BLUEPRINT_GAPS_VERIFICATION.md](BLUEPRINT_GAPS_VERIFICATION.md) | Gaps between blueprint and implementation. |
-| [GROQ_PROMPT_REFINEMENT.md](GROQ_PROMPT_REFINEMENT.md) | Groq/Smart Bar prompt refinement notes. |
+| [EXPENSE_PARSER_PROMPT_REFINEMENT.md](EXPENSE_PARSER_PROMPT_REFINEMENT.md) | AI expense parser prompt refinement (model-agnostic). |
 | [RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md](RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md) | Literature and guidance for prompt refinement and parsing. |
 | [SURVEY_FEATURE_REQUESTS.md](SURVEY_FEATURE_REQUESTS.md) | Survey summary and feature requests. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Module/directory structure over time (from Git). |

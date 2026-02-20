@@ -131,7 +131,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### GroqExpenseParserService
 
-**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. Calls Groq API (`llama-3.3-70b-versatile`) with a “Financial Data Parser” system prompt; expects raw JSON: `amount`, `description`, `category`, `splitType` ("even" | "exact" | "exclude"), `participants` (display names), and optionally `payer`, `excluded`, `exactAmounts`. Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude).
+**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. The **prompt is model-agnostic** (see **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md**). Implementation calls Groq API (`llama-3.3-70b-versatile`). Expects raw JSON (same schema). Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude / Percentage / Shares).
 
 ### CycleRepository
 
@@ -143,7 +143,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Identity** | `setAuthFromFirebaseUserSync` sets in-memory state; `continueAuthFromFirebaseUser()` (post-frame) writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
 | **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
-| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to Groq for Magic Bar fuzzy matching. |
+| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`. `setGlobalProfile` persists name to Firestore so profile name = NLP name. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor, for Razorpay settlement. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
@@ -234,11 +234,11 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 - Description / “with” used for participants.
 - Submit enabled when `input.trim().isNotEmpty` and `parseExpense(input).amount > 0`.
 
-### Smart Bar (GroupDetail) — Groq AI parser + manual fallback
+### Smart Bar (GroupDetail) — AI expense parser + manual fallback
 
 - **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Pradhyun”.
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
-- **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env only; model `llama-3.3-70b-versatile`; system prompt instructs “Financial Data Parser” to return only JSON: amount, description, category, splitType, participants (names from injected member list). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
+- **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env; implementation uses Groq (`llama-3.3-70b-versatile`). System prompt is model-agnostic (see docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
 - **Success:** Confirmation dialog with amount, description, category, split type, and participant chips. If a participant name from the AI cannot be resolved to a phone number, it is shown as a **"Select Member"** chip; the user must tap that chip to pick the correct member from the group list before Confirm is enabled. On Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
 - **Failure:** Only if no number could be extracted (API failed and fallback found no number); snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
@@ -282,7 +282,7 @@ lib/
     phone_auth_service.dart   # Firebase verifyPhoneNumber, codeSent, verificationCompleted, error handling
     firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles; deleteGroup (creator-only)
     pinned_groups_service.dart # User pin preference (max 3 groups); SharedPreferences
-    groq_expense_parser_service.dart  # Groq API (Llama 3.3 70B) — parse NL to amount, description, category, splitType, participants
+    groq_expense_parser_service.dart  # AI expense parser (model-agnostic prompt; implementation: Groq/Llama). Parse NL → JSON. See docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
     profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
     razorpay_order_service.dart       # createRazorpayOrder(amountPaise) via Cloud Function → orderId, keyId
   utils/
@@ -316,7 +316,7 @@ lib/
     error_states.dart
 test/
   expense_validation_test.dart   # Unit tests for validateExpenseAmount, validateExpenseDescription
-  parsed_expense_result_test.dart # Unit tests for ParsedExpenseResult.fromJson (Groq parser)
+  parsed_expense_result_test.dart # Unit tests for ParsedExpenseResult.fromJson (AI expense parser)
 ```
 
 ---
@@ -412,7 +412,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 **Implementation notes (AI & Hit-Maker):**
 
-- **Natural language expense parsing** — **Implemented.** GroupDetail “Magic Bar” uses Groq (Llama 3.3 70B) to parse free text → JSON (amount, description, category, splitType, participants); confirmation dialog then `CycleRepository.addExpense`. See §4 GroqExpenseParserService, §6 Magic Bar.
+- **Natural language expense parsing** — **Implemented.** GroupDetail “Magic Bar” uses the AI expense parser (model-agnostic prompt; implementation uses Groq) to parse free text → JSON; confirmation dialog then `CycleRepository.addExpense`. See §4 GroqExpenseParserService, §6 Smart Bar, docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md.
 - **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last.
 - **Voice entry** — “Hey Expenso, I paid 400 for movies with the boys.” Low real value; skip or postpone indefinitely.
 - **Debt minimization** — Real intelligence. Builds on members, balances, cross-group identity. Can be your signature feature. Extremely high value.

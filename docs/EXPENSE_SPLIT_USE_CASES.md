@@ -2,7 +2,7 @@
 
 Reference for split semantics, who-paid scenarios, and edge cases so the app stays consistent across Magic Bar, manual entry, and settlement.
 
-**AI scenario selection:** The Groq parser prompt includes a **SCENARIO DECISION** section so the model infers, in order: (1) who paid, (2) who shares the cost, (3) split type. The model chooses the scenario from natural language (e.g. "Rockey paid 200" → payer Rockey, participants [], even). No separate classifier; the same LLM does disambiguation via the structured prompt and few-shot examples. See `lib/services/groq_expense_parser_service.dart` (_buildSystemPrompt).
+**AI scenario selection:** The expense parser prompt (model-agnostic; works with any LLM) includes a **SCENARIO** section so the model infers, in order: (1) who paid, (2) who shares the cost, (3) split type. The model chooses the scenario from natural language (e.g. "Rockey paid 200" → payer Rockey, participants [], even). No separate classifier; the same LLM does disambiguation via the structured prompt and few-shot examples. See `lib/services/groq_expense_parser_service.dart` (_buildSystemPrompt).
 
 ---
 
@@ -90,8 +90,8 @@ Implementation: Even + `participantPhones.isEmpty` → repo uses `allPhones`; co
 
 ## 8. References
 
-- Groq prompt: `lib/services/groq_expense_parser_service.dart` (§ FIELD RULES, EXAMPLES).
+- Parser prompt: `lib/services/groq_expense_parser_service.dart` (§ FIELD RULES, EXAMPLES).
 - Repo: `addExpenseFromMagicBar` and `addExpense` in `lib/repositories/cycle_repository.dart`.
 - Balances: `lib/utils/settlement_engine.dart` (`computeNetBalances`, `computeDebts`).
 - Confirmation dialog: `_showConfirmationDialog` and `_onConfirm` in `lib/screens/group_detail.dart`.
-- **Prompt refinement:** When the parser produces a wrong result, document the error and fix in **docs/GROQ_PROMPT_REFINEMENT.md** and update the prompt (rule, COMMON MISTAKES, or example) in `groq_expense_parser_service.dart`.
+- **Prompt refinement:** When the parser produces a wrong result, document the error and fix in **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md** and update the prompt (rule, COMMON MISTAKES, or example) in `groq_expense_parser_service.dart`.

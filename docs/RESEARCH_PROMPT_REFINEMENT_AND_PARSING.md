@@ -1,6 +1,6 @@
 # Comprehensive research: prompt refinement and expense parsing
 
-Research summary on fine-tuning and iteratively fixing LLM prompts for structured expense parsing, with citations and implications for the Groq expense parser.
+Research summary on fine-tuning and iteratively fixing LLM prompts for structured expense parsing, with citations and implications for the AI expense parser (model-agnostic prompt; current implementation uses Groq).
 
 ---
 
@@ -88,7 +88,7 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 **Implications for Expenso:**  
 - Use a **COMMON MISTAKES** (or similar) block in a **WRONG → RIGHT** form (error reflection), not only “do not do X.”  
 - Keep the prompt **sectioned** (SCENARIO DECISION, FIELD RULES, EDGE CASES, COMMON MISTAKES, EXAMPLES) so each fix is localized.  
-- Document failures and fixes in **GROQ_PROMPT_REFINEMENT.md** and update the prompt (rule, anti-pattern, or example) systematically.
+- Document failures and fixes in **EXPENSE_PARSER_PROMPT_REFINEMENT.md** and update the prompt (rule, anti-pattern, or example) systematically.
 
 **Sources:** Error Reflection Prompting (arXiv 2508.16729); ProRefine (arXiv 2506.05305); Self-Refine (arXiv 2303.17651); Modular Prompt Optimization (arXiv 2601.04055).
 
@@ -168,7 +168,7 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 - **Section-local changes:** When the prompt is modular, change one section at a time and re-test to see which part caused regressions.
 
 **Implications for Expenso:**  
-- Keep a **changelog** of errors and fixes (GROQ_PROMPT_REFINEMENT.md).  
+- Keep a **changelog** of errors and fixes (EXPENSE_PARSER_PROMPT_REFINEMENT.md).  
 - Optionally add a **small golden set** (e.g. in `tool/` or `test/`) of inputs and expected JSON (or key fields) and run after prompt edits.  
 - Prefer **targeted** edits (one section, one rule or example) to reduce unintended regressions.
 
@@ -176,14 +176,14 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 
 ---
 
-## 9. Groq-specific and provider guidance
+## 9. Provider-agnostic prompt and optional provider features
 
-### 9.1 Structured outputs
+### 9.1 Structured outputs (when the provider supports it)
 
 - **Strict mode** (when available): schema is enforced at decoding time; use when the pipeline requires strict JSON shape.
 - **Best-effort mode:** model tries to follow the schema but may occasionally produce invalid or incomplete JSON; **prompt + client-side parsing/validation** remain important.
 
-### 9.2 Prompting (Groq)
+### 9.2 Prompting (any LLM)
 
 - Include **role, instructions, context, input, and expected output**.
 - Provide **example outputs** to lock format.
@@ -192,9 +192,9 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 - **Minimize context**: only what’s needed (e.g. member list, task description) to limit cost and drift.
 - **Low temperature** (e.g. 0–0.2) for extraction/parsing.
 
-**Implications for Expenso:** Our prompt already uses system message, schema, rules, and examples. We can periodically check Groq docs for **structured output** support on our model and, if available, enable it for format guarantees while keeping the current prompt for semantics.
+**Implications for Expenso:** The expense parser prompt is **model-agnostic** and uses system message, schema, rules, and examples. It is designed to work with any LLM. If the current provider (e.g. Groq) supports structured output, enable it for format guarantees while keeping the same prompt for semantics.
 
-**Sources:** Groq structured outputs; Groq prompting; Oreate AI (Groq JSON guide).
+**Sources:** OpenAI/Groq structured outputs; general prompting guides (OpenAI, Groq, Anthropic, etc.).
 
 ---
 
@@ -215,13 +215,13 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 | Area | Recommendation |
 |------|-----------------|
 | **Structure** | Keep prompt sectioned (SCENARIO DECISION, FIELD RULES, EDGE CASES, COMMON MISTAKES, EXAMPLES). Fix one section at a time. |
-| **Errors** | Document each failure in GROQ_PROMPT_REFINEMENT.md; add a rule, a WRONG→RIGHT line, or a few-shot example. |
+| **Errors** | Document each failure in EXPENSE_PARSER_PROMPT_REFINEMENT.md; add a rule, a WRONG→RIGHT line, or a few-shot example. |
 | **Examples** | Curate for diversity and failure patterns; prefer quality over quantity; avoid bloating the prompt. |
 | **Ambiguity** | Use explicit decision order (who paid → who shares → split type); add examples for ambiguous phrasings. |
 | **Negative instructions** | Use WRONG→RIGHT (error reflection), not long “never do X” lists. |
 | **Temperature** | Keep low (e.g. 0.1) for parsing. |
 | **Evaluation** | Consider a small golden set; re-run after prompt changes; use flexible or semantic matching where appropriate. |
-| **Provider** | Check Groq for structured output (strict) on our model; combine with current prompt for semantics. |
+| **Provider** | Prompt is model-agnostic. If the provider supports structured output (strict), use it with the current prompt for semantics. |
 
 ---
 
@@ -236,4 +236,4 @@ Research summary on fine-tuning and iteratively fixing LLM prompts for structure
 - **Negative constraints:** arXiv 2601.08070; MLR 2023 (negated prompts); Palantir, OpenAI.
 - **Regression:** arXiv 2311.11123, 2503.00137, 2509.01790; Evidently, Confident AI.
 - **Context length:** arXiv 2510.05381, 2407.08892, 2212.06713.
-- **Groq:** GroqDocs (structured outputs, prompting, API); Oreate AI.
+- **Providers:** OpenAI, Groq, Anthropic docs (structured outputs, prompting).

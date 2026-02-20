@@ -86,7 +86,7 @@ Scope: 7 files, +137 -1
 
 ### 2026-02-19 — ca2fecd **[test]**
 
-Auto-sync: GROQ_PROMPT_REFINEMENT.md, groq_expense_parser_service.dart, parsed_expense_result_test.dart
+Auto-sync: EXPENSE_PARSER_PROMPT_REFINEMENT.md, groq_expense_parser_service.dart, parsed_expense_result_test.dart
 
 Scope: 3 files, +78 -78
 
@@ -326,7 +326,7 @@ Scope: 14 files, +721 -112
 <details>
 <summary>Commit body</summary>
 
-Add a launch splash (assets + SplashScreen) and make '/splash' the initial route. Introduce a SettlementEngine util and wire it into GroupDetail to show a real “Balances” section. Expand the Groq expense parser and Smart Bar to support new split types (percentage, shares), add a richer system prompt
+Add a launch splash (assets + SplashScreen) and make '/splash' the initial route. Introduce a SettlementEngine util and wire it into GroupDetail to show a real “Balances” section. Expand the AI expense parser and Smart Bar to support new split types (percentage, shares), add a richer system prompt
 
 </details>
 
