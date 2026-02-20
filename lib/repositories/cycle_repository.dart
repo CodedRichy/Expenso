@@ -497,11 +497,14 @@ class CycleRepository extends ChangeNotifier {
   }
 
   String getMemberDisplayName(String phone) {
-    if (phone == currentUserPhone) {
+    if (phone.isEmpty) return '';
+    if (_normalizePhone(phone) == _normalizePhone(_currentUserPhone)) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
     }
     for (final m in _membersById.values) {
-      if (m.phone == phone) return m.name.isNotEmpty ? m.name : _formatPhone(phone);
+      if (_normalizePhone(m.phone) == _normalizePhone(phone)) {
+        return m.name.isNotEmpty ? m.name : _formatPhone(m.phone);
+      }
     }
     return _formatPhone(phone);
   }
@@ -511,6 +514,13 @@ class CycleRepository extends ChangeNotifier {
     if (digits.length == 11 && digits.startsWith('91')) return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
     if (digits.length == 10) return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
     return phone;
+  }
+
+  static String _normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 11 && digits.startsWith('91')) return digits.substring(digits.length - 10);
+    if (digits.length >= 10) return digits.substring(digits.length - 10);
+    return digits;
   }
 
   void addMemberToGroup(String groupId, Member member) {
@@ -846,27 +856,30 @@ class CycleRepository extends ChangeNotifier {
   Map<String, double> calculateBalances(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
-    final phones = members.map((m) => m.phone).toSet();
     final Map<String, double> net = {};
-    for (final phone in phones) {
-      net[phone] = 0.0;
+    for (final m in members) {
+      final key = _normalizePhone(m.phone);
+      if (key.isNotEmpty) net[key] = 0.0;
     }
     for (final expense in cycle.expenses) {
       final payer = expense.paidByPhone;
-      if (payer.isNotEmpty && phones.contains(payer)) {
-        net[payer] = (net[payer] ?? 0) + expense.amount;
+      if (payer.isNotEmpty) {
+        final pKey = _normalizePhone(payer);
+        if (pKey.isNotEmpty) net[pKey] = (net[pKey] ?? 0) + expense.amount;
       }
       final participants = expense.participantPhones.isNotEmpty
           ? expense.participantPhones
           : members.map((m) => m.phone).toList();
       if (expense.splitAmountsByPhone != null && expense.splitAmountsByPhone!.isNotEmpty) {
         for (final entry in expense.splitAmountsByPhone!.entries) {
-          net[entry.key] = (net[entry.key] ?? 0) - entry.value;
+          final k = _normalizePhone(entry.key);
+          if (k.isNotEmpty) net[k] = (net[k] ?? 0) - entry.value;
         }
       } else {
         final perShare = expense.amount / participants.length;
         for (final phone in participants) {
-          net[phone] = (net[phone] ?? 0) - perShare;
+          final k = _normalizePhone(phone);
+          if (k.isNotEmpty) net[k] = (net[k] ?? 0) - perShare;
         }
       }
     }
@@ -924,7 +937,7 @@ class CycleRepository extends ChangeNotifier {
       final creditor = creditors[c];
       final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
       if (amount < 0.01) break;
-      if (debtor.phone == _currentUserPhone) {
+      if (debtor.phone == _normalizePhone(_currentUserPhone)) {
         result.add(SettlementTransfer(
           creditorPhone: creditor.phone,
           creditorDisplayName: getMemberDisplayName(creditor.phone),
