@@ -14,7 +14,14 @@ The Logic
   Decision Clarity (cycle total ₹470): for Alice “Spent by you” ₹300, “Your status” +180; for Bob ₹120 and +30; for Carol ₹50 and −210.
 
 **Correct expected (type here):**
+See. 
+when alice types "paid 300 for dinner", the parser should look at the list of the members and also after identifying the plit, which can be consisdered even here and among how many people including herself? bob and carol and alice. so 3 people. so 300/3 is 100 each. meaning as alice already paid 300, meaning shes at a +200 as 100 is her split and 200 she needs to get from bob and carol totally. meaning her share should show 300 and her status should show +200 as shes GETTING money. but for bob and carol they have not contributed yet. so their share is 0 and their status should be -100 for both cause they are GIVING. thats my logic.
 
+so when bob types "paid 120 for coffee" another calculation occurs. that is 120/3 so each person is paying or has to pay 40 keeping in mind bob paid. as bob alread has a -100 but he needs to get a +40 from alice which makes his final to -60 and alice owes nothing to bob. but carol now owes 40 to bob so -40 on top of the -100 to alice. so her status shold show -40 + -100.
+
+now when carol types "paid 50 for snacks" next calculation. each person now owes carol 16.66 which can be rounded to 16.5. as she owes -100 to alice, and she needs to get +16.5, now she has to pay 83.5 and as she owes -40 to bob but she needs +16.5, putting her to pay 23.5. so her status now updates to -107. 
+
+the app has to track the inner calculations. do u understand the logic now? do u see what ive been trying to tell you.
 
 
 
