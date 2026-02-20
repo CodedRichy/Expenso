@@ -940,6 +940,18 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
       return (id: currentId.isNotEmpty ? currentId : null, isGuessed: false);
     }
+    if (contactNameToNormalizedPhones != null) {
+      final phoneToContactName = <String, String>{};
+      for (final entry in contactNameToNormalizedPhones.entries) {
+        for (final p in entry.value) {
+          phoneToContactName[p] = entry.key;
+        }
+      }
+      for (final m in members) {
+        final contactName = phoneToContactName[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
+        if (contactName != null && contactName == n) return (id: m.id, isGuessed: true);
+      }
+    }
     String? exactMatch;
     List<String> partialMatches = [];
     for (final m in members) {
@@ -1137,6 +1149,19 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         for (final name in names) {
           final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
           slots.add(_ParticipantSlot(name: name, amount: perShare, id: r.id, isGuessed: r.isGuessed));
+        }
+      }
+    }
+
+    final assignedIds = slots.where((s) => s.id != null && s.id!.isNotEmpty).map((s) => s.id!).toSet();
+    final unassignedMembers = members.where((m) => !assignedIds.contains(m.id)).toList();
+    final unresolvedCount = slots.where((s) => s.id == null || s.id!.isEmpty).length;
+    if (unresolvedCount == 1 && unassignedMembers.length == 1) {
+      final member = unassignedMembers.single;
+      for (var i = 0; i < slots.length; i++) {
+        if (slots[i].id == null || slots[i].id!.isEmpty) {
+          slots[i] = _ParticipantSlot(name: slots[i].name, amount: slots[i].amount, id: member.id, isGuessed: true);
+          break;
         }
       }
     }
