@@ -8,8 +8,10 @@
 
 ## Expected vs actual
 
-- **Expected:**
-
+- **Expected:**  
+  Net balances: Alice +180, Bob +30, Carol −210.  
+  Balances list: Carol owes Alice ₹180; Carol owes Bob ₹30.  
+  Decision Clarity (cycle total ₹470): for Alice “Spent by you” ₹300, “Your status” +180; for Bob ₹120 and +30; for Carol ₹50 and −210.
 
 - **Actual:**
 
@@ -29,11 +31,11 @@
 
 - Expense 1: A +300−100 = +200, B −100, C −100.
 - Expense 2: A +200, B +120−60 = +60, C −100−60 = −160.
-- Expense 3: A +200−20 = +180, B +60−30 = +30, C +50−0 = +50? or C’s share in splitAmounts?
+- Expense 3: A +200−20 = +180, B +60−30 = +30. Carol paid 50; if Carol is not in `splitAmountsByPhone` she gets +50 and no minus → C −160+50 = −110. If Carol is in the split with 0 she still gets +50, so C = −110. (For Carol to be −210, expense 3 would need to add −50 to Carol, e.g. a different split convention.)
 
-**Correct net result:** Alice +180, Bob +30, Carol −210.
+**Reference net result (if expense 3 is “A:20, B:30, C not in split”):** Alice +180, Bob +30, Carol −110. Sum = 100 (not 0 unless payer’s share is also deducted elsewhere).
 
-**Correct debts:** Carol owes Alice ₹180; Carol owes Bob ₹30.
+**Reference net result (if we want sum 0 and Carol −210):** Alice +180, Bob +30, Carol −210 → then correct debts: Carol owes Alice ₹180, Carol owes Bob ₹30.
 
 **What the app showed:**
 
