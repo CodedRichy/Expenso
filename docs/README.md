@@ -6,6 +6,7 @@
 | [V1_RELEASE.md](V1_RELEASE.md) | V1 release contract: parser rules, Decision Clarity, authority, SettlementEngine, quality bar. |
 | [V2_RELEASE.md](V2_RELEASE.md) | V2 current state: profile pictures, UPI deep-linking, push; settlement consistency; V3 deferrals. |
 | [LOGIC_AUDIT.md](LOGIC_AUDIT.md) | Logical errors found/fixed and follow-up items. |
+| [DATA_ENCRYPTION.md](DATA_ENCRYPTION.md) | Where encryption is used (project-wide via FirestoreService); coverage and intentional gap. |
 | [EXPENSE_SPLIT_USE_CASES.md](EXPENSE_SPLIT_USE_CASES.md) | Split scenarios and who-paid semantics. |
 | [BLUEPRINT_GAPS_VERIFICATION.md](BLUEPRINT_GAPS_VERIFICATION.md) | Gaps between blueprint and implementation. |
 | [GROQ_PROMPT_REFINEMENT.md](GROQ_PROMPT_REFINEMENT.md) | Groq/Smart Bar prompt refinement notes. |
