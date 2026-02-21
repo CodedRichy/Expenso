@@ -1,0 +1,19 @@
+# Gradient Dark Mode Rule
+
+When implementing dark mode, **invert the gradient direction** for card gradients:
+
+**Light mode (current):**
+- Start: `0xFF1A1A1A` (dark)
+- End: `0xFF6B6B6B` (lighter gray)
+- Direction: `topLeft` → `bottomRight`
+
+**Dark mode (future):**
+- Start: `0xFF6B6B6B` (lighter)
+- End: `0xFF1A1A1A` (darker)
+- Or use inverted light tones that work on dark backgrounds
+
+This applies to:
+- Profile screen cards (`_blackGradientStart`, `_blackGradientEnd`)
+- Group detail cycle stats header
+- Expense dialog header
+- Invitation cards in groups list
