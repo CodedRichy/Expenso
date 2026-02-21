@@ -20,7 +20,7 @@ Future<String> _encrypt(List<int> keyBytes, String plaintext) async {
   final key = SecretKey(keyBytes);
   final nonce = _aes.newNonce();
   final secretBox = await _aes.encrypt(
-    plaintext.codeUnits,
+    utf8.encode(plaintext),
     secretKey: key,
     nonce: nonce,
   );
@@ -41,7 +41,7 @@ Future<String> _decrypt(List<int> keyBytes, String ciphertext) async {
   final secretBox = SecretBox(ct, nonce: nonce, mac: Mac(tag));
   final key = SecretKey(keyBytes);
   final decrypted = await _aes.decrypt(secretBox, secretKey: key);
-  return String.fromCharCodes(decrypted);
+  return utf8.decode(decrypted);
 }
 
 bool _isEncrypted(dynamic v) =>

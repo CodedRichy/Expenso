@@ -965,8 +965,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) {
     final n = name.trim().toLowerCase();
+    debugPrint('[MagicBar] _resolveOneNameToIdWithGuess: looking for "$n"');
     if (n.isEmpty) return (id: null, isGuessed: false);
-    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo.getMembersForGroup(groupId);
+    debugPrint('[MagicBar] All members in group: ${members.map((m) => '${m.id} -> "${repo.getMemberDisplayNameById(m.id)}"').toList()}');
     final currentName = repo.currentUserName;
     final currentId = repo.currentUserId;
     if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
@@ -1004,8 +1006,15 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         similarMatchIds.add(m.id);
       }
     }
-    if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (similarMatchIds.length == 1) return (id: similarMatchIds.single, isGuessed: true);
+    if (exactMatch != null) {
+      debugPrint('[MagicBar] Found exact match for "$n": $exactMatch');
+      return (id: exactMatch, isGuessed: false);
+    }
+    if (similarMatchIds.length == 1) {
+      debugPrint('[MagicBar] Found single similar match for "$n": ${similarMatchIds.single}');
+      return (id: similarMatchIds.single, isGuessed: true);
+    }
+    debugPrint('[MagicBar] No match found for "$n". Similar matches: $similarMatchIds');
     return (id: null, isGuessed: false);
   }
 
