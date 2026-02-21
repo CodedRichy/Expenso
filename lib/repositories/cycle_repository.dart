@@ -308,20 +308,37 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// DEBUG: Add a dummy invitation for testing. Call removeDummyInvitation() to remove.
+  /// DEBUG: Add dummy invitations for testing. Call removeDummyInvitation() to remove.
   void addDummyInvitation() {
-    if (_pendingInvitations.any((i) => i.groupId == 'dummy_test_group')) return;
-    _pendingInvitations.add(const GroupInvitation(
-      groupId: 'dummy_test_group',
-      groupName: 'Weekend Trip with Alice, Bob & Carol',
-      creatorId: 'alice_uid',
-    ));
+    if (_pendingInvitations.any((i) => i.groupId == 'dummy_test_group_1')) return;
+    _pendingInvitations.addAll(const [
+      GroupInvitation(
+        groupId: 'dummy_test_group_1',
+        groupName: 'Weekend Trip',
+        creatorId: 'alice_uid',
+      ),
+      GroupInvitation(
+        groupId: 'dummy_test_group_2',
+        groupName: 'Roommates',
+        creatorId: 'bob_uid',
+      ),
+      GroupInvitation(
+        groupId: 'dummy_test_group_3',
+        groupName: 'Office Lunch',
+        creatorId: 'carol_uid',
+      ),
+      GroupInvitation(
+        groupId: 'dummy_test_group_4',
+        groupName: 'Birthday Party',
+        creatorId: 'dave_uid',
+      ),
+    ]);
     notifyListeners();
   }
 
-  /// DEBUG: Remove the dummy invitation.
+  /// DEBUG: Remove all dummy invitations.
   void removeDummyInvitation() {
-    _pendingInvitations.removeWhere((i) => i.groupId == 'dummy_test_group');
+    _pendingInvitations.removeWhere((i) => i.groupId.startsWith('dummy_test_group'));
     notifyListeners();
   }
 

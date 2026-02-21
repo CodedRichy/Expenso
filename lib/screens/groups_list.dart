@@ -541,8 +541,11 @@ class _GroupsListState extends State<GroupsList> {
                               ],
                             ),
                           ),
-                          if (repo.pendingInvitations.isNotEmpty)
+                          if (repo.pendingInvitations.isNotEmpty) ...[
+                            const SizedBox(height: 16),
                             _buildInvitationsSection(context, repo),
+                            const SizedBox(height: 16),
+                          ],
                           Expanded(
                             child: ListView.builder(
                               padding: const EdgeInsets.only(bottom: 88),
