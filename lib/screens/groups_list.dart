@@ -48,6 +48,7 @@ class _GroupsListState extends State<GroupsList> {
     );
   }
 
+  // ANIMATION: Remove TweenAnimationBuilder wrapper if animations not wanted
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
       const Color(0xFF1A1A1A),
@@ -57,9 +58,22 @@ class _GroupsListState extends State<GroupsList> {
     ];
     final bgColor = colors[index % colors.length];
     
-    return GestureDetector(
-      onTap: () => _showInvitationSheet(context, invitation, repo),
-      child: Container(
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 300 + (index * 80)),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: child,
+          ),
+        );
+      },
+      child: GestureDetector(
+        onTap: () => _showInvitationSheet(context, invitation, repo),
+        child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
@@ -130,6 +144,7 @@ class _GroupsListState extends State<GroupsList> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
