@@ -27,7 +27,7 @@ class SettlementEngine {
   }
 
   static Map<String, double> _buildNetBalances(List<Expense> expenses, List<Member> members) {
-    final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
+    final ids = members.map((m) => m.id).toSet();
     final Map<String, double> net = {};
     for (final id in ids) {
       net[id] = 0.0;
@@ -48,7 +48,7 @@ class SettlementEngine {
       
       if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
         for (final entry in expense.splitAmountsById!.entries) {
-          if (!entry.key.startsWith('p_') && ids.contains(entry.key)) {
+          if (ids.contains(entry.key)) {
             final splitAmount = entry.value;
             if (!splitAmount.isNaN && !splitAmount.isInfinite) {
               net[entry.key] = (net[entry.key] ?? 0) - splitAmount;
@@ -59,7 +59,7 @@ class SettlementEngine {
         final perShare = expense.amount / participantIds.length;
         if (perShare.isNaN || perShare.isInfinite) continue;
         for (final uid in participantIds) {
-          if (!uid.startsWith('p_') && ids.contains(uid)) {
+          if (ids.contains(uid)) {
             net[uid] = (net[uid] ?? 0) - perShare;
           }
         }
