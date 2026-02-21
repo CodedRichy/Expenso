@@ -195,6 +195,7 @@ class _InviteMembersState extends State<InviteMembers> {
         return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -625,8 +626,8 @@ class _InviteMembersState extends State<InviteMembers> {
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
-                top: 20,
-                bottom: 20 + MediaQuery.of(context).padding.bottom,
+                top: 12,
+                bottom: 12 + MediaQuery.of(context).padding.bottom,
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF7F7F8),
