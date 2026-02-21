@@ -6,7 +6,8 @@ We are currently in active development for V1.
 | Version | Supported          |
 | ------- | ------------------ |
 | 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 2.0.x   | :white_check_mark: |
+| < 2.0   | :x:                |
 
 ## Reporting a Vulnerability
 If you find a bug that compromises user data, UPI IDs, or the settlement engine:
