@@ -242,7 +242,12 @@ class CycleRepository extends ChangeNotifier {
   final Map<String, Map<String, dynamic>> _userCache = {};
 
   StreamSubscription<List<DocView>>? _groupsSub;
+  StreamSubscription<List<DocView>>? _invitationsSub;
   final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
+
+  /// Pending group invitations for the current user.
+  final List<GroupInvitation> _pendingInvitations = [];
+  List<GroupInvitation> get pendingInvitations => List.unmodifiable(_pendingInvitations);
 
   /// True while waiting for the first Firestore groups snapshot (for skeleton UX).
   bool get groupsLoading => _groupsLoading;
@@ -260,6 +265,7 @@ class CycleRepository extends ChangeNotifier {
     if (_currentUserId.isEmpty) return;
     _streamError = null;
     _groupsSub?.cancel();
+    _invitationsSub?.cancel();
     _groupsLoading = true;
     notifyListeners();
     _groupsSub = FirestoreService.instance.groupsStream(_currentUserId).listen(
@@ -272,12 +278,53 @@ class CycleRepository extends ChangeNotifier {
         notifyListeners();
       },
     );
+    if (_currentUserPhone.isNotEmpty) {
+      _invitationsSub = FirestoreService.instance.pendingInvitationsStream(_currentUserPhone).listen(
+        _onInvitationsSnapshot,
+        onError: (e, st) {
+          debugPrint('CycleRepository invitationsStream error: $e');
+          if (kDebugMode && st != null) debugPrint(st.toString());
+        },
+      );
+    }
+  }
+
+  void _onInvitationsSnapshot(List<DocView> docs) {
+    _pendingInvitations.clear();
+    for (final doc in docs) {
+      final data = doc.data();
+      _pendingInvitations.add(GroupInvitation(
+        groupId: doc.id,
+        groupName: data['groupName'] as String? ?? 'Unknown Group',
+        creatorId: data['creatorId'] as String? ?? '',
+      ));
+    }
+    notifyListeners();
+  }
+
+  /// DEBUG: Add a dummy invitation for testing. Call removeDummyInvitation() to remove.
+  void addDummyInvitation() {
+    _pendingInvitations.add(const GroupInvitation(
+      groupId: 'dummy_test_group',
+      groupName: 'Weekend Trip with Alice, Bob & Carol',
+      creatorId: 'alice_uid',
+    ));
+    notifyListeners();
+  }
+
+  /// DEBUG: Remove the dummy invitation.
+  void removeDummyInvitation() {
+    _pendingInvitations.removeWhere((i) => i.groupId == 'dummy_test_group');
+    notifyListeners();
   }
 
   void _stopListening() {
     _groupsSub?.cancel();
     _groupsSub = null;
+    _invitationsSub?.cancel();
+    _invitationsSub = null;
     _groupsLoading = false;
+    _pendingInvitations.clear();
     for (final sub in _expenseSubs.values) {
       sub.cancel();
     }
@@ -614,6 +661,22 @@ class CycleRepository extends ChangeNotifier {
       creatorId: g.creatorId,
       memberIds: [...g.memberIds, pid],
     );
+    notifyListeners();
+  }
+
+  /// Accept a group invitation: moves current user from pending to members.
+  Future<void> acceptInvitation(String groupId) async {
+    if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) return;
+    await FirestoreService.instance.acceptInvitation(groupId, _currentUserId, _currentUserPhone);
+    _pendingInvitations.removeWhere((i) => i.groupId == groupId);
+    notifyListeners();
+  }
+
+  /// Decline a group invitation: removes current user from pending members.
+  Future<void> declineInvitation(String groupId) async {
+    if (_currentUserPhone.isEmpty) return;
+    await FirestoreService.instance.declineInvitation(groupId, _currentUserPhone);
+    _pendingInvitations.removeWhere((i) => i.groupId == groupId);
     notifyListeners();
   }
 

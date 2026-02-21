@@ -20,6 +20,102 @@ class _GroupsListState extends State<GroupsList> {
   void initState() {
     super.initState();
     PinnedGroupsService.instance.load();
+    // DEBUG: Add dummy invitation for testing
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CycleRepository.instance.addDummyInvitation();
+    });
+  }
+
+  Widget _buildInvitationTile(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E5E5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  invitation.groupName,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You\'ve been invited',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF6B6B6B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await repo.declineInvitation(invitation.groupId);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                      );
+                    }
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF6B6B6B),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text('Decline'),
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await repo.acceptInvitation(invitation.groupId);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Joined ${invitation.groupName}'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                child: const Text('Join'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   /// Sort groups: pinned first (in pin order), then unpinned in repo order.
@@ -168,8 +264,29 @@ class _GroupsListState extends State<GroupsList> {
                           Expanded(
                             child: ListView.builder(
                               padding: const EdgeInsets.only(bottom: 88),
-                              itemCount: groups.length,
+                              itemCount: groups.length + (repo.pendingInvitations.isNotEmpty ? repo.pendingInvitations.length + 1 : 0),
                               itemBuilder: (context, index) {
+                                if (repo.pendingInvitations.isNotEmpty) {
+                                  if (index == 0) {
+                                    return Padding(
+                                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                                      child: Text(
+                                        'INVITATIONS',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF9B9B9B),
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  if (index <= repo.pendingInvitations.length) {
+                                    final invitation = repo.pendingInvitations[index - 1];
+                                    return _buildInvitationTile(context, invitation, repo);
+                                  }
+                                  index -= repo.pendingInvitations.length + 1;
+                                }
                                 final group = groups[index];
                                 final isSettled = group.status == 'settled';
                                 final isClosing = group.status == 'closing';

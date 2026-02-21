@@ -67,7 +67,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 |-------|--------|--------|
 | `/splash` | SplashScreen | Shown first; logo then navigates to `/`. |
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
-| `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. |
+| `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. **Pending Invitations** section at top when user has been invited to groups (via phone number); shows group name with Join/Decline buttons. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
 | `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). Invite link: `expenso://join/<groupId>` generated and copied to clipboard. Contacts: permission-denial message; suggestions deduped against existing + pending members. |
 | `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Settle up**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
@@ -79,7 +79,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 |-------|--------|--------|
 | `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. Shows description, amount, date, payer, **split type** (Even/Exact/Exclude from Firestore), and **people involved** (from saved `splits`; participant resolution uses normalized phone so parser-derived participants are not dropped). |
 | `/undo-expense` | UndoExpense | Shown after add (expense input or Magic Bar). Args: `groupId`, `expenseId`, `description`, `amount`. 5s timer then auto-dismiss; Undo deletes from Firestore and pops. |
-| `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. **Removal Guard:** Creator can only remove members with zero balance; otherwise blocked with alert ("Settle their outstanding debt before removing them"). |
+| `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. **Removal Guard:** Creator can only remove members with zero balance; otherwise blocked with alert ("Settle their outstanding debt before removing them"). Pending members show gray name with **Invited** badge; creator sees FAB to add more members. |
 | `/member-change` | MemberChange | Confirm member removal. Args: `groupId`, `groupName`, `memberId`, `memberPhone`, `action`. On confirm, calls `repo.removeMemberFromGroup`. |
 | `/delete-group` | DeleteGroup | Confirm delete. |
 
@@ -119,7 +119,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 03218).
 
 - **users** — Document ID = Firebase UID. Fields: `displayName`, `phoneNumber`, `photoURL`, `upiId`.
-- **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone).
+- **groups** — Fields: `groupName`, `members` (array of UIDs), `creatorId`, `activeCycleId`, `cycleStatus` ('active' | 'settling'), optional `pendingMembers` (phone/name for invite-by-phone), `pendingPhones` (flat array of normalized phone numbers for queryable invitations).
 - **groups/{groupId}/expenses** — Current-cycle expenses. All person references are by member id (uid). Fields: `groupId`, `amount`, `payerId`, `splitType`, `participantIds`, `splits` (uid → amount_owed), `description`, `date`, `dateSortKey`, optional `category`.
 - **groups/{groupId}/settled_cycles/{cycleId}** — One doc per settled cycle: `startDate`, `endDate`. Subcollection **expenses** holds archived expense docs (same shape).
 

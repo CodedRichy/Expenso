@@ -149,6 +149,69 @@ class FirestoreService {
     return _firestore.doc(FirestorePaths.groupDoc(groupId)).get();
   }
 
+  /// Stream of groups where [phone] (normalized) is in pendingPhones - i.e. pending invitations.
+  Stream<List<DocView>> pendingInvitationsStream(String phone) {
+    final normalizedPhone = _normalizePhone(phone);
+    return _firestore
+        .collection(FirestorePaths.groups)
+        .where('pendingPhones', arrayContains: normalizedPhone)
+        .snapshots()
+        .asyncMap((s) async {
+          final docs = s.docs;
+          if (_encryption != null && docs.isNotEmpty) {
+            await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
+            final decryptedDocs = await Future.wait(docs.map((d) async {
+              final decrypted = await _encryption!.decryptGroupData(d.data(), d.id);
+              return _DecryptedDocView(d.id, decrypted) as DocView;
+            }));
+            return decryptedDocs;
+          }
+          return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+        });
+  }
+
+  /// Accept an invitation: move user from pendingMembers to members.
+  Future<void> acceptInvitation(String groupId, String uid, String phone) async {
+    final normalizedPhone = _normalizePhone(phone);
+    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      
+      final members = List<String>.from(data['members'] as List? ?? []);
+      if (members.contains(uid)) return;
+      
+      final pendingMembers = List<Map<String, dynamic>>.from(
+        (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
+      );
+      List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
+      
+      pendingMembers.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
+      pendingPhones.remove(normalizedPhone);
+      members.add(uid);
+      
+      Map<String, dynamic> toWrite = {
+        'members': members,
+        'pendingMembers': pendingMembers,
+        'pendingPhones': pendingPhones,
+      };
+      if (_encryption != null) {
+        await _encryption!.ensureGroupKey(groupId);
+        final encrypted = await _encryption!.encryptGroupDataWithKey(groupId, {
+          'pendingMembers': pendingMembers,
+        });
+        toWrite['pendingMembers'] = encrypted['pendingMembers'];
+      }
+      tx.update(ref, toWrite);
+    });
+  }
+
+  /// Decline an invitation: just remove from pendingMembers.
+  Future<void> declineInvitation(String groupId, String phone) async {
+    await removePendingMemberFromGroup(groupId, phone);
+  }
+
   static const int _deleteBatchSize = 500;
 
   /// Deletes all documents in [ref] in batches (Firestore batch limit 500).
@@ -213,6 +276,7 @@ class FirestoreService {
 
   /// Add a pending member (phone + name) when inviting by phone (no UID yet).
   Future<void> addPendingMemberToGroup(String groupId, String phone, String name) async {
+    final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(ref);
@@ -221,9 +285,13 @@ class FirestoreService {
       List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(
         (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
       );
-      if (!list.any((e) => e['phone'] == phone)) {
+      List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
+      if (!list.any((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone)) {
         list.add({'phone': phone, 'name': name});
-        Map<String, dynamic> toWrite = {'pendingMembers': list};
+        if (!pendingPhones.contains(normalizedPhone)) {
+          pendingPhones.add(normalizedPhone);
+        }
+        Map<String, dynamic> toWrite = {'pendingMembers': list, 'pendingPhones': pendingPhones};
         if (_encryption != null) {
           await _encryption!.ensureGroupKey(groupId);
           toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
@@ -231,6 +299,12 @@ class FirestoreService {
         tx.update(ref, toWrite);
       }
     });
+  }
+
+  static String _normalizePhone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 10) return digits.substring(digits.length - 10);
+    return digits;
   }
 
   /// Remove a member UID from group.
@@ -243,6 +317,7 @@ class FirestoreService {
 
   /// Remove a pending member by phone.
   Future<void> removePendingMemberFromGroup(String groupId, String phone) async {
+    final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(ref);
@@ -251,8 +326,10 @@ class FirestoreService {
       final list = List<Map<String, dynamic>>.from(
         (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
       );
-      list.removeWhere((e) => e['phone'] == phone);
-      Map<String, dynamic> toWrite = {'pendingMembers': list};
+      List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
+      list.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
+      pendingPhones.remove(normalizedPhone);
+      Map<String, dynamic> toWrite = {'pendingMembers': list, 'pendingPhones': pendingPhones};
       if (_encryption != null) {
         await _encryption!.ensureGroupKey(groupId);
         toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
