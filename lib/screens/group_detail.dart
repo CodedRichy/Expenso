@@ -1089,11 +1089,13 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         }
         return name;
       }).toList();
+      debugPrint('[MagicBar] Member names sent to AI: $memberNames');
 
       final result = await GroqExpenseParserService.parse(
         userInput: input,
         groupMemberNames: memberNames,
       );
+      debugPrint('[MagicBar] AI result: amount=${result.amount}, desc=${result.description}, participants=${result.participantNames}, payer=${result.payerName}');
       if (!mounted) return;
       setState(() => _loading = false);
       _controller.clear();
