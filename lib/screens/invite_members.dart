@@ -622,8 +622,14 @@ class _InviteMembersState extends State<InviteMembers> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: 20 + MediaQuery.of(context).padding.bottom,
+              ),
               decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F8),
                 border: Border(
                   top: BorderSide(
                     color: const Color(0xFFE5E5E5),
