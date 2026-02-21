@@ -31,9 +31,11 @@ class FirestorePaths {
   static const String groups = 'groups';
   static const String expenses = 'expenses';
   static const String settledCycles = 'settled_cycles';
+  static const String systemMessages = 'system_messages';
 
   static String groupDoc(String groupId) => '$groups/$groupId';
   static String groupExpenses(String groupId) => '$groups/$groupId/$expenses';
+  static String groupSystemMessages(String groupId) => '$groups/$groupId/$systemMessages';
   static String groupSettledCycle(String groupId, String cycleId) =>
       '$groups/$groupId/$settledCycles/$cycleId';
   static String groupSettledCycleExpenses(String groupId, String cycleId) =>
@@ -170,8 +172,8 @@ class FirestoreService {
         });
   }
 
-  /// Accept an invitation: move user from pendingMembers to members.
-  Future<void> acceptInvitation(String groupId, String uid, String phone) async {
+  /// Accept an invitation: move user from pendingMembers to members and add system message.
+  Future<void> acceptInvitation(String groupId, String uid, String phone, {String? userName}) async {
     final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
     await _firestore.runTransaction((tx) async {
@@ -205,11 +207,45 @@ class FirestoreService {
       }
       tx.update(ref, toWrite);
     });
+    if (userName != null && userName.isNotEmpty) {
+      await addSystemMessage(groupId, type: 'joined', userName: userName, odId: uid);
+    }
   }
 
-  /// Decline an invitation: just remove from pendingMembers.
-  Future<void> declineInvitation(String groupId, String phone) async {
+  /// Decline an invitation: just remove from pendingMembers and add a system message.
+  Future<void> declineInvitation(String groupId, String phone, {String? userName}) async {
     await removePendingMemberFromGroup(groupId, phone);
+    if (userName != null && userName.isNotEmpty) {
+      await addSystemMessage(groupId, type: 'declined', odName: userName);
+    }
+  }
+
+  /// Add a system message to the group (e.g. "Alice joined", "Bob declined").
+  Future<void> addSystemMessage(String groupId, {
+    required String type,
+    String userName = '',
+    String odId = '',
+  }) async {
+    final now = DateTime.now();
+    final id = 'sys_${now.millisecondsSinceEpoch}';
+    final ref = _firestore.collection(FirestorePaths.groupSystemMessages(groupId)).doc(id);
+    await ref.set({
+      'id': id,
+      'type': type,
+      'userId': odId,
+      'userName': userName,
+      'timestamp': now.millisecondsSinceEpoch,
+    });
+  }
+
+  /// Stream of system messages for a group.
+  Stream<List<Map<String, dynamic>>> systemMessagesStream(String groupId) {
+    return _firestore
+        .collection(FirestorePaths.groupSystemMessages(groupId))
+        .orderBy('timestamp', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((s) => s.docs.map((d) => d.data()).toList());
   }
 
   static const int _deleteBatchSize = 500;

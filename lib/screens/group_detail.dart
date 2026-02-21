@@ -186,9 +186,10 @@ class GroupDetail extends StatelessWidget {
         }
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
+        final systemMessages = repo.getSystemMessages(groupId);
         final isPassive = activeCycle.status == CycleStatus.settling;
         final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
-        final hasExpenses = expenses.isNotEmpty;
+        final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
 
         return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -533,6 +534,65 @@ class GroupDetail extends StatelessWidget {
                         childCount: expenses.length,
                       ),
                     ),
+                    if (systemMessages.isNotEmpty)
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final msg = systemMessages[index];
+                            String text;
+                            switch (msg.type) {
+                              case 'joined':
+                                text = '${msg.userName} joined the group';
+                                break;
+                              case 'declined':
+                                text = '${msg.userName} declined the invitation';
+                                break;
+                              case 'left':
+                                text = '${msg.userName} left the group';
+                                break;
+                              case 'created':
+                                text = '${msg.userName} created the group';
+                                break;
+                              default:
+                                text = '${msg.userName} ${msg.type}';
+                            }
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF9B9B9B),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      text,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: const Color(0xFF9B9B9B),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    msg.date,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: const Color(0xFFB0B0B0),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          childCount: systemMessages.length,
+                        ),
+                      ),
                   ],
                 ),
               )

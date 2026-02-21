@@ -83,3 +83,22 @@ class GroupInvitation {
     required this.creatorId,
   });
 }
+
+/// A system message shown in the group activity feed (e.g. "Alice joined", "Bob declined").
+class SystemMessage {
+  final String id;
+  final String type; // 'joined', 'declined', 'left', 'created'
+  final String userId;
+  final String userName;
+  final String date;
+  final int timestamp;
+
+  const SystemMessage({
+    required this.id,
+    required this.type,
+    required this.userId,
+    required this.userName,
+    required this.date,
+    required this.timestamp,
+  });
+}

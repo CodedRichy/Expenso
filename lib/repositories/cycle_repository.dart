@@ -244,10 +244,16 @@ class CycleRepository extends ChangeNotifier {
   StreamSubscription<List<DocView>>? _groupsSub;
   StreamSubscription<List<DocView>>? _invitationsSub;
   final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _systemMessageSubs = {};
 
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
   List<GroupInvitation> get pendingInvitations => List.unmodifiable(_pendingInvitations);
+
+  /// System messages per group (groupId -> list of messages).
+  final Map<String, List<SystemMessage>> _systemMessagesByGroup = {};
+  List<SystemMessage> getSystemMessages(String groupId) =>
+      List.unmodifiable(_systemMessagesByGroup[groupId] ?? []);
 
   /// True while waiting for the first Firestore groups snapshot (for skeleton UX).
   bool get groupsLoading => _groupsLoading;
@@ -389,6 +395,11 @@ class CycleRepository extends ChangeNotifier {
       sub.cancel();
     }
     _expenseSubs.clear();
+    for (final sub in _systemMessageSubs.values) {
+      sub.cancel();
+    }
+    _systemMessageSubs.clear();
+    _systemMessagesByGroup.clear();
   }
 
   void restartListening() {
@@ -404,6 +415,13 @@ class CycleRepository extends ChangeNotifier {
       if (!newIds.contains(id)) {
         _expenseSubs[id]?.cancel();
         _expenseSubs.remove(id);
+      }
+    }
+    for (final id in _systemMessageSubs.keys.toList()) {
+      if (!newIds.contains(id)) {
+        _systemMessageSubs[id]?.cancel();
+        _systemMessageSubs.remove(id);
+        _systemMessagesByGroup.remove(id);
       }
     }
 
@@ -482,6 +500,14 @@ class CycleRepository extends ChangeNotifier {
           },
         );
       }
+      if (!_systemMessageSubs.containsKey(groupId)) {
+        _systemMessageSubs[groupId] = FirestoreService.instance.systemMessagesStream(groupId).listen(
+          (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
+          onError: (e, st) {
+            debugPrint('CycleRepository systemMessagesStream($groupId) error: $e');
+          },
+        );
+      }
     }
 
     _loadUsersForMembers(docs);
@@ -524,6 +550,34 @@ class CycleRepository extends ChangeNotifier {
     final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
     _expensesByCycleId[cycleId] = list;
     _refreshGroupAmounts();
+    notifyListeners();
+  }
+
+  void _onSystemMessagesSnapshot(String groupId, List<Map<String, dynamic>> msgs) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    
+    _systemMessagesByGroup[groupId] = msgs.map((m) {
+      final ts = m['timestamp'] as int? ?? 0;
+      final dt = DateTime.fromMillisecondsSinceEpoch(ts);
+      String dateStr;
+      if (dt.year == today.year && dt.month == today.month && dt.day == today.day) {
+        dateStr = 'Today';
+      } else if (dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day) {
+        dateStr = 'Yesterday';
+      } else {
+        dateStr = _formatDate(dt);
+      }
+      return SystemMessage(
+        id: m['id'] as String? ?? '',
+        type: m['type'] as String? ?? '',
+        userId: m['userId'] as String? ?? '',
+        userName: m['userName'] as String? ?? '',
+        date: dateStr,
+        timestamp: ts,
+      );
+    }).toList();
     notifyListeners();
   }
 
@@ -727,7 +781,12 @@ class CycleRepository extends ChangeNotifier {
   /// Accept a group invitation: moves current user from pending to members.
   Future<void> acceptInvitation(String groupId) async {
     if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) return;
-    await FirestoreService.instance.acceptInvitation(groupId, _currentUserId, _currentUserPhone);
+    await FirestoreService.instance.acceptInvitation(
+      groupId,
+      _currentUserId,
+      _currentUserPhone,
+      userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
+    );
     _pendingInvitations.removeWhere((i) => i.groupId == groupId);
     notifyListeners();
   }
@@ -735,7 +794,11 @@ class CycleRepository extends ChangeNotifier {
   /// Decline a group invitation: removes current user from pending members.
   Future<void> declineInvitation(String groupId) async {
     if (_currentUserPhone.isEmpty) return;
-    await FirestoreService.instance.declineInvitation(groupId, _currentUserPhone);
+    await FirestoreService.instance.declineInvitation(
+      groupId,
+      _currentUserPhone,
+      userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
+    );
     _pendingInvitations.removeWhere((i) => i.groupId == groupId);
     notifyListeners();
   }
