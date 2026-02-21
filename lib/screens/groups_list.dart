@@ -51,84 +51,136 @@ class _GroupsListState extends State<GroupsList> {
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
       const Color(0xFF1A1A1A),
+      const Color(0xFF3A3A3A),
+      const Color(0xFF555555),
       const Color(0xFF6B6B6B),
-      const Color(0xFF5B7C99),
-      const Color(0xFF9B9B9B),
     ];
     final bgColor = colors[index % colors.length];
     
-    return GestureDetector(
-      onTap: () => _showInvitationSheet(context, invitation, repo),
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [bgColor, bgColor.withOpacity(0.8)],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 300 + (index * 100)),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: child,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: bgColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+        );
+      },
+      child: _InvitationCardContent(
+        invitation: invitation,
+        repo: repo,
+        bgColor: bgColor,
+        onTap: () => _showInvitationSheet(context, invitation, repo),
+      ),
+    );
+  }
+}
+
+class _InvitationCardContent extends StatefulWidget {
+  final GroupInvitation invitation;
+  final CycleRepository repo;
+  final Color bgColor;
+  final VoidCallback onTap;
+
+  const _InvitationCardContent({
+    required this.invitation,
+    required this.repo,
+    required this.bgColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_InvitationCardContent> createState() => _InvitationCardContentState();
+}
+
+class _InvitationCardContentState extends State<_InvitationCardContent> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: 140,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [widget.bgColor, widget.bgColor.withOpacity(0.8)],
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: widget.bgColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    invitation.groupName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.group_add_outlined,
-                        size: 14,
-                        color: Colors.white.withOpacity(0.7),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.invitation.groupName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        height: 1.2,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Tap to view',
-                        style: TextStyle(
-                          fontSize: 11,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.group_add_outlined,
+                          size: 14,
                           color: Colors.white.withOpacity(0.7),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tap to view',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -302,98 +354,6 @@ class _GroupsListState extends State<GroupsList> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInvitationTile(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  invitation.groupName,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'You\'ve been invited',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: const Color(0xFF6B6B6B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextButton(
-                onPressed: () async {
-                  try {
-                    await repo.declineInvitation(invitation.groupId);
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
-                      );
-                    }
-                  }
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF6B6B6B),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                child: const Text('Decline'),
-              ),
-              const SizedBox(width: 4),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await repo.acceptInvitation(invitation.groupId);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Joined ${invitation.groupName}'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
-                      );
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                ),
-                child: const Text('Join'),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

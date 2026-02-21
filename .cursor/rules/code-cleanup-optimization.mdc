@@ -1,0 +1,41 @@
+---
+description: Self-review and optimize all code changes before finishing
+alwaysApply: true
+---
+
+# Code Cleanup & Optimization Protocol
+
+After adding or modifying code, **always perform a self-review pass** before considering the task complete.
+
+## Cleanup Checklist
+
+1. **Remove dead code**: Unused imports, unreachable branches, orphaned variables
+2. **Eliminate redundancy**: DRY violations, repeated logic that should be extracted
+3. **Simplify conditionals**: Flatten nested ifs, use early returns, prefer guard clauses
+4. **Optimize loops**: Avoid unnecessary iterations, use appropriate collection methods
+5. **Fix naming**: Ensure variables/functions have clear, intention-revealing names
+
+## Optimization Standards
+
+- **Minimize allocations**: Reuse objects where safe; avoid creating objects inside hot loops
+- **Prefer const**: Use `const` constructors and `final` variables in Dart/Flutter
+- **Lazy initialization**: Defer expensive operations until actually needed
+- **Efficient data structures**: Use Sets for lookups, Maps for key-value access
+- **Async best practices**: Avoid blocking; use `Future.wait` for parallel operations
+
+## Review Process
+
+After writing code:
+1. Re-read the entire modified section
+2. Ask: "Can this be shorter without losing clarity?"
+3. Ask: "Is there any duplication I can extract?"
+4. Ask: "Are there any edge cases or error paths I missed?"
+5. Run linter checks (`ReadLints`) and fix issues introduced
+
+## Quality Bar
+
+The final code should be:
+- **Readable**: A new developer understands it in one pass
+- **Efficient**: No obvious performance anti-patterns
+- **Robust**: Handles errors and edge cases gracefully
+- **Minimal**: No unnecessary abstraction or over-engineering
