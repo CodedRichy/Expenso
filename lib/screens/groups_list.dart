@@ -34,77 +34,98 @@ class _GroupsListState extends State<GroupsList> {
 
   Widget _buildInvitationsSection(BuildContext context, CycleRepository repo) {
     final invitations = repo.pendingInvitations;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          child: Text(
-            'INVITATIONS',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF9B9B9B),
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 56,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: invitations.length,
-            itemBuilder: (context, index) {
-              final invitation = invitations[index];
-              return _buildInvitationCard(context, invitation, repo);
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
+    return SizedBox(
+      height: 88,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: invitations.length,
+        itemBuilder: (context, index) {
+          final invitation = invitations[index];
+          return _buildInvitationCard(context, invitation, repo, index);
+        },
+      ),
     );
   }
 
-  Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
+  Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
+    final colors = [
+      const Color(0xFF2D3436),
+      const Color(0xFF636E72),
+      const Color(0xFF4A6572),
+      const Color(0xFF344955),
+    ];
+    final bgColor = colors[index % colors.length];
+    
     return GestureDetector(
-      onTap: () => _showInvitationDialog(context, invitation, repo),
+      onTap: () => _showInvitationSheet(context, invitation, repo),
       child: Container(
+        width: 140,
         margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E5E5)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [bgColor, bgColor.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: bgColor.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Text(
-              invitation.groupName,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1A1A1A),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    invitation.groupName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.group_add_outlined,
+                        size: 14,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tap to view',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -113,116 +134,173 @@ class _GroupsListState extends State<GroupsList> {
     );
   }
 
-  void _showInvitationDialog(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
-    showDialog(
+  void _showInvitationSheet(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(14),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 12,
+          bottom: 24 + MediaQuery.of(ctx).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E5E5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF2D3436), Color(0xFF636E72)],
                 ),
-                child: Center(
-                  child: Text(
-                    invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                invitation.groupName,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
-                textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              invitation.groupName,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'You\'ve been invited to join this group',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: const Color(0xFF6B6B6B),
-                ),
-                textAlign: TextAlign.center,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F8),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 24),
-              Row(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        try {
-                          await repo.declineInvitation(invitation.groupId);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
-                            );
-                          }
-                        }
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B6B6B),
-                        side: const BorderSide(color: Color(0xFFE5E5E5)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Decline'),
-                    ),
+                  Icon(
+                    Icons.mail_outline_rounded,
+                    size: 16,
+                    color: const Color(0xFF6B6B6B),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        try {
-                          await repo.acceptInvitation(invitation.groupId);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Joined ${invitation.groupName}'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
-                            );
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                      child: const Text('Join'),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Group invitation',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: const Color(0xFF6B6B6B),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        await repo.declineInvitation(invitation.groupId);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Decline',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF6B6B6B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        await repo.acceptInvitation(invitation.groupId);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Joined ${invitation.groupName}'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Join Group',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
