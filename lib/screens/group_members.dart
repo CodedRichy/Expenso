@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
+import '../utils/settlement_engine.dart';
 import '../widgets/member_avatar.dart';
 
 class GroupMembers extends StatelessWidget {
@@ -19,7 +20,26 @@ class GroupMembers extends StatelessWidget {
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
+        final currentGroup = repo.getGroup(group.id);
+        if (currentGroup == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          });
+          return const Scaffold(
+            backgroundColor: Color(0xFFF7F7F8),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
         final listMembers = repo.getMembersForGroup(group.id);
+        final activeCycle = repo.getActiveCycle(group.id);
+        final netBalances = SettlementEngine.computeNetBalances(
+          activeCycle.expenses,
+          listMembers,
+        );
+        final currentUserId = repo.currentUserId;
+        
         return Scaffold(
           backgroundColor: const Color(0xFFF7F7F8),
           body: SafeArea(
@@ -96,18 +116,68 @@ class GroupMembers extends StatelessWidget {
                               ...listMembers.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final member = entry.value;
+                                final memberBalance = netBalances[member.id] ?? 0.0;
+                                final isCurrentUser = member.id == currentUserId;
+                                final isCreator = member.id == currentGroup.creatorId;
+                                final canRemove = repo.isCreator(group.id, currentUserId) && 
+                                    !isCreator && 
+                                    !isCurrentUser;
+                                
+                                String balanceStatusText;
+                                Color balanceStatusColor;
+                                if (memberBalance.abs() < 0.01) {
+                                  balanceStatusText = 'Settled up';
+                                  balanceStatusColor = const Color(0xFF6B6B6B);
+                                } else if (isCurrentUser) {
+                                  if (memberBalance > 0) {
+                                    balanceStatusText = 'You get back ₹${memberBalance.toStringAsFixed(0)}';
+                                    balanceStatusColor = const Color(0xFF2E7D32);
+                                  } else {
+                                    balanceStatusText = 'You owe ₹${(-memberBalance).toStringAsFixed(0)}';
+                                    balanceStatusColor = const Color(0xFFD32F2F);
+                                  }
+                                } else {
+                                  if (memberBalance > 0) {
+                                    balanceStatusText = 'You owe them ₹${memberBalance.toStringAsFixed(0)}';
+                                    balanceStatusColor = const Color(0xFFD32F2F);
+                                  } else {
+                                    balanceStatusText = 'Owes you ₹${(-memberBalance).toStringAsFixed(0)}';
+                                    balanceStatusColor = const Color(0xFF2E7D32);
+                                  }
+                                }
+                                
                                 return InkWell(
-                                  onTap: () {
+                                  onTap: canRemove ? () {
+                                    if (memberBalance.abs() >= 0.01) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Cannot Remove Member'),
+                                          content: const Text(
+                                            'Cannot remove this member. Settle their outstanding debt before removing them from the group.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx),
+                                              child: const Text('OK'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     Navigator.pushNamed(
                                       context,
                                       '/member-change',
                                       arguments: {
+                                        'groupId': group.id,
                                         'groupName': group.name,
+                                        'memberId': member.id,
                                         'memberPhone': member.phone,
                                         'action': 'remove',
                                       },
                                     );
-                                  },
+                                  } : null,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
@@ -145,25 +215,30 @@ class GroupMembers extends StatelessWidget {
                                                       color: const Color(0xFF1A1A1A),
                                                     ),
                                                   ),
-                                                  if (member.id == group.creatorId) ...[
+                                                  if (isCreator) ...[
                                                     const SizedBox(width: 6),
                                                     const Text('👑', style: TextStyle(fontSize: 16)),
                                                   ],
                                                 ],
                                               ),
-                                              if (member.name.isNotEmpty) ...[
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  member.phone,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: const Color(0xFF9B9B9B),
-                                                  ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                balanceStatusText,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: balanceStatusColor,
+                                                  fontWeight: FontWeight.w500,
                                                 ),
-                                              ],
+                                              ),
                                             ],
                                           ),
                                         ),
+                                        if (canRemove)
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: const Color(0xFF9B9B9B),
+                                            size: 20,
+                                          ),
                                       ],
                                     ),
                                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../repositories/cycle_repository.dart';
 
 class MemberChange extends StatelessWidget {
   final String groupName;
@@ -15,18 +16,29 @@ class MemberChange extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
+    final String displayGroupId;
     final String displayGroupName;
+    final String displayMemberId;
     final String displayMemberPhone;
     final String displayAction;
     if (args is Map<String, dynamic>) {
+      displayGroupId = args['groupId'] as String? ?? '';
       displayGroupName = args['groupName'] as String? ?? groupName;
+      displayMemberId = args['memberId'] as String? ?? '';
       displayMemberPhone = args['memberPhone'] as String? ?? memberPhone;
       displayAction = args['action'] as String? ?? action;
     } else {
+      displayGroupId = '';
       displayGroupName = groupName;
+      displayMemberId = '';
       displayMemberPhone = args is String ? args : memberPhone;
       displayAction = action;
     }
+    
+    final repo = CycleRepository.instance;
+    final memberDisplayName = displayMemberId.isNotEmpty 
+        ? repo.getMemberDisplayName(displayMemberPhone)
+        : displayMemberPhone;
     
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -89,7 +101,7 @@ class MemberChange extends StatelessWidget {
                         Text(
                           displayAction == 'leave'
                               ? 'You will be removed from this group'
-                              : '$displayMemberPhone will be removed from this group',
+                              : '$memberDisplayName will be removed from this group',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
@@ -111,10 +123,13 @@ class MemberChange extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () {
+                                if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
+                                  repo.removeMemberFromGroup(displayGroupId, displayMemberId);
+                                }
                                 Navigator.pop(context);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A1A1A),
+                                backgroundColor: const Color(0xFFD32F2F),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
@@ -124,7 +139,7 @@ class MemberChange extends StatelessWidget {
                                 minimumSize: const Size(double.infinity, 0),
                               ),
                               child: Text(
-                                'Confirm',
+                                'Remove',
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w500,

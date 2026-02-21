@@ -79,8 +79,8 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 |-------|--------|--------|
 | `/edit-expense` | EditExpense | Args: `expenseId`, `groupId`. Shows description, amount, date, payer, **split type** (Even/Exact/Exclude from Firestore), and **people involved** (from saved `splits`; participant resolution uses normalized phone so parser-derived participants are not dropped). |
 | `/undo-expense` | UndoExpense | Shown after add (expense input or Magic Bar). Args: `groupId`, `expenseId`, `description`, `amount`. 5s timer then auto-dismiss; Undo deletes from Firestore and pops. |
-| `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. |
-| `/member-change` | MemberChange | Change one member. |
+| `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. Each member shows real-time balance status ("Owes you ₹X", "You owe them ₹X", "Settled up"). **Removal Guard:** Creator can only remove members with zero balance; otherwise blocked with alert. |
+| `/member-change` | MemberChange | Confirm member removal. Args: `groupId`, `groupName`, `memberId`, `memberPhone`, `action`. On confirm, calls `repo.removeMemberFromGroup`. |
 | `/delete-group` | DeleteGroup | Confirm delete. |
 
 ### Settlement and history
