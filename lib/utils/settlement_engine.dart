@@ -34,22 +34,30 @@ class SettlementEngine {
     }
 
     for (final expense in expenses) {
+      if (expense.amount <= 0 || expense.amount.isNaN || expense.amount.isInfinite) continue;
+      
       final payerId = expense.paidById.isNotEmpty ? expense.paidById : '';
       if (payerId.isNotEmpty && ids.contains(payerId)) {
         net[payerId] = (net[payerId] ?? 0) + expense.amount;
       }
+      
       final participantIds = expense.participantIds.isNotEmpty
-          ? expense.participantIds
+          ? expense.participantIds.where((id) => ids.contains(id)).toList()
           : ids.toList();
+      if (participantIds.isEmpty) continue;
+      
       if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
         for (final entry in expense.splitAmountsById!.entries) {
           if (!entry.key.startsWith('p_') && ids.contains(entry.key)) {
-            net[entry.key] = (net[entry.key] ?? 0) - entry.value;
+            final splitAmount = entry.value;
+            if (!splitAmount.isNaN && !splitAmount.isInfinite) {
+              net[entry.key] = (net[entry.key] ?? 0) - splitAmount;
+            }
           }
         }
       } else {
-        if (participantIds.isEmpty) continue;
         final perShare = expense.amount / participantIds.length;
+        if (perShare.isNaN || perShare.isInfinite) continue;
         for (final uid in participantIds) {
           if (!uid.startsWith('p_') && ids.contains(uid)) {
             net[uid] = (net[uid] ?? 0) - perShare;

@@ -620,22 +620,11 @@ class _InviteMembersState extends State<InviteMembers> {
                         '/group-detail',
                         arguments: updatedGroup,
                       );
+                    } else {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
                     }
                   } else {
-                    final newGroup = Group(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: displayGroupName,
-                      status: 'open',
-                      amount: 0,
-                      statusLine: 'No expenses yet',
-                      creatorId: repo.currentUserId,
-                      memberIds: [],
-                    );
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/group-detail',
-                      arguments: newGroup,
-                    );
+                    Navigator.of(context).popUntil((route) => route.isFirst);
                   }
                 },
                 style: ElevatedButton.styleFrom(

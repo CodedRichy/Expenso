@@ -58,7 +58,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return;
     final parsed = parseExpense(input);
-    if (parsed.amount <= 0) return;
+    if (parsed.amount <= 0 || parsed.amount.isNaN || parsed.amount.isInfinite) return;
     setState(() {
       parsedData = parsed;
       showConfirmation = true;
@@ -139,7 +139,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
   bool get _canSubmit {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return false;
-    return parseExpense(input).amount > 0;
+    final amount = parseExpense(input).amount;
+    return amount > 0 && !amount.isNaN && !amount.isInfinite;
   }
 
   /// As user types, if any word in the input matches a member's display name, auto-add that member to Who's Involved.

@@ -63,10 +63,13 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (_timeLeft <= 0) {
+      if (!mounted) {
         _timer?.cancel();
-        widget.onDismiss();
+        return;
+      }
+      if (_timeLeft <= 1) {
+        _timer?.cancel();
+        if (mounted) widget.onDismiss();
       } else {
         setState(() => _timeLeft--);
       }
@@ -169,8 +172,18 @@ class GroupDetail extends StatelessWidget {
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
-        final defaultGroup = repo.getGroup(groupId) ?? resolvedGroup;
-        // getActiveCycle may create a cycle if none exists; single lookup here.
+        final defaultGroup = repo.getGroup(groupId);
+        if (defaultGroup == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          });
+          return const Scaffold(
+            backgroundColor: Color(0xFFF7F7F8),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
         final isPassive = activeCycle.status == CycleStatus.settling;

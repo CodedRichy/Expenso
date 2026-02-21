@@ -1,6 +1,6 @@
 /// Returns an error message if the amount is invalid, otherwise null.
 String? validateExpenseAmount(double amount) {
-  if (amount.isNaN) return 'Amount is not a valid number.';
+  if (amount.isNaN || amount.isInfinite) return 'Amount is not a valid number.';
   if (amount <= 0) return 'Amount must be greater than 0.';
   return null;
 }

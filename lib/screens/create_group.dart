@@ -40,7 +40,7 @@ class _CreateGroupState extends State<CreateGroup> {
     }
   }
 
-  void handleCreate() {
+  Future<void> handleCreate() async {
     if (name.trim().isEmpty) return;
     final repo = CycleRepository.instance;
     final newGroup = Group(
@@ -51,12 +51,27 @@ class _CreateGroupState extends State<CreateGroup> {
       statusLine: 'Cycle open',
       creatorId: repo.currentUserId,
     );
-    repo.addGroup(newGroup);
-    Navigator.pushReplacementNamed(
-      context,
-      '/invite-members',
-      arguments: newGroup,
-    );
+    try {
+      await repo.addGroup(
+        newGroup,
+        settlementRhythm: rhythm,
+        settlementDay: settlementDay,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        '/invite-members',
+        arguments: newGroup,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not create group: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override

@@ -85,4 +85,86 @@ Summary of logical errors and edge cases found across the project. Items marked 
 
 ---
 
-*Audit performed by reviewing cycle_repository, settlement_engine, firestore_service, main routes, group_detail, expense_input, edit_expense, undo_expense, settlement_confirmation, payment_result, profile, and phone_auth_service.*
+---
+
+## Fixed: EditExpense doesn't recalculate splits when amount changes
+
+**Issue:** When editing an expense and changing the total amount, the existing `splitAmountsById` was preserved as-is. This meant changing a 1000 expense to 800 would leave split amounts summing to 1000, causing incorrect balance calculations.
+
+**Fix:** When the expense amount is changed and `splitAmountsById` is present, splits are now re-proportioned by the ratio (newAmount / oldAmount). Also added `isNaN` and `isInfinite` checks for the amount.
+
+---
+
+## Fixed: CreateGroup doesn't persist settlement rhythm/day
+
+**Issue:** The CreateGroup screen collected `rhythm` and `settlementDay` from the user but never passed them to the repository or Firestore. The values were lost.
+
+**Fix:** Updated `CreateGroup.handleCreate` to pass `settlementRhythm` and `settlementDay` to `CycleRepository.addGroup`, which now accepts these parameters and passes them to `FirestoreService.createGroup` for storage.
+
+---
+
+## Fixed: expense_validation missing isInfinite check
+
+**Issue:** `validateExpenseAmount` checked for `isNaN` and `amount <= 0` but not `isInfinite`. Infinite values could pass validation.
+
+**Fix:** Added `amount.isInfinite` check to `validateExpenseAmount`.
+
+---
+
+## Fixed: SettlementEngine _buildNetBalances edge cases
+
+**Issue:** The settlement engine didn't explicitly filter out invalid expense amounts (`NaN`, `Infinity`, `<= 0`) or validate that participant IDs correspond to actual group members. Split amounts weren't validated for `NaN`/`Infinity`.
+
+**Fix:** Added validation for expense amounts (skip if invalid), filtered participant IDs to only include actual members, and added `isNaN`/`isInfinite` checks for individual split amounts and per-share calculations.
+
+---
+
+## Fixed: GroupDetail may crash if group deleted externally
+
+**Issue:** If a group was deleted from Firestore while a user was viewing `GroupDetail`, `repo.getGroup(groupId)` would return null, potentially causing crashes or showing stale data.
+
+**Fix:** Added a null check for `defaultGroup` in `GroupDetail`. If the group no longer exists, the user is navigated back to the groups list via `popUntil`.
+
+---
+
+## Fixed: ExpenseInput doesn't validate infinite/NaN amounts
+
+**Issue:** `ExpenseInput.handleSubmit` and `_canSubmit` only checked if the amount was `> 0`, but didn't validate for `NaN` or `isInfinite` values that could be parsed from user input.
+
+**Fix:** Added explicit `isNaN` and `isInfinite` checks in both `handleSubmit` and `_canSubmit`.
+
+---
+
+## Fixed: UndoExpenseOverlay timer continues after unmount
+
+**Issue:** The periodic timer in `_UndoExpenseOverlayContentState` checked `mounted` before state updates but could still call `widget.onDismiss()` after the widget was disposed, or continue running unnecessarily.
+
+**Fix:** Added `_timer?.cancel()` when `!mounted`, and added a second `mounted` check before calling `onDismiss()`.
+
+---
+
+## Fixed: InviteMembers Done button dead code path
+
+**Issue:** When `groupArg` was null, the Done button would create a new orphan `Group` object with the current timestamp as ID and navigate to group detail. This group wouldn't exist in Firestore.
+
+**Fix:** Removed the dead code path. If `groupArg` is null or the group no longer exists, the user is navigated back to the groups list.
+
+---
+
+## Fixed: _dateStringToSortKey year rollover bug
+
+**Issue:** When parsing a date like "Jan 5" in December, the function would use the current year, making it appear as a future date and sorting incorrectly.
+
+**Fix:** If the parsed date is more than 1 day in the future, it's assumed to be from the previous year and adjusted accordingly.
+
+---
+
+## Fixed: CycleRepository.addGroup fire-and-forget error handling
+
+**Issue:** `addGroup` called `FirestoreService.createGroup` without awaiting or handling errors. If group creation failed, the error was silently lost and the UI would navigate as if successful.
+
+**Fix:** Made `addGroup` async and wrapped the `createGroup` call in try/catch with rethrow. Updated `CreateGroup.handleCreate` to await the result and show a SnackBar on failure.
+
+---
+
+*Audit performed by reviewing cycle_repository, settlement_engine, firestore_service, main routes, group_detail, expense_input, edit_expense, undo_expense, settlement_confirmation, payment_result, profile, phone_auth_service, create_group, and invite_members.*

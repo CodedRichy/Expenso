@@ -129,6 +129,24 @@ class _EditExpenseState extends State<EditExpense> {
     }
 
     final amount = double.tryParse(amountStr) ?? 0.0;
+    if (amount <= 0 || amount.isNaN || amount.isInfinite) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Amount must be a valid positive number.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Map<String, double>? updatedSplits = existing.splitAmountsById;
+    if (existing.splitAmountsById != null &&
+        existing.splitAmountsById!.isNotEmpty &&
+        amount != existing.amount) {
+      final ratio = amount / existing.amount;
+      updatedSplits = existing.splitAmountsById!.map((k, v) => MapEntry(k, v * ratio));
+    }
+
     try {
       final updatedExpense = Expense(
         id: expenseId,
@@ -137,7 +155,7 @@ class _EditExpenseState extends State<EditExpense> {
         date: _selectedDate,
         participantIds: existing.participantIds,
         paidById: _selectedPayerId,
-        splitAmountsById: existing.splitAmountsById,
+        splitAmountsById: updatedSplits,
         category: existing.category,
         splitType: existing.splitType,
       );

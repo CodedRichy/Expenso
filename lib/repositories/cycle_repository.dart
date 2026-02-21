@@ -37,7 +37,10 @@ class CycleRepository extends ChangeNotifier {
           final day = int.tryParse(match.group(2)!);
           final month = months.indexOf(monthName) + 1;
           if (month >= 1 && month <= 12 && day != null && day >= 1 && day <= 31) {
-            final d = DateTime(now.year, month, day);
+            var d = DateTime(now.year, month, day);
+            if (d.isAfter(today.add(const Duration(days: 1)))) {
+              d = DateTime(now.year - 1, month, day);
+            }
             return d.millisecondsSinceEpoch;
           }
         }
@@ -487,12 +490,28 @@ class CycleRepository extends ChangeNotifier {
 
   List<Group> get groups => List.unmodifiable(_groups);
 
-  void addGroup(Group group) {
+  Future<void> addGroup(
+    Group group, {
+    String? settlementRhythm,
+    int? settlementDay,
+  }) async {
     if (_currentUserId.isEmpty) return;
     final groupId = group.id;
-    FirestoreService.instance.createGroup(groupId, groupName: group.name, creatorId: _currentUserId);
+    try {
+      await FirestoreService.instance.createGroup(
+        groupId,
+        groupName: group.name,
+        creatorId: _currentUserId,
+        settlementRhythm: settlementRhythm,
+        settlementDay: settlementDay,
+      );
+    } catch (e, st) {
+      debugPrint('CycleRepository.addGroup createGroup failed: $e');
+      if (kDebugMode) debugPrint(st.toString());
+      rethrow;
+    }
     _writeCurrentUserProfile().catchError((e, st) {
-      debugPrint('CycleRepository.addGroup write failed: $e');
+      debugPrint('CycleRepository.addGroup profile write failed: $e');
       if (kDebugMode) debugPrint(st.toString());
     });
   }
