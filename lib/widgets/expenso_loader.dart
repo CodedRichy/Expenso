@@ -6,7 +6,7 @@ class ExpensoLoader extends StatefulWidget {
   
   const ExpensoLoader({
     super.key,
-    this.size = 160,
+    this.size = 120,
   });
 
   @override
@@ -20,7 +20,7 @@ class _ExpensoLoaderState extends State<ExpensoLoader> with SingleTickerProvider
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 6000),
+      duration: const Duration(milliseconds: 8000),
       vsync: this,
     )..repeat();
   }
@@ -33,103 +33,100 @@ class _ExpensoLoaderState extends State<ExpensoLoader> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            'assets/app_icon_light.png',
-            width: widget.size * 0.7,
-            height: widget.size * 0.7,
-            fit: BoxFit.contain,
-          ),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              return CustomPaint(
-                size: Size(widget.size, widget.size),
-                painter: _OrbitTextPainter(
-                  progress: _controller.value,
-                  size: widget.size,
-                ),
-              );
-            },
-          ),
-        ],
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _controller.value * 2 * math.pi,
+          child: child,
+        );
+      },
+      child: _CircularText(
+        text: 'EXPENSO • EXPENSO •',
+        radius: widget.size / 2 - 10,
+        textStyle: TextStyle(
+          fontSize: widget.size * 0.1,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF1A1A1A),
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 }
 
-class _OrbitTextPainter extends CustomPainter {
-  final double progress;
-  final double size;
-  
-  static const String _text = 'EXPENSO • EXPENSO •';
+class _CircularText extends StatelessWidget {
+  final String text;
+  final double radius;
+  final TextStyle textStyle;
 
-  _OrbitTextPainter({
-    required this.progress,
-    required this.size,
+  const _CircularText({
+    required this.text,
+    required this.radius,
+    required this.textStyle,
   });
 
   @override
-  void paint(Canvas canvas, Size canvasSize) {
-    final center = Offset(canvasSize.width / 2, canvasSize.height / 2);
-    
-    final textStyle = TextStyle(
-      fontSize: size * 0.055,
-      fontWeight: FontWeight.w500,
-      color: const Color(0xFF1A1A1A),
-      letterSpacing: 1.0,
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: (radius + 20) * 2,
+      height: (radius + 20) * 2,
+      child: CustomPaint(
+        painter: _CircularTextPainter(
+          text: text,
+          radius: radius,
+          textStyle: textStyle,
+        ),
+      ),
     );
+  }
+}
+
+class _CircularTextPainter extends CustomPainter {
+  final String text;
+  final double radius;
+  final TextStyle textStyle;
+
+  _CircularTextPainter({
+    required this.text,
+    required this.radius,
+    required this.textStyle,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final anglePerChar = (2 * math.pi) / text.length;
     
-    final a = size * 0.46;
-    final b = size * 0.18;
-    final tilt = -0.38;
-    final offsetY = size * 0.06;
-    
-    final angleOffset = progress * 2 * math.pi;
-    final anglePerChar = (2 * math.pi) / _text.length;
-    
-    for (int i = 0; i < _text.length; i++) {
-      final char = _text[i];
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
       if (char == ' ') continue;
       
-      final angle = angleOffset + (i * anglePerChar);
-      
-      final x0 = a * math.cos(angle);
-      final y0 = b * math.sin(angle);
-      
-      final x = x0 * math.cos(tilt) - y0 * math.sin(tilt);
-      final y = x0 * math.sin(tilt) + y0 * math.cos(tilt) + offsetY;
-      
-      final dx = -a * math.sin(angle);
-      final dy = b * math.cos(angle);
-      final tangentAngle = math.atan2(
-        dx * math.sin(tilt) + dy * math.cos(tilt),
-        dx * math.cos(tilt) - dy * math.sin(tilt),
-      );
+      final angle = -math.pi / 2 + (i * anglePerChar);
       
       canvas.save();
-      canvas.translate(center.dx + x, center.dy + y);
-      canvas.rotate(tangentAngle);
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(angle + math.pi / 2);
+      canvas.translate(0, -radius);
       
-      final painter = TextPainter(
+      final textPainter = TextPainter(
         text: TextSpan(text: char, style: textStyle),
         textDirection: TextDirection.ltr,
       );
-      painter.layout();
-      painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(-textPainter.width / 2, -textPainter.height / 2),
+      );
       
       canvas.restore();
     }
   }
 
   @override
-  bool shouldRepaint(covariant _OrbitTextPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-           oldDelegate.size != size;
+  bool shouldRepaint(covariant _CircularTextPainter oldDelegate) {
+    return oldDelegate.text != text || 
+           oldDelegate.radius != radius ||
+           oldDelegate.textStyle != textStyle;
   }
 }
