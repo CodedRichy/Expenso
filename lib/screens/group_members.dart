@@ -118,6 +118,7 @@ class GroupMembers extends StatelessWidget {
                                 final member = entry.value;
                                 final memberBalance = netBalances[member.id] ?? 0.0;
                                 final isCreator = member.id == currentGroup.creatorId;
+                                final isPending = member.id.startsWith('p_');
                                 final canRemove = repo.isCreator(group.id, currentUserId) && 
                                     !isCreator && 
                                     member.id != currentUserId;
@@ -188,12 +189,30 @@ class GroupMembers extends StatelessWidget {
                                                     repo.getMemberDisplayName(member.phone),
                                                     style: TextStyle(
                                                       fontSize: 17,
-                                                      color: const Color(0xFF1A1A1A),
+                                                      color: isPending ? const Color(0xFF9B9B9B) : const Color(0xFF1A1A1A),
                                                     ),
                                                   ),
                                                   if (isCreator) ...[
                                                     const SizedBox(width: 6),
                                                     const Text('👑', style: TextStyle(fontSize: 16)),
+                                                  ],
+                                                  if (isPending) ...[
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFE5E5E5),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                      child: Text(
+                                                        'Invited',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w500,
+                                                          color: const Color(0xFF6B6B6B),
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ],
                                                 ],
                                               ),
@@ -228,6 +247,19 @@ class GroupMembers extends StatelessWidget {
               ],
             ),
           ),
+          floatingActionButton: repo.isCreator(group.id, currentUserId)
+              ? FloatingActionButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/invite-members',
+                      arguments: currentGroup,
+                    );
+                  },
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  child: const Icon(Icons.person_add, color: Colors.white),
+                )
+              : null,
         );
       },
     );

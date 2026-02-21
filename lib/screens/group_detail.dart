@@ -956,6 +956,42 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     return false;
   }
 
+  /// Checks if a name matches a pending member (invited but not yet joined).
+  /// Returns the display name of the pending member if found, null otherwise.
+  String? _findPendingMemberMatch(
+    CycleRepository repo,
+    String groupId,
+    String name, {
+    Map<String, List<String>>? contactNameToNormalizedPhones,
+  }) {
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return null;
+    final pendingMembers = repo.getMembersForGroup(groupId).where((m) => m.id.startsWith('p_')).toList();
+    if (pendingMembers.isEmpty) return null;
+
+    Map<String, String>? phoneToContactName;
+    if (contactNameToNormalizedPhones != null) {
+      phoneToContactName = {};
+      for (final entry in contactNameToNormalizedPhones.entries) {
+        for (final p in entry.value) {
+          phoneToContactName[p] = entry.key;
+        }
+      }
+    }
+
+    for (final m in pendingMembers) {
+      final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
+        return repo.getMemberDisplayNameById(m.id);
+      }
+      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
+      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) {
+        return phoneToContactName![_normalizePhoneForMatch(m.phone)];
+      }
+    }
+    return null;
+  }
+
   /// Resolves a parsed participant name to a group member: match against each member's
   /// display name and (if available) contact name; exact match wins, else one similar match.
   ({String? id, bool isGuessed}) _resolveOneNameToIdWithGuess(
@@ -965,10 +1001,8 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) {
     final n = name.trim().toLowerCase();
-    debugPrint('[MagicBar] _resolveOneNameToIdWithGuess: looking for "$n"');
     if (n.isEmpty) return (id: null, isGuessed: false);
-    final members = repo.getMembersForGroup(groupId);
-    debugPrint('[MagicBar] All members in group: ${members.map((m) => '${m.id} -> "${repo.getMemberDisplayNameById(m.id)}"').toList()}');
+    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
     final currentName = repo.currentUserName;
     final currentId = repo.currentUserId;
     if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
@@ -1006,15 +1040,8 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         similarMatchIds.add(m.id);
       }
     }
-    if (exactMatch != null) {
-      debugPrint('[MagicBar] Found exact match for "$n": $exactMatch');
-      return (id: exactMatch, isGuessed: false);
-    }
-    if (similarMatchIds.length == 1) {
-      debugPrint('[MagicBar] Found single similar match for "$n": ${similarMatchIds.single}');
-      return (id: similarMatchIds.single, isGuessed: true);
-    }
-    debugPrint('[MagicBar] No match found for "$n". Similar matches: $similarMatchIds');
+    if (exactMatch != null) return (id: exactMatch, isGuessed: false);
+    if (similarMatchIds.length == 1) return (id: similarMatchIds.single, isGuessed: true);
     return (id: null, isGuessed: false);
   }
 
@@ -1098,14 +1125,55 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         }
         return name;
       }).toList();
-      debugPrint('[MagicBar] Member names sent to AI: $memberNames');
-
       final result = await GroqExpenseParserService.parse(
         userInput: input,
         groupMemberNames: memberNames,
       );
-      debugPrint('[MagicBar] AI result: amount=${result.amount}, desc=${result.description}, participants=${result.participantNames}, payer=${result.payerName}');
       if (!mounted) return;
+      
+      // Check if any participant is a pending member
+      final pendingNames = <String>[];
+      for (final pName in result.participantNames) {
+        final pendingMatch = _findPendingMemberMatch(
+          repo, groupId, pName,
+          contactNameToNormalizedPhones: _contactNameToNormalizedPhones,
+        );
+        if (pendingMatch != null) pendingNames.add(pendingMatch);
+      }
+      // Also check payer
+      if (result.payerName != null && result.payerName!.trim().isNotEmpty) {
+        final pendingMatch = _findPendingMemberMatch(
+          repo, groupId, result.payerName!,
+          contactNameToNormalizedPhones: _contactNameToNormalizedPhones,
+        );
+        if (pendingMatch != null) pendingNames.add(pendingMatch);
+      }
+      
+      if (pendingNames.isNotEmpty) {
+        setState(() => _loading = false);
+        final uniqueNames = pendingNames.toSet().toList();
+        final nameList = uniqueNames.length == 1 
+            ? uniqueNames.first 
+            : '${uniqueNames.sublist(0, uniqueNames.length - 1).join(', ')} and ${uniqueNames.last}';
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Member Not Joined'),
+            content: Text(
+              '$nameList hasn\'t accepted the invitation yet. They need to join the group before you can add them to expenses.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      
       setState(() => _loading = false);
       _controller.clear();
       setState(() => _sendAllowed = false);
