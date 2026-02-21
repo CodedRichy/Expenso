@@ -216,7 +216,7 @@ class FirestoreService {
   Future<void> declineInvitation(String groupId, String phone, {String? userName}) async {
     await removePendingMemberFromGroup(groupId, phone);
     if (userName != null && userName.isNotEmpty) {
-      await addSystemMessage(groupId, type: 'declined', odName: userName);
+      await addSystemMessage(groupId, type: 'declined', userName: userName);
     }
   }
 
