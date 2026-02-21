@@ -50,10 +50,10 @@ class _GroupsListState extends State<GroupsList> {
 
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
-      const Color(0xFF2D3436),
-      const Color(0xFF636E72),
-      const Color(0xFF4A6572),
-      const Color(0xFF344955),
+      const Color(0xFF1A1A1A),
+      const Color(0xFF6B6B6B),
+      const Color(0xFF5B7C99),
+      const Color(0xFF9B9B9B),
     ];
     final bgColor = colors[index % colors.length];
     
@@ -169,7 +169,7 @@ class _GroupsListState extends State<GroupsList> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF2D3436), Color(0xFF636E72)],
+                  colors: [Color(0xFF1A1A1A), Color(0xFF6B6B6B)],
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
