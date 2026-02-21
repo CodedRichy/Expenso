@@ -117,34 +117,10 @@ class GroupMembers extends StatelessWidget {
                                 final index = entry.key;
                                 final member = entry.value;
                                 final memberBalance = netBalances[member.id] ?? 0.0;
-                                final isCurrentUser = member.id == currentUserId;
                                 final isCreator = member.id == currentGroup.creatorId;
                                 final canRemove = repo.isCreator(group.id, currentUserId) && 
                                     !isCreator && 
-                                    !isCurrentUser;
-                                
-                                String balanceStatusText;
-                                Color balanceStatusColor;
-                                if (memberBalance.abs() < 0.01) {
-                                  balanceStatusText = 'Settled up';
-                                  balanceStatusColor = const Color(0xFF6B6B6B);
-                                } else if (isCurrentUser) {
-                                  if (memberBalance > 0) {
-                                    balanceStatusText = 'You get back ₹${memberBalance.toStringAsFixed(0)}';
-                                    balanceStatusColor = const Color(0xFF2E7D32);
-                                  } else {
-                                    balanceStatusText = 'You owe ₹${(-memberBalance).toStringAsFixed(0)}';
-                                    balanceStatusColor = const Color(0xFFD32F2F);
-                                  }
-                                } else {
-                                  if (memberBalance > 0) {
-                                    balanceStatusText = 'You owe them ₹${memberBalance.toStringAsFixed(0)}';
-                                    balanceStatusColor = const Color(0xFFD32F2F);
-                                  } else {
-                                    balanceStatusText = 'Owes you ₹${(-memberBalance).toStringAsFixed(0)}';
-                                    balanceStatusColor = const Color(0xFF2E7D32);
-                                  }
-                                }
+                                    member.id != currentUserId;
                                 
                                 return InkWell(
                                   onTap: canRemove ? () {
@@ -221,15 +197,16 @@ class GroupMembers extends StatelessWidget {
                                                   ],
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                balanceStatusText,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: balanceStatusColor,
-                                                  fontWeight: FontWeight.w500,
+                                              if (member.name.isNotEmpty) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  member.phone,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: const Color(0xFF9B9B9B),
+                                                  ),
                                                 ),
-                                              ),
+                                              ],
                                             ],
                                           ),
                                         ),
