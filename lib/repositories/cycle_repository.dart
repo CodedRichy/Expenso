@@ -304,6 +304,7 @@ class CycleRepository extends ChangeNotifier {
 
   /// DEBUG: Add a dummy invitation for testing. Call removeDummyInvitation() to remove.
   void addDummyInvitation() {
+    if (_pendingInvitations.any((i) => i.groupId == 'dummy_test_group')) return;
     _pendingInvitations.add(const GroupInvitation(
       groupId: 'dummy_test_group',
       groupName: 'Weekend Trip with Alice, Bob & Carol',
@@ -315,6 +316,65 @@ class CycleRepository extends ChangeNotifier {
   /// DEBUG: Remove the dummy invitation.
   void removeDummyInvitation() {
     _pendingInvitations.removeWhere((i) => i.groupId == 'dummy_test_group');
+    notifyListeners();
+  }
+
+  /// DEBUG: Add a dummy group for testing. Call removeDummyGroup() to remove.
+  void addDummyGroup() {
+    if (_groups.any((g) => g.id == 'dummy_weekend_trip')) return;
+    _groups.insert(0, Group(
+      id: 'dummy_weekend_trip',
+      name: 'Weekend Trip',
+      status: 'active',
+      amount: 2400,
+      statusLine: '+₹800',
+      creatorId: 'alice_uid',
+      memberIds: ['alice_uid', 'bob_uid', 'carol_uid', _currentUserId],
+    ));
+    _membersById['alice_uid'] = Member(id: 'alice_uid', phone: '9876543210', name: 'Alice');
+    _membersById['bob_uid'] = Member(id: 'bob_uid', phone: '9876543211', name: 'Bob');
+    _membersById['carol_uid'] = Member(id: 'carol_uid', phone: '9876543212', name: 'Carol');
+    _groupMeta['dummy_weekend_trip'] = _GroupMeta(
+      activeCycleId: 'dummy_cycle',
+      cycleStatus: 'active',
+    );
+    _expensesByCycleId['dummy_cycle'] = [
+      Expense(
+        id: 'exp1',
+        description: 'Hotel booking',
+        amount: 1200,
+        date: 'Today',
+        paidById: 'alice_uid',
+        participantIds: ['alice_uid', 'bob_uid', 'carol_uid', _currentUserId],
+      ),
+      Expense(
+        id: 'exp2',
+        description: 'Dinner',
+        amount: 800,
+        date: 'Today',
+        paidById: _currentUserId,
+        participantIds: ['alice_uid', 'bob_uid', 'carol_uid', _currentUserId],
+      ),
+      Expense(
+        id: 'exp3',
+        description: 'Fuel',
+        amount: 400,
+        date: 'Yesterday',
+        paidById: 'bob_uid',
+        participantIds: ['alice_uid', 'bob_uid', 'carol_uid', _currentUserId],
+      ),
+    ];
+    notifyListeners();
+  }
+
+  /// DEBUG: Remove the dummy group.
+  void removeDummyGroup() {
+    _groups.removeWhere((g) => g.id == 'dummy_weekend_trip');
+    _membersById.remove('alice_uid');
+    _membersById.remove('bob_uid');
+    _membersById.remove('carol_uid');
+    _groupMeta.remove('dummy_weekend_trip');
+    _expensesByCycleId.remove('dummy_cycle');
     notifyListeners();
   }
 
