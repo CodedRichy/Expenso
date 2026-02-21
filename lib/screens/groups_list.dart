@@ -32,6 +32,28 @@ class _GroupsListState extends State<GroupsList> {
     }
   }
 
+  Widget _buildInvitationsLoadingPlaceholder() {
+    return SizedBox(
+      height: 88,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 2,
+        itemBuilder: (context, index) {
+          return Container(
+            width: 140,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5E5E5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildInvitationsSection(BuildContext context, CycleRepository repo) {
     final invitations = repo.pendingInvitations;
     return SizedBox(
@@ -48,7 +70,9 @@ class _GroupsListState extends State<GroupsList> {
     );
   }
 
-  // ANIMATION: Remove TweenAnimationBuilder wrapper if animations not wanted
+  // Track which invitations have already animated
+  static final Set<String> _animatedInvitations = {};
+
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
       const Color(0xFF1A1A1A),
@@ -58,22 +82,14 @@ class _GroupsListState extends State<GroupsList> {
     ];
     final bgColor = colors[index % colors.length];
     
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (index * 80)),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Opacity(
-            opacity: value.clamp(0.0, 1.0),
-            child: child,
-          ),
-        );
-      },
-      child: GestureDetector(
-        onTap: () => _showInvitationSheet(context, invitation, repo),
-        child: Container(
+    final alreadyAnimated = _animatedInvitations.contains(invitation.groupId);
+    if (!alreadyAnimated) {
+      _animatedInvitations.add(invitation.groupId);
+    }
+    
+    final card = GestureDetector(
+      onTap: () => _showInvitationSheet(context, invitation, repo),
+      child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
@@ -145,7 +161,24 @@ class _GroupsListState extends State<GroupsList> {
           ],
         ),
       ),
-      ),
+    );
+    
+    if (alreadyAnimated) {
+      return card;
+    }
+    
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('anim_${invitation.groupId}'),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 200 + (index * 40)),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: child,
+        );
+      },
+      child: card,
     );
   }
 
@@ -464,7 +497,11 @@ class _GroupsListState extends State<GroupsList> {
                               ],
                             ),
                           ),
-                          if (repo.pendingInvitations.isNotEmpty) ...[
+                          if (repo.invitationsLoading) ...[
+                            const SizedBox(height: 16),
+                            _buildInvitationsLoadingPlaceholder(),
+                            const SizedBox(height: 16),
+                          ] else if (repo.pendingInvitations.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             _buildInvitationsSection(context, repo),
                             const SizedBox(height: 16),

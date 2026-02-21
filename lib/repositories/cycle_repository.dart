@@ -249,6 +249,10 @@ class CycleRepository extends ChangeNotifier {
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
   List<GroupInvitation> get pendingInvitations => List.unmodifiable(_pendingInvitations);
+  
+  /// True while waiting for the first invitations snapshot.
+  bool get invitationsLoading => _invitationsLoading;
+  bool _invitationsLoading = false;
 
   /// System messages per group (groupId -> list of messages).
   final Map<String, List<SystemMessage>> _systemMessagesByGroup = {};
@@ -285,17 +289,21 @@ class CycleRepository extends ChangeNotifier {
       },
     );
     if (_currentUserPhone.isNotEmpty) {
+      _invitationsLoading = true;
       _invitationsSub = FirestoreService.instance.pendingInvitationsStream(_currentUserPhone).listen(
         _onInvitationsSnapshot,
         onError: (e, st) {
           debugPrint('CycleRepository invitationsStream error: $e');
           if (kDebugMode && st != null) debugPrint(st.toString());
+          _invitationsLoading = false;
+          notifyListeners();
         },
       );
     }
   }
 
   void _onInvitationsSnapshot(List<DocView> docs) {
+    _invitationsLoading = false;
     _pendingInvitations.clear();
     for (final doc in docs) {
       final data = doc.data();
