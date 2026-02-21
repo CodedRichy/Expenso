@@ -7,6 +7,7 @@ import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/groq_expense_parser_service.dart';
 import '../utils/settlement_engine.dart';
+import '../widgets/expenso_loader.dart';
 import 'empty_states.dart';
 
 void _showUndoExpenseOverlay(
@@ -181,7 +182,7 @@ class GroupDetail extends StatelessWidget {
           });
           return const Scaffold(
             backgroundColor: Color(0xFFF7F7F8),
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(child: ExpensoLoader()),
           );
         }
         final activeCycle = repo.getActiveCycle(groupId);

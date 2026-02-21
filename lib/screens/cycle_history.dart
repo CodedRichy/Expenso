@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/expenso_loader.dart';
 
 class CycleHistory extends StatelessWidget {
   const CycleHistory({super.key});
@@ -69,7 +70,7 @@ class CycleHistory extends StatelessWidget {
                 final cycles = snapshot.data ?? [];
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: ExpensoLoader()),
                   );
                 }
                 if (cycles.isEmpty) {

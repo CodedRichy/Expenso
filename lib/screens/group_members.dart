@@ -3,6 +3,7 @@ import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
+import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 
 class GroupMembers extends StatelessWidget {
@@ -29,7 +30,7 @@ class GroupMembers extends StatelessWidget {
           });
           return const Scaffold(
             backgroundColor: Color(0xFFF7F7F8),
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(child: ExpensoLoader()),
           );
         }
         final listMembers = repo.getMembersForGroup(group.id);

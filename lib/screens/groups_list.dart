@@ -4,9 +4,9 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/pinned_groups_service.dart';
+import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
-import 'group_list_skeleton.dart';
 
 class GroupsList extends StatefulWidget {
   const GroupsList({super.key});
@@ -99,13 +99,6 @@ class _GroupsListState extends State<GroupsList> {
             colors: [bgColor, bgColor.withOpacity(0.8)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: bgColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Stack(
           children: [
@@ -441,26 +434,7 @@ class _GroupsListState extends State<GroupsList> {
                 )
               : null,
           body: loading
-              ? SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
-                        child: Text(
-                          'Groups',
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                            letterSpacing: -0.6,
-                          ),
-                        ),
-                      ),
-                      const Expanded(child: GroupListSkeleton()),
-                    ],
-                  ),
-                )
+              ? const Center(child: ExpensoLoader())
               : groups.isEmpty
                   ? EmptyStates(
                       type: 'no-groups',
