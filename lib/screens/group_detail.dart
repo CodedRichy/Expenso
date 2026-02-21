@@ -303,16 +303,27 @@ class GroupDetail extends StatelessWidget {
                         );
                       }
                     } else {
-                      final isLeader = repo.isCurrentUserCreator(groupId);
-                      if (isLeader) {
-                        _showSettleConfirmDialog(context, repo, groupId);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Request sent to group leader.'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                      final transfers = repo.getSettlementTransfersForCurrentUser(groupId);
+                      final totalDue = transfers.fold<double>(0, (s, t) => s + t.amount);
+                      
+                      if (totalDue >= 0.01) {
+                        Navigator.pushNamed(
+                          context,
+                          '/settlement-confirmation',
+                          arguments: {'group': defaultGroup, 'method': 'razorpay'},
                         );
+                      } else {
+                        final isLeader = repo.isCurrentUserCreator(groupId);
+                        if (isLeader) {
+                          _showSettleConfirmDialog(context, repo, groupId);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Request sent to group leader.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       }
                     }
                   },
@@ -1191,17 +1202,35 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           slots.add(_ParticipantSlot(name: displayName, amount: perShare, id: m.id, isGuessed: false));
         }
       } else {
-        final splitCount = names.length + 1;
-        final perShare = result.amount / splitCount;
-        slots.add(_ParticipantSlot(
-          name: repo.getMemberDisplayNameById(repo.currentUserId),
-          amount: perShare,
-          id: repo.currentUserId,
-          isGuessed: false,
-        ));
+        final resolvedSlots = <_ParticipantSlot>[];
+        final seenIds = <String>{};
+        
         for (final name in names) {
           final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-          slots.add(_ParticipantSlot(name: name, amount: perShare, id: r.id, isGuessed: r.isGuessed));
+          if (r.id != null && r.id!.isNotEmpty) {
+            if (!seenIds.contains(r.id)) {
+              seenIds.add(r.id!);
+              resolvedSlots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
+            }
+          } else {
+            resolvedSlots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
+          }
+        }
+        
+        if (!seenIds.contains(repo.currentUserId)) {
+          seenIds.add(repo.currentUserId);
+          resolvedSlots.insert(0, _ParticipantSlot(
+            name: repo.getMemberDisplayNameById(repo.currentUserId),
+            amount: 0,
+            id: repo.currentUserId,
+            isGuessed: false,
+          ));
+        }
+        
+        final splitCount = resolvedSlots.length;
+        final perShare = splitCount > 0 ? result.amount / splitCount : result.amount;
+        for (final slot in resolvedSlots) {
+          slots.add(_ParticipantSlot(name: slot.name, amount: perShare, id: slot.id, isGuessed: slot.isGuessed));
         }
       }
     }
