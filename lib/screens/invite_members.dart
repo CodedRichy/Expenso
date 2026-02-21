@@ -31,26 +31,23 @@ class _InviteMembersState extends State<InviteMembers> {
   @override
   void initState() {
     super.initState();
-    _phoneFocusNode.addListener(_onPhoneFocusChange);
+    _requestContactsOnInit();
   }
 
-  @override
-  void dispose() {
-    _phoneFocusNode.removeListener(_onPhoneFocusChange);
-    _phoneFocusNode.dispose();
-    super.dispose();
-  }
-
-  Future<void> _onPhoneFocusChange() async {
-    if (!_phoneFocusNode.hasFocus) return;
-    if (_contactsPermissionChecked) return;
-    _contactsPermissionChecked = true;
+  Future<void> _requestContactsOnInit() async {
     final granted = await fc.FlutterContacts.requestPermission();
     if (!mounted) return;
+    _contactsPermissionChecked = true;
     setState(() {
       _contactsPermissionGranted = granted;
       if (granted) _loadContacts();
     });
+  }
+
+  @override
+  void dispose() {
+    _phoneFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _requestContactsAndLoad() async {
@@ -83,11 +80,13 @@ class _InviteMembersState extends State<InviteMembers> {
   List<fc.Contact> _getFilteredContacts(Set<String> existingPhones) {
     final nameLower = name.trim().toLowerCase();
     final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
-    if (nameLower.isEmpty && phoneDigits.isEmpty) return [];
+    
     return _allContacts.where((c) {
+      if (c.phones.isEmpty) return false;
       for (final p in c.phones) {
         if (existingPhones.contains(_normalizePhone(p.number))) return false;
       }
+      if (nameLower.isEmpty && phoneDigits.isEmpty) return true;
       if (nameLower.isNotEmpty && c.displayName.toLowerCase().contains(nameLower)) return true;
       for (final p in c.phones) {
         final numDigits = p.number.replaceAll(RegExp(r'\D'), '');
@@ -103,10 +102,21 @@ class _InviteMembersState extends State<InviteMembers> {
     if (contact.phones.isNotEmpty) {
       normalized = _normalizePhone(contact.phones.first.number);
     }
+    if (normalized.length != 10) return;
+    
+    final formattedPhone = '+91 ${normalized.substring(0, 5)} ${normalized.substring(5)}';
+    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    if (group != null) {
+      final member = Member(
+        id: 'm_${DateTime.now().millisecondsSinceEpoch}',
+        name: displayName,
+        phone: formattedPhone,
+      );
+      CycleRepository.instance.addMemberToGroup(group.id, member);
+    }
     setState(() {
-      name = displayName;
-      phone = normalized;
-      _contactSuggestionsDismissed = true;
+      name = '';
+      phone = '';
     });
   }
 
@@ -420,12 +430,20 @@ class _InviteMembersState extends State<InviteMembers> {
                       ),
                     ],
                   ),
-                  if (_contactsPermissionGranted &&
-                      !_contactSuggestionsDismissed &&
-                      (name.trim().isNotEmpty || phone.isNotEmpty)) ...[
+                  if (_contactsPermissionGranted && !_contactSuggestionsDismissed) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'FROM YOUR CONTACTS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF9B9B9B),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
+                      constraints: const BoxConstraints(maxHeight: 280),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: const Color(0xFFE5E5E5)),
@@ -435,7 +453,11 @@ class _InviteMembersState extends State<InviteMembers> {
                           ? Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
-                                'No matching contacts',
+                                _allContacts.isEmpty 
+                                    ? 'Loading contacts...' 
+                                    : (name.trim().isNotEmpty || phone.isNotEmpty) 
+                                        ? 'No matching contacts' 
+                                        : 'All contacts already added',
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: const Color(0xFF6B6B6B),
