@@ -53,6 +53,7 @@ dependencies:
   flutter_slidable: ^3.1.1
   shared_preferences: ^2.3.3
   razorpay_flutter: ^1.4.1
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

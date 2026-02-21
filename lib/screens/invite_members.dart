@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
+import 'package:permission_handler/permission_handler.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 
@@ -51,12 +52,32 @@ class _InviteMembersState extends State<InviteMembers> {
   }
 
   Future<void> _requestContactsAndLoad() async {
-    final granted = await fc.FlutterContacts.requestPermission();
+    final status = await Permission.contacts.status;
+    
+    if (status.isGranted) {
+      setState(() {
+        _contactsPermissionGranted = true;
+        _loadContacts();
+      });
+      return;
+    }
+    
+    if (status.isPermanentlyDenied) {
+      await openAppSettings();
+      return;
+    }
+    
+    final result = await Permission.contacts.request();
     if (!mounted) return;
-    setState(() {
-      _contactsPermissionGranted = granted;
-      if (granted) _loadContacts();
-    });
+    
+    if (result.isGranted) {
+      setState(() {
+        _contactsPermissionGranted = true;
+        _loadContacts();
+      });
+    } else if (result.isPermanentlyDenied) {
+      await openAppSettings();
+    }
   }
 
   Future<void> _loadContacts() async {
