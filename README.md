@@ -82,6 +82,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 - [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
 - [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
 - [features/MONEY_CANONICALIZATION.md](docs/features/MONEY_CANONICALIZATION.md) — Canonical implementation plan
+- [MONEY_PHASE2.md](docs/MONEY_PHASE2.md) — Phase 2 invariant enforcement plan
 
 ---
 
