@@ -6,6 +6,7 @@ import '../models/cycle.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/expense_validation.dart';
+import '../utils/settlement_engine.dart';
 
 class CycleRepository extends ChangeNotifier {
   CycleRepository._();
@@ -1126,41 +1127,16 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO(canonicalization-phase2): Delegate to SettlementEngine.computeNetBalances
-  // once behavior changes are approved. Current differences:
-  // - Legacy: empty paidById falls back to _currentUserId
-  // - Legacy: no validation of amount (accepts ≤0, NaN, Infinite)
-  // - Legacy: no validation of split amounts
-  // - Legacy: participantIds not filtered to known members
-  // See MONEY_CANONICALIZATION.md for the delegation plan.
+  // TODO(phase2): Migrate to SettlementEngine.computeNetBalances once behavior
+  // changes are approved. See MONEY_CANONICALIZATION.md for the migration plan.
   Map<String, double> calculateBalances(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
-    final Map<String, double> net = {};
-    for (final m in members) {
-      if (!m.id.startsWith('p_')) net[m.id] = 0.0;
-    }
-    for (final expense in cycle.expenses) {
-      final payerId = expense.paidById.isNotEmpty ? expense.paidById : _currentUserId;
-      if (net.containsKey(payerId)) net[payerId] = (net[payerId] ?? 0) + expense.amount;
-      final participantIds = expense.participantIds.isNotEmpty
-          ? expense.participantIds
-          : members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
-      if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
-        for (final entry in expense.splitAmountsById!.entries) {
-          if (entry.key.startsWith('p_')) continue;
-          if (net.containsKey(entry.key)) net[entry.key] = (net[entry.key] ?? 0) - entry.value;
-        }
-      } else {
-        if (participantIds.isEmpty) continue;
-        final perShare = expense.amount / participantIds.length;
-        for (final uid in participantIds) {
-          if (uid.startsWith('p_')) continue;
-          if (net.containsKey(uid)) net[uid] = (net[uid] ?? 0) - perShare;
-        }
-      }
-    }
-    return net;
+    return SettlementEngine.computeNetBalancesLegacy(
+      cycle.expenses,
+      members,
+      _currentUserId,
+    );
   }
 
   List<String> getSettlementInstructions(String groupId) {

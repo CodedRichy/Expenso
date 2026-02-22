@@ -26,6 +26,49 @@ class SettlementEngine {
     return Map.unmodifiable(Map.from(net));
   }
 
+  /// LEGACY ADAPTER (Phase 1 canonicalization, temporary)
+  ///
+  /// Preserves exact pre-canonical behavior for CycleRepository.calculateBalances().
+  /// Differences from computeNetBalances:
+  /// - [fallbackPayerId]: used when expense.paidById is empty (legacy: _currentUserId)
+  /// - No validation: accepts ≤0, NaN, Infinite amounts
+  /// - No validation: accepts NaN, Infinite split amounts
+  /// - participantIds: not filtered to known members (uses net.containsKey check)
+  ///
+  /// TODO(phase2): Remove this adapter once behavior changes are approved.
+  /// Migrate callers to computeNetBalances and ensure expense creation always sets paidById.
+  static Map<String, double> computeNetBalancesLegacy(
+    List<Expense> expenses,
+    List<Member> members,
+    String fallbackPayerId,
+  ) {
+    final Map<String, double> net = {};
+    for (final m in members) {
+      if (!m.id.startsWith('p_')) net[m.id] = 0.0;
+    }
+    for (final expense in expenses) {
+      final payerId = expense.paidById.isNotEmpty ? expense.paidById : fallbackPayerId;
+      if (net.containsKey(payerId)) net[payerId] = (net[payerId] ?? 0) + expense.amount;
+      final participantIds = expense.participantIds.isNotEmpty
+          ? expense.participantIds
+          : members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+      if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
+        for (final entry in expense.splitAmountsById!.entries) {
+          if (entry.key.startsWith('p_')) continue;
+          if (net.containsKey(entry.key)) net[entry.key] = (net[entry.key] ?? 0) - entry.value;
+        }
+      } else {
+        if (participantIds.isEmpty) continue;
+        final perShare = expense.amount / participantIds.length;
+        for (final uid in participantIds) {
+          if (uid.startsWith('p_')) continue;
+          if (net.containsKey(uid)) net[uid] = (net[uid] ?? 0) - perShare;
+        }
+      }
+    }
+    return net;
+  }
+
   static Map<String, double> _buildNetBalances(List<Expense> expenses, List<Member> members) {
     final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
     final Map<String, double> net = {};
