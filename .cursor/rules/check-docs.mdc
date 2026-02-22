@@ -25,7 +25,7 @@ Before making significant changes or answering questions about the project, cons
 | Encryption | `docs/features/DATA_ENCRYPTION.md`, `docs/features/DATA_ENCRYPTION_SETUP.md` |
 | Release contracts | `docs/releases/V1_RELEASE.md`, `docs/releases/V2_RELEASE.md` |
 | Architecture / history | `docs/architecture/ARCHITECTURE.md`, `docs/architecture/DEVELOPMENT.md` |
-| Known issues | `docs/internal/ISSUES_LIST.md`, `docs/internal/LOGIC_AUDIT.md` |
+| Known issues | `docs/internal/LOGIC_AUDIT.md` |
 
 ## Usage
 

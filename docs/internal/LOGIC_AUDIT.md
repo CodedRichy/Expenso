@@ -168,3 +168,22 @@ Summary of logical errors and edge cases found across the project. Items marked 
 ---
 
 *Audit performed by reviewing cycle_repository, settlement_engine, firestore_service, main routes, group_detail, expense_input, edit_expense, undo_expense, settlement_confirmation, payment_result, profile, phone_auth_service, create_group, and invite_members.*
+
+---
+
+## Open / to investigate
+
+| Issue | Notes |
+|-------|-------|
+| Balance / settlement logic wrong in some cases | User reported problems; expected vs actual to be filled in `SETTLEMENT_LOGIC_NOTES.md`. Logic is implemented; if app still shows wrong numbers, likely cause is **who is in the split** (parser or stored data). |
+| Parser sometimes assumes wrong participants | e.g. returns `participants: []` for "with alice" so app treats as everyone. Prompt improved; monitor and add rules/examples if it recurs. |
+
+---
+
+## Known limitations / environment
+
+| Area | Issue |
+|------|-------|
+| Build | Java 8 source/target obsolete; Razorpay deprecated API. |
+| Device (Nothing AIN065) | Invalid resource ID 0x0 (NothingExperience); NtQueueManager logs; Choreographer "40 frames skipped". |
+| GMS / Firebase | DEVELOPER_ERROR (SHA-1 / package config); App Check placeholder; Firestore bloom filter fallback. |
