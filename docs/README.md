@@ -2,6 +2,17 @@
 
 > Primary reference: [APP_BLUEPRINT.md](../APP_BLUEPRINT.md) (routes, data layer, logic)
 
+---
+
+## Key References
+
+| Document | Purpose |
+|----------|---------|
+| [DATA_SPINE.md](DATA_SPINE.md) | Formal definition of core domain entities (User, Group, Expense, Cycle, etc.), their mutability, and data flow. |
+| [STABILIZATION.md](STABILIZATION.md) | Post-hoc stabilization analysis: system snapshot, execution flows, invariants, limitations, and change safety guide. |
+
+---
+
 ## Releases
 
 | Document | Purpose |
@@ -25,6 +36,7 @@
 | [DATA_ENCRYPTION_SETUP.md](features/DATA_ENCRYPTION_SETUP.md) | Step-by-step: set master key, deploy functions, verify. |
 | [EXPENSE_SPLIT_USE_CASES.md](features/EXPENSE_SPLIT_USE_CASES.md) | Split scenarios and who-paid semantics. |
 | [SETTLEMENT_LOGIC_NOTES.md](features/SETTLEMENT_LOGIC_NOTES.md) | Settlement logic implementation notes. |
+| [MONEY_BALANCE_LOGIC.md](features/MONEY_BALANCE_LOGIC.md) | Balance computation isolation and specification. |
 
 ## Research
 

@@ -1,0 +1,35 @@
+---
+description: Reference project documentation for context and guidance
+alwaysApply: true
+---
+
+# Check Project Documentation
+
+Before making significant changes or answering questions about the project, consult the documentation in `docs/` for context.
+
+## Key References
+
+| Document | When to check |
+|----------|---------------|
+| `APP_BLUEPRINT.md` | Routes, screens, data layer, design system, logic conventions, planned features |
+| `docs/DATA_SPINE.md` | Data entities, mutability, storage locations, data flow |
+| `docs/STABILIZATION.md` | System overview, execution flows, invariants, limitations, change safety |
+
+## By Topic
+
+| Topic | Document(s) |
+|-------|-------------|
+| Settlement logic | `docs/features/SETTLEMENT_LOGIC_NOTES.md`, `docs/features/MONEY_BALANCE_LOGIC.md`, `docs/research/RESEARCH_SETTLEMENT_LOGIC.md` |
+| Expense parsing / Magic Bar | `docs/research/EXPENSE_PARSER_PROMPT_REFINEMENT.md`, `docs/research/PARSER_AND_WHO_IS_INVOLVED.md` |
+| Split types | `docs/features/EXPENSE_SPLIT_USE_CASES.md` |
+| Encryption | `docs/features/DATA_ENCRYPTION.md`, `docs/features/DATA_ENCRYPTION_SETUP.md` |
+| Release contracts | `docs/releases/V1_RELEASE.md`, `docs/releases/V2_RELEASE.md` |
+| Architecture / history | `docs/architecture/ARCHITECTURE.md`, `docs/architecture/DEVELOPMENT.md` |
+| Known issues | `docs/internal/ISSUES_LIST.md`, `docs/internal/LOGIC_AUDIT.md` |
+
+## Usage
+
+- Read relevant docs before modifying core logic (settlement, cycle management, expense handling)
+- Consult `STABILIZATION.md` for invariants and change safety before touching risky code paths
+- Check `DATA_SPINE.md` when working with data entities to understand mutability and storage
+- Reference `APP_BLUEPRINT.md` for overall architecture decisions and planned features
