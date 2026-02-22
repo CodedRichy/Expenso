@@ -76,7 +76,7 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 - **Settlement:** Creator taps "Settle now" to freeze the cycle; when status is "Settling", creator taps "Start New Cycle" to archive and begin a new cycle. Use "Settle up" / "Pay via UPI" to pay dues via Razorpay Checkout.
 - **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID.
 
-Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs (architecture, development timeline, audits, research) are in [docs/](docs/).
+Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs (architecture, development timeline, audits, research) are in [docs/](docs/). For a stabilization analysis covering invariants, limitations, and change safety guidance, see [docs/STABILIZATION.md](docs/STABILIZATION.md).
 
 ---
 
