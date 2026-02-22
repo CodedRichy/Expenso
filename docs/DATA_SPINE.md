@@ -1,0 +1,306 @@
+# Expenso Data Spine
+
+**Purpose:** Formal definition of core domain entities  
+**Scope:** Conceptual locking — no refactors proposed
+
+---
+
+## Overview
+
+This document defines the fundamental data structures that Expenso operates on. Each entity is classified by its semantic role (event, state, or derived view) and its ideal mutability. This spine serves as a reference for understanding data ownership and identifying areas requiring extra care.
+
+---
+
+## Entity Classification Key
+
+| Type | Definition |
+|------|------------|
+| **Event** | An immutable record of something that happened. Append-only. Never edited or deleted in an ideal system. |
+| **State** | A mutable snapshot of current reality. Can be updated. Represents "what is true now." |
+| **Derived View** | Computed from other entities. Not stored. Recalculated on demand. |
+
+---
+
+## Core Domain Entities
+
+### 1. User
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | State |
+| **Ideal Mutability** | Mutable |
+| **Storage** | Firestore `users/{uid}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Firebase Auth UID |
+| `phone` | `String` | Primary identifier for invitations |
+| `displayName` | `String` | User-settable name |
+| `photoURL` | `String?` | Avatar URL (Firebase Storage) |
+| `upiId` | `String?` | Payment identifier |
+
+**Notes:** User represents the authenticated identity. Changes (name, avatar, UPI) are legitimate state updates. Phone number is effectively immutable once set (changing it breaks identity linkage).
+
+---
+
+### 2. Group
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | State |
+| **Ideal Mutability** | Mutable |
+| **Storage** | Firestore `groups/{groupId}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique group identifier |
+| `name` | `String` | Display name |
+| `creatorId` | `String` | UID of group owner |
+| `memberIds` | `List<String>` | Current members (UIDs) |
+| `pendingMembers` | `List<{phone, name}>` | Invited but not joined |
+| `activeCycleId` | `String` | Current expense cycle |
+| `cycleStatus` | `String` | `'active'` or `'settling'` |
+| `settlementRhythm` | `String?` | Optional schedule hint |
+| `settlementDay` | `int?` | Optional schedule day |
+
+**Notes:** Group is legitimately mutable (members join/leave, cycles progress). The `creatorId` should be immutable after creation.
+
+**⚠️ Overload detected:** Group currently carries both organizational state (members, name) and cycle coordination state (activeCycleId, cycleStatus). These are distinct concerns.
+
+---
+
+### 3. Expense
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Event |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | Firestore `groups/{groupId}/expenses/{expenseId}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique expense identifier |
+| `description` | `String` | What was purchased |
+| `amount` | `double` | Total cost |
+| `date` | `String` | When it occurred |
+| `paidById` | `String` | Who paid (UID) |
+| `participantIds` | `List<String>` | Who owes |
+| `splitAmountsById` | `Map<String, double>?` | Per-person amounts |
+| `splitType` | `String` | `'Even'`, `'Exact'`, `'Exclude'`, etc. |
+| `category` | `String` | Optional categorization |
+
+**💰 MONEY TRUTH:** This entity records financial facts. Changes directly affect what people owe.
+
+**⚠️ Current vs Ideal:** Currently mutable (can be edited/deleted). Ideally should be append-only with correction events rather than in-place edits. This is a known trade-off for usability.
+
+**Notes:** An expense represents "Person A paid X for Y, split among Z." This is fundamentally an event — it happened. In a rigorous system, corrections would be separate events, not overwrites.
+
+---
+
+### 4. Cycle
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | State (active) / Event (closed) |
+| **Ideal Mutability** | Mutable while active; **Immutable when closed** |
+| **Storage** | Active: `groups/{groupId}` fields; Closed: `groups/{groupId}/settled_cycles/{cycleId}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique cycle identifier |
+| `groupId` | `String` | Parent group |
+| `status` | `CycleStatus` | `active`, `settling`, `closed` |
+| `startDate` | `String?` | When cycle began |
+| `endDate` | `String?` | When cycle closed |
+| `expenses` | `List<Expense>` | In-memory only; expenses stored separately |
+
+**Notes:** A cycle is a container for expenses within a settlement period. Active cycles accept new expenses; settling cycles are frozen for payment; closed cycles are historical record.
+
+**⚠️ Overload detected:** Cycle has a dual nature — it's mutable state while active but should become an immutable historical record when closed. The transition is one-way but not enforced at the data layer.
+
+---
+
+### 5. Member
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | N/A (computed) |
+| **Storage** | In-memory cache (`_membersById`) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | UID or `p_{phone}` for pending |
+| `phone` | `String` | Contact identifier |
+| `name` | `String` | Display name |
+| `photoURL` | `String?` | Avatar |
+
+**Notes:** Member is a view combining User data with group membership context. It's assembled from `users/{uid}` documents and group `pendingMembers` arrays. Not independently stored as a first-class entity.
+
+---
+
+### 6. GroupInvitation
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | State (transient) |
+| **Ideal Mutability** | Immutable (accept/decline deletes it) |
+| **Storage** | Derived from `groups/{groupId}.pendingMembers` + `pendingPhones` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `groupId` | `String` | Target group |
+| `groupName` | `String` | For display |
+| `creatorId` | `String` | Who invited |
+
+**Notes:** Represents a pending invitation. Not a first-class document — derived from group's pending arrays. Accepting promotes user to member; declining removes from pending.
+
+---
+
+### 7. SystemMessage
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Event |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | Firestore `groups/{groupId}/system_messages/{msgId}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique message identifier |
+| `type` | `String` | `'joined'`, `'declined'`, `'left'`, `'created'` |
+| `userId` | `String` | Who performed action |
+| `userName` | `String` | Display name at time of action |
+| `date` | `String` | Human-readable date |
+| `timestamp` | `int` | Milliseconds since epoch |
+
+**Notes:** Activity feed entries. Correctly implemented as append-only events. The `userName` is denormalized (snapshot at creation time) to preserve historical accuracy.
+
+---
+
+### 8. Debt
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | N/A (computed) |
+| **Storage** | In-memory only |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `fromId` | `String` | Debtor UID |
+| `toId` | `String` | Creditor UID |
+| `amount` | `double` | Amount owed |
+
+**💰 MONEY TRUTH:** This entity represents computed financial obligations. Derived from Expense records.
+
+**Notes:** Computed by `SettlementEngine.computeDebts()`. Represents the minimal set of transfers needed to settle all balances. Never stored — always recalculated from expenses.
+
+---
+
+### 9. SettlementTransfer
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | N/A (computed) |
+| **Storage** | In-memory only |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `creditorPhone` | `String` | Who receives payment |
+| `creditorDisplayName` | `String` | For display |
+| `amount` | `double` | Amount to transfer |
+
+**💰 MONEY TRUTH:** Represents a specific payment the current user should make.
+
+**Notes:** A user-specific projection of Debt for the settlement UI. Computed by `getSettlementTransfersForCurrentUser()`.
+
+---
+
+### 10. NetBalance (implicit)
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | N/A (computed) |
+| **Storage** | In-memory only |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `memberId` | `String` | UID |
+| `balance` | `double` | Positive = credit, negative = debt |
+
+**💰 MONEY TRUTH:** The fundamental "who owes what" calculation.
+
+**Notes:** Computed by `SettlementEngine.computeNetBalances()`. This is the source of truth for the Decision Clarity card and Balances section. Sum across all members must equal zero.
+
+---
+
+## Entity Responsibility Analysis
+
+### Entities with Multiple Responsibilities
+
+| Entity | Responsibilities | Concern |
+|--------|------------------|---------|
+| **Group** | (1) Organizational container (name, members) (2) Cycle coordinator (activeCycleId, cycleStatus) | Two distinct concerns in one document. Cycle state changes frequently; group identity rarely. |
+| **Cycle** | (1) Active expense container (2) Historical archive | Dual lifecycle — mutable while active, should be immutable when closed. No enforcement at data layer. |
+| **Expense** | (1) Financial record (2) Editable user content | Tension between "immutable event" semantics and "user made a typo" usability. |
+
+### Money Truth Entities
+
+These entities directly affect financial calculations. Changes require extra care.
+
+| Entity | Role | Risk |
+|--------|------|------|
+| **Expense** | Primary record | Edits change what people owe |
+| **Expense.splitAmountsById** | Per-person amounts | Must sum to total (not enforced on read) |
+| **NetBalance** | Derived totals | Logic errors cause wrong settlement amounts |
+| **Debt** | Derived transfers | Algorithm errors cause wrong payment instructions |
+| **SettlementTransfer** | User-facing payment | Incorrect display causes real-world payment errors |
+
+---
+
+## Data Flow Summary
+
+```
+User ─────────────────────────────────────┐
+                                          │
+Group ──┬── memberIds ────────────────────┼──► Member (derived)
+        │                                 │
+        ├── activeCycleId ──► Cycle ──────┤
+        │                        │        │
+        │                        ▼        │
+        │                    Expense ─────┼──► NetBalance (derived)
+        │                        │        │         │
+        │                        │        │         ▼
+        └── pendingMembers ──────┼────────┼──► Debt (derived)
+                                 │        │         │
+                                 ▼        │         ▼
+                          SystemMessage   │   SettlementTransfer (derived)
+                                          │
+GroupInvitation (derived) ◄───────────────┘
+```
+
+---
+
+## Invariants Implied by This Spine
+
+1. **Expense amounts must be positive and finite** — enforced
+2. **Split amounts must sum to expense amount** — assumed, not enforced on read
+3. **Net balances must sum to zero** — enforced by algorithm design
+4. **Closed cycles should not accept new expenses** — assumed, not enforced at data layer
+5. **A user cannot be in both members and pendingMembers** — assumed, transaction-dependent
+6. **creatorId is immutable after group creation** — assumed, not enforced
+
+---
+
+## Usage Notes
+
+This document describes **what the entities are**, not **how they should be changed**. It serves as a reference for:
+
+- Understanding which fields affect money calculations
+- Identifying where extra caution is needed during modifications
+- Recognizing implicit invariants that the code assumes but doesn't enforce
+
+No refactors are proposed. The current implementation continues to work as designed.
