@@ -81,6 +81,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 - [DATA_SPINE.md](docs/DATA_SPINE.md) — Formal data entity definitions
 - [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
 - [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
+- [features/MONEY_CANONICALIZATION.md](docs/features/MONEY_CANONICALIZATION.md) — Canonical implementation plan
 
 ---
 
