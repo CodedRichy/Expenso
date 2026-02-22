@@ -80,11 +80,11 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ---
 
-## Project Status & Roadmap
+## Project Status
 
-**Current status:** v1 stable. Core flows (groups, expenses, splits, settlement cycles, Magic Bar, Razorpay settlement, profile) are implemented and documented. Firestore rules enforce auth and member-only access; optional application-level encryption (sensitive fields encrypted with server-derived keys) protects data if the DB is exposed. Cloud Function `createRazorpayOrder` requires auth and caps order amount.
+Expenso is a **stabilized v1**. Core logic (expense recording, split calculation, settlement engine, cycle management) is considered frozen. All primary flows are implemented, tested where critical, and documented. Future changes should be incremental and cautious—consult [docs/STABILIZATION.md](docs/STABILIZATION.md) for invariants, known limitations, and change safety guidance before modifying core behavior.
 
-**Roadmap:** Planned work is listed in APP_BLUEPRINT.md Section 9 (planned features). No timeline commitments; priorities are set as needed.
+**Planned features** (not yet implemented) are listed in APP_BLUEPRINT.md Section 9. No timeline commitments.
 
 ---
 
