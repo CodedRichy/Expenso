@@ -23,7 +23,6 @@ String _buildViewerRelativeDescription({
 }) {
   final baseDesc = expense.description;
   final currentUserId = repo.currentUserId;
-  final paidById = expense.paidById;
   final participantIds = expense.participantIds;
   
   final otherParticipants = participantIds.where((id) => id != currentUserId).toList();
@@ -32,20 +31,23 @@ String _buildViewerRelativeDescription({
     return baseDesc;
   }
   
-  final withNames = otherParticipants.map((id) {
-    if (id == paidById && id != currentUserId) {
-      return repo.getMemberDisplayNameById(id);
-    }
-    return repo.getMemberDisplayNameById(id);
-  }).toList();
-  
-  final withSuffix = 'with ${withNames.join(', ')}';
-  
   final withPattern = RegExp(r'\s*[-–—]\s*with\s+.+$', caseSensitive: false);
   final cleanDesc = baseDesc.replaceAll(withPattern, '').trim();
   
+  final otherCount = otherParticipants.length;
+  
+  if (otherCount >= 4) {
+    return '$cleanDesc — with $otherCount others';
+  }
+  
+  final withNames = otherParticipants
+      .map((id) => repo.getMemberDisplayNameById(id))
+      .toList();
+  
   final descLower = cleanDesc.toLowerCase();
-  final namesNotInDesc = withNames.where((n) => !descLower.contains(n.toLowerCase())).toList();
+  final namesNotInDesc = withNames
+      .where((n) => !descLower.contains(n.toLowerCase()))
+      .toList();
   
   if (namesNotInDesc.isEmpty) {
     return cleanDesc;
