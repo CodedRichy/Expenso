@@ -178,42 +178,39 @@ All revision functions are **pure** (no side effects, no DB access):
 
 ---
 
-## Integration Notes
+## Integration Status
 
-### For Repository Layer
+### Repository Layer — INTEGRATED
 
-When implementing edit/delete in `CycleRepository`:
+The `CycleRepository` now uses lifecycle guards for edit/delete operations:
 
 ```dart
-Future<void> editExpense(String expenseId, Expense newExpense) async {
-  // 1. Load revision metadata
-  final revisions = await loadRevisions(groupId);
-  final deletedIds = await loadDeletedIds(groupId);
-  
-  // 2. Guard (throws if not active)
-  guardEdit(
-    expenseId: expenseId,
-    revisions: revisions,
-    deletedExpenseIds: deletedIds,
-  );
-  
-  // 3. Generate compensation deltas
-  final originalDeltas = await loadDeltas(expenseId);
-  final newDeltas = expenseToLedgerDeltas(...);
-  final compensationDeltas = generateEditDeltas(...);
-  
-  // 4. Save new expense with replacesExpenseId
-  // 5. Append compensation deltas to ledger
-}
+// Delete uses soft-delete (marks as deleted, preserves audit trail)
+await repo.deleteExpense(groupId, expenseId);
+
+// Update validates expense is active before allowing changes
+repo.updateExpense(groupId, updatedExpense);
+
+// Query lifecycle state
+final state = repo.getExpenseLifecycleState(groupId, expenseId);
+final canEdit = repo.canEditExpense(groupId, expenseId);
+final canDelete = repo.canDeleteExpense(groupId, expenseId);
 ```
+
+### Firestore Storage
+
+| Collection | Purpose |
+|------------|---------|
+| `groups/{groupId}/expense_revisions` | Tracks edit chains (replacesExpenseId) |
+| `groups/{groupId}/deleted_expenses` | Stores deleted expense IDs with timestamps |
 
 ### For UI Layer
 
 Disable edit/delete buttons for non-active expenses:
 
 ```dart
-final state = deriveExpenseState(...);
-final canModify = state == ExpenseLifecycleState.active;
+final canModify = repo.canEditExpense(groupId, expense.id);
+// Use canModify to enable/disable UI controls
 ```
 
 ---

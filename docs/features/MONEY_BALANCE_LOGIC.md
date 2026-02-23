@@ -312,25 +312,18 @@ static const double _tolerance = 0.01;
 
 ---
 
-## 6. Duplication Analysis
+## 6. Canonicalization Status
 
-The balance computation logic exists in **two places**:
+**✅ RESOLVED (Phase 2 executed)**
 
-| Location | Implementation |
-|----------|---------------|
-| `SettlementEngine._buildNetBalances()` | Pure, testable, explicit filters |
-| `CycleRepository.calculateBalances()` | Impure, accesses `_currentUserId`, different fallback for empty `paidById` |
+Balance computation is now unified. `CycleRepository.calculateBalances()` delegates to `SettlementEngine.computeNetBalancesAsDouble()`.
 
-**Differences:**
+| Location | Role |
+|----------|------|
+| `SettlementEngine.computeNetBalances()` | Canonical implementation (strict validation) |
+| `CycleRepository.calculateBalances()` | Thin wrapper that delegates to SettlementEngine |
 
-| Aspect | SettlementEngine | CycleRepository |
-|--------|------------------|-----------------|
-| Empty `paidById` | Skips credit | Falls back to `_currentUserId` |
-| Invalid amount check | Yes (≤0, NaN, Inf) | No |
-| Invalid split check | Yes (NaN, Inf) | No |
-| Return type | Immutable map | Mutable map |
-
-**Risk:** These implementations may diverge. The SettlementEngine version is more defensive.
+See [MONEY_PHASE2.md](MONEY_PHASE2.md) for migration details and [MONEY_CANONICALIZATION.md](MONEY_CANONICALIZATION.md) for the delegation plan.
 
 ---
 
@@ -350,10 +343,9 @@ No code changes are proposed. This is a specification for future test expansion.
 
 ## Summary
 
-The balance computation in Expenso is implemented as near-pure functions in `SettlementEngine`. The core logic is sound and tested for basic cases. The main risks are:
+The balance computation in Expenso is implemented as pure functions in `SettlementEngine`. The core logic is sound and tested for basic cases. Remaining considerations:
 
-1. **Assumed invariant A1** — split amounts summing to total is not validated
-2. **Duplication** — `CycleRepository.calculateBalances()` has slightly different behavior
-3. **Test gaps** — edge cases and multi-party scenarios not covered
+1. **Assumed invariant A1** — split amounts summing to total is not validated at read time (enforced at write via `NormalizedExpense`)
+2. **Test gaps** — some edge cases and multi-party scenarios could benefit from additional coverage
 
-This specification isolates the money-critical path for inspection without modifying existing code.
+This specification isolates the money-critical path for inspection.

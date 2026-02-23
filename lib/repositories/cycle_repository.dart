@@ -6,7 +6,9 @@ import '../models/cycle.dart';
 import '../models/normalized_expense.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
+import '../utils/ledger_delta.dart';
 import '../utils/settlement_engine.dart';
 
 class CycleRepository extends ChangeNotifier {
@@ -204,6 +206,8 @@ class CycleRepository extends ChangeNotifier {
     _expensesByCycleId.clear();
     _groupMeta.clear();
     _userCache.clear();
+    _revisionsByGroup.clear();
+    _deletedIdsByGroup.clear();
     _clearLastAdded();
     _streamError = null;
     notifyListeners();
@@ -243,10 +247,17 @@ class CycleRepository extends ChangeNotifier {
   final Map<String, _GroupMeta> _groupMeta = {};
   final Map<String, Map<String, dynamic>> _userCache = {};
 
+  /// groupId -> list of expense revisions (for edit tracking).
+  final Map<String, List<ExpenseRevision>> _revisionsByGroup = {};
+  /// groupId -> set of deleted expense IDs.
+  final Map<String, Set<String>> _deletedIdsByGroup = {};
+
   StreamSubscription<List<DocView>>? _groupsSub;
   StreamSubscription<List<DocView>>? _invitationsSub;
   final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
   final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _systemMessageSubs = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _revisionSubs = {};
+  final Map<String, StreamSubscription<Set<String>>> _deletedIdsSubs = {};
 
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
@@ -427,6 +438,14 @@ class CycleRepository extends ChangeNotifier {
     }
     _systemMessageSubs.clear();
     _systemMessagesByGroup.clear();
+    for (final sub in _revisionSubs.values) {
+      sub.cancel();
+    }
+    _revisionSubs.clear();
+    for (final sub in _deletedIdsSubs.values) {
+      sub.cancel();
+    }
+    _deletedIdsSubs.clear();
   }
 
   void restartListening() {
@@ -535,6 +554,22 @@ class CycleRepository extends ChangeNotifier {
           },
         );
       }
+      if (!_revisionSubs.containsKey(groupId)) {
+        _revisionSubs[groupId] = FirestoreService.instance.expenseRevisionsStream(groupId).listen(
+          (revs) => _onRevisionsSnapshot(groupId, revs),
+          onError: (e, st) {
+            debugPrint('CycleRepository expenseRevisionsStream($groupId) error: $e');
+          },
+        );
+      }
+      if (!_deletedIdsSubs.containsKey(groupId)) {
+        _deletedIdsSubs[groupId] = FirestoreService.instance.deletedExpenseIdsStream(groupId).listen(
+          (ids) => _onDeletedIdsSnapshot(groupId, ids),
+          onError: (e, st) {
+            debugPrint('CycleRepository deletedExpenseIdsStream($groupId) error: $e');
+          },
+        );
+      }
     }
 
     _loadUsersForMembers(docs);
@@ -606,6 +641,17 @@ class CycleRepository extends ChangeNotifier {
       );
     }).toList();
     notifyListeners();
+  }
+
+  void _onRevisionsSnapshot(String groupId, List<Map<String, dynamic>> revs) {
+    _revisionsByGroup[groupId] = revs.map((r) => ExpenseRevision(
+      expenseId: r['expenseId'] as String? ?? r['id'] as String? ?? '',
+      replacesExpenseId: r['replacesExpenseId'] as String?,
+    )).toList();
+  }
+
+  void _onDeletedIdsSnapshot(String groupId, Set<String> ids) {
+    _deletedIdsByGroup[groupId] = ids;
   }
 
   String _phoneForUid(String uid) {
@@ -1112,11 +1158,54 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
+  /// Returns the lifecycle state of an expense (active, deleted, or superseded).
+  ExpenseLifecycleState getExpenseLifecycleState(String groupId, String expenseId) {
+    final revisions = _revisionsByGroup[groupId] ?? [];
+    final deletedIds = _deletedIdsByGroup[groupId] ?? {};
+    return deriveExpenseState(
+      expenseId: expenseId,
+      revisions: revisions,
+      deletedExpenseIds: deletedIds,
+    );
+  }
+
+  /// Returns true if the expense can be edited (is active).
+  bool canEditExpense(String groupId, String expenseId) {
+    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.active;
+  }
+
+  /// Returns true if the expense can be deleted (is active).
+  bool canDeleteExpense(String groupId, String expenseId) {
+    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.active;
+  }
+
+  /// Returns true if the expense is deleted (soft-deleted via compensation model).
+  bool isExpenseDeleted(String groupId, String expenseId) {
+    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.deleted;
+  }
+
+  /// Returns all active (non-deleted, non-superseded) expenses for a group.
+  List<Expense> getActiveExpenses(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    return cycle.expenses.where((e) => canEditExpense(groupId, e.id)).toList();
+  }
+
+  /// Updates an expense in-place. Validates that the expense is active
+  /// (not deleted or superseded) before allowing the update.
   void updateExpense(String groupId, Expense updatedExpense) {
     final amountError = validateExpenseAmount(updatedExpense.amount);
     if (amountError != null) throw ArgumentError(amountError);
     final descError = validateExpenseDescription(updatedExpense.description);
     if (descError != null) throw ArgumentError(descError);
+
+    final revisions = _revisionsByGroup[groupId] ?? [];
+    final deletedIds = _deletedIdsByGroup[groupId] ?? {};
+
+    guardEdit(
+      expenseId: updatedExpense.id,
+      revisions: revisions,
+      deletedExpenseIds: deletedIds,
+    );
 
     final meta = _groupMeta[groupId];
     if (meta == null) return;
@@ -1153,7 +1242,29 @@ class CycleRepository extends ChangeNotifier {
     });
   }
 
-  void deleteExpense(String groupId, String expenseId) {
+  /// Soft-deletes an expense using the compensation model.
+  /// The expense is marked as deleted and its effect on balances is negated,
+  /// but the original data is preserved for audit trail.
+  Future<void> deleteExpense(String groupId, String expenseId) async {
+    final revisions = _revisionsByGroup[groupId] ?? [];
+    final deletedIds = _deletedIdsByGroup[groupId] ?? {};
+
+    guardDelete(
+      expenseId: expenseId,
+      revisions: revisions,
+      deletedExpenseIds: deletedIds,
+    );
+
+    await FirestoreService.instance.markExpenseDeleted(groupId, expenseId);
+
+    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) {
+      _clearLastAdded();
+    }
+  }
+
+  /// Hard-deletes an expense (removes from Firestore completely).
+  /// Use for undo operations within the undo window only.
+  void hardDeleteExpense(String groupId, String expenseId) {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
     if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) _clearLastAdded();
   }

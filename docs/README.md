@@ -37,7 +37,6 @@
 | [EXPENSE_REVISIONS.md](features/EXPENSE_REVISIONS.md) | Edit/delete via compensation events |
 | [MULTI_PAYER.md](features/MULTI_PAYER.md) | Multiple payers per expense |
 | [EXPENSE_SPLIT_USE_CASES.md](features/EXPENSE_SPLIT_USE_CASES.md) | Split scenarios |
-| [SETTLEMENT_LOGIC_NOTES.md](features/SETTLEMENT_LOGIC_NOTES.md) | Settlement implementation notes |
 | [DATA_ENCRYPTION.md](features/DATA_ENCRYPTION.md) | Encryption coverage |
 | [DATA_ENCRYPTION_SETUP.md](features/DATA_ENCRYPTION_SETUP.md) | Setup guide |
 
@@ -49,6 +48,7 @@
 | [RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md](research/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md) | Parsing research notes |
 | [PARSER_AND_WHO_IS_INVOLVED.md](research/PARSER_AND_WHO_IS_INVOLVED.md) | Participant detection logic |
 | [RESEARCH_SETTLEMENT_LOGIC.md](research/RESEARCH_SETTLEMENT_LOGIC.md) | Settlement research |
+| [SETTLEMENT_LOGIC_NOTES.md](research/SETTLEMENT_LOGIC_NOTES.md) | Settlement debugging notes |
 | [SURVEY_FEATURE_REQUESTS.md](research/SURVEY_FEATURE_REQUESTS.md) | User survey summary |
 
 ## Internal

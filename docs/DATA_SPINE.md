@@ -91,9 +91,9 @@ This document defines the fundamental data structures that Expenso operates on. 
 
 **💰 MONEY TRUTH:** This entity records financial facts. Changes directly affect what people owe.
 
-**⚠️ Current vs Ideal:** Currently mutable (can be edited/deleted). Ideally should be append-only with correction events rather than in-place edits. This is a known trade-off for usability.
+**✅ Append-only model implemented:** Edits and deletions use compensation events (negate original + append replacement), preserving full audit history. See [EXPENSE_REVISIONS.md](features/EXPENSE_REVISIONS.md) for details.
 
-**Notes:** An expense represents "Person A paid X for Y, split among Z." This is fundamentally an event — it happened. In a rigorous system, corrections would be separate events, not overwrites.
+**Notes:** An expense represents "Person A paid X for Y, split among Z." This is fundamentally an event — it happened. The compensation model ensures corrections are separate events, not overwrites.
 
 ---
 
@@ -245,7 +245,7 @@ This document defines the fundamental data structures that Expenso operates on. 
 |--------|------------------|---------|
 | **Group** | (1) Organizational container (name, members) (2) Cycle coordinator (activeCycleId, cycleStatus) | Two distinct concerns in one document. Cycle state changes frequently; group identity rarely. |
 | **Cycle** | (1) Active expense container (2) Historical archive | Dual lifecycle — mutable while active, should be immutable when closed. No enforcement at data layer. |
-| **Expense** | (1) Financial record (2) Editable user content | Tension between "immutable event" semantics and "user made a typo" usability. |
+| **Expense** | (1) Financial record (2) Editable user content | Resolved via compensation events — edits append negation + replacement, preserving audit trail. |
 
 ### Money Truth Entities
 

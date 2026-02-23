@@ -51,7 +51,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 | Entity | Should Be Immutable? | Currently Immutable? | Notes |
 |--------|---------------------|---------------------|-------|
-| Expense | Yes (append-only ledger semantics) | **No** | Expenses can be edited/deleted while cycle is active. This is a known design trade-off for usability. |
+| Expense | Yes (append-only ledger semantics) | **Partially** | Deletes use soft-delete (marked deleted, preserved for audit). Edits still mutate in-place but have lifecycle guards. See `docs/features/EXPENSE_REVISIONS.md`. |
 | Cycle | Partially (closed cycles) | **No** | Active cycles are mutable; closed cycles are stored separately but lack tamper protection. |
 | SystemMessage | Yes | Yes | Append-only activity feed. |
 | SettlementTransfer | Yes | Yes | Ephemeral, computed on demand. |
@@ -138,6 +138,8 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 | 10 | **Phone numbers are normalized before comparison** | ✅ Enforced by code (`_normalizePhone` used consistently) |
 | 11 | **Pending members use `p_` prefix in IDs** | ✅ Enforced by code (convention throughout codebase) |
 | 12 | **Encryption keys must be fetched before encrypted read/write** | ⚠️ Assumed. `ensureUserKey()`/`ensureGroupKey()` called, but failure paths may leave data unreadable. |
+| 13 | **Deleted expenses cannot be edited** | ✅ Enforced by code (`guardEdit` throws `ExpenseLifecycleError`) |
+| 14 | **Deleted expenses cannot be deleted again** | ✅ Enforced by code (`guardDelete` throws `ExpenseLifecycleError`) |
 
 ---
 
@@ -147,27 +149,27 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 1. **No offline support.** All writes require network. Firestore offline persistence is not explicitly configured; behavior depends on defaults.
 
-2. **No expense edit history.** When an expense is edited, the previous state is lost. There is no audit trail.
+2. **No partial settlement tracking.** The app does not record who has paid whom mid-cycle. Settlement is all-or-nothing at cycle close.
 
-3. **No partial settlement tracking.** The app does not record who has paid whom mid-cycle. Settlement is all-or-nothing at cycle close.
+3. **No conflict resolution for concurrent edits.** If two users edit the same expense simultaneously, last-write-wins applies.
 
-4. **No conflict resolution for concurrent edits.** If two users edit the same expense simultaneously, last-write-wins applies.
+4. **Phone number as identity.** Users who change phone numbers lose access to their history unless manually migrated.
 
-5. **Phone number as identity.** Users who change phone numbers lose access to their history unless manually migrated.
+5. **Partial expense audit trail.** Deletes are soft-deleted with timestamps preserved. Edits are in-place but have lifecycle guards preventing edit-after-delete. Full append-only ledger for edits is available as pure functions but not yet wired up. See `docs/features/EXPENSE_REVISIONS.md`.
 
 ### Scale Limitations
 
-6. **In-memory member cache.** `_membersById` and `_userCache` grow unbounded across sessions. Large groups or many groups may consume significant memory.
+5. **In-memory member cache.** `_membersById` and `_userCache` grow unbounded across sessions. Large groups or many groups may consume significant memory.
 
-7. **No pagination.** Group list, expense list, and history are loaded fully. Works for small datasets; will degrade with hundreds of expenses per cycle.
+6. **No pagination.** Group list, expense list, and history are loaded fully. Works for small datasets; will degrade with hundreds of expenses per cycle.
 
-8. **Single-region encryption keys.** `DataEncryptionService` hardcodes `asia-south1`. Users in other regions may experience latency.
+7. **Single-region encryption keys.** `DataEncryptionService` hardcodes `asia-south1`. Users in other regions may experience latency.
 
 ### Design Shortcuts
 
-9. **Date stored as string.** Expense `date` field is `"Today"`, `"Yesterday"`, or `"Mon DD"`. This makes date math fragile and timezone-dependent.
+8. **Date stored as string.** Expense `date` field is `"Today"`, `"Yesterday"`, or `"Mon DD"`. This makes date math fragile and timezone-dependent.
 
-10. **Category is free-form.** No category normalization or predefined list. Inconsistent categorization is expected.
+9. **Category is free-form.** No category normalization or predefined list. Inconsistent categorization is expected.
 
 ---
 

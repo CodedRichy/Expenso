@@ -32,6 +32,8 @@ class FirestorePaths {
   static const String expenses = 'expenses';
   static const String settledCycles = 'settled_cycles';
   static const String systemMessages = 'system_messages';
+  static const String expenseRevisions = 'expense_revisions';
+  static const String deletedExpenses = 'deleted_expenses';
 
   static String groupDoc(String groupId) => '$groups/$groupId';
   static String groupExpenses(String groupId) => '$groups/$groupId/$expenses';
@@ -40,6 +42,8 @@ class FirestorePaths {
       '$groups/$groupId/$settledCycles/$cycleId';
   static String groupSettledCycleExpenses(String groupId, String cycleId) =>
       '$groups/$groupId/$settledCycles/$cycleId/$expenses';
+  static String groupExpenseRevisions(String groupId) => '$groups/$groupId/$expenseRevisions';
+  static String groupDeletedExpenses(String groupId) => '$groups/$groupId/$deletedExpenses';
 }
 
 /// Low-level Firestore access for users, groups, and expenses.
@@ -399,12 +403,60 @@ class FirestoreService {
         .update(toWrite);
   }
 
-  /// Delete expense from current cycle.
+  /// Soft-delete: marks expense as deleted (compensation model).
+  /// The expense document remains but is marked deleted for audit trail.
+  Future<void> markExpenseDeleted(String groupId, String expenseId) async {
+    final ref = _firestore.collection(FirestorePaths.groupDeletedExpenses(groupId)).doc(expenseId);
+    await ref.set({'deletedAt': FieldValue.serverTimestamp()});
+  }
+
+  /// Hard-delete expense from current cycle (legacy method, use markExpenseDeleted for audit trail).
   Future<void> deleteExpense(String groupId, String expenseId) async {
     await _firestore
         .collection(FirestorePaths.groupExpenses(groupId))
         .doc(expenseId)
         .delete();
+  }
+
+  /// Add an expense revision record (for edit tracking).
+  Future<void> addExpenseRevision(String groupId, {
+    required String expenseId,
+    String? replacesExpenseId,
+  }) async {
+    final ref = _firestore.collection(FirestorePaths.groupExpenseRevisions(groupId)).doc(expenseId);
+    await ref.set({
+      'expenseId': expenseId,
+      if (replacesExpenseId != null) 'replacesExpenseId': replacesExpenseId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Stream of expense revisions for a group (for lifecycle tracking).
+  Stream<List<Map<String, dynamic>>> expenseRevisionsStream(String groupId) {
+    return _firestore
+        .collection(FirestorePaths.groupExpenseRevisions(groupId))
+        .snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  /// Stream of deleted expense IDs for a group.
+  Stream<Set<String>> deletedExpenseIdsStream(String groupId) {
+    return _firestore
+        .collection(FirestorePaths.groupDeletedExpenses(groupId))
+        .snapshots()
+        .map((s) => s.docs.map((d) => d.id).toSet());
+  }
+
+  /// Get all expense revisions for a group (one-time fetch).
+  Future<List<Map<String, dynamic>>> getExpenseRevisions(String groupId) async {
+    final snap = await _firestore.collection(FirestorePaths.groupExpenseRevisions(groupId)).get();
+    return snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+  }
+
+  /// Get all deleted expense IDs for a group (one-time fetch).
+  Future<Set<String>> getDeletedExpenseIds(String groupId) async {
+    final snap = await _firestore.collection(FirestorePaths.groupDeletedExpenses(groupId)).get();
+    return snap.docs.map((d) => d.id).toSet();
   }
 
   /// Stream of current-cycle expenses for a group. Sorted by dateSortKey (then date string) in memory.
