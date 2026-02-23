@@ -296,21 +296,24 @@ GroupInvitation (derived) ◄───────────────┘
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `amount` | `double` | Total cost (positive, finite) |
+| `total` | `MoneyMinor` | Total cost in minor units (positive integer) |
 | `description` | `String` | Expense description (not validated, UI concern) |
 | `category` | `String` | Optional categorization (not validated) |
 | `date` | `String` | Date string (not validated) |
-| `payerContributionsByMemberId` | `Map<String, double>` | Who paid how much (sum = amount) |
-| `participantSharesByMemberId` | `Map<String, double>` | Who owes how much (sum = amount) |
+| `payerContributionsByMemberId` | `Map<String, MoneyMinor>` | Who paid how much (sum = total) |
+| `participantSharesByMemberId` | `Map<String, MoneyMinor>` | Who owes how much (sum = total) |
 
 **Design Principles:**
 - **UI-agnostic:** No UI concepts (slots, selections, confirmation state)
 - **Timeless:** Can be reconstructed from storage without current group state
 - **Replay-safe:** Produces identical LedgerDeltas regardless of when computed
+- **Integer-only:** All money values use `MoneyMinor` (no floating-point)
+- **Single-currency:** All amounts in an expense use the same currency
 
 **Money Invariants (enforced):**
-- sum(payerContributions) == amount
-- sum(participantShares) == amount
+- sum(payerContributions.amountMinor) == total.amountMinor (exact integer equality)
+- sum(participantShares.amountMinor) == total.amountMinor (exact integer equality)
+- All MoneyMinor instances share the same currencyCode
 - All map keys are valid member IDs (no `p_` prefixes)
 
 **Non-invariants (NOT validated):**
@@ -333,22 +336,57 @@ GroupInvitation (derived) ◄───────────────┘
 | Field | Type | Notes |
 |-------|------|-------|
 | `memberId` | `String` | Member UID |
-| `delta` | `double` | Balance change (+credit, -debit) |
+| `delta` | `MoneyMinor` | Balance change in minor units (+credit, -debit) |
 | `expenseId` | `String` | Source expense identifier |
 | `timestamp` | `DateTime` | When the expense occurred |
 
-**💰 MONEY TRUTH:** Fundamental unit of balance computation. Sum of all deltas for an expense is exactly zero.
+**💰 MONEY TRUTH:** Fundamental unit of balance computation. Sum of all deltas for an expense is exactly zero (integer arithmetic, no tolerance).
 
 **Design Principles:**
 - **UI-agnostic:** No UI concepts
 - **Timeless:** Computed from stored data only, not current group state
 - **Deterministic:** Same input always produces same output
 - **Replay-safe:** Old expenses produce identical deltas regardless of membership changes
+- **Integer-only:** Uses `MoneyMinor` for exact arithmetic
 
 **Replay Safety Guarantee:**
-The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amount, payerId, splitAmountsById). It does NOT use current group membership, "everyone" semantics, or dynamic participant lists.
+The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amountMinor, payerId, splitAmountsByIdMinor, currencyCode). It does NOT use current group membership, "everyone" semantics, or dynamic participant lists.
 
 **Notes:** Pure derived view from NormalizedExpense or Expense. For each payer: +paidAmount. For each participant: -shareAmount. This is the atomic unit for Splitwise-style ledger accounting. Balances are computed by aggregating deltas, never stored directly.
+
+---
+
+### 13. Currency
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Metadata |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | Static registry in code |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `code` | `String` | ISO 4217 currency code (e.g., "INR", "USD", "JPY") |
+| `minorUnitScale` | `int` | Number of decimal places (0, 2, or 3) |
+
+**Notes:** Currency metadata is declarative and drives all accounting behavior. Supported currencies include INR, USD, EUR, GBP (scale 2), JPY, KRW (scale 0), and KWD, BHD (scale 3). New currencies can be added to `CurrencyRegistry` without touching accounting logic.
+
+---
+
+### 14. MoneyMinor
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Value Object |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | Integer in minor units |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `amountMinor` | `int` | Amount in minor units (paise, cents, fils) |
+| `currencyCode` | `String` | ISO 4217 currency code |
+
+**Notes:** Core type for all accounting math. Using integers eliminates floating-point errors. Conversion to/from display values happens at UI boundaries via `MoneyConversion.parseToMinor()` and `MoneyConversion.toDisplay()`.
 
 ---
 

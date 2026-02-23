@@ -276,7 +276,9 @@ lib/
   models/
     models.dart                # Group, Member, Expense
     cycle.dart                 # Cycle, CycleStatus
-    normalized_expense.dart    # NormalizedExpense (UI-agnostic, ID-only, money-invariants-only)
+    currency.dart              # Currency, CurrencyRegistry (ISO 4217 metadata)
+    money_minor.dart           # MoneyMinor, MoneyConversion, MoneySplitter (integer money)
+    normalized_expense.dart    # NormalizedExpense (UI-agnostic, ID-only, integer-based)
   repositories/
     cycle_repository.dart      # Singleton; Firestore-backed (groups, members, cycles, expenses, identity)
   services/
@@ -289,8 +291,8 @@ lib/
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
     route_args.dart          # RouteArgs.getGroup, getMap — safe route arguments (avoids crash on missing/wrong type)
-    settlement_engine.dart     # Debt, computeDebts, computeNetBalances, computeNetBalancesFromDeltas
-    ledger_delta.dart          # LedgerDelta, toLedgerDeltas, expenseToLedgerDeltas
+    settlement_engine.dart     # Debt, computeDebts, computeNetBalances (integer-based)
+    ledger_delta.dart          # LedgerDelta, toLedgerDeltas, expenseToLedgerDeltas (integer-based)
     expense_normalization.dart # Re-exports normalization_workflow.dart
     normalization_workflow.dart # UI workflow: normalizeExpense, ParticipantSlot, NormalizationResult
   widgets/

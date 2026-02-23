@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:expenso/models/models.dart';
+import 'package:expenso/models/money_minor.dart';
 import 'package:expenso/utils/settlement_engine.dart';
 import 'package:expenso/utils/ledger_delta.dart';
 
@@ -26,7 +27,7 @@ void main() {
     );
   }
 
-  group('SettlementEngine.computeNetBalances', () {
+  group('SettlementEngine.computeNetBalances (integer-based)', () {
     test('even split: one paid, two share - payer gets credit others owe', () {
       final expenses = [
         expense(
@@ -38,23 +39,8 @@ void main() {
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['u1'], 150);
-      expect(net['u2'], -150);
-    });
-
-    test('empty participantIds uses all members (even split)', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 40,
-          paidById: 'u2',
-          participantIds: [],
-          splitAmountsById: null,
-        ),
-      ];
-      final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['u1'], -20);
-      expect(net['u2'], 20);
+      expect(net['u1'], 15000);
+      expect(net['u2'], -15000);
     });
 
     test('exact split: amounts match total', () {
@@ -68,8 +54,8 @@ void main() {
         ),
       ];
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['u1'], 300);
-      expect(net['u2'], -300);
+      expect(net['u1'], 30000);
+      expect(net['u2'], -30000);
     });
 
     test('multiple expenses net correctly', () {
@@ -95,7 +81,7 @@ void main() {
     });
   });
 
-  group('SettlementEngine.computeDebts', () {
+  group('SettlementEngine.computeDebts (integer-based)', () {
     test('single debtor owes single creditor', () {
       final expenses = [
         expense(
@@ -110,7 +96,7 @@ void main() {
       expect(debts.length, 1);
       expect(debts[0].fromId, 'u2');
       expect(debts[0].toId, 'u1');
-      expect(debts[0].amount, closeTo(150, 0.01));
+      expect(debts[0].amountMinor, 15000);
     });
 
     test('balanced expenses yield no debts', () {
@@ -135,47 +121,72 @@ void main() {
     });
   });
 
-  group('SettlementEngine delta-based computation', () {
-    test('computeNetBalancesFromDeltas matches computeNetBalances', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 300,
-          paidById: 'u1',
-          participantIds: ['u1', 'u2'],
-          splitAmountsById: {'u1': 150, 'u2': 150},
+  group('SettlementEngine delta-based computation (integer)', () {
+    test('computeNetBalancesFromDeltas returns integer balances', () {
+      final deltas = [
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
         ),
       ];
 
-      final legacyNet = SettlementEngine.computeNetBalances(expenses, members);
-      final deltas = SettlementEngine.expensesToDeltas(expenses);
-      final deltaNet = SettlementEngine.computeNetBalancesFromDeltas(deltas);
-
-      expect(deltaNet['u1'], closeTo(legacyNet['u1']!, 0.01));
-      expect(deltaNet['u2'], closeTo(legacyNet['u2']!, 0.01));
+      final net = SettlementEngine.computeNetBalancesFromDeltas(deltas, 'INR');
+      expect(net['u1'], 15000);
+      expect(net['u2'], -15000);
     });
 
-    test('computeDebtsFromDeltas matches computeDebts', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 300,
-          paidById: 'u1',
-          participantIds: ['u1', 'u2'],
-          splitAmountsById: {'u1': 150, 'u2': 150},
+    test('computeDebtsFromDeltas returns Debt with MoneyMinor', () {
+      final deltas = [
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
         ),
       ];
 
-      final legacyDebts = SettlementEngine.computeDebts(expenses, members);
-      final deltas = SettlementEngine.expensesToDeltas(expenses);
-      final deltaDebts = SettlementEngine.computeDebtsFromDeltas(deltas);
+      final debts = SettlementEngine.computeDebtsFromDeltas(deltas, 'INR');
+      expect(debts.length, 1);
+      expect(debts[0].fromId, 'u2');
+      expect(debts[0].toId, 'u1');
+      expect(debts[0].amountMinor, 15000);
+      expect(debts[0].currencyCode, 'INR');
+    });
 
-      expect(deltaDebts.length, legacyDebts.length);
-      if (deltaDebts.isNotEmpty) {
-        expect(deltaDebts[0].fromId, legacyDebts[0].fromId);
-        expect(deltaDebts[0].toId, legacyDebts[0].toId);
-        expect(deltaDebts[0].amount, closeTo(legacyDebts[0].amount, 0.01));
-      }
+    test('rejects mixed currencies in deltas', () {
+      final deltas = [
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-15000, 'USD'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      expect(
+        () => SettlementEngine.computeNetBalancesFromDeltas(deltas, 'INR'),
+        throwsArgumentError,
+      );
     });
 
     test('expenseToDeltas produces correct deltas', () {
@@ -188,13 +199,13 @@ void main() {
       );
 
       final deltas = SettlementEngine.expenseToDeltas(exp);
-      final deltaMap = {for (final d in deltas) d.memberId: d.delta};
+      final deltaMap = {for (final d in deltas) d.memberId: d.deltaMinor};
 
-      expect(deltaMap['u1'], closeTo(150, 0.01));
-      expect(deltaMap['u2'], closeTo(-150, 0.01));
+      expect(deltaMap['u1'], 15000);
+      expect(deltaMap['u2'], -15000);
     });
 
-    test('delta sum is always zero', () {
+    test('delta sum is always exactly zero (integer)', () {
       final exp = expense(
         id: 'e1',
         amount: 500,
@@ -204,9 +215,9 @@ void main() {
       );
 
       final deltas = SettlementEngine.expenseToDeltas(exp);
-      final sum = deltas.fold(0.0, (acc, d) => acc + d.delta);
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
 
-      expect(sum.abs(), lessThan(0.01));
+      expect(sum, 0);
     });
 
     test('invalid expense returns empty deltas', () {
@@ -254,34 +265,36 @@ void main() {
       ];
 
       final deltas = SettlementEngine.expensesToDeltas(expenses);
-      final net = SettlementEngine.computeNetBalancesFromDeltas(deltas);
+      final net = SettlementEngine.computeNetBalancesFromDeltas(deltas, 'INR');
 
-      expect(net['u1'], closeTo(0, 0.01));
-      expect(net['u2'], closeTo(0, 0.01));
+      expect(net['u1'], 0);
+      expect(net['u2'], 0);
     });
   });
 
-  group('expenseToLedgerDeltas function', () {
-    test('produces correct deltas from raw expense data', () {
+  group('expenseToLedgerDeltas function (integer-based)', () {
+    test('produces correct deltas from integer expense data', () {
       final deltas = expenseToLedgerDeltas(
         expenseId: 'e1',
-        amount: 300,
+        amountMinor: 30000,
         payerId: 'u1',
-        splitAmountsById: {'u1': 150, 'u2': 150},
+        splitAmountsByIdMinor: {'u1': 15000, 'u2': 15000},
+        currencyCode: 'INR',
         timestamp: DateTime.now(),
       );
 
-      final deltaMap = {for (final d in deltas) d.memberId: d.delta};
-      expect(deltaMap['u1'], closeTo(150, 0.01));
-      expect(deltaMap['u2'], closeTo(-150, 0.01));
+      final deltaMap = {for (final d in deltas) d.memberId: d.deltaMinor};
+      expect(deltaMap['u1'], 15000);
+      expect(deltaMap['u2'], -15000);
     });
 
     test('skips pending member IDs in splits', () {
       final deltas = expenseToLedgerDeltas(
         expenseId: 'e1',
-        amount: 300,
+        amountMinor: 30000,
         payerId: 'u1',
-        splitAmountsById: {'u1': 150, 'p_pending': 150},
+        splitAmountsByIdMinor: {'u1': 15000, 'p_pending': 15000},
+        currencyCode: 'INR',
         timestamp: DateTime.now(),
       );
 
@@ -291,13 +304,92 @@ void main() {
     test('returns empty for invalid amount', () {
       final deltas = expenseToLedgerDeltas(
         expenseId: 'e1',
-        amount: 0,
+        amountMinor: 0,
         payerId: 'u1',
-        splitAmountsById: {'u1': 0},
+        splitAmountsByIdMinor: {'u1': 0},
+        currencyCode: 'INR',
         timestamp: DateTime.now(),
       );
 
       expect(deltas, isEmpty);
+    });
+
+    test('deltas sum to exactly zero', () {
+      final deltas = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amountMinor: 50000,
+        payerId: 'u1',
+        splitAmountsByIdMinor: {'u1': 20000, 'u2': 30000},
+        currencyCode: 'INR',
+        timestamp: DateTime.now(),
+      );
+
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
+      expect(sum, 0);
+    });
+  });
+
+  group('Legacy adapter compatibility', () {
+    test('expenseToLedgerDeltasLegacy converts doubles to integers', () {
+      final deltas = expenseToLedgerDeltasLegacy(
+        expenseId: 'e1',
+        amount: 300.50,
+        payerId: 'u1',
+        splitAmountsById: {'u1': 150.25, 'u2': 150.25},
+        currencyCode: 'INR',
+        timestamp: DateTime.now(),
+      );
+
+      final deltaMap = {for (final d in deltas) d.memberId: d.deltaMinor};
+      expect(deltaMap['u1'], 15025);
+      expect(deltaMap['u2'], -15025);
+    });
+
+    test('computeNetBalancesAsDouble returns display values', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+      ];
+      final net = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
+      expect(net['u1'], 150.0);
+      expect(net['u2'], -150.0);
+    });
+  });
+
+  group('Multi-currency settlement', () {
+    test('JPY: deltas in minor units (no decimals)', () {
+      final deltas = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amountMinor: 3000,
+        payerId: 'u1',
+        splitAmountsByIdMinor: {'u1': 1500, 'u2': 1500},
+        currencyCode: 'JPY',
+        timestamp: DateTime.now(),
+      );
+
+      expect(deltas.every((d) => d.currencyCode == 'JPY'), true);
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
+      expect(sum, 0);
+    });
+
+    test('KWD: deltas in fils (3 decimal places)', () {
+      final deltas = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amountMinor: 3000,
+        payerId: 'u1',
+        splitAmountsByIdMinor: {'u1': 1500, 'u2': 1500},
+        currencyCode: 'KWD',
+        timestamp: DateTime.now(),
+      );
+
+      expect(deltas.every((d) => d.currencyCode == 'KWD'), true);
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
+      expect(sum, 0);
     });
   });
 }

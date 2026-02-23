@@ -200,7 +200,7 @@ class SettlementEngine {
     return debts.map((d) => (
       fromId: d.fromId,
       toId: d.toId,
-      amount: MoneyConversion.minorToDisplay(d.amount, currencyCode),
+      amount: MoneyConversion.minorToDisplay(d.amountMinor, currencyCode),
     )).toList();
   }
 
