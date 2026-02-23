@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'design/colors.dart';
+import 'design/typography.dart';
 import 'firebase_app.dart';
 import 'firebase_options.dart';
 import 'repositories/cycle_repository.dart';
@@ -58,7 +60,84 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A1A1A)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          surface: AppColors.surface,
+          error: AppColors.error,
+        ),
+        scaffoldBackgroundColor: AppColors.background,
+        textTheme: const TextTheme(
+          displayLarge: AppTypography.heroTitle,
+          headlineLarge: AppTypography.screenTitle,
+          headlineMedium: AppTypography.subheader,
+          titleLarge: AppTypography.appBarTitle,
+          titleMedium: AppTypography.listItemTitle,
+          bodyLarge: AppTypography.bodyPrimary,
+          bodyMedium: AppTypography.bodySecondary,
+          labelLarge: AppTypography.button,
+          labelMedium: AppTypography.sectionLabel,
+          bodySmall: AppTypography.caption,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            disabledBackgroundColor: AppColors.disabledBackground,
+            foregroundColor: AppColors.surface,
+            disabledForegroundColor: AppColors.disabledForeground,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            elevation: 0,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
+            side: const BorderSide(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.accent,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.surface,
+          hintStyle: AppTypography.hint,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.borderInput),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.borderInput),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.borderFocused),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.error),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.border,
+          thickness: 1,
+          space: 0,
+        ),
       ),
       initialRoute: '/splash',
       routes: {
@@ -68,22 +147,14 @@ class MyApp extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(
-                backgroundColor: const Color(0xFFF7F7F8),
+                backgroundColor: AppColors.background,
                 body: SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Padding(
                         padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
-                        child: Text(
-                          'Groups',
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                            letterSpacing: -0.6,
-                          ),
-                        ),
+                        child: Text('Groups', style: AppTypography.heroTitle),
                       ),
                       const Expanded(child: GroupListSkeleton()),
                     ],

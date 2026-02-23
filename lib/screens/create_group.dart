@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 
@@ -77,7 +79,7 @@ class _CreateGroupState extends State<CreateGroup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -92,7 +94,7 @@ class _CreateGroupState extends State<CreateGroup> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: AppColors.textPrimary,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -102,15 +104,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    'Create Group',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+                  const Text('Create Group', style: AppTypography.screenTitle),
                 ],
               ),
             ),
@@ -123,15 +117,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'GROUP NAME',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF9B9B9B),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
+                        const Text('GROUP NAME', style: AppTypography.sectionLabel),
                         const SizedBox(height: 12),
                         TextField(
                           autofocus: true,
@@ -140,31 +126,10 @@ class _CreateGroupState extends State<CreateGroup> {
                               name = value;
                             });
                           },
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             hintText: 'e.g. Roommates, Trip',
-                            hintStyle: TextStyle(
-                              color: const Color(0xFFB0B0B0),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           ),
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: const Color(0xFF1A1A1A),
-                          ),
+                          style: AppTypography.input,
                         ),
                       ],
                     ),
@@ -172,21 +137,13 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'SETTLEMENT RHYTHM',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF9B9B9B),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
+                        const Text('SETTLEMENT RHYTHM', style: AppTypography.sectionLabel),
                         const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE5E5E5)),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Column(
                             children: [
@@ -205,29 +162,21 @@ class _CreateGroupState extends State<CreateGroup> {
                         children: [
                           Text(
                             rhythm == 'weekly' ? 'SETTLEMENT DAY' : 'SETTLEMENT DATE',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF9B9B9B),
-                              letterSpacing: 0.3,
-                            ),
+                            style: AppTypography.sectionLabel,
                           ),
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: const Color(0xFFD0D0D0)),
+                              color: AppColors.surface,
+                              border: Border.all(color: AppColors.borderInput),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: settlementDay,
                                 isExpanded: true,
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  color: const Color(0xFF1A1A1A),
-                                ),
+                                style: AppTypography.input,
                                 items: rhythm == 'weekly'
                                     ? _buildWeeklyOptions()
                                     : _buildMonthlyOptions(),
@@ -248,17 +197,11 @@ class _CreateGroupState extends State<CreateGroup> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        color: AppColors.surface,
+                        border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        getPreviewText(),
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: const Color(0xFF6B6B6B),
-                        ),
-                      ),
+                      child: Text(getPreviewText(), style: AppTypography.bodySecondary),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -267,34 +210,12 @@ class _CreateGroupState extends State<CreateGroup> {
             ),
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: const Color(0xFFE5E5E5),
-                    width: 1,
-                  ),
-                ),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.border, width: 1)),
               ),
               child: ElevatedButton(
                 onPressed: name.trim().isNotEmpty ? handleCreate : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  disabledBackgroundColor: const Color(0xFFE5E5E5),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: const Color(0xFFB0B0B0),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Create Group',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                child: const Text('Create Group', style: AppTypography.button),
               ),
             ),
           ],
