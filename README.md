@@ -74,7 +74,7 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 - **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only).
 - **Expenses:** In group detail, use the Magic Bar (e.g. "Dinner 1200 with Pradhyun") or tap to add manually. Choose payer, split type, and participants; confirm. Recent add shows an undo screen for a few seconds.
 - **Settlement:** Creator taps "Settle now" to freeze the cycle; when status is "Settling", creator taps "Start New Cycle" to archive and begin a new cycle. Use "Settle up" / "Pay via UPI" to pay dues via Razorpay Checkout.
-- **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID.
+- **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID. Log out to switch accounts.
 
 Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
 - [STABILIZATION.md](docs/STABILIZATION.md) — Invariants, limitations, and change safety guidance
