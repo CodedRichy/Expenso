@@ -31,6 +31,8 @@
 | Document | Purpose |
 |----------|---------|
 | [MONEY_BALANCE_LOGIC.md](features/MONEY_BALANCE_LOGIC.md) | Balance computation spec |
+| [MONEY_CANONICALIZATION.md](features/MONEY_CANONICALIZATION.md) | Canonical money computation plan |
+| [MONEY_PHASE2.md](features/MONEY_PHASE2.md) | Phase 2 invariant enforcement (executed) |
 | [MONEY_TESTS.md](features/MONEY_TESTS.md) | Golden test cases |
 | [EXPENSE_REVISIONS.md](features/EXPENSE_REVISIONS.md) | Edit/delete via compensation events |
 | [MULTI_PAYER.md](features/MULTI_PAYER.md) | Multiple payers per expense |
@@ -44,6 +46,7 @@
 | Document | Purpose |
 |----------|---------|
 | [EXPENSE_PARSER_PROMPT_REFINEMENT.md](research/EXPENSE_PARSER_PROMPT_REFINEMENT.md) | AI parser prompt changelog |
+| [RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md](research/RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md) | Parsing research notes |
 | [PARSER_AND_WHO_IS_INVOLVED.md](research/PARSER_AND_WHO_IS_INVOLVED.md) | Participant detection logic |
 | [RESEARCH_SETTLEMENT_LOGIC.md](research/RESEARCH_SETTLEMENT_LOGIC.md) | Settlement research |
 | [SURVEY_FEATURE_REQUESTS.md](research/SURVEY_FEATURE_REQUESTS.md) | User survey summary |

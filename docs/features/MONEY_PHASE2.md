@@ -283,7 +283,7 @@ Before executing Phase 2:
 
 ## Appendix: Related Documentation
 
-- [MONEY_BALANCE_LOGIC.md](features/MONEY_BALANCE_LOGIC.md) — Pure function specifications
-- [MONEY_TESTS.md](features/MONEY_TESTS.md) — Golden test cases
-- [MONEY_CANONICALIZATION.md](features/MONEY_CANONICALIZATION.md) — Canonicalization plan
-- [STABILIZATION.md](STABILIZATION.md) — Overall stabilization analysis
+- [MONEY_BALANCE_LOGIC.md](MONEY_BALANCE_LOGIC.md) — Pure function specifications
+- [MONEY_TESTS.md](MONEY_TESTS.md) — Golden test cases
+- [MONEY_CANONICALIZATION.md](MONEY_CANONICALIZATION.md) — Canonicalization plan
+- [STABILIZATION.md](../STABILIZATION.md) — Overall stabilization analysis
