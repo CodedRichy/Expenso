@@ -51,7 +51,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 | Entity | Should Be Immutable? | Currently Immutable? | Notes |
 |--------|---------------------|---------------------|-------|
-| Expense | Yes (append-only ledger semantics) | **Partially** | Deletes use soft-delete (marked deleted, preserved for audit). Edits still mutate in-place but have lifecycle guards. See `docs/features/EXPENSE_REVISIONS.md`. |
+| Expense | Yes (append-only ledger semantics) | **Yes** | Edits and deletes use compensation events (negate original + append replacement). Lifecycle guards prevent illegal operations. See `docs/features/EXPENSE_REVISIONS.md`. |
 | Cycle | Partially (closed cycles) | **No** | Active cycles are mutable; closed cycles are stored separately but lack tamper protection. |
 | SystemMessage | Yes | Yes | Append-only activity feed. |
 | SettlementTransfer | Yes | Yes | Ephemeral, computed on demand. |
@@ -155,7 +155,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 4. **Phone number as identity.** Users who change phone numbers lose access to their history unless manually migrated.
 
-5. **Partial expense audit trail.** Deletes are soft-deleted with timestamps preserved. Edits are in-place but have lifecycle guards preventing edit-after-delete. Full append-only ledger for edits is available as pure functions but not yet wired up. See `docs/features/EXPENSE_REVISIONS.md`.
+5. **Expense audit trail via compensation model.** Edits and deletes use compensation events (negate original + append replacement), preserving full audit history. Lifecycle guards prevent edit-after-delete and delete-after-delete. See `docs/features/EXPENSE_REVISIONS.md`.
 
 ### Scale Limitations
 

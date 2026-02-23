@@ -319,6 +319,7 @@ lib/
     groq_expense_parser_service.dart  # AI expense parser (model-agnostic prompt; implementation: Groq/Llama). Parse NL → JSON. See docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
     profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
     razorpay_order_service.dart       # createRazorpayOrder(amountPaise) via Cloud Function → orderId, keyId
+    data_encryption_service.dart      # AES-GCM encryption for sensitive Firestore fields
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
     route_args.dart          # RouteArgs.getGroup, getMap — safe route arguments (avoids crash on missing/wrong type)
@@ -326,8 +327,10 @@ lib/
     ledger_delta.dart          # LedgerDelta, toLedgerDeltas, expenseToLedgerDeltas (integer-based)
     expense_normalization.dart # Re-exports normalization_workflow.dart
     normalization_workflow.dart # UI workflow: normalizeExpense, ParticipantSlot, NormalizationResult
+    expense_revision.dart      # Expense lifecycle guards (edit/delete validation)
   widgets/
     member_avatar.dart        # Letter avatar or CachedNetworkImage from photoURL (Deep Navy/Slate)
+    expenso_loader.dart       # Animated loading indicator
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart

@@ -17,6 +17,7 @@
 | Document | Purpose |
 |----------|---------|
 | [DATA_SPINE.md](DATA_SPINE.md) | Domain entities, mutability, data flow |
+| [DATA_FLOW_TABLES.md](DATA_FLOW_TABLES.md) | Screen-to-database data mapping (SQL table format) |
 | [STABILIZATION.md](STABILIZATION.md) | Invariants, limitations, change safety |
 
 ## Releases

@@ -424,10 +424,7 @@ class GroupDetail extends StatelessWidget {
                       return debts.map((d) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          '${repo.getMemberDisplayNameById(d.fromId)} owes ${repo.getMemberDisplayNameById(d.toId)} ₹${d.amount.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                            (Match m) => '${m[1]},',
-                          )}',
+                          '${repo.getMemberDisplayNameById(d.fromId)} owes ${repo.getMemberDisplayNameById(d.toId)} ₹${_fmtRupee(d.amount.amountMinor / 100.0)}',
                           style: TextStyle(fontSize: 15, color: const Color(0xFF1A1A1A)),
                         ),
                       )).toList();
@@ -745,7 +742,7 @@ class _DecisionClarityCard extends StatelessWidget {
     final debts = SettlementEngine.computeDebts(expenses, members);
     final netBalances = SettlementEngine.computeNetBalances(expenses, members);
     final myId = repo.currentUserId;
-    double myNet = netBalances[myId] ?? 0.0;
+    double myNet = (netBalances[myId] ?? 0.0).toDouble();
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
 
     showModalBottomSheet<void>(
@@ -777,7 +774,7 @@ class _DecisionClarityCard extends StatelessWidget {
       }
     }
 
-    double myNet = netBalances[myId] ?? 0.0;
+    double myNet = (netBalances[myId] ?? 0.0).toDouble();
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final isCredit = myNet > 0;
     final isDebt = myNet < 0;
@@ -1960,12 +1957,14 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         isGuessed: s.isGuessed,
       )).toList();
 
+      final payerSlots = [PayerContributionSlot(memberId: _payerId, amount: amount)];
+
       final normalized = buildNormalizedExpenseFromSlots(
         amount: amount,
         description: description,
         category: widget.result.category,
         date: 'Today',
-        payerId: _payerId,
+        payerSlots: payerSlots,
         slots: participantSlots,
         splitType: persistSplitType,
         allMemberIds: widget.allIds,

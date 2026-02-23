@@ -79,10 +79,11 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
 - [STABILIZATION.md](docs/STABILIZATION.md) — Invariants, limitations, and change safety guidance
 - [DATA_SPINE.md](docs/DATA_SPINE.md) — Formal data entity definitions
+- [DATA_FLOW_TABLES.md](docs/DATA_FLOW_TABLES.md) — Screen-to-database data mapping (SQL table format)
 - [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
 - [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
 - [features/MONEY_CANONICALIZATION.md](docs/features/MONEY_CANONICALIZATION.md) — Canonical implementation plan
-- [MONEY_PHASE2.md](docs/MONEY_PHASE2.md) — Phase 2 invariant enforcement plan
+- [features/MONEY_PHASE2.md](docs/features/MONEY_PHASE2.md) — Phase 2 invariant enforcement plan
 
 ---
 

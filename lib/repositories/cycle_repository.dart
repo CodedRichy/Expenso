@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
@@ -1110,13 +1111,17 @@ class CycleRepository extends ChangeNotifier {
     }
 
     final payerId = normalized.primaryPayerId;
-    final splits = Map<String, double>.from(normalized.participantSharesByMemberId);
+    final splits = normalized.participantSharesByMemberId.map(
+      (memberId, money) => MapEntry(memberId, MoneyConversion.toDisplay(money)),
+    );
     final participantIds = normalized.participantIds;
+
+    final displayAmount = MoneyConversion.toDisplay(normalized.total);
 
     final data = {
       'id': id,
       'groupId': groupId,
-      'amount': normalized.amount,
+      'amount': displayAmount,
       'payerId': payerId,
       'splitType': splitType,
       'participantIds': participantIds,
@@ -1128,19 +1133,23 @@ class CycleRepository extends ChangeNotifier {
     };
 
     await FirestoreService.instance.addExpense(groupId, data);
-    _setLastAdded(groupId, id, normalized.description, normalized.amount);
+    _setLastAdded(groupId, id, normalized.description, displayAmount);
   }
 
   /// Converts a NormalizedExpense to an Expense model (for local use).
   Expense normalizedToExpense(String id, NormalizedExpense normalized, String splitType) {
+    final displayAmount = MoneyConversion.toDisplay(normalized.total);
+    final splitAmounts = normalized.participantSharesByMemberId.map(
+      (memberId, money) => MapEntry(memberId, MoneyConversion.toDisplay(money)),
+    );
     return Expense(
       id: id,
       description: normalized.description,
-      amount: normalized.amount,
+      amount: displayAmount,
       date: normalized.date,
       participantIds: normalized.participantIds,
       paidById: normalized.primaryPayerId,
-      splitAmountsById: Map<String, double>.from(normalized.participantSharesByMemberId),
+      splitAmountsById: splitAmounts,
       category: normalized.category,
       splitType: splitType,
     );
