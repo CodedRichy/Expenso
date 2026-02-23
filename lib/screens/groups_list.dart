@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/pinned_groups_service.dart';
@@ -45,7 +47,7 @@ class _GroupsListState extends State<GroupsList> {
             width: 140,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E5E5),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(16),
             ),
           );
@@ -75,10 +77,10 @@ class _GroupsListState extends State<GroupsList> {
 
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
-      const Color(0xFF1A1A1A),
-      const Color(0xFF3A3A3A),
-      const Color(0xFF555555),
-      const Color(0xFF6B6B6B),
+      AppColors.gradientStart,
+      AppColors.primaryVariant,
+      AppColors.gradientMid,
+      AppColors.gradientEnd,
     ];
     final bgColor = colors[index % colors.length];
     
@@ -178,11 +180,11 @@ class _GroupsListState extends State<GroupsList> {
   void _showInvitationSheet(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface.withOpacity(0),
       isScrollControlled: true,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.only(
@@ -198,7 +200,7 @@ class _GroupsListState extends State<GroupsList> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E5E5),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -210,7 +212,7 @@ class _GroupsListState extends State<GroupsList> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF1A1A1A), Color(0xFF6B6B6B)],
+                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -228,35 +230,24 @@ class _GroupsListState extends State<GroupsList> {
             const SizedBox(height: 20),
             Text(
               invitation.groupName,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
+              style: AppTypography.subheader,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F8),
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.mail_outline_rounded,
-                    size: 16,
-                    color: const Color(0xFF6B6B6B),
-                  ),
+                  Icon(Icons.mail_outline_rounded, size: 16, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     'Group invitation',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: const Color(0xFF6B6B6B),
-                    ),
+                    style: AppTypography.sectionLabel.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -281,17 +272,13 @@ class _GroupsListState extends State<GroupsList> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'Decline',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF6B6B6B),
-                          ),
+                          style: AppTypography.button.copyWith(color: AppColors.textSecondary),
                         ),
                       ),
                     ),
@@ -323,17 +310,13 @@ class _GroupsListState extends State<GroupsList> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'Join Group',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
+                          style: AppTypography.button.copyWith(color: AppColors.surface),
                         ),
                       ),
                     ),
@@ -367,7 +350,7 @@ class _GroupsListState extends State<GroupsList> {
         title: const Text('Delete Group'),
         content: Text(
           'Permanently delete "${group.name}" and all expense history?',
-          style: const TextStyle(fontSize: 16, color: Color(0xFF6B6B6B)),
+          style: AppTypography.bodySecondary.copyWith(fontSize: 16),
         ),
         actions: [
           TextButton(
@@ -420,12 +403,12 @@ class _GroupsListState extends State<GroupsList> {
           });
         }
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F7F8),
+          backgroundColor: AppColors.background,
           floatingActionButton: !loading && groups.isNotEmpty
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -450,15 +433,7 @@ class _GroupsListState extends State<GroupsList> {
                             child: Row(
                               children: [
                                 const Expanded(
-                                  child: Text(
-                                    'Groups',
-                                    style: TextStyle(
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A1A1A),
-                                      letterSpacing: -0.6,
-                                    ),
-                                  ),
+                                  child: Text('Groups', style: AppTypography.heroTitle),
                                 ),
                                 GestureDetector(
                                   onTap: () => Navigator.pushNamed(context, '/profile'),
@@ -513,8 +488,8 @@ class _GroupsListState extends State<GroupsList> {
                                           }
                                           await pinService.togglePin(group.id);
                                         },
-                                        backgroundColor: const Color(0xFFE5A017),
-                                        foregroundColor: Colors.white,
+                                        backgroundColor: AppColors.warning,
+                                        foregroundColor: AppColors.surface,
                                         icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                                         label: isPinned ? 'Unpin' : 'Pin',
                                       ),
@@ -530,8 +505,8 @@ class _GroupsListState extends State<GroupsList> {
                                                 HapticFeedback.lightImpact();
                                                 _confirmDeleteGroup(context, group);
                                               },
-                                              backgroundColor: const Color(0xFFC62828),
-                                              foregroundColor: Colors.white,
+                                              backgroundColor: AppColors.error,
+                                              foregroundColor: AppColors.surface,
                                               icon: Icons.delete_outline,
                                               label: 'Delete',
                                             ),
@@ -553,12 +528,9 @@ class _GroupsListState extends State<GroupsList> {
                                           horizontal: 24,
                                           vertical: isSettled ? 18 : 22,
                                         ),
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           border: Border(
-                                            top: BorderSide(
-                                              color: const Color(0xFFE5E5E5),
-                                              width: 1,
-                                            ),
+                                            top: BorderSide(color: AppColors.border, width: 1),
                                           ),
                                         ),
                                         child: Row(
@@ -569,11 +541,8 @@ class _GroupsListState extends State<GroupsList> {
                                                 children: [
                                                   Text(
                                                     group.name,
-                                                    style: TextStyle(
-                                                      fontSize: 19,
+                                                    style: AppTypography.listItemTitle.copyWith(
                                                       fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
-                                                      color: const Color(0xFF1A1A1A),
-                                                      letterSpacing: -0.3,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 8),
@@ -585,52 +554,38 @@ class _GroupsListState extends State<GroupsList> {
                                                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                                                             (Match m) => '${m[1]},',
                                                           )}',
-                                                          style: TextStyle(
-                                                            fontSize: 17,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: const Color(0xFF1A1A1A),
-                                                          ),
+                                                          style: AppTypography.amountSM,
                                                         ),
                                                         const SizedBox(width: 8),
-                                                        Text(
-                                                          'pending',
-                                                          style: TextStyle(
-                                                            fontSize: 15,
-                                                            color: const Color(0xFF6B6B6B),
-                                                          ),
-                                                        ),
+                                                        Text('pending', style: AppTypography.bodySecondary),
                                                       ],
                                                     ),
                                                     const SizedBox(height: 6),
                                                     Text(
                                                       group.statusLine,
-                                                      style: TextStyle(
-                                                        fontSize: 15,
-                                                        color: isClosing ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
+                                                      style: AppTypography.bodySecondary.copyWith(
+                                                        color: isClosing ? AppColors.textPrimary : AppColors.textSecondary,
                                                         fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
                                                       ),
                                                     ),
                                                   ] else
                                                     Text(
                                                       'All balances cleared',
-                                                      style: TextStyle(
-                                                        fontSize: 15,
-                                                        color: const Color(0xFF9B9B9B),
-                                                      ),
+                                                      style: AppTypography.bodySecondary.copyWith(color: AppColors.textTertiary),
                                                     ),
                                                 ],
                                               ),
                                             ),
                                             if (isPinned)
-                                              Padding(
-                                                padding: const EdgeInsets.only(right: 8),
-                                                child: Icon(Icons.push_pin, size: 18, color: const Color(0xFFE5A017)),
+                                              const Padding(
+                                                padding: EdgeInsets.only(right: 8),
+                                                child: Icon(Icons.push_pin, size: 18, color: AppColors.warning),
                                               ),
                                             const SizedBox(width: 16),
-                                            Icon(
+                                            const Icon(
                                               Icons.chevron_right,
                                               size: 20,
-                                              color: const Color(0xFFB0B0B0),
+                                              color: AppColors.textDisabled,
                                             ),
                                           ],
                                         ),

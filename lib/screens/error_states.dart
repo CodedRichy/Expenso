@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
 
 class ErrorStates extends StatelessWidget {
@@ -13,7 +15,7 @@ class ErrorStates extends StatelessWidget {
   Widget build(BuildContext context) {
     if (type == 'network') {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -26,34 +28,24 @@ class ErrorStates extends StatelessWidget {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5E5E5),
+                      decoration: const BoxDecoration(
+                        color: AppColors.border,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.wifi_off,
-                        color: const Color(0xFF6B6B6B),
-                        size: 32,
-                      ),
+                      child: const Icon(Icons.wifi_off, color: AppColors.textSecondary, size: 32),
                     ),
                     const SizedBox(height: 32),
-                    Text(
+                    const Text(
                       'Connection unavailable',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A),
-                        letterSpacing: -0.4,
-                      ),
+                      style: AppTypography.subheader,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Unable to load data. Check your connection and try again.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFF6B6B6B),
+                      style: AppTypography.bodyPrimary.copyWith(
+                        color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -64,22 +56,9 @@ class ErrorStates extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
                         minimumSize: const Size(double.infinity, 0),
                       ),
-                      child: Text(
-                        'Try Again',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: const Text('Try Again', style: AppTypography.button),
                     ),
                   ],
                 ),
@@ -92,7 +71,7 @@ class ErrorStates extends StatelessWidget {
 
     if (type == 'session-expired') {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -105,34 +84,24 @@ class ErrorStates extends StatelessWidget {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5E5E5),
+                      decoration: const BoxDecoration(
+                        color: AppColors.border,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.access_time,
-                        color: const Color(0xFF6B6B6B),
-                        size: 32,
-                      ),
+                      child: const Icon(Icons.access_time, color: AppColors.textSecondary, size: 32),
                     ),
                     const SizedBox(height: 32),
-                    Text(
+                    const Text(
                       'Session expired',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A),
-                        letterSpacing: -0.4,
-                      ),
+                      style: AppTypography.subheader,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Your session has expired. Verify your phone number to continue.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFF6B6B6B),
+                      style: AppTypography.bodyPrimary.copyWith(
+                        color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -142,22 +111,9 @@ class ErrorStates extends StatelessWidget {
                         Navigator.pushReplacementNamed(context, '/');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
                         minimumSize: const Size(double.infinity, 0),
                       ),
-                      child: Text(
-                        'Verify',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: const Text('Verify', style: AppTypography.button),
                     ),
                   ],
                 ),
@@ -170,7 +126,7 @@ class ErrorStates extends StatelessWidget {
 
     if (type == 'payment-unavailable') {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -183,34 +139,24 @@ class ErrorStates extends StatelessWidget {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5E5E5),
+                      decoration: const BoxDecoration(
+                        color: AppColors.border,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.error_outline,
-                        color: const Color(0xFF6B6B6B),
-                        size: 32,
-                      ),
+                      child: const Icon(Icons.error_outline, color: AppColors.textSecondary, size: 32),
                     ),
                     const SizedBox(height: 32),
-                    Text(
+                    const Text(
                       'Payment service unavailable',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A),
-                        letterSpacing: -0.4,
-                      ),
+                      style: AppTypography.subheader,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Payment processing is temporarily unavailable. Try again later or settle manually.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFF6B6B6B),
+                      style: AppTypography.bodyPrimary.copyWith(
+                        color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -220,22 +166,9 @@ class ErrorStates extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A1A1A),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
                             minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: Text(
-                            'Try Again',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: const Text('Try Again', style: AppTypography.button),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton(
@@ -243,22 +176,9 @@ class ErrorStates extends StatelessWidget {
                             Navigator.pop(context);
                           },
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF1A1A1A),
-                            side: const BorderSide(color: Color(0xFFE5E5E5)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
                             minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: const Text('Cancel', style: AppTypography.button),
                         ),
                       ],
                     ),
@@ -272,7 +192,7 @@ class ErrorStates extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -285,34 +205,24 @@ class ErrorStates extends StatelessWidget {
                   Container(
                     width: 64,
                     height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE5E5E5),
+                    decoration: const BoxDecoration(
+                      color: AppColors.border,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.error_outline,
-                      color: const Color(0xFF6B6B6B),
-                      size: 32,
-                    ),
+                    child: const Icon(Icons.error_outline, color: AppColors.textSecondary, size: 32),
                   ),
                   const SizedBox(height: 32),
-                  Text(
+                  const Text(
                     'Something went wrong',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
-                      letterSpacing: -0.4,
-                    ),
+                    style: AppTypography.subheader,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'An error occurred. Try again or restart the app.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: const Color(0xFF6B6B6B),
+                    style: AppTypography.bodyPrimary.copyWith(
+                      color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -323,22 +233,9 @@ class ErrorStates extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
                       minimumSize: const Size(double.infinity, 0),
                     ),
-                    child: Text(
-                      'Try Again',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: const Text('Try Again', style: AppTypography.button),
                   ),
                 ],
               ),

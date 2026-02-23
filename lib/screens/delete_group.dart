@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 
 class DeleteGroup extends StatelessWidget {
   final String groupName;
@@ -15,7 +17,7 @@ class DeleteGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -30,7 +32,7 @@ class DeleteGroup extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: AppColors.textPrimary,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -40,15 +42,7 @@ class DeleteGroup extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    'Delete Group',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+                  const Text('Delete Group', style: AppTypography.screenTitle),
                 ],
               ),
             ),
@@ -64,12 +58,7 @@ class DeleteGroup extends StatelessWidget {
                         Text(
                           groupName.isEmpty ? 'Delete group' : 'Delete "$groupName"',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
-                            letterSpacing: -0.4,
-                          ),
+                          style: AppTypography.subheader,
                         ),
                         const SizedBox(height: 16),
                         if (hasPendingBalance) ...[
@@ -79,28 +68,20 @@ class DeleteGroup extends StatelessWidget {
                               (Match m) => '${m[1]},',
                             )} pending',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: const Color(0xFF6B6B6B),
-                            ),
+                            style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Deleting this group will remove all expense history. Outstanding balances will not be automatically settled.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: const Color(0xFF6B6B6B),
-                              height: 1.5,
-                            ),
+                            style: AppTypography.bodySecondary,
                           ),
                         ] else
                           Text(
                             'This will permanently delete the group and all expense history.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: const Color(0xFF6B6B6B),
+                            style: AppTypography.bodyPrimary.copyWith(
+                              color: AppColors.textSecondary,
                               height: 1.5,
                             ),
                           ),
@@ -112,22 +93,9 @@ class DeleteGroup extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A1A1A),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: Text(
-                                'Delete Group',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              child: const Text('Delete Group', style: AppTypography.button),
                             ),
                             const SizedBox(height: 12),
                             OutlinedButton(
@@ -135,22 +103,9 @@ class DeleteGroup extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1A1A1A),
-                                side: const BorderSide(color: Color(0xFFE5E5E5)),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              child: const Text('Cancel', style: AppTypography.button),
                             ),
                           ],
                         ),

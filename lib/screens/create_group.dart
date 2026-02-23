@@ -243,26 +243,20 @@ class _CreateGroupState extends State<CreateGroup> {
           border: Border(
             top: isFirst
                 ? BorderSide.none
-                : const BorderSide(color: Color(0xFFE5E5E5), width: 1),
+                : const BorderSide(color: AppColors.border, width: 1),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 17,
-                color: const Color(0xFF1A1A1A),
-              ),
-            ),
+            Text(label, style: AppTypography.bodyPrimary),
             Container(
               width: 20,
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFFD0D0D0),
+                  color: isSelected ? AppColors.primary : AppColors.borderInput,
                   width: 2,
                 ),
               ),
@@ -271,9 +265,9 @@ class _CreateGroupState extends State<CreateGroup> {
                       child: Container(
                         width: 10,
                         height: 10,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF1A1A1A),
+                          color: AppColors.primary,
                         ),
                       ),
                     )

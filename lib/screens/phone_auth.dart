@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 import '../firebase_app.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/phone_auth_service.dart';
@@ -137,7 +139,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
   Widget build(BuildContext context) {
     if (step == 'phone') {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -151,21 +153,12 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   children: [
                     Text(
                       'Enter phone number',
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A),
-                        letterSpacing: -0.6,
-                        height: 1.2,
-                      ),
+                      style: AppTypography.heroTitle.copyWith(height: 1.2),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'You will receive a verification code',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: const Color(0xFF6B6B6B),
-                      ),
+                      style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -175,16 +168,13 @@ class _PhoneAuthState extends State<PhoneAuth> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        color: AppColors.surface,
+                        border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '+91',
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: const Color(0xFF6B6B6B),
-                        ),
+                        style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -202,31 +192,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
                           });
                         },
                         onSubmitted: (_) => handlePhoneSubmit(),
-                        decoration: InputDecoration(
-                          hintText: 'Phone number',
-                          hintStyle: TextStyle(
-                            color: const Color(0xFFB0B0B0),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        ),
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: const Color(0xFF1A1A1A),
-                        ),
+                        decoration: const InputDecoration(hintText: 'Phone number'),
+                        style: AppTypography.input,
                       ),
                     ),
                   ],
@@ -235,42 +202,22 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   const SizedBox(height: 12),
                   Text(
                     _errorMessage!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFFB00020),
-                    ),
+                    style: AppTypography.bodySecondary.copyWith(color: AppColors.error),
                   ),
                 ],
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: (phone.length == 10 && !_loading) ? handlePhoneSubmit : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    disabledBackgroundColor: const Color(0xFFE5E5E5),
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: const Color(0xFFB0B0B0),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
                   child: _loading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppColors.surface,
                           ),
                         )
-                      : Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                      : const Text('Continue', style: AppTypography.button),
                 ),
                 const Spacer(),
               ],
@@ -281,7 +228,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -295,37 +242,27 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 children: [
                   Text(
                     'Enter verification code',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
-                      letterSpacing: -0.6,
-                      height: 1.2,
-                    ),
+                    style: AppTypography.heroTitle.copyWith(height: 1.2),
                   ),
                   const SizedBox(height: 12),
-              Text(
-                  'Sent to +91 $phone',
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: const Color(0xFF6B6B6B),
-                  ),
-                ),
-                if (PhoneAuthService.isTestNumber(phone)) ...[
-                  const SizedBox(height: 8),
                   Text(
-                    'For this test number, use the code ${PhoneAuthService.devTestCode}.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: const Color(0xFF5B7C99),
-                      fontStyle: FontStyle.italic,
-                    ),
+                    'Sent to +91 $phone',
+                    style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
                   ),
+                  if (PhoneAuthService.isTestNumber(phone)) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'For this test number, use the code ${PhoneAuthService.devTestCode}.',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accent,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-            const SizedBox(height: 48),
-            TextField(
+              ),
+              const SizedBox(height: 48),
+              TextField(
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
@@ -339,86 +276,38 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   });
                 },
                 onSubmitted: (_) => handleOtpSubmit(),
-                decoration: InputDecoration(
-                  hintText: '6-digit code',
-                  hintStyle: TextStyle(
-                    color: const Color(0xFFB0B0B0),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-                style: TextStyle(
-                  fontSize: 17,
-                  color: const Color(0xFF1A1A1A),
-                  letterSpacing: 8,
-                ),
+                decoration: const InputDecoration(hintText: '6-digit code'),
+                style: AppTypography.input.copyWith(letterSpacing: 8),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFFB00020),
-                  ),
+                  style: AppTypography.bodySecondary.copyWith(color: AppColors.error),
                 ),
               ],
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: (otp.length == 6 && !_loading) ? handleOtpSubmit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  disabledBackgroundColor: const Color(0xFFE5E5E5),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: const Color(0xFFB0B0B0),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
                 child: _loading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.surface,
                         ),
                       )
-                    : Text(
-                        'Verify',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                    : const Text('Verify', style: AppTypography.button),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: _loading ? null : _goBackToPhone,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
                 child: Text(
                   'Change number',
-                  style: TextStyle(
-                    fontSize: 15,
+                  style: AppTypography.bodySecondary.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B7C99),
+                    color: AppColors.accent,
                   ),
                 ),
               ),
