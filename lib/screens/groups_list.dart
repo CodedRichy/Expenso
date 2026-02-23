@@ -18,20 +18,10 @@ class GroupsList extends StatefulWidget {
 }
 
 class _GroupsListState extends State<GroupsList> {
-  static bool _dummyAdded = false;
-
   @override
   void initState() {
     super.initState();
     PinnedGroupsService.instance.load();
-    // DEBUG: Add dummy invitation and group for testing (only once)
-    if (!_dummyAdded) {
-      _dummyAdded = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        CycleRepository.instance.addDummyInvitation();
-        CycleRepository.instance.addDummyGroup();
-      });
-    }
   }
 
   Widget _buildInvitationsLoadingPlaceholder() {
