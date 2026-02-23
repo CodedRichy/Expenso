@@ -9,8 +9,14 @@
 /// - [NormalizedExpense] is an accounting concept for ledger computation
 /// 
 /// The workflow is: ParsedExpenseResult → ParticipantSlots (UI) → NormalizedExpense (accounting)
+/// 
+/// ## Currency Handling
+/// - UI layer works with doubles for display
+/// - Conversion to [MoneyMinor] happens once at normalization boundary
+/// - Remainder from integer division is handled deterministically
 
 import '../models/models.dart';
+import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
 import '../services/groq_expense_parser_service.dart';
 
@@ -25,6 +31,9 @@ const double _tolerance = 0.01;
 /// 
 /// This class should NEVER be used for balance computation.
 /// Convert to [NormalizedExpense] before any accounting operations.
+/// 
+/// Note: [amount] is a double for UI display. It will be converted to
+/// [MoneyMinor] (integer) at the normalization boundary.
 class ParticipantSlot {
   final String name;
   final double amount;
@@ -75,6 +84,7 @@ class NormalizationNeedsConfirmation extends NormalizationResult {
   final String date;
   final String splitType;
   final String payerId;
+  final String currencyCode;
   final List<ParticipantSlot> slots;
   final List<String> unresolvedNames;
   final String? validationWarning;
@@ -86,6 +96,7 @@ class NormalizationNeedsConfirmation extends NormalizationResult {
     required this.date,
     required this.splitType,
     required this.payerId,
+    required this.currencyCode,
     required this.slots,
     required this.unresolvedNames,
     this.validationWarning,
@@ -222,6 +233,7 @@ NormalizationResult normalizeExpense({
   required List<Member> members,
   required String currentUserId,
   required String currentUserName,
+  String currencyCode = 'INR',
   Map<String, List<String>>? contactNameToNormalizedPhones,
   String date = 'Today',
 }) {
@@ -302,6 +314,7 @@ NormalizationResult normalizeExpense({
       date: date,
       splitType: splitType,
       payerId: payerId,
+      currencyCode: currencyCode,
       slots: slots,
       unresolvedNames: stillUnresolved.map((s) => s.name).toList(),
       validationWarning: validationWarning,
@@ -318,6 +331,7 @@ NormalizationResult normalizeExpense({
       slots: slots,
       splitType: splitType,
       allMemberIds: ctx.allMemberIds,
+      currencyCode: currencyCode,
     );
     return NormalizationSuccess(normalized);
   } on NormalizedExpenseError catch (e) {
@@ -327,8 +341,18 @@ NormalizationResult normalizeExpense({
 
 /// Converts resolved ParticipantSlots to a NormalizedExpense.
 /// 
-/// This is the bridge from UI workflow to accounting model.
+/// This is the bridge from UI workflow (doubles) to accounting model (integers).
 /// All slots must have resolved memberIds before calling this.
+/// 
+/// ## Remainder Handling
+/// When splitting amounts, integer division may produce a remainder.
+/// The remainder is assigned to the payer (deterministic, documented).
+/// 
+/// Example: 100.00 INR split among 3 people
+/// - Total minor units: 10000 paise
+/// - Base share: 10000 ÷ 3 = 3333 paise each
+/// - Remainder: 10000 - (3333 × 3) = 1 paise
+/// - Payer gets: 3333 + 1 = 3334 paise
 NormalizedExpense buildNormalizedExpenseFromSlots({
   required double amount,
   required String description,
@@ -338,39 +362,128 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
   required List<ParticipantSlot> slots,
   required String splitType,
   required List<String> allMemberIds,
+  String currencyCode = 'INR',
   List<String>? excludedIds,
 }) {
-  final payerContributions = <String, double>{payerId: amount};
+  final totalMinor = MoneyConversion.parseToMinor(amount, currencyCode);
+  
+  final payerContributions = <String, MoneyMinor>{
+    payerId: totalMinor,
+  };
 
-  Map<String, double> participantShares;
+  Map<String, MoneyMinor> participantShares;
 
   if (splitType == 'Exclude') {
-    final excludedSet = (excludedIds ?? slots.map((s) => s.memberId).whereType<String>()).toSet();
-    final includedIds = allMemberIds.where((id) => !excludedSet.contains(id)).toList();
-    if (includedIds.isEmpty) {
-      participantShares = {payerId: amount};
-    } else {
-      final perShare = amount / includedIds.length;
-      participantShares = {for (final id in includedIds) id: perShare};
-    }
+    participantShares = _splitExclude(
+      totalMinor: totalMinor.amountMinor,
+      currencyCode: currencyCode,
+      allMemberIds: allMemberIds,
+      excludedIds: excludedIds ?? slots.map((s) => s.memberId).whereType<String>().toList(),
+      payerId: payerId,
+    );
   } else {
-    participantShares = <String, double>{};
-    for (final slot in slots) {
-      if (slot.isResolved) {
-        participantShares[slot.memberId!] = 
-            (participantShares[slot.memberId!] ?? 0) + slot.amount;
-      }
-    }
+    participantShares = _splitFromSlots(
+      totalMinor: totalMinor.amountMinor,
+      currencyCode: currencyCode,
+      slots: slots,
+      payerId: payerId,
+    );
   }
 
   return NormalizedExpense(
-    amount: amount,
+    total: totalMinor,
     description: description,
     category: category,
     date: date,
     payerContributionsByMemberId: payerContributions,
     participantSharesByMemberId: participantShares,
   );
+}
+
+/// Splits total among non-excluded members, assigning remainder to payer.
+Map<String, MoneyMinor> _splitExclude({
+  required int totalMinor,
+  required String currencyCode,
+  required List<String> allMemberIds,
+  required List<String> excludedIds,
+  required String payerId,
+}) {
+  final excludedSet = excludedIds.toSet();
+  final includedIds = allMemberIds.where((id) => !excludedSet.contains(id)).toList();
+  
+  if (includedIds.isEmpty) {
+    return {payerId: MoneyMinor(totalMinor, currencyCode)};
+  }
+
+  return _splitEvenlyWithRemainder(
+    totalMinor: totalMinor,
+    currencyCode: currencyCode,
+    participantIds: includedIds,
+    remainderId: payerId,
+  );
+}
+
+/// Converts slot amounts to integer shares, assigning remainder to payer.
+Map<String, MoneyMinor> _splitFromSlots({
+  required int totalMinor,
+  required String currencyCode,
+  required List<ParticipantSlot> slots,
+  required String payerId,
+}) {
+  final resolvedSlots = slots.where((s) => s.isResolved).toList();
+  if (resolvedSlots.isEmpty) {
+    return {payerId: MoneyMinor(totalMinor, currencyCode)};
+  }
+
+  final computed = <String, int>{};
+  int allocated = 0;
+
+  for (final slot in resolvedSlots) {
+    final minor = MoneyConversion.parseToMinor(slot.amount, currencyCode);
+    final id = slot.memberId!;
+    computed[id] = (computed[id] ?? 0) + minor.amountMinor;
+    allocated += minor.amountMinor;
+  }
+
+  final remainder = totalMinor - allocated;
+  if (remainder != 0) {
+    computed[payerId] = (computed[payerId] ?? 0) + remainder;
+  }
+
+  return computed.map((id, amt) => MapEntry(id, MoneyMinor(amt, currencyCode)));
+}
+
+/// Splits evenly with deterministic remainder assignment.
+Map<String, MoneyMinor> _splitEvenlyWithRemainder({
+  required int totalMinor,
+  required String currencyCode,
+  required List<String> participantIds,
+  required String remainderId,
+}) {
+  final count = participantIds.length;
+  final baseShare = totalMinor ~/ count;
+  final remainder = totalMinor - (baseShare * count);
+
+  final result = <String, MoneyMinor>{};
+  for (final id in participantIds) {
+    result[id] = MoneyMinor(baseShare, currencyCode);
+  }
+
+  if (remainder > 0) {
+    if (result.containsKey(remainderId)) {
+      result[remainderId] = MoneyMinor(
+        result[remainderId]!.amountMinor + remainder,
+        currencyCode,
+      );
+    } else {
+      result[participantIds.first] = MoneyMinor(
+        result[participantIds.first]!.amountMinor + remainder,
+        currencyCode,
+      );
+    }
+  }
+
+  return result;
 }
 
 String _capitalizeSplitType(String splitType) {
