@@ -28,6 +28,9 @@ abstract final class AppColors {
   static const warning = Color(0xFFF9A825);
   static const warningBackground = Color(0xFFFFF8E1);
   static const destructive = Color(0xFFD32F2F);
+  static const success = Color(0xFF2E7D32);
+  static const successLight = Color(0xFF66BB6A);
+  static const debtRed = Color(0xFFEF5350);
 
   // Disabled States
   static const disabledBackground = Color(0xFFE5E5E5);

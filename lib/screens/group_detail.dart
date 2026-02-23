@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
+import '../design/colors.dart';
+import '../design/spacing.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../models/normalized_expense.dart';
@@ -732,72 +735,63 @@ class _DecisionClarityCard extends StatelessWidget {
   });
 
   static const double _minHeight = 132.0;
-  static const Color _blackGradientStart = Color(0xFF1A1A1A);
-  static const Color _blackGradientEnd = Color(0xFF6B6B6B);
 
   @override
   Widget build(BuildContext context) {
     final isEmpty = expenses.isEmpty;
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
     final members = repo.getMembersForGroup(groupId);
-    final memberCount = members.length;
     final netBalances = SettlementEngine.computeNetBalances(expenses, members);
     final myId = repo.currentUserId;
-    double yourShare = 0.0;
+
+    double youPaid = 0.0;
     for (final e in expenses) {
-      if (e.splitAmountsById != null && e.splitAmountsById!.containsKey(myId)) {
-        yourShare += e.splitAmountsById![myId]!;
-      } else if (e.participantIds.contains(myId)) {
-        yourShare += e.amount / e.participantIds.length;
-      } else if (e.participantIds.isEmpty && memberCount > 0) {
-        yourShare += e.amount / memberCount;
+      if (e.paidById == myId) {
+        youPaid += e.amount;
       }
     }
+
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
-    final isCredit = myNet >= 0;
-    final isNetClear = (netBalances[myId] ?? 0.0).isNaN || (netBalances[myId] ?? 0.0).isInfinite;
+    final isCredit = myNet > 0;
+    final isDebt = myNet < 0;
+    final isBalanceClear = myNet.abs() < 0.01;
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: _minHeight),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1A1A1A).withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+    final isMuted = isPassive;
+
+    return Opacity(
+      opacity: isMuted ? 0.6 : 1.0,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: _minHeight),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
           ),
-        ],
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_blackGradientStart, _blackGradientEnd],
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.space2xl),
             child: isEmpty
-                ? KeyedSubtree(
-                    key: const ValueKey('empty'),
-                    child: EmptyStates(type: 'zero-waste-cycle', forDarkCard: true),
-                  )
-                : KeyedSubtree(
-                    key: const ValueKey('content'),
-                    child: _buildContent(
-                      context,
-                      cycleTotal: cycleTotal,
-                      yourShare: yourShare,
-                      myNet: myNet,
-                      isCredit: isCredit,
-                      isNetClear: isNetClear,
-                    ),
+                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                : _buildContent(
+                    cycleTotal: cycleTotal,
+                    youPaid: youPaid,
+                    myNet: myNet,
+                    isCredit: isCredit,
+                    isDebt: isDebt,
+                    isBalanceClear: isBalanceClear,
+                    isMuted: isMuted,
                   ),
           ),
         ),
@@ -805,29 +799,43 @@ class _DecisionClarityCard extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context, {
+  Widget _buildContent({
     required double cycleTotal,
-    required double yourShare,
+    required double youPaid,
     required double myNet,
     required bool isCredit,
-    bool isNetClear = false,
+    required bool isDebt,
+    required bool isBalanceClear,
+    required bool isMuted,
   }) {
+    final statusColor = isBalanceClear
+        ? Colors.white70
+        : isCredit
+            ? AppColors.successLight
+            : AppColors.debtRed;
+
+    final statusText = isMuted
+        ? 'Cycle settled — pending restart'
+        : isBalanceClear
+            ? 'All clear'
+            : '${isCredit ? '+' : '-'}₹${_fmtRupee(myNet.abs())}';
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Cycle Total: ₹${_fmtRupee(cycleTotal)}',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.98),
-            letterSpacing: -0.5,
-            height: 1.2,
+          'Cycle Total',
+          style: AppTypography.sectionLabel.copyWith(
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: AppSpacing.spaceXs),
+        Text(
+          '₹${_fmtRupee(cycleTotal)}',
+          style: AppTypography.amountLG.copyWith(color: Colors.white),
+        ),
+        SizedBox(height: AppSpacing.spaceXl),
         Row(
           children: [
             Expanded(
@@ -835,20 +843,16 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your share',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    'You Paid',
+                    style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
-                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: AppSpacing.space2xs),
                   Text(
-                    '₹${_fmtRupee(yourShare)}',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+                    '₹${_fmtRupee(youPaid)}',
+                    style: AppTypography.amountSM.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                     ),
                   ),
@@ -861,21 +865,15 @@ class _DecisionClarityCard extends StatelessWidget {
                 children: [
                   Text(
                     'Your Status',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
-                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: AppSpacing.space2xs),
                   Text(
-                    isNetClear ? 'Balance Clear' : '${myNet >= 0 ? '+' : ''}₹${_fmtRupee(myNet.abs())}',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: isNetClear ? Colors.white70 : (isCredit ? Colors.greenAccent : Colors.redAccent),
-                    ),
+                    statusText,
+                    style: AppTypography.amountSM.copyWith(color: statusColor),
                   ),
                 ],
               ),
