@@ -284,14 +284,60 @@ GroupInvitation (derived) ◄───────────────┘
 
 ---
 
+## Intermediate Accounting Entities
+
+### 11. NormalizedExpense
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Intermediate (computed) |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | In-memory only (transient during expense creation) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `amount` | `double` | Total cost (positive, finite) |
+| `description` | `String` | Expense description |
+| `category` | `String` | Optional categorization |
+| `date` | `String` | Date string |
+| `payerContributionsByMemberId` | `Map<String, double>` | Who paid how much (sum = amount) |
+| `participantSharesByMemberId` | `Map<String, double>` | Who owes how much (sum = amount) |
+
+**Notes:** Canonical intermediate model between parsing (names) and storage (IDs). All person references are member IDs (UUIDs), never names. "Everyone" semantics are expanded to concrete IDs at construction time. Invariants enforced at construction: sum(payerContributions) == amount, sum(participantShares) == amount, no pending member IDs.
+
+---
+
+### 12. LedgerDelta
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | In-memory only (computed on demand) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `memberId` | `String` | Member UID |
+| `delta` | `double` | Balance change (+credit, -debit) |
+| `expenseId` | `String` | Source expense identifier |
+| `timestamp` | `DateTime` | When the expense occurred |
+
+**💰 MONEY TRUTH:** Fundamental unit of balance computation. Sum of all deltas for an expense is exactly zero.
+
+**Notes:** Pure derived view from NormalizedExpense or Expense. For each payer: +paidAmount. For each participant: -shareAmount. This is the atomic unit for Splitwise-style ledger accounting. Balances are computed by aggregating deltas, never stored directly.
+
+---
+
 ## Invariants Implied by This Spine
 
 1. **Expense amounts must be positive and finite** — enforced
-2. **Split amounts must sum to expense amount** — assumed, not enforced on read
-3. **Net balances must sum to zero** — enforced by algorithm design
+2. **Split amounts must sum to expense amount** — enforced at NormalizedExpense construction
+3. **Net balances must sum to zero** — enforced by algorithm design and LedgerDelta invariant
 4. **Closed cycles should not accept new expenses** — assumed, not enforced at data layer
 5. **A user cannot be in both members and pendingMembers** — assumed, transaction-dependent
 6. **creatorId is immutable after group creation** — assumed, not enforced
+7. **Sum of LedgerDeltas for any expense is zero** — enforced by toLedgerDeltas assertion
+8. **NormalizedExpense contains only member IDs, never names** — enforced at construction
 
 ---
 

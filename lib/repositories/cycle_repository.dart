@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../models/normalized_expense.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/expense_validation.dart';
@@ -1041,6 +1042,62 @@ class CycleRepository extends ChangeNotifier {
     };
     await FirestoreService.instance.addExpense(groupId, data);
     _setLastAdded(groupId, id, description, amount);
+  }
+
+  /// Adds an expense from a NormalizedExpense (the canonical path).
+  /// 
+  /// This method takes an already-validated, ID-only NormalizedExpense and persists it.
+  /// No split calculation is needed - all amounts are already computed in the normalization layer.
+  /// 
+  /// The splitType parameter indicates the original user intent for UI display purposes only.
+  /// The actual amounts are stored in participantSharesByMemberId.
+  Future<void> addExpenseFromNormalized(
+    String groupId, {
+    required String id,
+    required NormalizedExpense normalized,
+    required String splitType,
+  }) async {
+    final meta = _groupMeta[groupId];
+    final cycleId = meta?.activeCycleId;
+    if (cycleId == null) {
+      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+    }
+
+    final payerId = normalized.primaryPayerId;
+    final splits = Map<String, double>.from(normalized.participantSharesByMemberId);
+    final participantIds = normalized.participantIds;
+
+    final data = {
+      'id': id,
+      'groupId': groupId,
+      'amount': normalized.amount,
+      'payerId': payerId,
+      'splitType': splitType,
+      'participantIds': participantIds,
+      'splits': splits,
+      'description': normalized.description,
+      'date': normalized.date,
+      'dateSortKey': _dateStringToSortKey(normalized.date),
+      if (normalized.category.isNotEmpty) 'category': normalized.category,
+    };
+
+    await FirestoreService.instance.addExpense(groupId, data);
+    _setLastAdded(groupId, id, normalized.description, normalized.amount);
+  }
+
+  /// Converts a NormalizedExpense to an Expense model (for local use).
+  Expense normalizedToExpense(String id, NormalizedExpense normalized, String splitType) {
+    return Expense(
+      id: id,
+      description: normalized.description,
+      amount: normalized.amount,
+      date: normalized.date,
+      participantIds: normalized.participantIds,
+      paidById: normalized.primaryPayerId,
+      splitAmountsById: Map<String, double>.from(normalized.participantSharesByMemberId),
+      category: normalized.category,
+      splitType: splitType,
+    );
   }
 
   Expense? getExpense(String groupId, String expenseId) {

@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../models/normalized_expense.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/groq_expense_parser_service.dart';
+import '../utils/expense_normalization.dart';
 import '../utils/settlement_engine.dart';
 import '../widgets/expenso_loader.dart';
 import 'empty_states.dart';
@@ -1719,44 +1721,53 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     HapticFeedback.lightImpact();
     final repo = widget.repo;
     final groupId = widget.groupId;
-    List<String> participantIds;
-    List<String>? excludedIds;
-    Map<String, double>? exactAmountsById;
-
-    if (widget.isExclude) {
-      excludedIds = slots.map((s) => s.id!).toList();
-      final excludedSet = excludedIds.toSet();
-      participantIds = widget.allIds.where((id) => !excludedSet.contains(id)).toList();
-      if (participantIds.isEmpty) participantIds = [widget.payerId];
-    } else if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') {
-      exactAmountsById = {for (final s in slots) s.id!: s.amount};
-      participantIds = exactAmountsById.keys.toList();
-    } else {
-      participantIds = slots.map((s) => s.id!).toList();
-    }
+    final amount = _editedAmount ?? widget.result.amount;
+    final description = _descriptionController.text.trim();
+    final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
 
     final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
         ? 'Exact'
         : widget.splitTypeCap;
-    final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
-    final amount = _editedAmount ?? widget.result.amount;
-    final description = _descriptionController.text.trim();
+
     try {
-      await repo.addExpenseFromMagicBar(
-        groupId,
-        id: expenseId,
-        description: description,
+      final participantSlots = slots.map((s) => ParticipantSlot(
+        name: s.name,
+        amount: s.amount,
+        memberId: s.id,
+        isGuessed: s.isGuessed,
+      )).toList();
+
+      final normalized = buildNormalizedExpenseFromSlots(
         amount: amount,
+        description: description,
+        category: widget.result.category,
         date: 'Today',
         payerId: _payerId,
+        slots: participantSlots,
         splitType: persistSplitType,
-        participantIds: participantIds,
-        excludedIds: excludedIds,
-        exactAmountsById: exactAmountsById,
-        category: widget.result.category,
+        allMemberIds: widget.allIds,
+        excludedIds: widget.isExclude ? slots.map((s) => s.id!).toList() : null,
       );
+
+      await repo.addExpenseFromNormalized(
+        groupId,
+        id: expenseId,
+        normalized: normalized,
+        splitType: persistSplitType,
+      );
+
       if (!context.mounted) return;
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
+    } on NormalizedExpenseError catch (e) {
+      HapticFeedback.heavyImpact();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } on ArgumentError catch (e) {
       HapticFeedback.heavyImpact();
       if (context.mounted) {

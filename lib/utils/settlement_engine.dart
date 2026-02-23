@@ -1,4 +1,5 @@
 import '../models/models.dart';
+import 'ledger_delta.dart';
 
 /// A single debt: [fromId] owes [toId] [amount].
 class Debt {
@@ -19,6 +20,61 @@ class SettlementEngine {
   SettlementEngine._();
 
   static const double _tolerance = 0.01;
+
+  /// Computes net balances from a list of ledger deltas.
+  /// 
+  /// This is the canonical, pure computation path.
+  /// Positive = owed to member (credit), negative = member owes (debt).
+  static Map<String, double> computeNetBalancesFromDeltas(List<LedgerDelta> deltas) {
+    final Map<String, double> net = {};
+    
+    for (final delta in deltas) {
+      if (delta.memberId.isEmpty || delta.memberId.startsWith('p_')) continue;
+      if (delta.delta.isNaN || delta.delta.isInfinite) continue;
+      net[delta.memberId] = (net[delta.memberId] ?? 0) + delta.delta;
+    }
+    
+    return Map.unmodifiable(net);
+  }
+
+  /// Computes debts from a list of ledger deltas.
+  /// 
+  /// Uses the greedy algorithm to minimize number of transactions.
+  static List<Debt> computeDebtsFromDeltas(List<LedgerDelta> deltas) {
+    final net = computeNetBalancesFromDeltas(deltas);
+    return _computeDebtsFromNetBalances(net);
+  }
+
+  /// Converts an Expense to LedgerDeltas for the canonical computation path.
+  /// 
+  /// This bridges existing Expense data to the new delta-based system.
+  static List<LedgerDelta> expenseToDeltas(Expense expense) {
+    if (expense.amount <= 0 || expense.amount.isNaN || expense.amount.isInfinite) {
+      return [];
+    }
+
+    final payerId = expense.paidById;
+    if (payerId.isEmpty || payerId.startsWith('p_')) {
+      return [];
+    }
+
+    return expenseToLedgerDeltas(
+      expenseId: expense.id,
+      amount: expense.amount,
+      payerId: payerId,
+      splitAmountsById: expense.splitAmountsById ?? {},
+      timestamp: DateTime.now(),
+    );
+  }
+
+  /// Converts a list of Expenses to LedgerDeltas.
+  static List<LedgerDelta> expensesToDeltas(List<Expense> expenses) {
+    final deltas = <LedgerDelta>[];
+    for (final expense in expenses) {
+      deltas.addAll(expenseToDeltas(expense));
+    }
+    return deltas;
+  }
 
   /// Returns net balance per member id: positive = owed to them (credit), negative = they owe (debt).
   static Map<String, double> computeNetBalances(List<Expense> expenses, List<Member> members) {
@@ -114,7 +170,10 @@ class SettlementEngine {
   /// Returns a list of [Debt] (fromId, toId, amount).
   static List<Debt> computeDebts(List<Expense> expenses, List<Member> members) {
     final net = _buildNetBalances(expenses, members);
+    return _computeDebtsFromNetBalances(net);
+  }
 
+  static List<Debt> _computeDebtsFromNetBalances(Map<String, double> net) {
     final debtors = net.entries
         .where((e) => e.value < -_tolerance)
         .map((e) => _BalanceEntry(e.key, -e.value))
