@@ -134,12 +134,6 @@ class DataEncryptionService {
   }
 
   static dynamic _groupTypeRestore(String k, String v) {
-    if (k == 'pendingMembers') {
-      try {
-        final list = jsonDecode(v) as List?;
-        return list?.map((e) => Map<String, String>.from((e as Map).map((x, y) => MapEntry(x.toString(), y?.toString() ?? '')))).toList() ?? <Map<String, String>>[];
-      } catch (_) {}
-    }
     return v;
   }
 

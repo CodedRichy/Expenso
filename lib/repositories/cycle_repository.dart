@@ -392,9 +392,7 @@ class CycleRepository extends ChangeNotifier {
       final creatorId = data['creatorId'] as String? ?? '';
       final activeCycleId = data['activeCycleId'] as String? ?? _nextCycleId();
       final cycleStatus = data['cycleStatus'] as String? ?? 'active';
-      final pendingList = (data['pendingMembers'] as List?)
-          ?.map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
-          .toList() ?? <Map<String, String>>[];
+      final pendingList = _extractPendingMembersList(data['pendingMembers']);
 
       _groupMeta[groupId] = _GroupMeta(activeCycleId: activeCycleId, cycleStatus: cycleStatus);
       final status = cycleStatus == 'settling' ? 'closing' : (cycleStatus == 'active' ? 'open' : 'settled');
@@ -433,9 +431,7 @@ class CycleRepository extends ChangeNotifier {
         final groupData = docs.where((d) => d.id == g.id);
         if (groupData.isEmpty) continue;
         final d = groupData.first.data();
-        final pending = (d['pendingMembers'] as List?)
-            ?.map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
-            .toList() ?? <Map<String, String>>[];
+        final pending = _extractPendingMembersList(d['pendingMembers']);
         for (final p in pending) {
           final phone = p['phone'] ?? '';
           final name = p['name'] ?? '';
@@ -730,9 +726,25 @@ class CycleRepository extends ChangeNotifier {
     return digits;
   }
 
+  /// Extracts pendingMembers list, handling legacy encrypted data gracefully.
+  /// If data is a String (legacy encrypted), returns empty list - pendingPhones is source of truth.
+  static List<Map<String, String>> _extractPendingMembersList(dynamic rawPending) {
+    if (rawPending is List) {
+      return rawPending
+          .map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+          .toList();
+    }
+    return <Map<String, String>>[];
+  }
+
   void addMemberToGroup(String groupId, Member member) {
     if (member.id.startsWith('p_') || (member.id.startsWith('m_') && member.id.length < 28)) {
-      FirestoreService.instance.addPendingMemberToGroup(groupId, member.phone, member.name);
+      FirestoreService.instance.addPendingMemberToGroup(
+        groupId,
+        member.phone,
+        member.name,
+        invitedBy: _currentUserId,
+      );
       _refreshGroupPendingMembersLocally(groupId, member);
     } else {
       FirestoreService.instance.addMemberToGroup(groupId, member.id);

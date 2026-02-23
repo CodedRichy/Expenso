@@ -168,10 +168,13 @@ class FirestoreService {
         .map((s) => s.docs.map((d) => _SnapshotDocView(d) as DocView).toList());
   }
 
-  /// Accept an invitation: move user from pendingMembers to members and add system message.
+  /// Accept an invitation: move user from pending to members atomically.
+  /// Handles both new (unencrypted List) and legacy (encrypted String) pendingMembers.
+  /// All cleanup happens in a single transaction - no encryption keys required.
   Future<void> acceptInvitation(String groupId, String uid, String phone, {String? userName}) async {
     final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+    
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
@@ -184,12 +187,19 @@ class FirestoreService {
       pendingPhones.remove(normalizedPhone);
       members.add(uid);
       
-      tx.update(ref, {
+      final rawPending = data['pendingMembers'];
+      List<Map<String, dynamic>> pendingList = _extractPendingMembersList(rawPending);
+      pendingList.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
+      
+      final Map<String, dynamic> updates = {
         'members': members,
         'pendingPhones': pendingPhones,
-      });
+        'pendingMembers': pendingList,
+      };
+      
+      tx.update(ref, updates);
     });
-    await removePendingMemberFromGroup(groupId, phone);
+    
     if (userName != null && userName.isNotEmpty) {
       await addSystemMessage(groupId, type: 'joined', userName: userName, odId: uid);
     }
@@ -294,29 +304,42 @@ class FirestoreService {
   }
 
   /// Add a pending member (phone + name) when inviting by phone (no UID yet).
-  Future<void> addPendingMemberToGroup(String groupId, String phone, String name) async {
+  /// Uses unencrypted pendingMembers with schema: { phone, name, invitedAt, invitedBy }
+  Future<void> addPendingMemberToGroup(String groupId, String phone, String name, {String? invitedBy}) async {
     final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
       final data = snap.data()!;
-      List<Map<String, dynamic>> list = [];
-      final rawPending = data['pendingMembers'];
-      if (rawPending is List) {
-        list = List<Map<String, dynamic>>.from(
-          rawPending.map((e) => Map<String, dynamic>.from(e as Map)),
-        );
-      }
+      
+      List<Map<String, dynamic>> list = _extractPendingMembersList(data['pendingMembers']);
       List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
+      
       if (!list.any((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone)) {
-        list.add({'phone': phone, 'name': name});
+        list.add({
+          'phone': phone,
+          'name': name,
+          'invitedAt': DateTime.now().millisecondsSinceEpoch,
+          'invitedBy': invitedBy ?? '',
+        });
         if (!pendingPhones.contains(normalizedPhone)) {
           pendingPhones.add(normalizedPhone);
         }
         tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
       }
     });
+  }
+  
+  /// Extracts pendingMembers list, handling legacy encrypted data gracefully.
+  /// If data is a String (legacy encrypted), returns empty list - pendingPhones is source of truth.
+  static List<Map<String, dynamic>> _extractPendingMembersList(dynamic rawPending) {
+    if (rawPending is List) {
+      return List<Map<String, dynamic>>.from(
+        rawPending.map((e) => Map<String, dynamic>.from(e as Map)),
+      );
+    }
+    return [];
   }
 
   static String _normalizePhone(String raw) {
@@ -338,6 +361,7 @@ class FirestoreService {
   }
 
   /// Remove a pending member by phone.
+  /// Handles legacy encrypted pendingMembers by treating them as empty list.
   Future<void> removePendingMemberFromGroup(String groupId, String phone) async {
     final normalizedPhone = _normalizePhone(phone);
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
@@ -346,17 +370,12 @@ class FirestoreService {
       if (!snap.exists) return;
       final data = snap.data()!;
       
-      List<Map<String, dynamic>> list = [];
-      final rawPending = data['pendingMembers'];
-      if (rawPending is List) {
-        list = List<Map<String, dynamic>>.from(
-          rawPending.map((e) => Map<String, dynamic>.from(e as Map)),
-        );
-      }
-      
+      List<Map<String, dynamic>> list = _extractPendingMembersList(data['pendingMembers']);
       List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
+      
       list.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
       pendingPhones.remove(normalizedPhone);
+      
       tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
     });
   }
