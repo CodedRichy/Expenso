@@ -763,15 +763,25 @@ class CycleRepository extends ChangeNotifier {
 
   /// Accept a group invitation: moves current user from pending to members.
   Future<void> acceptInvitation(String groupId) async {
-    if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) return;
-    await FirestoreService.instance.acceptInvitation(
-      groupId,
-      _currentUserId,
-      _currentUserPhone,
-      userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
-    );
-    _pendingInvitations.removeWhere((i) => i.groupId == groupId);
-    notifyListeners();
+    debugPrint('DEBUG acceptInvitation: groupId=$groupId uid=$_currentUserId phone=$_currentUserPhone');
+    if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) {
+      debugPrint('DEBUG acceptInvitation: missing uid or phone, aborting');
+      return;
+    }
+    try {
+      await FirestoreService.instance.acceptInvitation(
+        groupId,
+        _currentUserId,
+        _currentUserPhone,
+        userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
+      );
+      debugPrint('DEBUG acceptInvitation: success');
+      _pendingInvitations.removeWhere((i) => i.groupId == groupId);
+      notifyListeners();
+    } catch (e, st) {
+      debugPrint('DEBUG acceptInvitation ERROR: $e\n$st');
+      rethrow;
+    }
   }
 
   /// Decline a group invitation: removes current user from pending members.

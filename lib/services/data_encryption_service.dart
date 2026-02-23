@@ -80,7 +80,7 @@ class DataEncryptionService {
   }
 
   static const _userFields = ['displayName', 'phoneNumber', 'photoURL', 'upiId'];
-  static const _groupFields = ['groupName', 'pendingMembers'];
+  static const _groupFields = ['groupName'];
   static const _expenseFields = [
     'description', 'amount', 'date', 'dateSortKey', 'payerId',
     'participantIds', 'splits', 'splitType', 'category',

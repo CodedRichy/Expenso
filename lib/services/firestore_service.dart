@@ -180,29 +180,16 @@ class FirestoreService {
       final members = List<String>.from(data['members'] as List? ?? []);
       if (members.contains(uid)) return;
       
-      final pendingMembers = List<Map<String, dynamic>>.from(
-        (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
-      );
       List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
-      
-      pendingMembers.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
       pendingPhones.remove(normalizedPhone);
       members.add(uid);
       
-      Map<String, dynamic> toWrite = {
+      tx.update(ref, {
         'members': members,
-        'pendingMembers': pendingMembers,
         'pendingPhones': pendingPhones,
-      };
-      if (_encryption != null) {
-        await _encryption!.ensureGroupKey(groupId);
-        final encrypted = await _encryption!.encryptGroupDataWithKey(groupId, {
-          'pendingMembers': pendingMembers,
-        });
-        toWrite['pendingMembers'] = encrypted['pendingMembers'];
-      }
-      tx.update(ref, toWrite);
+      });
     });
+    await removePendingMemberFromGroup(groupId, phone);
     if (userName != null && userName.isNotEmpty) {
       await addSystemMessage(groupId, type: 'joined', userName: userName, odId: uid);
     }
@@ -314,21 +301,20 @@ class FirestoreService {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
       final data = snap.data()!;
-      List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(
-        (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
-      );
+      List<Map<String, dynamic>> list = [];
+      final rawPending = data['pendingMembers'];
+      if (rawPending is List) {
+        list = List<Map<String, dynamic>>.from(
+          rawPending.map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      }
       List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
       if (!list.any((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone)) {
         list.add({'phone': phone, 'name': name});
         if (!pendingPhones.contains(normalizedPhone)) {
           pendingPhones.add(normalizedPhone);
         }
-        Map<String, dynamic> toWrite = {'pendingMembers': list, 'pendingPhones': pendingPhones};
-        if (_encryption != null) {
-          await _encryption!.ensureGroupKey(groupId);
-          toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
-        }
-        tx.update(ref, toWrite);
+        tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
       }
     });
   }
@@ -359,18 +345,19 @@ class FirestoreService {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
       final data = snap.data()!;
-      final list = List<Map<String, dynamic>>.from(
-        (data['pendingMembers'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
-      );
+      
+      List<Map<String, dynamic>> list = [];
+      final rawPending = data['pendingMembers'];
+      if (rawPending is List) {
+        list = List<Map<String, dynamic>>.from(
+          rawPending.map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      }
+      
       List<String> pendingPhones = List<String>.from(data['pendingPhones'] as List? ?? []);
       list.removeWhere((e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone);
       pendingPhones.remove(normalizedPhone);
-      Map<String, dynamic> toWrite = {'pendingMembers': list, 'pendingPhones': pendingPhones};
-      if (_encryption != null) {
-        await _encryption!.ensureGroupKey(groupId);
-        toWrite = await _encryption!.encryptGroupDataWithKey(groupId, toWrite);
-      }
-      tx.update(ref, toWrite);
+      tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
     });
   }
 
