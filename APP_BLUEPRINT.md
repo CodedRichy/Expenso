@@ -69,7 +69,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/` | PhoneAuth / OnboardingName / GroupsList | Decided by auth stream then repo (see §2). |
 | `/groups` | GroupsList | List of groups; header shows **profile avatar** (tap → `/profile`); **swipe left** = Pin/Unpin (max 3); **swipe right** = Delete (creator only). Pinned at top. Black FAB creates group. **Pending Invitations** section at top when user has been invited to groups (via phone number); shows group name with Join/Decline buttons. |
 | `/create-group` | CreateGroup | New group → then InviteMembers. |
-| `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). Invite link: `expenso://join/<groupId>` generated and copied to clipboard. Contacts: permission-denial message; suggestions deduped against existing + pending members. |
+| `/invite-members` | InviteMembers | Add by phone/name; contact suggestions via `flutter_contacts` (import as `fc`). **Country code picker** (15 countries: IN, US, UK, UAE, SG, AU, DE, FR, JP, CN, KR, BR, MX, RU, ZA). Invite link: `expenso://join/<groupId>` generated and copied to clipboard. Contacts: permission-denial message; suggestions deduped against existing + pending members. |
 | `/group-detail` | GroupDetail | Compact top bar (back, group name, members). **Decision Clarity** summary card (gradient Deep Navy→Slate, shadow): “Cycle Total: ₹X”, 50/50 row “Spent by You: ₹Y” and “Your Status: ±₹Z” (green accent = credit, red = debt); empty state “Zero-Waste Cycle” + Magic Bar prompt. Then **Settle now** + **Settle up**, **Balances**, expense log, **Smart Bar**. **Expense confirmation dialog**: Real-time sum of exact amounts as user types. Label "Total: ₹X | Assigned: ₹Y" for Exact/Percentage/Shares. For Exact split, amount per slot is editable (TextField); assigned sum updates live. Confirm enabled only when amount > 0, description non-empty, total assigned == total (0.01 tolerance), and all slots have a member; otherwise grey Confirm and red subtext; heavy haptic on Confirm tap when math invalid. **Justice Guard**: "Settle & Restart" and "Start New Cycle" both require a confirmation popup (even for creator). Haptics: light on AI parse success and confirm; heavy on validation failure; groups list swipe (Pin/Delete) unchanged. |
 | `/expense-input` | ExpenseInput | One field (e.g. “Dinner 1200 with”); Who paid? Who’s involved; **NLP** auto-selects participants by typed names. |
 
@@ -97,7 +97,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/profile` | ProfileScreen | Identity: avatar (upload via ProfileService), display name (synced to Firestore + Groq fuzzy matching). Payment Settings: UPI ID. Deep Navy & Slate card theme. |
+| `/profile` | ProfileScreen | Identity: avatar (upload via ProfileService), display name (synced to Firestore + Groq fuzzy matching). Payment Settings: UPI ID. **Log out** button (confirmation dialog, clears auth, returns to login). Deep Navy & Slate card theme. |
 
 ### Utility
 
@@ -156,7 +156,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/models/`
 
-- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (participantIds, paidById, splitAmountsById; category; splitType. All person references use member id, not phone.), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount — phone/name filled from uid for display)
+- **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (participantIds, paidById, splitAmountsById; category; splitType; `displayDate` getter returns human-friendly format: "Today", "Yesterday", "3 days ago", "Feb 15", "Feb 15, 2025". All person references use member id, not phone.), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount — phone/name filled from uid for display)
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 - **utils/settlement_engine.dart** — `Debt` (fromId, toId, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (member id → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
@@ -256,8 +256,8 @@ Semantic: `screenPaddingH` (24), `inputPadding` (16), `buttonPaddingV` (14).
 
 ### Phone format
 
-- Store/display as `+91 XXXXX XXXXX` (10 digits).
-- Normalize to digits (e.g. last 10) when needed.
+- Store/display with country code prefix (e.g. `+91XXXXXXXXXX`, `+1XXXXXXXXXX`). Supports 15 country codes (IN, US, UK, UAE, SG, AU, DE, FR, JP, CN, KR, BR, MX, RU, ZA).
+- Normalize to digits when needed for matching.
 
 ### Expense parsing (ExpenseInput)
 

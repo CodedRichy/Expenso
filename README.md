@@ -15,7 +15,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 - **Groups** — Create groups, add members by phone or contacts, pin up to 3 groups, delete (creator only).
 - **Expenses** — Add via Magic Bar (natural language, Groq/Llama) or manual form. Splits: Even, Exact, Exclude, Percentage, Shares. Decision Clarity card shows cycle total, spent-by-you, and your net status (credit/debt).
 - **Settlement** — Two-phase: Settle (freeze cycle) then Start New Cycle (creator). Settle up via Razorpay Checkout for in-app payment of dues; optional UPI/system flow.
-- **Profile** — Display name, avatar (Firebase Storage), UPI ID for payment settings.
+- **Profile** — Display name, avatar (Firebase Storage), UPI ID for payment settings, logout.
 - **Auth** — Phone (OTP) sign-in via Firebase when configured; optional mock flow when not.
 
 ---
@@ -71,7 +71,7 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 
 ## Usage
 
-- **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts). Swipe left to pin/unpin (max 3), swipe right to delete (creator only).
+- **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only).
 - **Expenses:** In group detail, use the Magic Bar (e.g. "Dinner 1200 with Pradhyun") or tap to add manually. Choose payer, split type, and participants; confirm. Recent add shows an undo screen for a few seconds.
 - **Settlement:** Creator taps "Settle now" to freeze the cycle; when status is "Settling", creator taps "Start New Cycle" to archive and begin a new cycle. Use "Settle up" / "Pay via UPI" to pay dues via Razorpay Checkout.
 - **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID.
