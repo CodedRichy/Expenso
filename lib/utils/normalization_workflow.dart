@@ -64,6 +64,109 @@ class ParticipantSlot {
   bool get isResolved => memberId != null && memberId!.isNotEmpty;
 }
 
+/// UI-only class for displaying and editing payer contributions.
+/// 
+/// Used in confirmation dialogs where users can:
+/// - See who paid how much
+/// - Add additional payers
+/// - Edit contribution amounts
+/// 
+/// This class should NEVER be used for balance computation.
+/// Convert to [NormalizedExpense] before any accounting operations.
+/// 
+/// Note: [amount] is a double for UI display. It will be converted to
+/// [MoneyMinor] (integer) at the normalization boundary.
+class PayerContributionSlot {
+  final String? memberId;
+  final double amount;
+  
+  const PayerContributionSlot({
+    this.memberId,
+    this.amount = 0,
+  });
+  
+  PayerContributionSlot copyWith({
+    String? memberId,
+    double? amount,
+  }) {
+    return PayerContributionSlot(
+      memberId: memberId ?? this.memberId,
+      amount: amount ?? this.amount,
+    );
+  }
+  
+  bool get isResolved => memberId != null && memberId!.isNotEmpty;
+  bool get hasAmount => amount > 0;
+  bool get isValid => isResolved && hasAmount;
+}
+
+/// Validation result for payer contributions.
+sealed class PayerValidationResult {}
+
+class PayerValidationSuccess extends PayerValidationResult {}
+
+class PayerValidationError extends PayerValidationResult {
+  final String message;
+  final double expected;
+  final double actual;
+  
+  PayerValidationError({
+    required this.message,
+    required this.expected,
+    required this.actual,
+  });
+}
+
+/// Validates that payer contributions sum exactly to the total.
+/// 
+/// Rules:
+/// - Sum must match total exactly (no tolerance)
+/// - All payers must have valid member IDs
+/// - All amounts must be positive
+PayerValidationResult validatePayerContributions({
+  required double total,
+  required List<PayerContributionSlot> payerSlots,
+}) {
+  if (payerSlots.isEmpty) {
+    return PayerValidationError(
+      message: 'At least one payer is required',
+      expected: total,
+      actual: 0,
+    );
+  }
+  
+  for (final slot in payerSlots) {
+    if (!slot.isResolved) {
+      return PayerValidationError(
+        message: 'All payers must be selected',
+        expected: total,
+        actual: payerSlots.fold(0.0, (sum, s) => sum + s.amount),
+      );
+    }
+    if (slot.amount <= 0) {
+      return PayerValidationError(
+        message: 'All payer amounts must be positive',
+        expected: total,
+        actual: payerSlots.fold(0.0, (sum, s) => sum + s.amount),
+      );
+    }
+  }
+  
+  final sum = payerSlots.fold(0.0, (acc, slot) => acc + slot.amount);
+  
+  if ((sum - total).abs() > _tolerance) {
+    return PayerValidationError(
+      message: sum < total
+          ? 'Payer contributions (${sum.toStringAsFixed(2)}) are less than total (${total.toStringAsFixed(2)})'
+          : 'Payer contributions (${sum.toStringAsFixed(2)}) exceed total (${total.toStringAsFixed(2)})',
+      expected: total,
+      actual: sum,
+    );
+  }
+  
+  return PayerValidationSuccess();
+}
+
 /// Result of attempting to normalize a parsed expense.
 sealed class NormalizationResult {}
 
@@ -83,9 +186,9 @@ class NormalizationNeedsConfirmation extends NormalizationResult {
   final String category;
   final String date;
   final String splitType;
-  final String payerId;
   final String currencyCode;
   final List<ParticipantSlot> slots;
+  final List<PayerContributionSlot> payerSlots;
   final List<String> unresolvedNames;
   final String? validationWarning;
 
@@ -95,12 +198,16 @@ class NormalizationNeedsConfirmation extends NormalizationResult {
     required this.category,
     required this.date,
     required this.splitType,
-    required this.payerId,
     required this.currencyCode,
     required this.slots,
+    required this.payerSlots,
     required this.unresolvedNames,
     this.validationWarning,
   });
+  
+  /// Primary payer ID for backward compatibility.
+  /// Returns the first payer's ID or empty string if no payers.
+  String get payerId => payerSlots.isNotEmpty ? (payerSlots.first.memberId ?? '') : '';
 }
 
 /// Normalization failed with an unrecoverable error.
@@ -267,6 +374,10 @@ NormalizationResult normalizeExpense({
     return NormalizationError('Invalid payer');
   }
 
+  final payerSlots = [
+    PayerContributionSlot(memberId: payerId, amount: parsed.amount),
+  ];
+
   final splitType = _capitalizeSplitType(parsed.splitType);
   final List<ParticipantSlot> slots;
   String? validationWarning;
@@ -313,9 +424,9 @@ NormalizationResult normalizeExpense({
       category: parsed.category.trim(),
       date: date,
       splitType: splitType,
-      payerId: payerId,
       currencyCode: currencyCode,
       slots: slots,
+      payerSlots: payerSlots,
       unresolvedNames: stillUnresolved.map((s) => s.name).toList(),
       validationWarning: validationWarning,
     );
@@ -327,7 +438,7 @@ NormalizationResult normalizeExpense({
       description: parsed.description.trim(),
       category: parsed.category.trim(),
       date: date,
-      payerId: payerId,
+      payerSlots: payerSlots,
       slots: slots,
       splitType: splitType,
       allMemberIds: ctx.allMemberIds,
@@ -339,26 +450,30 @@ NormalizationResult normalizeExpense({
   }
 }
 
-/// Converts resolved ParticipantSlots to a NormalizedExpense.
+/// Converts resolved ParticipantSlots and PayerContributionSlots to a NormalizedExpense.
 /// 
 /// This is the bridge from UI workflow (doubles) to accounting model (integers).
 /// All slots must have resolved memberIds before calling this.
 /// 
+/// ## Multi-Payer Support
+/// When multiple payers are provided, each payer's contribution is converted
+/// to integer minor units. The sum of all contributions must equal the total.
+/// 
 /// ## Remainder Handling
 /// When splitting amounts, integer division may produce a remainder.
-/// The remainder is assigned to the payer (deterministic, documented).
+/// The remainder is assigned to the first payer (deterministic, documented).
 /// 
 /// Example: 100.00 INR split among 3 people
 /// - Total minor units: 10000 paise
 /// - Base share: 10000 ÷ 3 = 3333 paise each
 /// - Remainder: 10000 - (3333 × 3) = 1 paise
-/// - Payer gets: 3333 + 1 = 3334 paise
+/// - First participant gets: 3333 + 1 = 3334 paise
 NormalizedExpense buildNormalizedExpenseFromSlots({
   required double amount,
   required String description,
   required String category,
   required String date,
-  required String payerId,
+  required List<PayerContributionSlot> payerSlots,
   required List<ParticipantSlot> slots,
   required String splitType,
   required List<String> allMemberIds,
@@ -367,9 +482,13 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
 }) {
   final totalMinor = MoneyConversion.parseToMinor(amount, currencyCode);
   
-  final payerContributions = <String, MoneyMinor>{
-    payerId: totalMinor,
-  };
+  final payerContributions = _buildPayerContributions(
+    payerSlots: payerSlots,
+    totalMinor: totalMinor.amountMinor,
+    currencyCode: currencyCode,
+  );
+
+  final primaryPayerId = payerSlots.first.memberId!;
 
   Map<String, MoneyMinor> participantShares;
 
@@ -379,14 +498,14 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
       currencyCode: currencyCode,
       allMemberIds: allMemberIds,
       excludedIds: excludedIds ?? slots.map((s) => s.memberId).whereType<String>().toList(),
-      payerId: payerId,
+      payerId: primaryPayerId,
     );
   } else {
     participantShares = _splitFromSlots(
       totalMinor: totalMinor.amountMinor,
       currencyCode: currencyCode,
       slots: slots,
-      payerId: payerId,
+      payerId: primaryPayerId,
     );
   }
 
@@ -398,6 +517,36 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
     payerContributionsByMemberId: payerContributions,
     participantSharesByMemberId: participantShares,
   );
+}
+
+/// Converts payer slots to integer contributions.
+/// 
+/// Rules:
+/// - Each slot's amount is converted to minor units
+/// - Any rounding remainder is assigned to the first payer
+/// - Sum is guaranteed to equal totalMinor
+Map<String, MoneyMinor> _buildPayerContributions({
+  required List<PayerContributionSlot> payerSlots,
+  required int totalMinor,
+  required String currencyCode,
+}) {
+  final contributions = <String, int>{};
+  int allocated = 0;
+  
+  for (final slot in payerSlots) {
+    if (slot.memberId == null || slot.memberId!.isEmpty) continue;
+    final minor = MoneyConversion.parseToMinor(slot.amount, currencyCode);
+    contributions[slot.memberId!] = (contributions[slot.memberId!] ?? 0) + minor.amountMinor;
+    allocated += minor.amountMinor;
+  }
+  
+  final remainder = totalMinor - allocated;
+  if (remainder != 0 && payerSlots.isNotEmpty && payerSlots.first.memberId != null) {
+    final firstPayerId = payerSlots.first.memberId!;
+    contributions[firstPayerId] = (contributions[firstPayerId] ?? 0) + remainder;
+  }
+  
+  return contributions.map((id, amt) => MapEntry(id, MoneyMinor(amt, currencyCode)));
 }
 
 /// Splits total among non-excluded members, assigning remainder to payer.

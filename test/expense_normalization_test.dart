@@ -462,7 +462,7 @@ void main() {
         description: 'Test',
         category: '',
         date: 'Today',
-        payerId: 'u1',
+        payerSlots: [const PayerContributionSlot(memberId: 'u1', amount: 1.00)],
         slots: [
           ParticipantSlot(name: 'Alice', amount: 0.33, memberId: 'u1'),
           ParticipantSlot(name: 'Bob', amount: 0.33, memberId: 'u2'),
@@ -484,7 +484,7 @@ void main() {
         description: 'Test',
         category: '',
         date: 'Today',
-        payerId: 'u1',
+        payerSlots: [const PayerContributionSlot(memberId: 'u1', amount: 100)],
         slots: [
           ParticipantSlot(name: 'Alice', amount: 33, memberId: 'u1'),
           ParticipantSlot(name: 'Bob', amount: 33, memberId: 'u2'),
@@ -506,7 +506,7 @@ void main() {
         description: 'Test',
         category: '',
         date: 'Today',
-        payerId: 'u1',
+        payerSlots: [const PayerContributionSlot(memberId: 'u1', amount: 1.000)],
         slots: [
           ParticipantSlot(name: 'Alice', amount: 0.333, memberId: 'u1'),
           ParticipantSlot(name: 'Bob', amount: 0.333, memberId: 'u2'),
@@ -799,5 +799,350 @@ void main() {
         expect(sum, 0, reason: 'Delta sum must be exactly zero for ${tc.name}');
       });
     }
+  });
+
+  group('Multi-payer support', () {
+    test('PayerContributionSlot validation: empty slots rejected', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [],
+      );
+      
+      expect(result, isA<PayerValidationError>());
+      final error = result as PayerValidationError;
+      expect(error.message, contains('At least one payer'));
+    });
+
+    test('PayerContributionSlot validation: unresolved payer rejected', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [
+          const PayerContributionSlot(memberId: null, amount: 300.0),
+        ],
+      );
+      
+      expect(result, isA<PayerValidationError>());
+      final error = result as PayerValidationError;
+      expect(error.message, contains('must be selected'));
+    });
+
+    test('PayerContributionSlot validation: zero amount rejected', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 0),
+        ],
+      );
+      
+      expect(result, isA<PayerValidationError>());
+      final error = result as PayerValidationError;
+      expect(error.message, contains('must be positive'));
+    });
+
+    test('PayerContributionSlot validation: sum less than total rejected', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 100.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+      );
+      
+      expect(result, isA<PayerValidationError>());
+      final error = result as PayerValidationError;
+      expect(error.message, contains('less than total'));
+      expect(error.expected, 300.0);
+      expect(error.actual, 200.0);
+    });
+
+    test('PayerContributionSlot validation: sum exceeds total rejected', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 200.0),
+        ],
+      );
+      
+      expect(result, isA<PayerValidationError>());
+      final error = result as PayerValidationError;
+      expect(error.message, contains('exceed total'));
+    });
+
+    test('PayerContributionSlot validation: exact sum accepted', () {
+      final result = validatePayerContributions(
+        total: 300.0,
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 150.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 150.0),
+        ],
+      );
+      
+      expect(result, isA<PayerValidationSuccess>());
+    });
+
+    test('Two payers splitting payment unevenly', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 300.0,
+        description: 'Dinner',
+        category: 'Food',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 100.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 100.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 100.0, memberId: 'u3'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      expect(expense.payerContributionsByMemberId.length, 2);
+      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 20000);
+      expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 10000);
+      expect(expense.participantSharesByMemberId.length, 3);
+      
+      final payerSum = expense.payerContributionsByMemberId.values
+          .fold(0, (sum, m) => sum + m.amountMinor);
+      expect(payerSum, expense.total.amountMinor);
+    });
+
+    test('Three payers summing exactly to total', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 900.0,
+        description: 'Group outing',
+        category: 'Entertainment',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 300.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 300.0),
+          const PayerContributionSlot(memberId: 'u3', amount: 300.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 300.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 300.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 300.0, memberId: 'u3'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      expect(expense.payerContributionsByMemberId.length, 3);
+      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 30000);
+      expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 30000);
+      expect(expense.payerContributionsByMemberId['u3']!.amountMinor, 30000);
+    });
+
+    test('Multi-payer with even split participants', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 300.0,
+        description: 'Lunch',
+        category: 'Food',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 100.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 100.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 100.0, memberId: 'u3'),
+        ],
+        splitType: 'Even',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      final payerSum = expense.payerContributionsByMemberId.values
+          .fold(0, (sum, m) => sum + m.amountMinor);
+      final participantSum = expense.participantSharesByMemberId.values
+          .fold(0, (sum, m) => sum + m.amountMinor);
+      
+      expect(payerSum, expense.total.amountMinor);
+      expect(participantSum, expense.total.amountMinor);
+    });
+
+    test('Multi-payer with percentage split', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 1000.0,
+        description: 'Project expense',
+        category: 'Work',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 600.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 400.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 500.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 300.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 200.0, memberId: 'u3'),
+        ],
+        splitType: 'Percentage',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 60000);
+      expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 40000);
+      
+      final payerSum = expense.payerContributionsByMemberId.values
+          .fold(0, (sum, m) => sum + m.amountMinor);
+      expect(payerSum, expense.total.amountMinor);
+    });
+
+    test('Multi-payer ledger deltas sum to zero', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 300.0,
+        description: 'Shared payment',
+        category: 'General',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 100.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 100.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 100.0, memberId: 'u3'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
+      
+      expect(sum, 0, reason: 'Multi-payer deltas must sum to zero');
+    });
+
+    test('Multi-payer: payer contributions stored correctly', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 300.0,
+        description: 'Shared payment',
+        category: 'General',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 100.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 100.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 100.0, memberId: 'u3'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 20000,
+          reason: 'u1 paid 200 = 20000 paise');
+      expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 10000,
+          reason: 'u2 paid 100 = 10000 paise');
+    });
+
+    test('Multi-payer: net deltas are correct', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 300.0,
+        description: 'Shared payment',
+        category: 'General',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 200.0),
+          const PayerContributionSlot(memberId: 'u2', amount: 100.0),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 100.0, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 100.0, memberId: 'u2'),
+          ParticipantSlot(name: 'Charlie', amount: 100.0, memberId: 'u3'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2', 'u3'],
+        currencyCode: 'INR',
+      );
+
+      final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
+      final deltaMap = {for (var d in deltas) d.memberId: d.deltaMinor};
+      
+      expect(deltaMap['u1'], 10000, reason: 'u1: paid 200, owes 100 → net +100 = +10000');
+      expect(deltaMap.containsKey('u2'), false, reason: 'u2: paid 100, owes 100 → net 0 (no delta created)');
+      expect(deltaMap['u3'], -10000, reason: 'u3: paid 0, owes 100 → net -100 = -10000');
+    });
+
+    test('NormalizationNeedsConfirmation includes payerSlots', () {
+      final parsed = ParsedExpenseResult(
+        amount: 300.0,
+        description: 'Test',
+        category: 'Test',
+        splitType: 'exact',
+        participantNames: [],
+        excludedNames: [],
+        exactAmountsByName: {},
+      );
+
+      final result = normalizeExpense(
+        parsed: parsed,
+        members: members,
+        currentUserId: 'u1',
+        currentUserName: 'Alice',
+        currencyCode: 'INR',
+      );
+
+      if (result is NormalizationNeedsConfirmation) {
+        expect(result.payerSlots, isNotEmpty);
+        expect(result.payerSlots.first.memberId, 'u1');
+        expect(result.payerSlots.first.amount, 300.0);
+        expect(result.payerId, 'u1');
+      }
+    });
+
+    test('NormalizationNeedsConfirmation backward compatibility: payerId getter', () {
+      final confirmation = NormalizationNeedsConfirmation(
+        amount: 300.0,
+        description: 'Test',
+        category: 'Test',
+        date: 'Today',
+        splitType: 'Even',
+        currencyCode: 'INR',
+        slots: [],
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 300.0),
+        ],
+        unresolvedNames: [],
+      );
+
+      expect(confirmation.payerId, 'u1');
+    });
+
+    test('Rounding remainder assigned to first payer', () {
+      final expense = buildNormalizedExpenseFromSlots(
+        amount: 100.01,
+        description: 'Test rounding',
+        category: 'Test',
+        date: 'Today',
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 50.00),
+          const PayerContributionSlot(memberId: 'u2', amount: 50.00),
+        ],
+        slots: [
+          ParticipantSlot(name: 'Alice', amount: 50.00, memberId: 'u1'),
+          ParticipantSlot(name: 'Bob', amount: 50.00, memberId: 'u2'),
+        ],
+        splitType: 'Exact',
+        allMemberIds: ['u1', 'u2'],
+        currencyCode: 'INR',
+      );
+
+      final payerSum = expense.payerContributionsByMemberId.values
+          .fold(0, (sum, m) => sum + m.amountMinor);
+      expect(payerSum, expense.total.amountMinor);
+      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 5001);
+    });
   });
 }
