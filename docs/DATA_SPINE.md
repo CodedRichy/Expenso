@@ -290,20 +290,35 @@ GroupInvitation (derived) ◄───────────────┘
 
 | Attribute | Value |
 |-----------|-------|
-| **Semantic Role** | Intermediate (computed) |
+| **Semantic Role** | Intermediate (accounting event) |
 | **Ideal Mutability** | **Immutable** |
 | **Storage** | In-memory only (transient during expense creation) |
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `amount` | `double` | Total cost (positive, finite) |
-| `description` | `String` | Expense description |
-| `category` | `String` | Optional categorization |
-| `date` | `String` | Date string |
+| `description` | `String` | Expense description (not validated, UI concern) |
+| `category` | `String` | Optional categorization (not validated) |
+| `date` | `String` | Date string (not validated) |
 | `payerContributionsByMemberId` | `Map<String, double>` | Who paid how much (sum = amount) |
 | `participantSharesByMemberId` | `Map<String, double>` | Who owes how much (sum = amount) |
 
-**Notes:** Canonical intermediate model between parsing (names) and storage (IDs). All person references are member IDs (UUIDs), never names. "Everyone" semantics are expanded to concrete IDs at construction time. Invariants enforced at construction: sum(payerContributions) == amount, sum(participantShares) == amount, no pending member IDs.
+**Design Principles:**
+- **UI-agnostic:** No UI concepts (slots, selections, confirmation state)
+- **Timeless:** Can be reconstructed from storage without current group state
+- **Replay-safe:** Produces identical LedgerDeltas regardless of when computed
+
+**Money Invariants (enforced):**
+- sum(payerContributions) == amount
+- sum(participantShares) == amount
+- All map keys are valid member IDs (no `p_` prefixes)
+
+**Non-invariants (NOT validated):**
+- Description content (UI concern)
+- Category validity
+- Date format
+
+**Notes:** Canonical model for accounting events. All person references are member IDs (UUIDs), never names. "Everyone" semantics must be expanded to concrete IDs before construction.
 
 ---
 
@@ -323,6 +338,15 @@ GroupInvitation (derived) ◄───────────────┘
 | `timestamp` | `DateTime` | When the expense occurred |
 
 **💰 MONEY TRUTH:** Fundamental unit of balance computation. Sum of all deltas for an expense is exactly zero.
+
+**Design Principles:**
+- **UI-agnostic:** No UI concepts
+- **Timeless:** Computed from stored data only, not current group state
+- **Deterministic:** Same input always produces same output
+- **Replay-safe:** Old expenses produce identical deltas regardless of membership changes
+
+**Replay Safety Guarantee:**
+The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amount, payerId, splitAmountsById). It does NOT use current group membership, "everyone" semantics, or dynamic participant lists.
 
 **Notes:** Pure derived view from NormalizedExpense or Expense. For each payer: +paidAmount. For each participant: -shareAmount. This is the atomic unit for Splitwise-style ledger accounting. Balances are computed by aggregating deltas, never stored directly.
 

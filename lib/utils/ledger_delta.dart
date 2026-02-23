@@ -4,11 +4,22 @@ const double _tolerance = 0.01;
 
 /// A single balance-affecting entry in the ledger.
 /// 
-/// Represents a change to a member's balance for a specific expense.
+/// This model represents a fully-resolved accounting event.
+/// It must be safe to replay at any time in the future.
+/// 
+/// ## Design Principles
+/// - **UI-agnostic:** No UI concepts (selections, confirmation state)
+/// - **Timeless:** Computed from stored data, not current group state
+/// - **Deterministic:** Same input always produces same output
+/// 
+/// ## Properties
 /// - Positive delta = credit (member is owed money)
 /// - Negative delta = debit (member owes money)
 /// 
-/// The sum of all deltas for an expense must be exactly zero.
+/// ## Invariants
+/// - The sum of all deltas for an expense must be exactly zero
+/// - No inference from "everyone" or dynamic group membership
+/// - Member IDs must be valid (non-empty, no `p_` prefixes)
 class LedgerDelta {
   final String memberId;
   final double delta;
@@ -72,9 +83,21 @@ List<LedgerDelta> toLedgerDeltas(
 
 /// Converts a stored Expense (from Firestore) into LedgerDeltas.
 /// 
-/// This bridges the gap between the existing Expense model and the new
-/// delta-based computation. Used during migration to ensure both paths
-/// produce identical results.
+/// This is the canonical replay-safe conversion function.
+/// 
+/// ## Replay Safety
+/// This function uses ONLY explicitly stored data:
+/// - `amount`: The total expense amount
+/// - `payerId`: Who paid (stored, not inferred)
+/// - `splitAmountsById`: Exact per-person shares (stored, not computed)
+/// 
+/// It does NOT use:
+/// - Current group membership
+/// - "Everyone" semantics
+/// - Dynamic participant lists
+/// 
+/// This ensures that old expenses produce identical deltas regardless
+/// of group membership changes after the expense was created.
 List<LedgerDelta> expenseToLedgerDeltas({
   required String expenseId,
   required double amount,

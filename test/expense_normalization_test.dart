@@ -61,16 +61,14 @@ void main() {
       );
     });
 
-    test('empty description is rejected', () {
-      expect(
-        () => NormalizedExpense(
-          amount: 300,
-          description: '',
-          payerContributionsByMemberId: {'u1': 300},
-          participantSharesByMemberId: {'u1': 150, 'u2': 150},
-        ),
-        throwsA(isA<NormalizedExpenseError>()),
+    test('empty description is allowed (UI concern, not accounting)', () {
+      final expense = NormalizedExpense(
+        amount: 300,
+        description: '',
+        payerContributionsByMemberId: {'u1': 300},
+        participantSharesByMemberId: {'u1': 150, 'u2': 150},
       );
+      expect(expense.description, '');
     });
 
     test('zero or negative amount is rejected', () {
@@ -453,6 +451,149 @@ void main() {
       expect(expense.participantSharesByMemberId.containsKey('u3'), false);
       expect(expense.participantSharesByMemberId['u1'], closeTo(150, 0.01));
       expect(expense.participantSharesByMemberId['u2'], closeTo(150, 0.01));
+    });
+  });
+
+  group('architectural guardrails', () {
+    test('NormalizedExpense contains no names (only IDs)', () {
+      final expense = NormalizedExpense(
+        amount: 300,
+        description: 'Test',
+        payerContributionsByMemberId: {'u1': 300},
+        participantSharesByMemberId: {'u1': 100, 'u2': 200},
+      );
+
+      for (final id in expense.payerContributionsByMemberId.keys) {
+        expect(id, isNot(contains('Alice')));
+        expect(id, isNot(contains('Bob')));
+      }
+      for (final id in expense.participantSharesByMemberId.keys) {
+        expect(id, isNot(contains('Alice')));
+        expect(id, isNot(contains('Bob')));
+      }
+    });
+
+    test('NormalizedExpense can be created without UI state', () {
+      final expense = NormalizedExpense(
+        amount: 500,
+        payerContributionsByMemberId: {'user-123': 500},
+        participantSharesByMemberId: {'user-123': 250, 'user-456': 250},
+      );
+
+      expect(expense.amount, 500);
+      expect(expense.primaryPayerId, 'user-123');
+    });
+
+    test('expenseToLedgerDeltas is deterministic (same input = same output)', () {
+      final deltas1 = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amount: 300,
+        payerId: 'u1',
+        splitAmountsById: {'u1': 100, 'u2': 200},
+        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+      );
+
+      final deltas2 = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amount: 300,
+        payerId: 'u1',
+        splitAmountsById: {'u1': 100, 'u2': 200},
+        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+      );
+
+      expect(deltas1.length, deltas2.length);
+      for (var i = 0; i < deltas1.length; i++) {
+        expect(deltas1[i].memberId, deltas2[i].memberId);
+        expect(deltas1[i].delta, deltas2[i].delta);
+      }
+    });
+
+    test('expenseToLedgerDeltas does not use "everyone" semantics', () {
+      final deltas = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amount: 300,
+        payerId: 'u1',
+        splitAmountsById: {'u1': 150, 'u2': 150},
+        timestamp: DateTime.now(),
+      );
+
+      final memberIds = deltas.map((d) => d.memberId).toSet();
+      expect(memberIds, containsAll(['u1', 'u2']));
+      expect(memberIds.length, 2);
+    });
+
+    test('changing group membership does not affect old expense deltas', () {
+      final expenseData = {
+        'expenseId': 'e1',
+        'amount': 300.0,
+        'payerId': 'u1',
+        'splitAmountsById': {'u1': 150.0, 'u2': 150.0},
+      };
+
+      final deltasBeforeMemberChange = expenseToLedgerDeltas(
+        expenseId: expenseData['expenseId'] as String,
+        amount: expenseData['amount'] as double,
+        payerId: expenseData['payerId'] as String,
+        splitAmountsById: expenseData['splitAmountsById'] as Map<String, double>,
+        timestamp: DateTime.now(),
+      );
+
+      final deltasAfterMemberChange = expenseToLedgerDeltas(
+        expenseId: expenseData['expenseId'] as String,
+        amount: expenseData['amount'] as double,
+        payerId: expenseData['payerId'] as String,
+        splitAmountsById: expenseData['splitAmountsById'] as Map<String, double>,
+        timestamp: DateTime.now(),
+      );
+
+      expect(deltasBeforeMemberChange.length, deltasAfterMemberChange.length);
+      final map1 = {for (final d in deltasBeforeMemberChange) d.memberId: d.delta};
+      final map2 = {for (final d in deltasAfterMemberChange) d.memberId: d.delta};
+      expect(map1, map2);
+    });
+
+    test('LedgerDelta contains no names', () {
+      final expense = NormalizedExpense(
+        amount: 300,
+        payerContributionsByMemberId: {'u1': 300},
+        participantSharesByMemberId: {'u1': 100, 'u2': 200},
+      );
+
+      final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
+
+      for (final delta in deltas) {
+        expect(delta.memberId, isNot(contains('Alice')));
+        expect(delta.memberId, isNot(contains('Bob')));
+        expect(delta.memberId.length, greaterThan(0));
+      }
+    });
+
+    test('UI-only fields do not affect balance computation', () {
+      final expense1 = NormalizedExpense(
+        amount: 300,
+        description: 'Dinner at fancy restaurant',
+        category: 'Food',
+        date: 'Today',
+        payerContributionsByMemberId: {'u1': 300},
+        participantSharesByMemberId: {'u1': 100, 'u2': 200},
+      );
+
+      final expense2 = NormalizedExpense(
+        amount: 300,
+        description: '',
+        category: '',
+        date: '',
+        payerContributionsByMemberId: {'u1': 300},
+        participantSharesByMemberId: {'u1': 100, 'u2': 200},
+      );
+
+      final deltas1 = toLedgerDeltas(expense1, 'e1', DateTime.now());
+      final deltas2 = toLedgerDeltas(expense2, 'e1', DateTime.now());
+
+      final map1 = {for (final d in deltas1) d.memberId: d.delta};
+      final map2 = {for (final d in deltas2) d.memberId: d.delta};
+
+      expect(map1, map2);
     });
   });
 
