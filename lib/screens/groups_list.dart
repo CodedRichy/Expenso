@@ -372,7 +372,7 @@ class _GroupsListState extends State<GroupsList> {
         }
         return Scaffold(
           backgroundColor: AppColors.background,
-          floatingActionButton: !loading && groups.isNotEmpty
+          floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
                   backgroundColor: AppColors.primary,
@@ -386,7 +386,7 @@ class _GroupsListState extends State<GroupsList> {
               : null,
           body: loading
               ? const Center(child: ExpensoLoader())
-              : groups.isEmpty
+              : groups.isEmpty && repo.pendingInvitations.isEmpty
                   ? EmptyStates(
                       type: 'no-groups',
                       wrapInScaffold: false,

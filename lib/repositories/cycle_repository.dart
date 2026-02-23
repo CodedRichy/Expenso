@@ -317,10 +317,12 @@ class CycleRepository extends ChangeNotifier {
   }
 
   void _onInvitationsSnapshot(List<DocView> docs) {
+    debugPrint('DEBUG _onInvitationsSnapshot: ${docs.length} docs');
     _invitationsLoading = false;
     _pendingInvitations.clear();
     for (final doc in docs) {
       final data = doc.data();
+      debugPrint('DEBUG invitation: groupId=${doc.id} groupName=${data['groupName']}');
       _pendingInvitations.add(GroupInvitation(
         groupId: doc.id,
         groupName: data['groupName'] as String? ?? 'Unknown Group',
