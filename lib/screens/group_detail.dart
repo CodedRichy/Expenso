@@ -1714,7 +1714,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                       : 'e.g. Dinner 500 with Pradhyun',
                   hintStyle: TextStyle(
                     color: _inCooldown ? const Color(0xFF6B6B6B) : const Color(0xFFB0B0B0),
-                    fontSize: 16,
+                    fontSize: 17,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -1724,7 +1724,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   isDense: true,
                 ),
-                style: TextStyle(fontSize: 16, color: const Color(0xFF1A1A1A)),
+                style: const TextStyle(fontSize: 17, color: Color(0xFF1A1A1A)),
               ),
             ),
             const SizedBox(width: 8),
