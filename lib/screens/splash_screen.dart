@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: child,
             );
           },
-          child: const ExpensoLoader(size: 200),
+          child: const ExpensoLoader(),
         ),
       ),
     );

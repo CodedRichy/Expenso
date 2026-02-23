@@ -6,7 +6,7 @@ class ExpensoLoader extends StatefulWidget {
   
   const ExpensoLoader({
     super.key,
-    this.size = 120,
+    this.size = 160,
   });
 
   @override
