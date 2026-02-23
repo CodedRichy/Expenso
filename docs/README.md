@@ -4,6 +4,14 @@
 
 ---
 
+## Portfolio & Interviews
+
+| Document | Purpose |
+|----------|---------|
+| [PORTFOLIO.md](PORTFOLIO.md) | Resume bullets, architecture overview, interview talking points |
+
+---
+
 ## Core
 
 | Document | Purpose |
