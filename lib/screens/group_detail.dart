@@ -158,7 +158,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
   }
 }
 
-class GroupDetail extends StatelessWidget {
+class GroupDetail extends StatefulWidget {
   final Group? group;
 
   const GroupDetail({
@@ -167,15 +167,29 @@ class GroupDetail extends StatelessWidget {
   });
 
   @override
+  State<GroupDetail> createState() => _GroupDetailState();
+}
+
+class _GroupDetailState extends State<GroupDetail> {
+  bool _profilesRefreshed = false;
+
+  @override
   Widget build(BuildContext context) {
     final repo = CycleRepository.instance;
     final routeGroup = ModalRoute.of(context)?.settings.arguments as Group?;
-    final resolvedGroup = routeGroup ?? group;
+    final resolvedGroup = routeGroup ?? widget.group;
     if (resolvedGroup == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
       return const Scaffold(body: SizedBox.shrink());
     }
     final groupId = resolvedGroup.id;
+
+    if (!_profilesRefreshed) {
+      _profilesRefreshed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        repo.refreshGroupMemberProfiles(groupId);
+      });
+    }
 
     return ListenableBuilder(
       listenable: repo,

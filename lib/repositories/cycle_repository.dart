@@ -511,6 +511,41 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Refreshes user profile data for all members of a group.
+  /// Call when opening a group to get latest profile photos, names, etc.
+  Future<void> refreshGroupMemberProfiles(String groupId) async {
+    final idx = _groups.indexWhere((g) => g.id == groupId);
+    if (idx < 0) return;
+    final group = _groups[idx];
+    
+    final uids = group.memberIds.where((id) => !id.startsWith('p_')).toList();
+    bool changed = false;
+    
+    for (final uid in uids) {
+      try {
+        final u = await FirestoreService.instance.getUser(uid);
+        if (u != null) {
+          _userCache[uid] = u;
+          final existing = _membersById[uid];
+          final newPhotoURL = u['photoURL'] as String?;
+          if (existing != null && existing.photoURL != newPhotoURL) {
+            _membersById[uid] = Member(
+              id: uid,
+              phone: u['phoneNumber'] as String? ?? existing.phone,
+              name: u['displayName'] as String? ?? existing.name,
+              photoURL: newPhotoURL,
+            );
+            changed = true;
+          }
+        }
+      } catch (e) {
+        debugPrint('CycleRepository.refreshGroupMemberProfiles error for uid $uid: $e');
+      }
+    }
+    
+    if (changed) notifyListeners();
+  }
+
   void _onExpensesSnapshot(String groupId, List<DocView> expDocs) {
     final meta = _groupMeta[groupId];
     if (meta == null) return;
