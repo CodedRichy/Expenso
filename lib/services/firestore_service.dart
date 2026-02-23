@@ -342,6 +342,10 @@ class FirestoreService {
   }
 
   static String _normalizePhone(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('+')) {
+      return trimmed.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    }
     final digits = raw.replaceAll(RegExp(r'\D'), '');
     if (digits.length >= 10) return digits.substring(digits.length - 10);
     return digits;

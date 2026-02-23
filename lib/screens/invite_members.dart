@@ -22,6 +22,25 @@ class _InviteMembersState extends State<InviteMembers> {
   String phone = '';
   String name = '';
   bool linkCopied = false;
+  String _selectedCountryCode = '+91';
+
+  static const List<Map<String, String>> _countryCodes = [
+    {'code': '+91', 'country': 'IN', 'name': 'India'},
+    {'code': '+1', 'country': 'US', 'name': 'United States'},
+    {'code': '+44', 'country': 'GB', 'name': 'United Kingdom'},
+    {'code': '+971', 'country': 'AE', 'name': 'UAE'},
+    {'code': '+65', 'country': 'SG', 'name': 'Singapore'},
+    {'code': '+61', 'country': 'AU', 'name': 'Australia'},
+    {'code': '+49', 'country': 'DE', 'name': 'Germany'},
+    {'code': '+33', 'country': 'FR', 'name': 'France'},
+    {'code': '+81', 'country': 'JP', 'name': 'Japan'},
+    {'code': '+86', 'country': 'CN', 'name': 'China'},
+    {'code': '+82', 'country': 'KR', 'name': 'South Korea'},
+    {'code': '+55', 'country': 'BR', 'name': 'Brazil'},
+    {'code': '+52', 'country': 'MX', 'name': 'Mexico'},
+    {'code': '+7', 'country': 'RU', 'name': 'Russia'},
+    {'code': '+27', 'country': 'ZA', 'name': 'South Africa'},
+  ];
 
   final FocusNode _phoneFocusNode = FocusNode();
   bool _contactsPermissionGranted = false;
@@ -125,7 +144,7 @@ class _InviteMembersState extends State<InviteMembers> {
     }
     if (normalized.length != 10) return;
     
-    final formattedPhone = '+91 ${normalized.substring(0, 5)} ${normalized.substring(5)}';
+    final formattedPhone = '$_selectedCountryCode$normalized';
     final group = ModalRoute.of(context)?.settings.arguments as Group?;
     if (group != null) {
       final member = Member(
@@ -155,7 +174,7 @@ class _InviteMembersState extends State<InviteMembers> {
 
   void handleAddMember() {
     if (phone.length != 10) return;
-    final formattedPhone = '+91 ${phone.substring(0, 5)} ${phone.substring(5)}';
+    final formattedPhone = '$_selectedCountryCode$phone';
     final group = ModalRoute.of(context)?.settings.arguments as Group?;
     if (group != null) {
       final member = Member(
@@ -373,17 +392,35 @@ class _InviteMembersState extends State<InviteMembers> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border.all(color: const Color(0xFFE5E5E5)),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          '+91',
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                        child: PopupMenuButton<String>(
+                          onSelected: (code) => setState(() => _selectedCountryCode = code),
+                          offset: const Offset(0, 48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          itemBuilder: (context) => _countryCodes.map((c) => PopupMenuItem<String>(
+                            value: c['code'],
+                            child: Text(
+                              '${c['code']} ${c['country']}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          )).toList(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _selectedCountryCode,
+                                  style: const TextStyle(fontSize: 17, color: Color(0xFF1A1A1A)),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_drop_down, size: 20, color: Color(0xFF6B6B6B)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -496,7 +533,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                     ? _normalizePhone(c.phones.first.number)
                                     : '';
                                 final phoneDisplay = primaryPhone.length == 10
-                                    ? '+91 ${primaryPhone.substring(0, 5)} ${primaryPhone.substring(5)}'
+                                    ? '$_selectedCountryCode $primaryPhone'
                                     : c.phones.isNotEmpty
                                         ? c.phones.first.number
                                         : '';
