@@ -17,6 +17,43 @@ import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
 
+String _buildViewerRelativeDescription({
+  required Expense expense,
+  required CycleRepository repo,
+}) {
+  final baseDesc = expense.description;
+  final currentUserId = repo.currentUserId;
+  final paidById = expense.paidById;
+  final participantIds = expense.participantIds;
+  
+  final otherParticipants = participantIds.where((id) => id != currentUserId).toList();
+  
+  if (otherParticipants.isEmpty) {
+    return baseDesc;
+  }
+  
+  final withNames = otherParticipants.map((id) {
+    if (id == paidById && id != currentUserId) {
+      return repo.getMemberDisplayNameById(id);
+    }
+    return repo.getMemberDisplayNameById(id);
+  }).toList();
+  
+  final withSuffix = 'with ${withNames.join(', ')}';
+  
+  final withPattern = RegExp(r'\s*[-–—]\s*with\s+.+$', caseSensitive: false);
+  final cleanDesc = baseDesc.replaceAll(withPattern, '').trim();
+  
+  final descLower = cleanDesc.toLowerCase();
+  final namesNotInDesc = withNames.where((n) => !descLower.contains(n.toLowerCase())).toList();
+  
+  if (namesNotInDesc.isEmpty) {
+    return cleanDesc;
+  }
+  
+  return '$cleanDesc — with ${namesNotInDesc.join(', ')}';
+}
+
 void _showUndoExpenseOverlay(
   BuildContext context, {
   required String groupId,
@@ -458,22 +495,10 @@ class _GroupDetailState extends State<GroupDetail> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                            () {
-                                            final d = expense.description;
-                                            final others = expense.participantIds
-                                                .where((id) => id != expense.paidById)
-                                                .toList();
-                                            if (others.isEmpty) return d;
-                                            final names = others
-                                                .map((id) => repo.getMemberDisplayNameById(id))
-                                                .toList();
-                                            final dLower = d.toLowerCase();
-                                            final notInDescription = names
-                                                .where((name) => !dLower.contains(name.toLowerCase()))
-                                                .toList();
-                                            if (notInDescription.isEmpty) return d;
-                                            return '$d — with ${notInDescription.join(', ')}';
-                                          }(),
+                                            _buildViewerRelativeDescription(
+                                              expense: expense,
+                                              repo: repo,
+                                            ),
                                           style: TextStyle(
                                             fontSize: 17,
                                             color: const Color(0xFF1A1A1A),
