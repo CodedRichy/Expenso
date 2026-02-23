@@ -24,6 +24,7 @@
 |----------|---------|
 | [MONEY_BALANCE_LOGIC.md](features/MONEY_BALANCE_LOGIC.md) | Balance computation spec |
 | [MONEY_TESTS.md](features/MONEY_TESTS.md) | Golden test cases |
+| [EXPENSE_REVISIONS.md](features/EXPENSE_REVISIONS.md) | Edit/delete via compensation events |
 | [EXPENSE_SPLIT_USE_CASES.md](features/EXPENSE_SPLIT_USE_CASES.md) | Split scenarios |
 | [SETTLEMENT_LOGIC_NOTES.md](features/SETTLEMENT_LOGIC_NOTES.md) | Settlement implementation notes |
 | [DATA_ENCRYPTION.md](features/DATA_ENCRYPTION.md) | Encryption coverage |

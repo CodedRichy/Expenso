@@ -431,4 +431,206 @@ void main() {
       expect(revision.replacesExpenseId, 'e1');
     });
   });
+
+  group('ExpenseLifecycleState derivation', () {
+    test('new expense is active', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      final state = deriveExpenseState(
+        expenseId: 'e1',
+        revisions: revisions,
+        deletedExpenseIds: deletedIds,
+      );
+
+      expect(state, ExpenseLifecycleState.active);
+    });
+
+    test('deleted expense is deleted', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+      ];
+      final deletedIds = {'e1'};
+
+      final state = deriveExpenseState(
+        expenseId: 'e1',
+        revisions: revisions,
+        deletedExpenseIds: deletedIds,
+      );
+
+      expect(state, ExpenseLifecycleState.deleted);
+    });
+
+    test('edited expense is superseded', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      final state = deriveExpenseState(
+        expenseId: 'e1',
+        revisions: revisions,
+        deletedExpenseIds: deletedIds,
+      );
+
+      expect(state, ExpenseLifecycleState.superseded);
+    });
+
+    test('replacement expense is active', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      final state = deriveExpenseState(
+        expenseId: 'e2',
+        revisions: revisions,
+        deletedExpenseIds: deletedIds,
+      );
+
+      expect(state, ExpenseLifecycleState.active);
+    });
+
+    test('chain of edits: only latest is active', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e3', replacesExpenseId: 'e2'),
+      ];
+      final deletedIds = <String>{};
+
+      expect(
+        deriveExpenseState(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        ExpenseLifecycleState.superseded,
+      );
+      expect(
+        deriveExpenseState(expenseId: 'e2', revisions: revisions, deletedExpenseIds: deletedIds),
+        ExpenseLifecycleState.superseded,
+      );
+      expect(
+        deriveExpenseState(expenseId: 'e3', revisions: revisions, deletedExpenseIds: deletedIds),
+        ExpenseLifecycleState.active,
+      );
+    });
+  });
+
+  group('Lifecycle guards', () {
+    test('guardEdit allows active expense', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = <String>{};
+
+      expect(
+        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        returnsNormally,
+      );
+    });
+
+    test('guardEdit throws for deleted expense', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = {'e1'};
+
+      expect(
+        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+      );
+    });
+
+    test('guardEdit throws for superseded expense', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      expect(
+        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+      );
+    });
+
+    test('guardDelete allows active expense', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = <String>{};
+
+      expect(
+        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        returnsNormally,
+      );
+    });
+
+    test('guardDelete throws for already-deleted expense', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = {'e1'};
+
+      expect(
+        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+      );
+    });
+
+    test('guardDelete throws for superseded expense', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      expect(
+        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+      );
+    });
+
+    test('error message includes expense ID and state', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = {'e1'};
+
+      try {
+        guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds);
+        fail('Should have thrown');
+      } on ExpenseLifecycleError catch (e) {
+        expect(e.expenseId, 'e1');
+        expect(e.state, ExpenseLifecycleState.deleted);
+        expect(e.toString(), contains('e1'));
+        expect(e.toString(), contains('deleted'));
+      }
+    });
+  });
+
+  group('Edit-after-delete prevention', () {
+    test('attempting to edit a deleted expense throws', () {
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
+      final deletedIds = {'e1'};
+
+      expect(
+        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+        reason: 'Editing a deleted expense must be prevented',
+      );
+    });
+
+    test('edit the replacement, not the original', () {
+      final revisions = [
+        const ExpenseRevision(expenseId: 'e1'),
+        const ExpenseRevision(expenseId: 'e2', replacesExpenseId: 'e1'),
+      ];
+      final deletedIds = <String>{};
+
+      expect(
+        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        throwsA(isA<ExpenseLifecycleError>()),
+        reason: 'Must edit the latest revision, not the original',
+      );
+
+      expect(
+        () => guardEdit(expenseId: 'e2', revisions: revisions, deletedExpenseIds: deletedIds),
+        returnsNormally,
+        reason: 'Latest revision can be edited',
+      );
+    });
+  });
 }

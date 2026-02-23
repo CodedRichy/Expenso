@@ -1,6 +1,114 @@
 import '../models/money_minor.dart';
 import 'ledger_delta.dart';
 
+// ============================================================
+// EXPENSE LIFECYCLE
+// ============================================================
+
+/// Lifecycle state of an expense (derived from revision history).
+/// 
+/// ## States
+/// - [active]: The expense affects balances. Can be edited or deleted.
+/// - [deleted]: The expense has been deleted. Cannot be edited or deleted again.
+/// - [superseded]: The expense was replaced by an edit. Cannot be edited or deleted.
+/// 
+/// ## Rules
+/// - Only [active] expenses can be edited
+/// - Only [active] expenses can be deleted
+/// - Editing a deleted/superseded expense is an error
+/// - Deleting an already-deleted expense is a no-op (or error, caller's choice)
+enum ExpenseLifecycleState { active, deleted, superseded }
+
+/// Derives the lifecycle state of an expense from revision metadata.
+/// 
+/// ## Parameters
+/// - [expenseId]: The expense to check
+/// - [revisions]: All revision records in the system
+/// - [deletedExpenseIds]: Set of expense IDs that have been deleted
+/// 
+/// ## Returns
+/// The current lifecycle state of the expense.
+ExpenseLifecycleState deriveExpenseState({
+  required String expenseId,
+  required List<ExpenseRevision> revisions,
+  required Set<String> deletedExpenseIds,
+}) {
+  if (deletedExpenseIds.contains(expenseId)) {
+    return ExpenseLifecycleState.deleted;
+  }
+  
+  final hasBeenSuperseded = revisions.any((r) => r.replacesExpenseId == expenseId);
+  if (hasBeenSuperseded) {
+    return ExpenseLifecycleState.superseded;
+  }
+  
+  return ExpenseLifecycleState.active;
+}
+
+/// Error thrown when attempting to modify a non-active expense.
+class ExpenseLifecycleError extends Error {
+  final String message;
+  final String expenseId;
+  final ExpenseLifecycleState state;
+  
+  ExpenseLifecycleError(this.message, this.expenseId, this.state);
+  
+  @override
+  String toString() => 'ExpenseLifecycleError: $message (expense: $expenseId, state: $state)';
+}
+
+/// Guards an edit operation. Throws if the expense is not active.
+/// 
+/// Call this before generating edit deltas to prevent editing
+/// deleted or superseded expenses.
+void guardEdit({
+  required String expenseId,
+  required List<ExpenseRevision> revisions,
+  required Set<String> deletedExpenseIds,
+}) {
+  final state = deriveExpenseState(
+    expenseId: expenseId,
+    revisions: revisions,
+    deletedExpenseIds: deletedExpenseIds,
+  );
+  
+  if (state != ExpenseLifecycleState.active) {
+    throw ExpenseLifecycleError(
+      'Cannot edit expense: it is $state',
+      expenseId,
+      state,
+    );
+  }
+}
+
+/// Guards a delete operation. Throws if the expense is not active.
+/// 
+/// Call this before generating delete deltas to prevent deleting
+/// already-deleted or superseded expenses.
+void guardDelete({
+  required String expenseId,
+  required List<ExpenseRevision> revisions,
+  required Set<String> deletedExpenseIds,
+}) {
+  final state = deriveExpenseState(
+    expenseId: expenseId,
+    revisions: revisions,
+    deletedExpenseIds: deletedExpenseIds,
+  );
+  
+  if (state != ExpenseLifecycleState.active) {
+    throw ExpenseLifecycleError(
+      'Cannot delete expense: it is $state',
+      expenseId,
+      state,
+    );
+  }
+}
+
+// ============================================================
+// EXPENSE REVISION MODEL
+// ============================================================
+
 /// Represents an expense event in an append-only ledger.
 /// 
 /// ## Compensation Model
