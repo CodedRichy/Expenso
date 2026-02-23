@@ -12,6 +12,7 @@ import '../repositories/cycle_repository.dart';
 import '../services/groq_expense_parser_service.dart';
 import '../utils/expense_normalization.dart';
 import '../utils/settlement_engine.dart';
+import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
@@ -740,9 +741,9 @@ class _DecisionClarityCard extends StatelessWidget {
   void _showSettlementDetails(BuildContext context) {
     final members = repo.getMembersForGroup(groupId);
     final debts = SettlementEngine.computeDebts(expenses, members);
-    final netBalances = SettlementEngine.computeNetBalances(expenses, members);
+    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
     final myId = repo.currentUserId;
-    double myNet = (netBalances[myId] ?? 0.0).toDouble();
+    double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
 
     showModalBottomSheet<void>(
@@ -764,7 +765,7 @@ class _DecisionClarityCard extends StatelessWidget {
     final isEmpty = expenses.isEmpty;
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
     final members = repo.getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(expenses, members);
+    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
     final myId = repo.currentUserId;
 
     double youPaid = 0.0;
@@ -774,7 +775,7 @@ class _DecisionClarityCard extends StatelessWidget {
       }
     }
 
-    double myNet = (netBalances[myId] ?? 0.0).toDouble();
+    double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final isCredit = myNet > 0;
     final isDebt = myNet < 0;
@@ -1062,7 +1063,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
           final photoUrl = repo.getMemberPhotoURL(otherId);
           final direction = iOwe ? 'Pay' : 'Receive';
           final directionColor = iOwe ? AppColors.error : AppColors.success;
-          final amountDisplay = debt.amount.amountMinor / 100.0;
+          final amountDisplay = MoneyConversion.toDisplay(debt.amount);
 
           return Container(
             padding: EdgeInsets.symmetric(
