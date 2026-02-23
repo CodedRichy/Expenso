@@ -180,7 +180,7 @@ class _GroupsListState extends State<GroupsList> {
   void _showInvitationSheet(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface.withOpacity(0),
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
