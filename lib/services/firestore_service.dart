@@ -156,24 +156,14 @@ class FirestoreService {
   }
 
   /// Stream of groups where [phone] (normalized) is in pendingPhones - i.e. pending invitations.
+  /// Note: No decryption attempted here since invited users don't have access to group keys yet.
   Stream<List<DocView>> pendingInvitationsStream(String phone) {
     final normalizedPhone = _normalizePhone(phone);
     return _firestore
         .collection(FirestorePaths.groups)
         .where('pendingPhones', arrayContains: normalizedPhone)
         .snapshots()
-        .asyncMap((s) async {
-          final docs = s.docs;
-          if (_encryption != null && docs.isNotEmpty) {
-            await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
-            final decryptedDocs = await Future.wait(docs.map((d) async {
-              final decrypted = await _encryption!.decryptGroupData(d.data(), d.id);
-              return _DecryptedDocView(d.id, decrypted) as DocView;
-            }));
-            return decryptedDocs;
-          }
-          return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
-        });
+        .map((s) => s.docs.map((d) => _SnapshotDocView(d) as DocView).toList());
   }
 
   /// Accept an invitation: move user from pendingMembers to members and add system message.
