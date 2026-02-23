@@ -1,4 +1,4 @@
-const double _tolerance = 0.01;
+import 'money_minor.dart';
 
 class NormalizedExpenseError extends Error {
   final String message;
@@ -16,12 +16,15 @@ class NormalizedExpenseError extends Error {
 /// - **UI-agnostic:** No UI concepts (slots, selections, confirmation state)
 /// - **Timeless:** Can be reconstructed from storage without current group state
 /// - **Replay-safe:** Produces identical LedgerDeltas regardless of when computed
+/// - **Integer-only:** All money values use [MoneyMinor] (no floating-point)
+/// - **Single-currency:** All amounts use the same currency
 /// 
 /// ## Money Invariants (enforced at construction)
-/// - `sum(payerContributions) == amount` (within tolerance)
-/// - `sum(participantShares) == amount` (within tolerance)
+/// - `sum(payerContributions.amountMinor) == total.amountMinor` (exact)
+/// - `sum(participantShares.amountMinor) == total.amountMinor` (exact)
+/// - All MoneyMinor instances share the same `currencyCode`
 /// - All map keys are valid member IDs (no `p_` prefixes, non-empty)
-/// - All amounts are non-negative and finite
+/// - All amounts are non-negative
 /// 
 /// ## Non-Invariants (NOT validated here)
 /// - Description content (validated at UI/parsing layer)
@@ -31,22 +34,27 @@ class NormalizedExpenseError extends Error {
 /// All person references are member IDs (UUIDs), never names.
 /// "Everyone" semantics must be expanded to concrete IDs before construction.
 class NormalizedExpense {
-  final double amount;
+  /// Total expense amount in minor units.
+  final MoneyMinor total;
+  
   final String description;
   final String category;
   final String date;
   
   /// Who paid and how much. Supports multiple payers (future-proof).
-  /// Keys are member IDs, values are positive contribution amounts.
-  /// Sum must equal [amount].
-  final Map<String, double> payerContributionsByMemberId;
+  /// Keys are member IDs, values are positive contribution amounts in minor units.
+  /// Sum must equal [total].
+  final Map<String, MoneyMinor> payerContributionsByMemberId;
   
-  /// Who owes what share. Keys are member IDs, values are positive amounts owed.
-  /// Sum must equal [amount].
-  final Map<String, double> participantSharesByMemberId;
+  /// Who owes what share. Keys are member IDs, values are positive amounts owed in minor units.
+  /// Sum must equal [total].
+  final Map<String, MoneyMinor> participantSharesByMemberId;
+
+  /// The currency code for this expense.
+  String get currencyCode => total.currencyCode;
 
   NormalizedExpense._({
-    required this.amount,
+    required this.total,
     required this.description,
     required this.category,
     required this.date,
@@ -59,15 +67,15 @@ class NormalizedExpense {
   /// Throws [NormalizedExpenseError] if money invariants are violated.
   /// Does NOT validate description, category, or date (those are UI concerns).
   factory NormalizedExpense({
-    required double amount,
+    required MoneyMinor total,
     String description = '',
     String category = '',
     String date = '',
-    required Map<String, double> payerContributionsByMemberId,
-    required Map<String, double> participantSharesByMemberId,
+    required Map<String, MoneyMinor> payerContributionsByMemberId,
+    required Map<String, MoneyMinor> participantSharesByMemberId,
   }) {
-    if (amount <= 0 || amount.isNaN || amount.isInfinite) {
-      throw NormalizedExpenseError('Amount must be positive and finite');
+    if (total.amountMinor <= 0) {
+      throw NormalizedExpenseError('Amount must be positive');
     }
     if (payerContributionsByMemberId.isEmpty) {
       throw NormalizedExpenseError('Must have at least one payer');
@@ -76,50 +84,62 @@ class NormalizedExpense {
       throw NormalizedExpenseError('Must have at least one participant');
     }
 
-    for (final key in payerContributionsByMemberId.keys) {
-      if (key.startsWith('p_')) {
-        throw NormalizedExpenseError('Payer ID cannot be a pending member: $key');
+    final currencyCode = total.currencyCode;
+
+    for (final entry in payerContributionsByMemberId.entries) {
+      if (entry.key.startsWith('p_')) {
+        throw NormalizedExpenseError('Payer ID cannot be a pending member: ${entry.key}');
       }
-      if (key.isEmpty) {
+      if (entry.key.isEmpty) {
         throw NormalizedExpenseError('Payer ID cannot be empty');
       }
-    }
-    for (final key in participantSharesByMemberId.keys) {
-      if (key.startsWith('p_')) {
-        throw NormalizedExpenseError('Participant ID cannot be a pending member: $key');
+      if (entry.value.currencyCode != currencyCode) {
+        throw NormalizedExpenseError(
+          'Payer contribution currency (${entry.value.currencyCode}) '
+          'must match expense currency ($currencyCode)',
+        );
       }
-      if (key.isEmpty) {
+      if (entry.value.amountMinor < 0) {
+        throw NormalizedExpenseError('Payer contribution must be non-negative');
+      }
+    }
+
+    for (final entry in participantSharesByMemberId.entries) {
+      if (entry.key.startsWith('p_')) {
+        throw NormalizedExpenseError('Participant ID cannot be a pending member: ${entry.key}');
+      }
+      if (entry.key.isEmpty) {
         throw NormalizedExpenseError('Participant ID cannot be empty');
       }
-    }
-
-    for (final value in payerContributionsByMemberId.values) {
-      if (value < 0 || value.isNaN || value.isInfinite) {
-        throw NormalizedExpenseError('Payer contribution must be non-negative and finite');
+      if (entry.value.currencyCode != currencyCode) {
+        throw NormalizedExpenseError(
+          'Participant share currency (${entry.value.currencyCode}) '
+          'must match expense currency ($currencyCode)',
+        );
       }
-    }
-    for (final value in participantSharesByMemberId.values) {
-      if (value < 0 || value.isNaN || value.isInfinite) {
-        throw NormalizedExpenseError('Participant share must be non-negative and finite');
+      if (entry.value.amountMinor < 0) {
+        throw NormalizedExpenseError('Participant share must be non-negative');
       }
     }
 
-    final payerSum = payerContributionsByMemberId.values.fold(0.0, (a, b) => a + b);
-    if ((payerSum - amount).abs() > _tolerance) {
+    final payerSum = payerContributionsByMemberId.values
+        .fold(0, (sum, m) => sum + m.amountMinor);
+    if (payerSum != total.amountMinor) {
       throw NormalizedExpenseError(
-        'Payer contributions ($payerSum) must equal amount ($amount)',
+        'Payer contributions ($payerSum) must equal total (${total.amountMinor})',
       );
     }
 
-    final participantSum = participantSharesByMemberId.values.fold(0.0, (a, b) => a + b);
-    if ((participantSum - amount).abs() > _tolerance) {
+    final participantSum = participantSharesByMemberId.values
+        .fold(0, (sum, m) => sum + m.amountMinor);
+    if (participantSum != total.amountMinor) {
       throw NormalizedExpenseError(
-        'Participant shares ($participantSum) must equal amount ($amount)',
+        'Participant shares ($participantSum) must equal total (${total.amountMinor})',
       );
     }
 
     return NormalizedExpense._(
-      amount: amount,
+      total: total,
       description: description,
       category: category,
       date: date,
@@ -134,17 +154,20 @@ class NormalizedExpense {
   /// List of participant IDs.
   List<String> get participantIds => participantSharesByMemberId.keys.toList();
 
+  /// Total amount in minor units (convenience getter).
+  int get amountMinor => total.amountMinor;
+
   /// Creates a copy with optional field overrides.
   NormalizedExpense copyWith({
-    double? amount,
+    MoneyMinor? total,
     String? description,
     String? category,
     String? date,
-    Map<String, double>? payerContributionsByMemberId,
-    Map<String, double>? participantSharesByMemberId,
+    Map<String, MoneyMinor>? payerContributionsByMemberId,
+    Map<String, MoneyMinor>? participantSharesByMemberId,
   }) {
     return NormalizedExpense(
-      amount: amount ?? this.amount,
+      total: total ?? this.total,
       description: description ?? this.description,
       category: category ?? this.category,
       date: date ?? this.date,
@@ -155,7 +178,7 @@ class NormalizedExpense {
 
   @override
   String toString() {
-    return 'NormalizedExpense(amount: $amount, description: $description, '
+    return 'NormalizedExpense(total: $total, description: $description, '
         'payers: $payerContributionsByMemberId, participants: $participantSharesByMemberId)';
   }
 }
