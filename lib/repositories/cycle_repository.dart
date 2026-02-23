@@ -1184,16 +1184,10 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO(phase2): Migrate to SettlementEngine.computeNetBalances once behavior
-  // changes are approved. See MONEY_CANONICALIZATION.md for the migration plan.
   Map<String, double> calculateBalances(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
-    return SettlementEngine.computeNetBalancesLegacy(
-      cycle.expenses,
-      members,
-      _currentUserId,
-    );
+    return SettlementEngine.computeNetBalancesAsDouble(cycle.expenses, members);
   }
 
   List<String> getSettlementInstructions(String groupId) {

@@ -25,6 +25,16 @@ class Debt {
 /// 
 /// All accounting uses integer arithmetic only - no floating-point.
 /// Net balance = Total Paid - Total Owed per member (by id); then matches debtors to creditors.
+///
+/// DEPLOYMENT GATE (MONEY_PHASE2):
+/// Before deploying, Firestore must be verified to contain no expenses with
+/// empty or invalid paidById. If such data exists, it must be backfilled or
+/// quarantined. This is a deployment responsibility, not app logic.
+/// 
+/// Invariant I7: An expense with no valid payer produces no credit.
+/// - Empty paidById: skipped entirely (no deltas)
+/// - Pending member paidById (p_ prefix): skipped entirely
+/// - Unknown paidById: credit lost (no fallback, no inference)
 class SettlementEngine {
   SettlementEngine._();
 
@@ -204,87 +214,10 @@ class SettlementEngine {
     )).toList();
   }
 
-  /// LEGACY ADAPTER (Phase 1 canonicalization, temporary)
-  ///
-  /// Preserves exact pre-canonical behavior for CycleRepository.calculateBalances().
-  /// This uses the old double-based logic.
-  static const double _tolerance = 0.01;
-  
-  static Map<String, double> computeNetBalancesLegacy(
-    List<Expense> expenses,
-    List<Member> members,
-    String fallbackPayerId,
-  ) {
-    final Map<String, double> net = {};
-    for (final m in members) {
-      if (!m.id.startsWith('p_')) net[m.id] = 0.0;
-    }
-    for (final expense in expenses) {
-      final payerId = expense.paidById.isNotEmpty ? expense.paidById : fallbackPayerId;
-      if (net.containsKey(payerId)) net[payerId] = (net[payerId] ?? 0) + expense.amount;
-      final participantIds = expense.participantIds.isNotEmpty
-          ? expense.participantIds
-          : members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
-      if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
-        for (final entry in expense.splitAmountsById!.entries) {
-          if (entry.key.startsWith('p_')) continue;
-          if (net.containsKey(entry.key)) net[entry.key] = (net[entry.key] ?? 0) - entry.value;
-        }
-      } else {
-        if (participantIds.isEmpty) continue;
-        final perShare = expense.amount / participantIds.length;
-        for (final uid in participantIds) {
-          if (uid.startsWith('p_')) continue;
-          if (net.containsKey(uid)) net[uid] = (net[uid] ?? 0) - perShare;
-        }
-      }
-    }
-    return net;
-  }
-
-  /// Legacy: Compute debts from double-based net balances.
-  static List<({String fromId, String toId, double amount})> computeDebtsLegacy(
-    List<Expense> expenses,
-    List<Member> members,
-  ) {
-    final net = computeNetBalancesLegacy(expenses, members, '');
-    
-    final debtors = net.entries
-        .where((e) => e.value < -_tolerance)
-        .map((e) => _BalanceEntryDouble(e.key, -e.value))
-        .toList();
-    final creditors = net.entries
-        .where((e) => e.value > _tolerance)
-        .map((e) => _BalanceEntryDouble(e.key, e.value))
-        .toList();
-    debtors.sort((a, b) => b.amount.compareTo(a.amount));
-    creditors.sort((a, b) => b.amount.compareTo(a.amount));
-
-    final List<({String fromId, String toId, double amount})> result = [];
-    int d = 0, c = 0;
-    while (d < debtors.length && c < creditors.length) {
-      final debtor = debtors[d];
-      final creditor = creditors[c];
-      final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
-      if (amount < _tolerance) break;
-      result.add((fromId: debtor.id, toId: creditor.id, amount: amount));
-      debtor.amount -= amount;
-      creditor.amount -= amount;
-      if (debtor.amount < _tolerance) d++;
-      if (creditor.amount < _tolerance) c++;
-    }
-    return result;
-  }
 }
 
 class _BalanceEntry {
   final String id;
   int amount;
   _BalanceEntry(this.id, this.amount);
-}
-
-class _BalanceEntryDouble {
-  final String id;
-  double amount;
-  _BalanceEntryDouble(this.id, this.amount);
 }

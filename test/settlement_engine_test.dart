@@ -392,4 +392,223 @@ void main() {
       expect(sum, 0);
     });
   });
+
+  // ============================================================
+  // PHASE 2: Invariant Enforcement Tests (I7)
+  // ============================================================
+  // DEPLOYMENT GATE: Before deploying MONEY_PHASE2, Firestore must be verified
+  // to contain no expenses with empty or invalid paidById. If such data exists,
+  // it must be backfilled or quarantined.
+  // ============================================================
+
+  group('Phase 2: Invariant I7 - Empty/Invalid payer enforcement', () {
+    test('empty paidById produces no credit (no deltas)', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 300,
+        paidById: '',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': 150, 'u2': 150},
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty, reason: 'Empty paidById must yield no deltas');
+    });
+
+    test('empty paidById does not affect net balances', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: '',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+      ];
+
+      final net = SettlementEngine.computeNetBalances(expenses, members);
+      expect(net['u1'], 0, reason: 'Empty paidById expense must not affect balances');
+      expect(net['u2'], 0, reason: 'Empty paidById expense must not affect balances');
+    });
+
+    test('unknown paidById (not in members) does not affect member balances', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'unknown_user',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+      ];
+
+      final net = SettlementEngine.computeNetBalances(expenses, members);
+      expect(net['u1'], -15000, reason: 'u1 still debited for their share');
+      expect(net['u2'], -15000, reason: 'u2 still debited for their share');
+      expect(net.containsKey('unknown_user'), false, reason: 'Unknown payer not in balances');
+    });
+
+    test('pending member paidById (p_ prefix) produces no deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 300,
+        paidById: 'p_pending123',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': 150, 'u2': 150},
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty, reason: 'Pending member payer must yield no deltas');
+    });
+  });
+
+  group('Phase 2: Invalid amount enforcement', () {
+    test('zero amount expense produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 0,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': 0, 'u2': 0},
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty);
+    });
+
+    test('negative amount expense produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: -100,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': -50, 'u2': -50},
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty);
+    });
+
+    test('NaN amount expense produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: double.nan,
+        paidById: 'u1',
+        participantIds: ['u1'],
+        splitAmountsById: null,
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty);
+    });
+
+    test('Infinite amount expense produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: double.infinity,
+        paidById: 'u1',
+        participantIds: ['u1'],
+        splitAmountsById: null,
+      );
+
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isEmpty);
+    });
+  });
+
+  group('Phase 2: Replay determinism and balance invariants', () {
+    test('replay of historical expenses is deterministic', () {
+      final historicalExpenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+        expense(
+          id: 'e2',
+          amount: 200,
+          paidById: 'u2',
+          splitAmountsById: {'u1': 100, 'u2': 100},
+        ),
+      ];
+
+      final deltas1 = SettlementEngine.expensesToDeltas(historicalExpenses);
+      final deltas2 = SettlementEngine.expensesToDeltas(historicalExpenses);
+
+      final net1 = SettlementEngine.computeNetBalancesFromDeltas(deltas1, 'INR');
+      final net2 = SettlementEngine.computeNetBalancesFromDeltas(deltas2, 'INR');
+
+      expect(net1, equals(net2), reason: 'Replay must be deterministic');
+    });
+
+    test('ledger deltas always sum to zero', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+        expense(
+          id: 'e2',
+          amount: 500,
+          paidById: 'u2',
+          splitAmountsById: {'u1': 200, 'u2': 300},
+        ),
+      ];
+
+      final deltas = SettlementEngine.expensesToDeltas(expenses);
+      final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
+
+      expect(sum, 0, reason: 'Total delta sum must be exactly zero');
+    });
+
+    test('removing group members does not affect old balances', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+      ];
+
+      final fullMembers = [memberRishi, memberRockey];
+      final reducedMembers = [memberRishi];
+
+      final netFull = SettlementEngine.computeNetBalances(expenses, fullMembers);
+      final netReduced = SettlementEngine.computeNetBalances(expenses, reducedMembers);
+
+      expect(netFull['u1'], 15000);
+      expect(netReduced['u1'], isNotNull, reason: 'u1 balance must be present');
+    });
+  });
+
+  group('Phase 2: Regression - Pre-Phase2 expense compatibility', () {
+    test('well-formed expenses compute identical balances', () {
+      final validExpenses = [
+        expense(
+          id: 'e1',
+          amount: 1000,
+          paidById: 'u1',
+          splitAmountsById: {'u1': 400, 'u2': 600},
+        ),
+        expense(
+          id: 'e2',
+          amount: 500,
+          paidById: 'u2',
+          splitAmountsById: {'u1': 250, 'u2': 250},
+        ),
+      ];
+
+      final net = SettlementEngine.computeNetBalances(validExpenses, members);
+      final netDouble = SettlementEngine.computeNetBalancesAsDouble(validExpenses, members);
+
+      expect(net['u1'], 35000);
+      expect(net['u2'], -35000);
+      expect(netDouble['u1'], 350.0);
+      expect(netDouble['u2'], -350.0);
+    });
+  });
 }

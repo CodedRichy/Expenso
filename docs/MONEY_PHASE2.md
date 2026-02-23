@@ -1,20 +1,41 @@
 # Phase 2 Money Invariant Enforcement Plan
 
-**Purpose:** Plan the transition from legacy balance computation to canonical behavior  
-**Scope:** Decision and planning document only — no code changes proposed  
-**Status:** Draft
+**Purpose:** Transition from legacy balance computation to canonical behavior  
+**Status:** **EXECUTED**
 
 ---
 
-## 1. Current State Summary
+> **DEPLOYMENT GATE**
+> 
+> Before deploying MONEY_PHASE2, Firestore must be verified to contain no expenses
+> with empty or invalid `paidById`. If such data exists, it must be backfilled or
+> quarantined. This is a deployment responsibility, not app logic.
+
+---
+
+## Execution Summary
+
+**Completed:**
+- Removed `computeNetBalancesLegacy()` and `computeDebtsLegacy()` from `SettlementEngine`
+- Removed `_BalanceEntryDouble` helper class
+- Updated `CycleRepository.calculateBalances()` to use `computeNetBalancesAsDouble()`
+- Added 12 Phase 2 tests covering I7 invariant enforcement, invalid amounts, and replay determinism
+- Added deployment gate comments to `settlement_engine.dart`
+
+**Invariant I7 now enforced:** An expense with no valid payer produces no credit.
+
+---
+
+## 1. Final State
 
 ### Canonical Implementation
 - `SettlementEngine.computeNetBalances()` — strict validation, no fallbacks
 - `SettlementEngine.computeDebts()` — uses strict balances
+- `SettlementEngine.computeNetBalancesAsDouble()` — UI-facing wrapper
 
 ### Legacy Adapter
-- `SettlementEngine.computeNetBalancesLegacy()` — preserves original behavior
-- Used by: `CycleRepository.calculateBalances()`
+- **DELETED**: `computeNetBalancesLegacy()` — removed
+- **DELETED**: `computeDebtsLegacy()` — removed
 
 ### Behavior Differences (Legacy vs Canonical)
 
