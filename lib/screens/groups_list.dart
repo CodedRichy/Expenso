@@ -24,28 +24,6 @@ class _GroupsListState extends State<GroupsList> {
     PinnedGroupsService.instance.load();
   }
 
-  Widget _buildInvitationsLoadingPlaceholder() {
-    return SizedBox(
-      height: 88,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 2,
-        itemBuilder: (context, index) {
-          return Container(
-            width: 140,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildInvitationsSection(BuildContext context, CycleRepository repo) {
     final invitations = repo.pendingInvitations;
     return SizedBox(
@@ -436,11 +414,7 @@ class _GroupsListState extends State<GroupsList> {
                               ],
                             ),
                           ),
-                          if (repo.invitationsLoading) ...[
-                            const SizedBox(height: 16),
-                            _buildInvitationsLoadingPlaceholder(),
-                            const SizedBox(height: 16),
-                          ] else if (repo.pendingInvitations.isNotEmpty) ...[
+                          if (repo.pendingInvitations.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             _buildInvitationsSection(context, repo),
                             const SizedBox(height: 16),
