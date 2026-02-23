@@ -202,16 +202,31 @@ Centralized design tokens in `lib/design/`:
 | Labels / small | 15px | — | — |
 | Overlines (e.g. “EXPENSE LOG”) | 13px | w500 | 0.3 |
 
+### Spacing (AppSpacing)
+
+Scale: `space2xs` (2) → `spaceXl` (16) → `space3xl` (24) → `space9xl` (96).
+Semantic: `screenPaddingH` (24), `inputPadding` (16), `buttonPaddingV` (14).
+
+### Theme (main.dart)
+
+`ThemeData` configured with:
+- `ColorScheme` from `AppColors`
+- `textTheme` mapped to `AppTypography`
+- `ElevatedButtonTheme` — primary bg, white fg, 8px radius, 0 elevation
+- `OutlinedButtonTheme` — white bg, border `AppColors.border`
+- `TextButtonTheme` — accent foreground
+- `InputDecorationTheme` — filled white, border radii, focus colors
+
 ### Branding
 
-- **App logo** — Shown on **splash** only (`assets/images/logoWhiteBg.png`). Not shown in Groups header (avoids white-bg mismatch with app background `#F7F7F8`). Use `logoBlackBg.png` for dark splash if needed.
+- **App logo** — Shown on **splash** only (`assets/images/logoWhiteBg.png`). Not shown in Groups header.
 
 ### Components
 
-- **Primary buttons** — Background `0xFF1A1A1A`, white text, `borderRadius: 8`, elevation 0.
-- **FAB** — Same; e.g. GroupsList uses 14px radius.
-- **Inputs** — White fill, 8px radius, borders as above; focused border `0xFF1A1A1A`.
-- **Empty states** — Centered copy, same palette; primary CTA = primary button style.
+- **Primary buttons** — Use theme defaults; override with `ElevatedButton.styleFrom(minimumSize: ...)` for full-width.
+- **FAB** — `AppColors.primary` bg, `AppColors.surface` fg, 14px radius.
+- **Inputs** — Use theme defaults; InputDecorationTheme handles fill, borders.
+- **Empty states** — Centered copy using `AppTypography`, primary button CTA.
 
 ---
 
