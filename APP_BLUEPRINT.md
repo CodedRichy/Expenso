@@ -165,16 +165,32 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ## 5. Design system
 
-### Colors
+### Design Tokens (lib/design/)
 
-| Role | Value | Use |
-|------|--------|-----|
-| Background | `0xFFF7F7F8` | Scaffold (light gray). |
-| Primary / text | `0xFF1A1A1A` | Headlines, body. |
-| Secondary | `0xFF6B6B6B` | Body, labels. |
-| Muted / hints | `0xFF9B9B9B`, `0xFFB0B0B0` | Hints, disabled. |
-| Borders | `0xFFE5E5E5`, `0xFFD0D0D0` | Dividers, inputs. |
-| Links / secondary actions | `0xFF5B7C99` | TextButton, links. |
+Centralized design tokens in `lib/design/`:
+
+| File | Contents |
+|------|----------|
+| `colors.dart` | `AppColors` — primary, text hierarchy, backgrounds, borders, semantic colors, gradients |
+| `typography.dart` | `AppTypography` — heroTitle, screenTitle, bodyPrimary, button, sectionLabel, etc. |
+| `spacing.dart` | `AppSpacing` — spacing scale (space2xs through space9xl), semantic spacing constants |
+
+### Colors (AppColors)
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `background` | `0xFFF7F7F8` | Scaffold background |
+| `surface` | `Colors.white` | Cards, inputs |
+| `primary` | `0xFF1A1A1A` | Buttons, headlines, focused borders |
+| `textPrimary` | `0xFF1A1A1A` | Primary text |
+| `textSecondary` | `0xFF6B6B6B` | Body, labels |
+| `textTertiary` | `0xFF9B9B9B` | Section labels, captions |
+| `textDisabled` | `0xFFB0B0B0` | Hints, placeholders |
+| `border` | `0xFFE5E5E5` | Dividers, card borders |
+| `borderInput` | `0xFFD0D0D0` | Input borders |
+| `accent` | `0xFF5B7C99` | Links, TextButton |
+| `error` | `0xFFC62828` | Error text, destructive |
+| `warning` | `0xFFF9A825` | Pinned icon, warnings |
 
 ### Typography
 
