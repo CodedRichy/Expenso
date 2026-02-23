@@ -363,7 +363,7 @@ class GroupDetail extends StatelessWidget {
                     isPassive
                         ? (repo.isCurrentUserCreator(groupId) ? 'Start New Cycle' : 'Waiting for creator to restart')
                         : 'Settle now',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                    style: AppTypography.button,
                   ),
                 ),
               ),
@@ -2390,7 +2390,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
                       ),
-                      child: const Text('Confirm'),
+                      child: const Text('Confirm', style: AppTypography.button),
                     ),
                   ),
                 ],

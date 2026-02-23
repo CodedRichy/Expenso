@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
@@ -471,13 +472,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         elevation: 0,
                         minimumSize: const Size(double.infinity, 0),
                       ),
-                      child: Text(
-                        'Confirm',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: Text('Confirm', style: AppTypography.button),
                     ),
                     const SizedBox(height: 12),
                     TextButton(
@@ -648,13 +643,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       elevation: 0,
                       minimumSize: const Size(double.infinity, 0),
                     ),
-                    child: Text(
-                      'Submit',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: Text('Submit', style: AppTypography.button),
                   ),
                 ],
               ),

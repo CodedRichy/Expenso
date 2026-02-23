@@ -547,4 +547,5 @@ class FirestoreService {
     list.sort((a, b) => _compareExpenseDocs(a, b));
     return list;
   }
+
 }

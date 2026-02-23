@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/profile_service.dart';
+import '../design/typography.dart';
 import '../widgets/member_avatar.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
@@ -375,6 +376,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Log out?'),
+                          content: const Text('You will need to sign in again with your phone number.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Log out'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && context.mounted) {
+                        await FirebaseAuth.instance.signOut();
+                        CycleRepository.instance.clearAuth();
+                        if (context.mounted) {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
+                    child: const Text('Log out', style: AppTypography.button),
                   ),
                 ),
               ],

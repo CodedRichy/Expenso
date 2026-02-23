@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/razorpay_order_service.dart';
@@ -275,7 +276,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               ),
               child: Text(
                 _paymentInProgress ? 'Opening…' : 'Pay ₹${_formatAmount(totalDue)}',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                style: AppTypography.button,
               ),
             )
           else
@@ -298,7 +299,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               minimumSize: const Size(double.infinity, 0),
             ),
-            child: const Text('Back', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+            child: const Text('Back', style: AppTypography.button),
           ),
         ],
       );
@@ -322,7 +323,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             ),
             child: Text(
               method == 'upi' ? 'Continue to Payment' : 'Close Cycle',
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+              style: AppTypography.button,
             ),
           )
         else
@@ -345,7 +346,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             minimumSize: const Size(double.infinity, 0),
           ),
-          child: const Text('Cancel', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+          child: const Text('Cancel', style: AppTypography.button),
         ),
       ],
     );
