@@ -390,50 +390,6 @@ class GroupDetail extends StatelessWidget {
                 ),
               ),
             ],
-            if (!isSettled && hasExpenses) ...[
-              Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: const Color(0xFFE5E5E5), width: 1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BALANCES',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF9B9B9B),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ...() {
-                      final members = repo.getMembersForGroup(groupId);
-                      final debts = SettlementEngine.computeDebts(expenses, members);
-                      if (debts.isEmpty) {
-                        return [
-                          Text(
-                            'No debts to settle',
-                            style: TextStyle(fontSize: 15, color: const Color(0xFF6B6B6B)),
-                          ),
-                        ];
-                      }
-                      return debts.map((d) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          '${repo.getMemberDisplayNameById(d.fromId)} owes ${repo.getMemberDisplayNameById(d.toId)} ₹${_fmtRupee(d.amount.amountMinor / 100.0)}',
-                          style: TextStyle(fontSize: 15, color: const Color(0xFF1A1A1A)),
-                        ),
-                      )).toList();
-                    }(),
-                  ],
-                ),
-              ),
-            ],
             if (hasExpenses)
               Expanded(
                 child: CustomScrollView(
