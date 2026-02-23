@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 import 'data_encryption_service.dart';
 
@@ -160,7 +159,6 @@ class FirestoreService {
   /// Note: No decryption attempted here since invited users don't have access to group keys yet.
   Stream<List<DocView>> pendingInvitationsStream(String phone) {
     final normalizedPhone = _normalizePhone(phone);
-    debugPrint('DEBUG pendingInvitationsStream: raw=$phone normalized=$normalizedPhone');
     return _firestore
         .collection(FirestorePaths.groups)
         .where('pendingPhones', arrayContains: normalizedPhone)

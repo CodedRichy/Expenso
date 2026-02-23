@@ -56,6 +56,32 @@ class Expense {
     this.category = '',
     this.splitType = 'Even',
   }) : participantIds = participantIds ?? [];
+
+  String get displayDate {
+    final timestamp = int.tryParse(date);
+    if (timestamp == null) {
+      return date;
+    }
+    
+    final expenseDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final expenseDay = DateTime(expenseDate.year, expenseDate.month, expenseDate.day);
+    
+    final diff = today.difference(expenseDay).inDays;
+    
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (diff < 7) return '$diff days ago';
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final month = months[expenseDate.month - 1];
+    
+    if (expenseDate.year == now.year) {
+      return '$month ${expenseDate.day}';
+    }
+    return '$month ${expenseDate.day}, ${expenseDate.year}';
+  }
 }
 
 /// One transfer from current user (debtor) to a creditor for settlement.

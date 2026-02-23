@@ -16,13 +16,80 @@ class _EditExpenseState extends State<EditExpense> {
   String? _groupId;
   String? _expenseId;
   Expense? _expense;
-  String _selectedDate = 'Today';
+  int _selectedTimestamp = DateTime.now().millisecondsSinceEpoch;
   String _selectedPayerId = '';
   bool _canEdit = true;
   bool _hasInitialized = false;
   bool _expenseNotFound = false;
 
-  static const List<String> _dateOptions = ['Today', 'Yesterday'];
+  String get _selectedDateDisplay {
+    final expenseDate = DateTime.fromMillisecondsSinceEpoch(_selectedTimestamp);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final expenseDay = DateTime(expenseDate.year, expenseDate.month, expenseDate.day);
+    
+    final diff = today.difference(expenseDay).inDays;
+    
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final month = months[expenseDate.month - 1];
+    
+    if (expenseDate.year == now.year) {
+      return '$month ${expenseDate.day}';
+    }
+    return '$month ${expenseDate.day}, ${expenseDate.year}';
+  }
+  
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.fromMillisecondsSinceEpoch(_selectedTimestamp),
+      firstDate: DateTime(now.year - 1),
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedTimestamp = picked.millisecondsSinceEpoch;
+      });
+    }
+  }
+
+  Widget _buildDateChip(String label, bool canEdit) {
+    final isSelected = _selectedDateDisplay == label;
+    return GestureDetector(
+      onTap: canEdit
+          ? () {
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              setState(() {
+                if (label == 'Today') {
+                  _selectedTimestamp = today.millisecondsSinceEpoch;
+                } else if (label == 'Yesterday') {
+                  _selectedTimestamp = today.subtract(const Duration(days: 1)).millisecondsSinceEpoch;
+                }
+              });
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1A1A1A) : Colors.white,
+          border: Border.all(color: const Color(0xFFE5E5E5)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -60,7 +127,8 @@ class _EditExpenseState extends State<EditExpense> {
     _groupId = groupId;
     _expenseId = expenseId;
     _expense = expense;
-    _selectedDate = expense.date;
+    final parsedTimestamp = int.tryParse(expense.date);
+    _selectedTimestamp = parsedTimestamp ?? DateTime.now().millisecondsSinceEpoch;
     _selectedPayerId = expense.paidById.isNotEmpty ? expense.paidById : repo.currentUserId;
     _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
     descriptionController.text = expense.description;
@@ -152,7 +220,7 @@ class _EditExpenseState extends State<EditExpense> {
         id: expenseId,
         description: desc,
         amount: amount,
-        date: _selectedDate,
+        date: _selectedTimestamp.toString(),
         participantIds: existing.participantIds,
         paidById: _selectedPayerId,
         splitAmountsById: updatedSplits,
@@ -484,23 +552,45 @@ class _EditExpenseState extends State<EditExpense> {
         ),
         const SizedBox(height: 12),
         if (canEdit)
-          DropdownButtonFormField<String>(
-            value: _selectedDate.isEmpty ? 'Today' : _selectedDate,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+          Row(
+            children: [
+              _buildDateChip('Today', canEdit),
+              const SizedBox(width: 8),
+              _buildDateChip('Yesterday', canEdit),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _pickDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: !['Today', 'Yesterday'].contains(_selectedDateDisplay)
+                        ? const Color(0xFF1A1A1A)
+                        : Colors.white,
+                    border: Border.all(color: const Color(0xFFE5E5E5)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: !['Today', 'Yesterday'].contains(_selectedDateDisplay)
+                            ? Colors.white
+                            : const Color(0xFF9B9B9B),
+                      ),
+                      if (!['Today', 'Yesterday'].contains(_selectedDateDisplay)) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _selectedDateDisplay,
+                          style: const TextStyle(fontSize: 15, color: Colors.white),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-            items: [
-              ..._dateOptions.map((d) => DropdownMenuItem(value: d, child: Text(d))),
-              if (!_dateOptions.contains(_selectedDate) && _selectedDate.isNotEmpty)
-                DropdownMenuItem(value: _selectedDate, child: Text(_selectedDate)),
             ],
-            onChanged: (v) => setState(() => _selectedDate = v ?? 'Today'),
           )
         else
           Container(
@@ -511,7 +601,7 @@ class _EditExpenseState extends State<EditExpense> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              _selectedDate,
+              _selectedDateDisplay,
               style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
             ),
           ),

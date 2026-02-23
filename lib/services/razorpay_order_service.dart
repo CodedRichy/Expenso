@@ -19,7 +19,7 @@ Future<RazorpayOrderResult> createRazorpayOrder({
   });
   final data = result.data;
   if (data == null || data is! Map) throw Exception('No response from server.');
-  final map = Map<String, dynamic>.from(data as Map);
+  final map = Map<String, dynamic>.from(data);
   final orderId = map['orderId'] as String?;
   final keyId = map['keyId'] as String?;
   if (orderId == null || orderId.isEmpty || keyId == null || keyId.isEmpty) {

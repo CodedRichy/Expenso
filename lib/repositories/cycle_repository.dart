@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../models/money_minor.dart';
@@ -9,7 +8,6 @@ import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
-import '../utils/ledger_delta.dart';
 import '../utils/settlement_engine.dart';
 
 class CycleRepository extends ChangeNotifier {
@@ -25,6 +23,9 @@ class CycleRepository extends ChangeNotifier {
   }
 
   static int _dateStringToSortKey(String date) {
+    final timestamp = int.tryParse(date);
+    if (timestamp != null) return timestamp;
+    
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     switch (date) {
@@ -317,12 +318,10 @@ class CycleRepository extends ChangeNotifier {
   }
 
   void _onInvitationsSnapshot(List<DocView> docs) {
-    debugPrint('DEBUG _onInvitationsSnapshot: ${docs.length} docs');
     _invitationsLoading = false;
     _pendingInvitations.clear();
     for (final doc in docs) {
       final data = doc.data();
-      debugPrint('DEBUG invitation: groupId=${doc.id} groupName=${data['groupName']}');
       _pendingInvitations.add(GroupInvitation(
         groupId: doc.id,
         groupName: data['groupName'] as String? ?? 'Unknown Group',
@@ -621,7 +620,7 @@ class CycleRepository extends ChangeNotifier {
     }
     if (splitAmountsById.isEmpty && splits != null) {
       for (final entry in splits.entries) {
-        splitAmountsById[entry.key as String] = (entry.value is num)
+        splitAmountsById[entry.key] = (entry.value is num)
             ? (entry.value as num).toDouble()
             : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
       }
@@ -810,25 +809,15 @@ class CycleRepository extends ChangeNotifier {
 
   /// Accept a group invitation: moves current user from pending to members.
   Future<void> acceptInvitation(String groupId) async {
-    debugPrint('DEBUG acceptInvitation: groupId=$groupId uid=$_currentUserId phone=$_currentUserPhone');
-    if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) {
-      debugPrint('DEBUG acceptInvitation: missing uid or phone, aborting');
-      return;
-    }
-    try {
-      await FirestoreService.instance.acceptInvitation(
-        groupId,
-        _currentUserId,
-        _currentUserPhone,
-        userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
-      );
-      debugPrint('DEBUG acceptInvitation: success');
-      _pendingInvitations.removeWhere((i) => i.groupId == groupId);
-      notifyListeners();
-    } catch (e, st) {
-      debugPrint('DEBUG acceptInvitation ERROR: $e\n$st');
-      rethrow;
-    }
+    if (_currentUserId.isEmpty || _currentUserPhone.isEmpty) return;
+    await FirestoreService.instance.acceptInvitation(
+      groupId,
+      _currentUserId,
+      _currentUserPhone,
+      userName: _currentUserName.isNotEmpty ? _currentUserName : 'Someone',
+    );
+    _pendingInvitations.removeWhere((i) => i.groupId == groupId);
+    notifyListeners();
   }
 
   /// Decline a group invitation: removes current user from pending members.
@@ -913,21 +902,6 @@ class CycleRepository extends ChangeNotifier {
   List<Expense> getExpenses(String cycleId) {
     final list = _expensesByCycleId[cycleId];
     return list != null ? List.unmodifiable(list) : [];
-  }
-
-  /// Resolve phone to UID (current user or from cache). Uses normalized phone so formats match.
-  String? _uidForPhone(String phone) {
-    if (phone.isEmpty) return null;
-    final n = _normalizePhone(phone);
-    if (n == _normalizePhone(_currentUserPhone)) return _currentUserId;
-    for (final e in _userCache.entries) {
-      final cached = e.value['phoneNumber'] as String? ?? '';
-      if (_normalizePhone(cached) == n) return e.key;
-    }
-    for (final m in _membersById.values) {
-      if (_normalizePhone(m.phone) == n) return m.id.startsWith('p_') ? null : m.id;
-    }
-    return null;
   }
 
   Future<void> addExpense(String groupId, Expense expense) async {
@@ -1394,7 +1368,7 @@ class CycleRepository extends ChangeNotifier {
       final settledDocs = await FirestoreService.instance.getSettledCycles(groupId);
       final List<Cycle> closed = [];
       for (final doc in settledDocs) {
-        final data = doc.data() ?? {};
+        final data = doc.data();
         final cycleId = doc.id;
         final startDate = data['startDate'] as String? ?? '';
         final endDate = data['endDate'] as String? ?? '';
@@ -1410,9 +1384,8 @@ class CycleRepository extends ChangeNotifier {
         ));
       }
       return closed;
-    } catch (e, st) {
+    } catch (e) {
       debugPrint('CycleRepository.getHistory failed for $groupId: $e');
-      if (kDebugMode) debugPrint(st.toString());
       return [];
     }
   }

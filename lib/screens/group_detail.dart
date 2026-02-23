@@ -17,7 +17,14 @@ import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
 
-String _buildViewerRelativeDescription({
+class _StyledDescription {
+  final String main;
+  final String? suffix;
+  
+  _StyledDescription(this.main, this.suffix);
+}
+
+_StyledDescription _buildViewerRelativeDescription({
   required Expense expense,
   required CycleRepository repo,
 }) {
@@ -27,17 +34,17 @@ String _buildViewerRelativeDescription({
   
   final otherParticipants = participantIds.where((id) => id != currentUserId).toList();
   
-  if (otherParticipants.isEmpty) {
-    return baseDesc;
-  }
-  
   final withPattern = RegExp(r'\s*[-–—]\s*with\s+.+$', caseSensitive: false);
   final cleanDesc = baseDesc.replaceAll(withPattern, '').trim();
+  
+  if (otherParticipants.isEmpty) {
+    return _StyledDescription(cleanDesc, null);
+  }
   
   final otherCount = otherParticipants.length;
   
   if (otherCount >= 4) {
-    return '$cleanDesc — with $otherCount others';
+    return _StyledDescription(cleanDesc, 'with $otherCount others');
   }
   
   final withNames = otherParticipants
@@ -50,10 +57,10 @@ String _buildViewerRelativeDescription({
       .toList();
   
   if (namesNotInDesc.isEmpty) {
-    return cleanDesc;
+    return _StyledDescription(cleanDesc, null);
   }
   
-  return '$cleanDesc — with ${namesNotInDesc.join(', ')}';
+  return _StyledDescription(cleanDesc, 'with ${namesNotInDesc.join(', ')}');
 }
 
 void _showUndoExpenseOverlay(
@@ -496,19 +503,40 @@ class _GroupDetailState extends State<GroupDetail> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                            _buildViewerRelativeDescription(
+                                        Builder(
+                                          builder: (context) {
+                                            final desc = _buildViewerRelativeDescription(
                                               expense: expense,
                                               repo: repo,
-                                            ),
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            color: const Color(0xFF1A1A1A),
-                                          ),
+                                            );
+                                            return Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text: desc.main,
+                                                    style: const TextStyle(
+                                                      fontSize: 17,
+                                                      color: Color(0xFF1A1A1A),
+                                                    ),
+                                                  ),
+                                                  if (desc.suffix != null) ...[
+                                                    const TextSpan(text: '  '),
+                                                    TextSpan(
+                                                      text: desc.suffix,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Color(0xFF9B9B9B),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            );
+                                          },
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          expense.date,
+                                          expense.displayDate,
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: const Color(0xFF9B9B9B),
@@ -1965,7 +1993,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         amount: amount,
         description: description,
         category: widget.result.category,
-        date: 'Today',
+        date: DateTime.now().millisecondsSinceEpoch.toString(),
         payerSlots: payerSlots,
         slots: participantSlots,
         splitType: persistSplitType,
@@ -2021,9 +2049,6 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
-    final exactSum = widget.result.splitType == 'exact'
-        ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
-        : 0.0;
 
     return Dialog(
       backgroundColor: Colors.transparent,

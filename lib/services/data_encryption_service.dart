@@ -129,10 +129,6 @@ class DataEncryptionService {
     return out;
   }
 
-  static dynamic _userTypeRestore(String k, String v) {
-    return v;
-  }
-
   static dynamic _groupTypeRestore(String k, String v) {
     return v;
   }

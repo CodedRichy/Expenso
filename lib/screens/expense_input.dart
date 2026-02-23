@@ -82,7 +82,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             description: parsedData!.description,
             amount: parsedData!.amount,
-            date: 'Today',
+            date: DateTime.now().millisecondsSinceEpoch.toString(),
             participantIds: participantIds,
             paidById: payerId,
           );

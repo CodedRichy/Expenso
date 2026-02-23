@@ -18,7 +18,7 @@ class CycleHistoryDetail extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
-    final cycle = cycleData as Cycle;
+    final cycle = cycleData;
     final startDate = cycle.startDate ?? '–';
     final endDate = cycle.endDate ?? '–';
     final cycleDate = '$startDate – $endDate';
@@ -156,7 +156,7 @@ class CycleHistoryDetail extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      expense.date,
+                                      expense.displayDate,
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: const Color(0xFF9B9B9B),
