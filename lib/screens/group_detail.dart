@@ -13,6 +13,7 @@ import '../services/groq_expense_parser_service.dart';
 import '../utils/expense_normalization.dart';
 import '../utils/settlement_engine.dart';
 import '../widgets/expenso_loader.dart';
+import '../widgets/member_avatar.dart';
 import 'empty_states.dart';
 
 void _showUndoExpenseOverlay(
@@ -262,6 +263,7 @@ class GroupDetail extends StatelessWidget {
               child: _DecisionClarityCard(
                 repo: repo,
                 groupId: groupId,
+                groupName: defaultGroup.name,
                 expenses: expenses,
                 isSettled: isSettled,
                 isPassive: isPassive,
@@ -722,6 +724,7 @@ String _fmtRupee(double value) {
 class _DecisionClarityCard extends StatelessWidget {
   final CycleRepository repo;
   final String groupId;
+  final String groupName;
   final List<Expense> expenses;
   final bool isSettled;
   final bool isPassive;
@@ -729,12 +732,35 @@ class _DecisionClarityCard extends StatelessWidget {
   const _DecisionClarityCard({
     required this.repo,
     required this.groupId,
+    required this.groupName,
     required this.expenses,
     required this.isSettled,
     required this.isPassive,
   });
 
   static const double _minHeight = 132.0;
+
+  void _showSettlementDetails(BuildContext context) {
+    final members = repo.getMembersForGroup(groupId);
+    final debts = SettlementEngine.computeDebts(expenses, members);
+    final netBalances = SettlementEngine.computeNetBalances(expenses, members);
+    final myId = repo.currentUserId;
+    double myNet = netBalances[myId] ?? 0.0;
+    if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SettlementDetailsSheet(
+        repo: repo,
+        groupName: groupName,
+        debts: debts,
+        myId: myId,
+        myNet: myNet,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -759,40 +785,43 @@ class _DecisionClarityCard extends StatelessWidget {
 
     final isMuted = isPassive;
 
-    return Opacity(
-      opacity: isMuted ? 0.6 : 1.0,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: _minHeight),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+    return GestureDetector(
+      onTap: isEmpty ? null : () => _showSettlementDetails(context),
+      child: Opacity(
+        opacity: isMuted ? 0.6 : 1.0,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: _minHeight),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.gradientStart, AppColors.gradientEnd],
             ),
-          ],
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.gradientStart, AppColors.gradientEnd],
           ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.space2xl),
-            child: isEmpty
-                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                : _buildContent(
-                    cycleTotal: cycleTotal,
-                    youPaid: youPaid,
-                    myNet: myNet,
-                    isCredit: isCredit,
-                    isDebt: isDebt,
-                    isBalanceClear: isBalanceClear,
-                    isMuted: isMuted,
-                  ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.space2xl),
+              child: isEmpty
+                  ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                  : _buildContent(
+                      cycleTotal: cycleTotal,
+                      youPaid: youPaid,
+                      myNet: myNet,
+                      isCredit: isCredit,
+                      isDebt: isDebt,
+                      isBalanceClear: isBalanceClear,
+                      isMuted: isMuted,
+                    ),
+            ),
           ),
         ),
       ),
@@ -880,6 +909,202 @@ class _DecisionClarityCard extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _SettlementDetailsSheet extends StatelessWidget {
+  final CycleRepository repo;
+  final String groupName;
+  final List<Debt> debts;
+  final String myId;
+  final double myNet;
+
+  const _SettlementDetailsSheet({
+    required this.repo,
+    required this.groupName,
+    required this.debts,
+    required this.myId,
+    required this.myNet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isCredit = myNet > 0;
+    final isDebt = myNet < 0;
+    final isBalanceClear = myNet.abs() < 0.01;
+
+    final myDebts = debts.where((d) => d.fromId == myId || d.toId == myId).toList();
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: AppSpacing.spaceLg),
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.spaceXl),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Settlement details', style: AppTypography.screenTitle),
+                  SizedBox(height: AppSpacing.spaceXs),
+                  Text(groupName, style: AppTypography.bodySecondary),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.sectionGap),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+              child: _buildYourPosition(isCredit, isDebt, isBalanceClear),
+            ),
+            SizedBox(height: AppSpacing.sectionGap),
+            if (myDebts.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.space4xl),
+                    child: Text(
+                      'All settled 🎉',
+                      style: AppTypography.subheader.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
+                ),
+              )
+            else
+              _buildDebtsList(myDebts),
+            SizedBox(height: AppSpacing.space3xl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildYourPosition(bool isCredit, bool isDebt, bool isBalanceClear) {
+    if (isBalanceClear) {
+      return Container(
+        padding: EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: AppColors.success, size: 28),
+            SizedBox(width: AppSpacing.spaceLg),
+            Expanded(
+              child: Text(
+                'You\'re all settled up',
+                style: AppTypography.listItemTitle,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final color = isCredit ? AppColors.success : AppColors.error;
+    final label = isCredit ? 'You will receive' : 'You owe';
+    final amount = '₹${_fmtRupee(myNet.abs())}';
+
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: isCredit ? const Color(0xFFE8F5E9) : AppColors.errorBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(color: color),
+          ),
+          SizedBox(height: AppSpacing.spaceXs),
+          Text(
+            amount,
+            style: AppTypography.amountLG.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebtsList(List<Debt> myDebts) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+          child: Text('BREAKDOWN', style: AppTypography.sectionLabel),
+        ),
+        SizedBox(height: AppSpacing.spaceLg),
+        ...myDebts.map((debt) {
+          final iOwe = debt.fromId == myId;
+          final otherId = iOwe ? debt.toId : debt.fromId;
+          final otherName = repo.getMemberDisplayNameById(otherId);
+          final photoUrl = repo.getMemberPhotoURL(otherId);
+          final direction = iOwe ? 'Pay' : 'Receive';
+          final directionColor = iOwe ? AppColors.error : AppColors.success;
+          final amountDisplay = debt.amount.amountMinor / 100.0;
+
+          return Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPaddingH,
+              vertical: AppSpacing.spaceLg,
+            ),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: AppColors.border, width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                MemberAvatar(displayName: otherName, photoURL: photoUrl, size: 44),
+                SizedBox(width: AppSpacing.spaceLg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(otherName, style: AppTypography.listItemTitle),
+                      SizedBox(height: AppSpacing.space2xs),
+                      Text(
+                        direction,
+                        style: AppTypography.captionSmall.copyWith(
+                          color: directionColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '₹${_fmtRupee(amountDisplay)}',
+                  style: AppTypography.amountSM.copyWith(color: directionColor),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
