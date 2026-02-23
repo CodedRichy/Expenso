@@ -9,14 +9,27 @@ class NormalizedExpenseError extends Error {
 
 /// Immutable, ID-only expense representation for accounting.
 /// 
-/// This is the canonical intermediate model between parsing (names) and storage.
-/// All person references are member IDs (UUIDs), never names.
-/// "Everyone" semantics are expanded to concrete IDs at construction time.
+/// This model represents a fully-resolved accounting event.
+/// It must be safe to replay at any time in the future.
 /// 
-/// Invariants (enforced at construction):
-/// - sum(payerContributions) == amount (within tolerance)
-/// - sum(participantShares) == amount (within tolerance)
-/// - All map keys are valid member IDs (no p_ prefixes)
+/// ## Design Principles
+/// - **UI-agnostic:** No UI concepts (slots, selections, confirmation state)
+/// - **Timeless:** Can be reconstructed from storage without current group state
+/// - **Replay-safe:** Produces identical LedgerDeltas regardless of when computed
+/// 
+/// ## Money Invariants (enforced at construction)
+/// - `sum(payerContributions) == amount` (within tolerance)
+/// - `sum(participantShares) == amount` (within tolerance)
+/// - All map keys are valid member IDs (no `p_` prefixes, non-empty)
+/// - All amounts are non-negative and finite
+/// 
+/// ## Non-Invariants (NOT validated here)
+/// - Description content (validated at UI/parsing layer)
+/// - Category validity
+/// - Date format
+/// 
+/// All person references are member IDs (UUIDs), never names.
+/// "Everyone" semantics must be expanded to concrete IDs before construction.
 class NormalizedExpense {
   final double amount;
   final String description;
@@ -41,21 +54,20 @@ class NormalizedExpense {
     required this.participantSharesByMemberId,
   });
 
-  /// Creates a NormalizedExpense with invariant validation.
-  /// Throws [NormalizedExpenseError] if invariants are violated.
+  /// Creates a NormalizedExpense with money invariant validation.
+  /// 
+  /// Throws [NormalizedExpenseError] if money invariants are violated.
+  /// Does NOT validate description, category, or date (those are UI concerns).
   factory NormalizedExpense({
     required double amount,
-    required String description,
+    String description = '',
     String category = '',
-    String date = 'Today',
+    String date = '',
     required Map<String, double> payerContributionsByMemberId,
     required Map<String, double> participantSharesByMemberId,
   }) {
     if (amount <= 0 || amount.isNaN || amount.isInfinite) {
       throw NormalizedExpenseError('Amount must be positive and finite');
-    }
-    if (description.trim().isEmpty) {
-      throw NormalizedExpenseError('Description cannot be empty');
     }
     if (payerContributionsByMemberId.isEmpty) {
       throw NormalizedExpenseError('Must have at least one payer');
@@ -108,8 +120,8 @@ class NormalizedExpense {
 
     return NormalizedExpense._(
       amount: amount,
-      description: description.trim(),
-      category: category.trim(),
+      description: description,
+      category: category,
       date: date,
       payerContributionsByMemberId: Map.unmodifiable(payerContributionsByMemberId),
       participantSharesByMemberId: Map.unmodifiable(participantSharesByMemberId),
