@@ -45,8 +45,7 @@ class _UndoExpenseState extends State<UndoExpense> {
     final gid = widget.groupId ?? repo.lastAddedGroupId;
     final eid = widget.expenseId ?? repo.lastAddedExpenseId;
     if (gid != null && eid != null) {
-      repo.deleteExpense(gid, eid);
-      repo.clearLastAdded();
+      repo.hardDeleteExpense(gid, eid);
     }
     _dismiss();
   }
