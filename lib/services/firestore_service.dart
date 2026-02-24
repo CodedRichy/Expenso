@@ -634,6 +634,8 @@ class FirestoreService {
     String status, {
     int? initiatedAt,
     int? confirmedAt,
+    String? upiTransactionId,
+    String? upiResponseCode,
   }) async {
     final ref = _firestore
         .collection(FirestorePaths.groupPaymentAttempts(groupId))
@@ -641,6 +643,8 @@ class FirestoreService {
     final data = <String, dynamic>{'status': status};
     if (initiatedAt != null) data['initiatedAt'] = initiatedAt;
     if (confirmedAt != null) data['confirmedAt'] = confirmedAt;
+    if (upiTransactionId != null) data['upiTransactionId'] = upiTransactionId;
+    if (upiResponseCode != null) data['upiResponseCode'] = upiResponseCode;
     await ref.update(data);
   }
 

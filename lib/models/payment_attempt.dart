@@ -89,6 +89,8 @@ class PaymentAttempt {
   final int createdAt;
   final int? initiatedAt;
   final int? confirmedAt;
+  final String? upiTransactionId;
+  final String? upiResponseCode;
 
   const PaymentAttempt({
     required this.id,
@@ -102,7 +104,11 @@ class PaymentAttempt {
     required this.createdAt,
     this.initiatedAt,
     this.confirmedAt,
+    this.upiTransactionId,
+    this.upiResponseCode,
   });
+
+  bool get hasUpiProof => upiTransactionId != null && upiTransactionId!.isNotEmpty;
 
   String get routeKey => '${fromMemberId}_$toMemberId';
 
@@ -110,6 +116,8 @@ class PaymentAttempt {
     PaymentAttemptStatus? status,
     int? initiatedAt,
     int? confirmedAt,
+    String? upiTransactionId,
+    String? upiResponseCode,
   }) {
     return PaymentAttempt(
       id: id,
@@ -123,6 +131,8 @@ class PaymentAttempt {
       createdAt: createdAt,
       initiatedAt: initiatedAt ?? this.initiatedAt,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+      upiTransactionId: upiTransactionId ?? this.upiTransactionId,
+      upiResponseCode: upiResponseCode ?? this.upiResponseCode,
     );
   }
 
@@ -138,6 +148,8 @@ class PaymentAttempt {
       'createdAt': createdAt,
       if (initiatedAt != null) 'initiatedAt': initiatedAt,
       if (confirmedAt != null) 'confirmedAt': confirmedAt,
+      if (upiTransactionId != null) 'upiTransactionId': upiTransactionId,
+      if (upiResponseCode != null) 'upiResponseCode': upiResponseCode,
     };
   }
 
@@ -154,6 +166,8 @@ class PaymentAttempt {
       createdAt: data['createdAt'] as int? ?? 0,
       initiatedAt: data['initiatedAt'] as int?,
       confirmedAt: data['confirmedAt'] as int?,
+      upiTransactionId: data['upiTransactionId'] as String?,
+      upiResponseCode: data['upiResponseCode'] as String?,
     );
   }
 

@@ -1494,16 +1494,30 @@ class CycleRepository extends ChangeNotifier {
     _logSettlementEvent(groupId, SettlementEventType.paymentInitiated, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
   }
 
-  Future<void> markPaymentConfirmedByPayer(String groupId, String attemptId) async {
+  Future<void> markPaymentConfirmedByPayer(
+    String groupId,
+    String attemptId, {
+    String? upiTransactionId,
+    String? upiResponseCode,
+  }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.confirmedByPayer.firestoreValue,
       confirmedAt: now,
+      upiTransactionId: upiTransactionId,
+      upiResponseCode: upiResponseCode,
     );
 
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByPayer, confirmedAt: now);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.confirmedByPayer,
+      confirmedAt: now,
+      upiTransactionId: upiTransactionId,
+      upiResponseCode: upiResponseCode,
+    );
     _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByPayer, paymentAttemptId: attemptId);
     _checkAndEmitFullySettled(groupId);
   }
@@ -1576,6 +1590,8 @@ class CycleRepository extends ChangeNotifier {
     PaymentAttemptStatus status, {
     int? initiatedAt,
     int? confirmedAt,
+    String? upiTransactionId,
+    String? upiResponseCode,
   }) {
     final attempts = _paymentAttemptsByGroup[groupId];
     if (attempts == null) return;
@@ -1587,6 +1603,8 @@ class CycleRepository extends ChangeNotifier {
       status: status,
       initiatedAt: initiatedAt,
       confirmedAt: confirmedAt,
+      upiTransactionId: upiTransactionId,
+      upiResponseCode: upiResponseCode,
     );
     notifyListeners();
   }
@@ -1806,7 +1824,7 @@ class CycleRepository extends ChangeNotifier {
       return;
     }
 
-    final events = await FirestoreService.instance.getSettlementEvents(groupId, limit: 20);
+    final events = await FirestoreService.instance.getSettlementEvents(groupId);
     for (final data in events) {
       if (data['type'] == 'pending_reminder') {
         final ts = data['timestamp'] as int? ?? 0;

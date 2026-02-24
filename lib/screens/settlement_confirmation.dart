@@ -89,7 +89,11 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _handleMarkAsPaid(PaymentRoute route) async {
+  Future<void> _handleMarkAsPaid(
+    PaymentRoute route, {
+    String? transactionId,
+    String? responseCode,
+  }) async {
     if (_group == null) return;
     if (ConnectivityService.instance.isOffline) {
       if (mounted) {
@@ -110,12 +114,20 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       route.toMemberId,
     );
 
-    if (attempt != null && attempt.status == PaymentAttemptStatus.initiated) {
-      await repo.markPaymentConfirmedByPayer(_group!.id, attempt.id);
+    if (attempt != null && (attempt.status == PaymentAttemptStatus.initiated || attempt.status == PaymentAttemptStatus.notStarted)) {
+      await repo.markPaymentConfirmedByPayer(
+        _group!.id,
+        attempt.id,
+        upiTransactionId: transactionId,
+        upiResponseCode: responseCode,
+      );
       if (mounted) {
+        final hasProof = transactionId != null && transactionId.isNotEmpty;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment marked as complete'),
+          SnackBar(
+            content: Text(hasProof
+                ? 'Payment confirmed with transaction ID'
+                : 'Payment marked as complete'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -561,6 +573,11 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           final payeeName = repo.getMemberDisplayNameById(route.toMemberId);
           final payeeUpiId = repo.getMemberUpiId(route.toMemberId);
           final status = _getAttemptStatus(route);
+          final attempt = repo.getPaymentAttemptForRoute(
+            group.id,
+            route.fromMemberId,
+            route.toMemberId,
+          );
           return UpiPaymentCard(
             payeeName: payeeName,
             payeeUpiId: payeeUpiId,
@@ -568,8 +585,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             groupName: group.name,
             currencyCode: route.currencyCode,
             attemptStatus: status,
+            upiTransactionId: attempt?.upiTransactionId,
             onPaymentInitiated: () => _handlePaymentInitiated(route),
-            onMarkAsPaid: () => _handleMarkAsPaid(route),
+            onMarkAsPaid: ({String? transactionId, String? responseCode}) =>
+                _handleMarkAsPaid(route, transactionId: transactionId, responseCode: responseCode),
             onPaidViaCash: () => _handlePaidViaCash(route),
             isReceiver: false,
           );

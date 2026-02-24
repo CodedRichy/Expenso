@@ -15,8 +15,9 @@ class UpiPaymentCard extends StatefulWidget {
   final String groupName;
   final String currencyCode;
   final PaymentAttemptStatus? attemptStatus;
+  final String? upiTransactionId;
   final VoidCallback? onPaymentInitiated;
-  final VoidCallback? onMarkAsPaid;
+  final void Function({String? transactionId, String? responseCode})? onMarkAsPaid;
   final VoidCallback? onPaidViaCash;
   final VoidCallback? onConfirmCashReceived;
   final Function(UpiTransactionResult result)? onPaymentResult;
@@ -30,6 +31,7 @@ class UpiPaymentCard extends StatefulWidget {
     required this.groupName,
     this.currencyCode = 'INR',
     this.attemptStatus,
+    this.upiTransactionId,
     this.onPaymentInitiated,
     this.onMarkAsPaid,
     this.onPaidViaCash,
@@ -109,9 +111,36 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       
       if (result.transactionResult != null) {
         widget.onPaymentResult?.call(result.transactionResult!);
-      }
-
-      if (result.isSuccess) {
+        
+        final txn = result.transactionResult!;
+        if (txn.isSuccess) {
+          widget.onMarkAsPaid?.call(
+            transactionId: txn.transactionId,
+            responseCode: txn.responseCode,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        txn.transactionId != null
+                            ? 'Payment confirmed (Txn: ${txn.transactionId})'
+                            : 'Payment confirmed',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } else if (result.manuallyConfirmed) {
         widget.onMarkAsPaid?.call();
       }
     }
@@ -368,17 +397,50 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       } else {
         message = 'Marked as paid';
       }
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, color: AppColors.success, size: 20),
-          const SizedBox(width: AppSpacing.spaceSm),
-          Text(
-            message,
-            style: AppTypography.bodySecondary.copyWith(
-              color: AppColors.success,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.success, size: 20),
+              const SizedBox(width: AppSpacing.spaceSm),
+              Text(
+                message,
+                style: AppTypography.bodySecondary.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
+          if (widget.upiTransactionId != null && widget.upiTransactionId!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.spaceSm),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceMd,
+                vertical: AppSpacing.spaceXs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.receipt_long, size: 12, color: AppColors.textTertiary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Txn: ${widget.upiTransactionId}',
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 10,
+                      color: AppColors.textTertiary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -446,7 +508,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
           const SizedBox(width: AppSpacing.spaceMd),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: widget.onMarkAsPaid,
+              onPressed: () => widget.onMarkAsPaid?.call(),
               icon: const Icon(Icons.check, size: 18),
               label: const Text('Mark as paid'),
               style: ElevatedButton.styleFrom(

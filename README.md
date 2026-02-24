@@ -1,12 +1,166 @@
 # Expenso
 
-Group expense tracking with settlement cycles and one creator per group. Track who paid what, see live who owes whom, and close the loop with Settle then Start New Cycle. Optional natural-language input (Magic Bar) for quick expense entry.
+**Group expense tracking done right.** Track who paid what, see who owes whom, settle via UPI, repeat.
+
+```
+  ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
+  │  ADD    │      │  TRACK  │      │  SEE    │      │  PAY    │
+  │ EXPENSE │ ───► │ SPLITS  │ ───► │ BALANCE │ ───► │  & GO   │
+  └─────────┘      └─────────┘      └─────────┘      └─────────┘
+      │                                                   │
+      └───────────────────── REPEAT ◄─────────────────────┘
+```
+
+> *"Dinner 1200 with Pradhyun"* → Magic Bar parses it → Split calculated → Everyone knows what they owe
 
 ---
 
 ## Project Overview
 
-Expenso is a Flutter app that solves shared-expense tracking for small groups (friends, roommates, trips). It removes the pain of manual tallying and "who paid for what" confusion by enforcing a clear model: one group creator, an active expense cycle, and a two-phase settlement (freeze cycle, then archive and start new). Expenses are recorded with flexible splits (even, exact, exclude, percentage, shares); balances and settlement instructions are derived automatically. In-app settlement can be completed via Razorpay Checkout. The app exists to give groups a single source of truth and a repeatable way to settle and reset.
+Expenso is a Flutter app that solves shared-expense tracking for small groups (friends, roommates, trips). It removes the pain of manual tallying and "who paid for what" confusion by enforcing a clear model: one group creator, an active expense cycle, and a two-phase settlement (freeze cycle, then archive and start new). Expenses are recorded with flexible splits (even, exact, exclude, percentage, shares); balances and settlement instructions are derived automatically. In-app settlement via UPI with app picker (GPay, PhonePe, Paytm, etc.). The app exists to give groups a single source of truth and a repeatable way to settle and reset.
+
+---
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           THE EXPENSO CYCLE                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+     ┌──────────┐          ┌──────────┐          ┌──────────┐
+     │  CREATE  │          │  TRACK   │          │  SETTLE  │
+     │  GROUP   │────────► │ EXPENSES │────────► │    UP    │
+     └──────────┘          └──────────┘          └──────────┘
+          │                      │                     │
+          │                      │                     │
+          ▼                      ▼                     ▼
+   ┌─────────────┐        ┌─────────────┐       ┌─────────────┐
+   │ Add members │        │ "Dinner     │       │ Pay via UPI │
+   │ via phone   │        │  1200 with  │       │ (GPay, etc) │
+   │ or contacts │        │  Pradhyun"  │       │ or Cash     │
+   └─────────────┘        └─────────────┘       └─────────────┘
+                                │                     │
+                                ▼                     ▼
+                         ┌─────────────┐       ┌─────────────┐
+                         │ Auto-split  │       │ Start new   │
+                         │ & balance   │       │ cycle ──────┼──────┐
+                         │ calculation │       │             │      │
+                         └─────────────┘       └─────────────┘      │
+                                                                    │
+                                ┌───────────────────────────────────┘
+                                │
+                                ▼
+                         ┌─────────────┐
+                         │   REPEAT    │
+                         │   ∞         │
+                         └─────────────┘
+```
+
+---
+
+## Expense Entry — Magic Bar
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         NATURAL LANGUAGE INPUT                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  You type:                          Expenso understands:
+  ─────────                          ────────────────────
+
+  "Dinner 1200 with Pradhyun"   ──►  ₹1,200 • Dinner • Split with Pradhyun
+
+  "Auto 450 paid by Rekha"      ──►  ₹450 • Auto • Rekha paid • Split all
+
+  "Groceries 800 exclude Amit"  ──►  ₹800 • Groceries • Exclude Amit from split
+
+  "Movie 300 Pradhyun Rekha"    ──►  ₹300 • Movie • Split: You + Pradhyun + Rekha
+
+                                          │
+                                          ▼
+                                   ┌─────────────┐
+                                   │  CONFIRM &  │
+                                   │    SAVE     │
+                                   └─────────────┘
+```
+
+---
+
+## Settlement Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PAYMENT & CONFIRMATION                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  PAYER                                              RECEIVER
+  ─────                                              ────────
+
+  ┌─────────────────┐                          ┌─────────────────┐
+  │  "Settle now"   │                          │                 │
+  │                 │                          │                 │
+  │  You owe ₹450   │                          │  ₹450 incoming  │
+  │  to Rekha       │                          │  from Amit      │
+  └────────┬────────┘                          └────────┬────────┘
+           │                                            │
+           ▼                                            │
+  ┌─────────────────┐                                   │
+  │  Pay via UPI    │                                   │
+  │  ┌────┬────┬────┤                                   │
+  │  │GPay│PhPe│Paytm                                   │
+  │  └────┴────┴────┘                                   │
+  └────────┬────────┘                                   │
+           │                                            │
+           ▼                                            │
+  ┌─────────────────┐                                   │
+  │  Payment sent   │                                   │
+  │  ─────────────  │                                   │
+  │  Mark as paid ✓ │──────────── notification ────────►│
+  └────────┬────────┘                                   │
+           │                                            ▼
+           │                                   ┌─────────────────┐
+           │                                   │  Confirm        │
+           │                                   │  received? ✓    │
+           │                                   └────────┬────────┘
+           │                                            │
+           ▼                                            ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │                      ✓ SETTLED                              │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Decision Clarity Card
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ALWAYS KNOW WHERE YOU STAND                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────┐
+                    │                                 │
+                    │   CYCLE TOTAL      ₹4,500       │
+                    │   ─────────────────────────     │
+                    │   You spent        ₹2,100       │
+                    │   Your share       ₹1,500       │
+                    │   ─────────────────────────     │
+                    │                                 │
+                    │   ┌─────────────────────────┐   │
+                    │   │  YOU GET BACK  ₹600  ▲  │   │  ◄── Green = others owe you
+                    │   └─────────────────────────┘   │
+                    │                                 │
+                    │           ── or ──              │
+                    │                                 │
+                    │   ┌─────────────────────────┐   │
+                    │   │  YOU OWE      ₹300   ▼  │   │  ◄── Red = you owe others
+                    │   └─────────────────────────┘   │
+                    │                                 │
+                    └─────────────────────────────────┘
+```
 
 ---
 
@@ -20,7 +174,50 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
 ---
 
-## Architecture / How It Works
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DATA FLOW                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │    USER      │     │   FLUTTER    │     │   FIREBASE   │
+  │   ACTION     │────►│     APP      │────►│  FIRESTORE   │
+  └──────────────┘     └──────────────┘     └──────────────┘
+                              │                    │
+                              │                    │
+                       ┌──────┴──────┐      ┌──────┴──────┐
+                       │             │      │             │
+                       ▼             ▼      ▼             ▼
+                ┌───────────┐  ┌─────────┐  ┌─────────────────┐
+                │  MAGIC    │  │ SETTLE- │  │     REAL-TIME   │
+                │   BAR     │  │  MENT   │  │      SYNC       │
+                │  (Groq)   │  │ ENGINE  │  │                 │
+                └───────────┘  └─────────┘  └─────────────────┘
+                     │              │              │
+                     │              ▼              │
+                     │       ┌───────────┐         │
+                     │       │  BALANCE  │         │
+                     └──────►│   CALC    │◄────────┘
+                             └───────────┘
+                                   │
+                                   ▼
+                            ┌─────────────┐
+                            │  DECISION   │
+                            │  CLARITY    │
+                            │   CARD      │
+                            └─────────────┘
+```
+
+| Layer | Component | Role |
+|-------|-----------|------|
+| **UI** | Screens, Widgets | User interaction |
+| **State** | CycleRepository | Single source of truth, Firestore sync |
+| **Logic** | SettlementEngine | Balance math, debt minimization |
+| **AI** | GroqExpenseParserService | Natural language → structured expense |
+| **Payments** | UpiPaymentService | UPI app discovery, deep links |
+| **Backend** | Firebase (Auth, Firestore, Storage) | Persistence, real-time sync |
 
 On launch, the app shows a splash then routes by Firebase Auth state: unauthenticated users see Phone Auth; authenticated users sync identity to a singleton `CycleRepository` and then either onboarding (name) or the groups list. The repository subscribes to Firestore streams for groups (where the user is a member) and each group’s current-cycle expenses; it maintains in-memory state (`_groups`, `_expensesByCycleId`, `_membersById`) and notifies listeners. Group detail reads the active cycle and uses `SettlementEngine` to compute debts and net balances for the Decision Clarity card and Balances section. Expense writes go to `groups/{groupId}/expenses`; settlement is creator-only: Phase 1 sets cycle status to `settling`, Phase 2 archives expenses into `settled_cycles/{cycleId}/expenses`, clears current expenses, and creates a new active cycle. Magic Bar calls `GroqExpenseParserService` (with optional local number fallback); the result is confirmed in UI then persisted via `CycleRepository.addExpenseFromMagicBar`. Payments use `upi_india` to detect installed UPI apps and launch transactions directly; payment attempts are tracked in Firestore with payer/receiver confirmation states.
 

@@ -474,12 +474,16 @@ The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amountM
 | `createdAt` | `int` | Epoch millis when attempt was created |
 | `initiatedAt` | `int?` | Epoch millis when UPI app was launched |
 | `confirmedAt` | `int?` | Epoch millis when marked as paid |
+| `upiTransactionId` | `String?` | UPI transaction ID from successful payment (proof) |
+| `upiResponseCode` | `String?` | UPI response code from payment app |
 
-**Notes:** Tracks state of each UPI payment or cash settlement. Created lazily when user first taps "Pay via UPI" or "Paid via cash" for a route. State machines: 
-- **UPI flow:** `notStarted` → `initiated` (on UPI launch) → `confirmedByPayer` (on "Mark as paid") → optionally `confirmedByReceiver` (on receiver confirmation). `disputed` state available for conflict resolution.
+**Notes:** Tracks state of each UPI payment or cash settlement. Created lazily when user first taps "Pay via UPI" or "Paid via cash" for a route. State machines:
+- **UPI flow:** `notStarted` → `initiated` (on UPI launch) → `confirmedByPayer` (auto or manual) → optionally `confirmedByReceiver` (on receiver confirmation). `disputed` state available for conflict resolution.
 - **Cash flow:** `notStarted` → `cashPending` (on "Paid via cash") → `cashConfirmed` (on receiver confirmation). No edits allowed after `cashConfirmed`.
 
-Payments are **never auto-confirmed**; explicit user action required. Attempts persist per-cycle; deleted when cycle archives.
+**Smart auto-confirmation:** When the UPI app returns a `success` status with a transaction ID, the payment is automatically marked as `confirmedByPayer` and the transaction ID is stored as proof. For `submitted` or unclear responses, manual "Mark as paid" is required. The transaction ID (when available) is displayed in the UI as an audit trail.
+
+Payments persist per-cycle; deleted when cycle archives.
 
 ---
 
