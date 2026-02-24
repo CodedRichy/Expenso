@@ -1,7 +1,8 @@
 # Expenso – Monetization Execution Plan
 
-**Version**: 1.0  
+**Version**: 2.0  
 **Created**: February 2026  
+**Updated**: February 2026  
 **Status**: Ready for Implementation
 
 ---
@@ -12,9 +13,8 @@
 |----------|-------|
 | **When to monetize** | After 5K MAU with 40%+ 30-day retention |
 | **Pricing** | ₹29/month · ₹249/year · ₹499 lifetime (first 500 only) |
-| **Plus v1 features** | Smart Reminders, Settlement Export |
-| **Plus v2 features** | Expense Templates |
-| **Never monetize** | Core tracking, groups, invites, settlements, UPI links, sync |
+| **Plus features** | Smart Reminders, Settlement Export, Receipt Attachments, Spending Insights, Expense Templates, Custom Categories, Biometric Lock |
+| **Never monetize** | Core tracking, groups, invites, settlements, UPI, Magic Bar AI, God Mode math, QR |
 | **Revenue expectation** | ₹50K–1.2L/year at 50K–100K MAU |
 | **Play Store cut** | 15-30% (factored into projections) |
 
@@ -46,17 +46,24 @@
 
 ```
 ┌─────────────────────────────────────┐
-│         Expenso Plus                │
+│           Expenso Plus              │
 │                                     │
-│    ₹249/year  ← BEST VALUE          │
-│    (save 28%)                       │
+│  ✓ Unlimited smart reminders        │
+│  ✓ PDF & CSV exports                │
+│  ✓ Receipt attachments              │
+│  ✓ Spending insights & trends       │
+│  ✓ Expense templates                │
+│  ✓ Custom categories                │
+│  ✓ Biometric lock                   │
 │                                     │
-│         or ₹29/month                │
+│      ₹249/year ← BEST VALUE         │
+│      (save 28%)                     │
+│                                     │
+│          or ₹29/month               │
 │                                     │
 │  [Get Plus]                         │
 │                                     │
-│  ₹499 one-time (limited offer)      │
-│  [X of 500 remaining]               │
+│  ₹499 one-time (X of 500 remaining) │
 └─────────────────────────────────────┘
 ```
 
@@ -67,17 +74,56 @@
 | Feature | Reason |
 |---------|--------|
 | Expense creation | Core value |
-| Group creation | Virality |
+| Unlimited groups | Virality — Splitwise's group limits killed growth |
+| Unlimited members | Network effects |
 | Member invites | Network effects |
 | Settlement view | Core utility |
 | UPI deep-links | Differentiator |
+| Dynamic UPI QR | India adoption driver |
+| Magic Bar (AI parsing) | Core hook — let everyone experience it |
+| Debt minimization (God Mode) | Signature math — competitive moat |
+| Cross-group identity | Foundation feature, not convenience |
 | Sync/backup | Expected baseline |
 | Dark mode | Commoditized |
 | Expense editing/deletion | Data hygiene |
+| Basic categories | Expected |
+| Offline entry | Expected baseline |
+
+### Competitive Context
+
+**Splitwise's mistake (2023-2024):**
+- Added daily expense limits (3-5/day) and 10-second wait times on free tier
+- Charged $70/year — same as Spotify for an occasional-use tool
+- Ratings crashed from 4+ stars to below 2 stars
+- **Lesson:** Never paywall core actions. Users feel punished, not persuaded.
+
+**Splitkaro (India competitor) paywalls:**
+- Group limits (5 free)
+- Bills in collections (5 free)
+- Full analytics
+- Auto-fetch from Swiggy/Zomato
+- Priority reminders
+
+**Expenso's advantage:** More generous free tier than both competitors.
 
 ---
 
-## 4. Expenso Plus v1 Features
+## 4. Expenso Plus Features
+
+### What Converts (2025 Industry Data)
+
+| Driver | Conversion share |
+|--------|------------------|
+| Unlock premium content | 26% |
+| Special offers/discounts | 23% |
+| Extended features/tools | 20% |
+| Trial expiration | 17% |
+| Ad-free | 6% |
+| Privacy/security | 6% |
+
+**Key insight:** People pay to **unlock extra**, not to **remove friction from basics**.
+
+---
 
 ### Feature 1: Smart Payment Reminders
 
@@ -88,7 +134,7 @@
 - Tone: friendly / neutral / direct
 - Auto-stop when settled
 
-**Why it converts**: Chasing money is socially awkward. Users pay to outsource this.
+**Why it converts**: Chasing money is socially awkward. Users pay to outsource this. **#1 pain point.**
 
 **Dev effort**: Low
 
@@ -144,13 +190,107 @@
 
 ---
 
-### Feature 3: Expense Templates (v2)
+### Feature 3: Receipt Attachments
 
-**Status**: Deferred. Build after v1 validates.
+**What**: Attach photos of receipts/bills to expenses.
 
-**Reason**: Smaller segment, higher dev effort, less clear paywall moment.
+**Why it converts**:
+- Ends disputes ("show me the bill")
+- Power users want unlimited attachments
+- Reduces support burden (fewer arguments)
 
-**v2 approach**: Manual "Save as template" button (not auto-detection).
+**Dev effort**: Medium
+
+**Free tier**: 3 receipt attachments per account (demonstrates value).
+
+**Paywall trigger**: After 3 free receipts used.
+
+```
+┌─────────────────────────────────────┐
+│  🧾 Keep your receipts organized    │
+│                                     │
+│  Attach unlimited receipts with     │
+│  Expenso Plus.                      │
+│                                     │
+│  [Get Plus — ₹29/month]             │
+│                                     │
+│  Not now                            │
+└─────────────────────────────────────┘
+```
+
+---
+
+### Feature 4: Spending Insights
+
+**What**: Analytics with category, group, and time breakdowns.
+
+**Includes**:
+- Category pie charts (Food, Transport, Entertainment, etc.)
+- Monthly trends
+- Group spending comparisons
+- "Top spender" stats
+
+**Why it converts**: Analytics = premium tier expectation. Power users love data.
+
+**Dev effort**: Medium
+
+**Paywall trigger**: Always Plus (no free tier).
+
+```
+┌─────────────────────────────────────┐
+│  📊 See where your money goes       │
+│                                     │
+│  Get spending insights and trends   │
+│  with Expenso Plus.                 │
+│                                     │
+│  [Get Plus — ₹29/month]             │
+│                                     │
+│  Not now                            │
+└─────────────────────────────────────┘
+```
+
+---
+
+### Feature 5: Expense Templates
+
+**What**: Save recurring expenses as templates for quick re-entry.
+
+**Use cases**:
+- Monthly rent
+- Weekly groceries
+- Regular subscriptions
+
+**Why it converts**: Convenience for power users with recurring expenses.
+
+**Dev effort**: Low-Medium
+
+**Paywall trigger**: On "Save as template" tap.
+
+---
+
+### Feature 6: Custom Categories
+
+**What**: Create custom expense categories beyond defaults.
+
+**Why it converts**: Personalization = premium feel.
+
+**Dev effort**: Low
+
+**Free tier**: 5 custom categories.
+
+**Paywall trigger**: After 5 custom categories created.
+
+---
+
+### Feature 7: Biometric Lock
+
+**What**: Fingerprint/Face unlock for app access.
+
+**Why it converts**: Security = premium/trust feel. Privacy-conscious users.
+
+**Dev effort**: Low
+
+**Paywall trigger**: Always Plus.
 
 ---
 
@@ -170,12 +310,19 @@
 |--------|----------|-----------|
 | Tap "Remind" | Yes | 2nd time on same balance |
 | Tap "Export" | Yes | After 1 free export |
+| Attach receipt | Yes | After 3 free receipts |
+| View insights | Yes | Always |
+| Save template | Yes | Always |
+| Create custom category | Yes | After 5 free |
+| Enable biometric | Yes | Always |
 | Open app | No | Never |
 | Create group | No | Never |
 | Invite member | No | Never |
 | Add expense | No | Never |
 | View settlement | No | Never |
 | Use UPI link | No | Never |
+| Use Magic Bar AI | No | Never |
+| Generate UPI QR | No | Never |
 
 ### UI Spec
 
@@ -358,6 +505,49 @@
 | Feature ROI | After each ship |
 | Paywall audit | Monthly (first 3 months) |
 | Full strategy | Every 6 months |
+
+---
+
+## 13. Feature Tier Summary
+
+### Free Forever
+
+| Feature | Reason |
+|---------|--------|
+| Expense creation | Core value |
+| Unlimited groups | Virality |
+| Unlimited members | Network effects |
+| Member invites | Network effects |
+| Settlement view | Core utility |
+| UPI deep-links | Differentiator |
+| Dynamic UPI QR | India adoption driver |
+| Magic Bar (AI parsing) | Core hook |
+| Debt minimization (God Mode) | Signature math |
+| Cross-group identity | Foundation |
+| Sync/backup | Expected baseline |
+| Basic categories | Expected |
+| Offline entry | Expected baseline |
+| Dark mode | Commoditized |
+| Expense editing/deletion | Data hygiene |
+
+### Expenso Plus (₹29/mo · ₹249/yr · ₹499 lifetime)
+
+| Feature | Paywall Trigger | Free Allowance |
+|---------|-----------------|----------------|
+| Smart Reminders | 2nd remind on same balance | 1 manual remind per balance |
+| Settlement Export | After 1 free export | 1 export lifetime |
+| Receipt Attachments | After 3 free receipts | 3 receipts lifetime |
+| Spending Insights | Always Plus | None |
+| Expense Templates | On "Save as template" | None |
+| Custom Categories | After 5 custom | 5 custom categories |
+| Biometric Lock | Always Plus | None |
+
+### The Rule
+
+> **"Monetize convenience, not access"**
+>
+> If it saves time or friction → Plus  
+> If it's core tracking/payments → Free
 
 ---
 
