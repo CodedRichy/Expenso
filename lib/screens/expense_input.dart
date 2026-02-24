@@ -3,6 +3,7 @@ import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
+import '../widgets/gradient_scaffold.dart';
 
 class ParsedExpense {
   final String description;
@@ -345,7 +346,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
     if (showConfirmation && parsedData != null) {
       final theme = Theme.of(context);
       final isDark = theme.brightness == Brightness.dark;
-      return Scaffold(
+      return GradientScaffold(
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -500,7 +501,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

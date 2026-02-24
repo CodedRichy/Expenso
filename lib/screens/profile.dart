@@ -1,12 +1,15 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/profile_service.dart';
 import '../services/theme_service.dart';
 import '../design/typography.dart';
+import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
@@ -120,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final displayName = repo.currentUserName.isEmpty ? 'You' : repo.currentUserName;
         final photoURL = repo.currentUserPhotoURL;
 
-        return Scaffold(
+        return GradientScaffold(
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,9 +174,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [const Color(0xFF2C3E50), const Color(0xFF4A6572)]
-                            : [const Color(0xFF1A1A1A), const Color(0xFF6B6B6B)],
+                        colors: [context.colorGradientStart, context.colorGradientEnd],
                       ),
                     ),
                     child: Column(
@@ -306,9 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [const Color(0xFF2C3E50), const Color(0xFF4A6572)]
-                            : [const Color(0xFF1A1A1A), const Color(0xFF6B6B6B)],
+                        colors: [context.colorGradientStart, context.colorGradientEnd],
                       ),
                     ),
                     child: Column(
@@ -445,8 +444,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _ThemeToggleButton extends StatelessWidget {
+class _ThemeToggleButton extends StatefulWidget {
   const _ThemeToggleButton();
+
+  @override
+  State<_ThemeToggleButton> createState() => _ThemeToggleButtonState();
+}
+
+class _ThemeToggleButtonState extends State<_ThemeToggleButton> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _eclipseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 750),
+      vsync: this,
+    );
+    _eclipseAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    
+    final mode = ThemeService.instance.themeMode;
+    final isDark = mode == ThemeMode.dark || 
+        (mode == ThemeMode.system && 
+         WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+    if (isDark) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void _cycleTheme() {
     final current = ThemeService.instance.themeMode;
@@ -456,88 +491,121 @@ class _ThemeToggleButton extends StatelessWidget {
       ThemeMode.dark => ThemeMode.system,
     };
     ThemeService.instance.setThemeMode(next);
+    
+    final willBeDark = next == ThemeMode.dark || 
+        (next == ThemeMode.system && 
+         MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    
+    if (willBeDark) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final iconColor = theme.colorScheme.onSurface;
+    final bgColor = theme.scaffoldBackgroundColor;
     
-    return ListenableBuilder(
-      listenable: ThemeService.instance,
-      builder: (context, _) {
-        final mode = ThemeService.instance.themeMode;
-        final isDark = mode == ThemeMode.dark || 
-            (mode == ThemeMode.system && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
-        
-        return GestureDetector(
-          onTap: _cycleTheme,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  return RotationTransition(
-                    turns: Tween(begin: 0.5, end: 1.0).animate(
-                      CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                    ),
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-                child: CustomPaint(
-                  key: ValueKey(isDark),
-                  size: const Size(22, 22),
-                  painter: _EclipsePainter(
-                    isDark: isDark,
-                    color: theme.colorScheme.onSurface,
-                    backgroundColor: theme.scaffoldBackgroundColor,
-                  ),
+    return GestureDetector(
+      onTap: _cycleTheme,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _eclipseAnimation,
+            builder: (context, _) {
+              return CustomPaint(
+                size: const Size(24, 24),
+                painter: _EclipsePainter(
+                  progress: _eclipseAnimation.value,
+                  color: iconColor,
+                  backgroundColor: bgColor,
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
 class _EclipsePainter extends CustomPainter {
-  final bool isDark;
+  final double progress;
   final Color color;
   final Color backgroundColor;
   
   _EclipsePainter({
-    required this.isDark,
+    required this.progress,
     required this.color,
     required this.backgroundColor,
   });
   
+  static const int _rayCount = 8;
+  
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 4;
+    
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
     
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
+    final rayPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
     
+    // Draw sun rays (fade out as moon comes in)
+    final rayOpacity = 1.0 - progress;
+    if (rayOpacity > 0) {
+      rayPaint.color = color.withValues(alpha: rayOpacity);
+      final rayInnerRadius = radius + 2;
+      final rayOuterRadius = radius + 5;
+      
+      for (int i = 0; i < _rayCount; i++) {
+        final angle = (i * math.pi * 2 / _rayCount) - math.pi / 2;
+        final cosA = math.cos(angle);
+        final sinA = math.sin(angle);
+        final startX = center.dx + rayInnerRadius * cosA;
+        final startY = center.dy + rayInnerRadius * sinA;
+        final endX = center.dx + rayOuterRadius * cosA;
+        final endY = center.dy + rayOuterRadius * sinA;
+        canvas.drawLine(Offset(startX, startY), Offset(endX, endY), rayPaint);
+      }
+    }
+    
+    // Draw the main circle (sun/moon base)
     canvas.drawCircle(center, radius, paint);
     
-    if (isDark) {
+    // Draw the moon (cutout) sliding across
+    if (progress > 0) {
       final cutoutPaint = Paint()
         ..color = backgroundColor
         ..style = PaintingStyle.fill;
       
-      final eclipseCenter = Offset(center.dx + radius * 0.4, center.dy - radius * 0.4);
-      canvas.drawCircle(eclipseCenter, radius * 0.75, cutoutPaint);
+      canvas.save();
+      canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
+      
+      final moonOffset = Offset(
+        center.dx + radius * 1.2 * (1 - progress),
+        center.dy - radius * 0.3 * progress,
+      );
+      canvas.drawCircle(moonOffset, radius * 0.85, cutoutPaint);
+      
+      canvas.restore();
     }
   }
   
   @override
   bool shouldRepaint(_EclipsePainter oldDelegate) => 
-      isDark != oldDelegate.isDark || 
+      progress != oldDelegate.progress || 
       color != oldDelegate.color ||
       backgroundColor != oldDelegate.backgroundColor;
 }

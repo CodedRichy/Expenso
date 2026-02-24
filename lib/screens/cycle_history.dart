@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/gradient_scaffold.dart';
 
 class CycleHistory extends StatefulWidget {
   const CycleHistory({super.key});
@@ -51,7 +52,7 @@ class _CycleHistoryState extends State<CycleHistory> {
     }
     final groupName = group.name;
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

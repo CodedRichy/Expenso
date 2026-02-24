@@ -158,25 +158,25 @@ ThemeData _buildTheme(Brightness brightness) {
       elevation: 0,
     ),
     cardTheme: CardThemeData(
-      color: surface,
+      color: isDark ? AppColorsDark.cardGradientStart : AppColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: border),
+        side: BorderSide(color: isDark ? AppColorsDark.cardBorder : AppColors.cardBorder),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: surface,
+      backgroundColor: isDark ? AppColorsDark.cardGradientStart : AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: surface,
+      backgroundColor: isDark ? AppColorsDark.cardGradientStart : AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFF323232),
+      backgroundColor: isDark ? AppColorsDark.cardGradientEnd : const Color(0xFF323232),
       contentTextStyle: AppTypography.bodyPrimary.copyWith(color: Colors.white),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

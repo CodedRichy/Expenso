@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../services/pinned_groups_service.dart';
+import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/skeleton_placeholders.dart';
@@ -409,12 +410,13 @@ class _GroupsListState extends State<GroupsList> {
             CycleRepository.instance.clearStreamError();
           });
         }
-        return Scaffold(
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return GradientScaffold(
           floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surface,
+                  backgroundColor: isDark ? AppColorsDark.primary : AppColors.primary,
+                  foregroundColor: isDark ? AppColorsDark.background : AppColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),

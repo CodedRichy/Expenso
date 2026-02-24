@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/expenso_loader.dart';
+import '../design/colors.dart';
 
-/// Full-screen splash shown on launch. Displays elliptical text animation then navigates to main route.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,7 +10,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   static const _fadeInDuration = Duration(milliseconds: 500);
-  static const _holdDuration = Duration(milliseconds: 1800);
+  static const _holdDuration = Duration(milliseconds: 1200);
   static const _fadeOutDuration = Duration(milliseconds: 400);
 
   late AnimationController _fadeController;
@@ -51,7 +50,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColorsDark.background : AppColors.background;
+    
     return Scaffold(
+      backgroundColor: bgColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _fadeController,
@@ -61,7 +64,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: child,
             );
           },
-          child: const ExpensoLoader(),
+          child: ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              isDark ? Colors.white : Colors.black,
+              BlendMode.srcIn,
+            ),
+            child: Image.asset(
+              'assets/images/logoTransparent.png',
+              width: 150,
+              height: 150,
+            ),
+          ),
         ),
       ),
     );

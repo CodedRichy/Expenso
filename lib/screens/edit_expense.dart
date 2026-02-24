@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/gradient_scaffold.dart';
 
 class EditExpense extends StatefulWidget {
   const EditExpense({super.key});
@@ -258,7 +259,7 @@ class _EditExpenseState extends State<EditExpense> {
       return _buildErrorScreen(context);
     }
     final canEdit = _canEdit;
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -8,6 +8,7 @@ import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
+import '../widgets/gradient_scaffold.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/skeleton_placeholders.dart';
@@ -240,7 +241,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     final myTotalDue = myPaymentRoutes.fold<int>(0, (s, r) => s + r.amountMinor);
     final hasUpiDues = myTotalDue > 0;
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

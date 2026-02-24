@@ -5,6 +5,7 @@ import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/gradient_scaffold.dart';
 
 class InviteMembers extends StatefulWidget {
   final String groupName;
@@ -214,7 +215,7 @@ class _InviteMembersState extends State<InviteMembers> {
           }
         }
         final filteredContacts = _getFilteredContacts(existingPhones);
-        return Scaffold(
+        return GradientScaffold(
       body: SafeArea(
         bottom: false,
         child: Column(

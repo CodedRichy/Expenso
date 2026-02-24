@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/gradient_scaffold.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -78,7 +79,7 @@ class _CreateGroupState extends State<CreateGroup> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

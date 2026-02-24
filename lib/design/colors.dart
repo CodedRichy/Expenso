@@ -12,9 +12,17 @@ abstract final class AppColors {
   static const textDisabled = Color(0xFFB0B0B0);
 
   // Backgrounds
-  static const background = Color(0xFFF7F7F8);
+  static const background = Color(0xFFFFFFFF);
+  static const backgroundGradientStart = Color(0xFFFFFFFF);
+  static const backgroundGradientEnd = Color(0xFFFFFFFF);
   static const surface = Colors.white;
   static const surfaceVariant = Color(0xFFF0F0F0);
+
+  // Card
+  static const cardGradientStart = Color(0xFFFFFFFF);
+  static const cardGradientEnd = Color(0xFFEFEFEF);
+  static const cardBorder = Color(0xFFDADADA);
+  static const cardShadow = Color(0x14000000); // rgba(0,0,0,0.08)
 
   // Borders & Dividers
   static const border = Color(0xFFE5E5E5);
@@ -38,7 +46,7 @@ abstract final class AppColors {
   static const disabledBackground = Color(0xFFE5E5E5);
   static const disabledForeground = Color(0xFFB0B0B0);
 
-  // Gradients
+  // Header/Profile Gradients (accent colors)
   static const gradientStart = Color(0xFF1A1A1A);
   static const gradientMid = Color(0xFF555555);
   static const gradientEnd = Color(0xFF6B6B6B);
@@ -53,12 +61,21 @@ abstract final class AppColorsDark {
   static const textTertiary = Color(0xFF808080);
   static const textDisabled = Color(0xFF606060);
 
-  static const background = Color(0xFF121212);
-  static const surface = Color(0xFF1E1E1E);
-  static const surfaceVariant = Color(0xFF2A2A2A);
+  // Backgrounds - gradient
+  static const background = Color(0xFF0B0B0D);
+  static const backgroundGradientStart = Color(0xFF0B0B0D);
+  static const backgroundGradientEnd = Color(0xFF121216);
+  static const surface = Color(0xFF18181C);
+  static const surfaceVariant = Color(0xFF232329);
 
-  static const border = Color(0xFF3A3A3A);
-  static const borderInput = Color(0xFF4A4A4A);
+  // Card
+  static const cardGradientStart = Color(0xFF18181C);
+  static const cardGradientEnd = Color(0xFF232329);
+  static const cardBorder = Color(0xFF2C2C34);
+  static const cardShadow = Color(0x8C000000); // rgba(0,0,0,0.55)
+
+  static const border = Color(0xFF2C2C34);
+  static const borderInput = Color(0xFF3A3A3A);
   static const borderFocused = Color(0xFFE5E5E5);
 
   static const accent = Color(0xFF7BA3C4);
@@ -76,9 +93,10 @@ abstract final class AppColorsDark {
   static const disabledBackground = Color(0xFF2A2A2A);
   static const disabledForeground = Color(0xFF606060);
 
-  static const gradientStart = Color(0xFF2C3E50);
-  static const gradientMid = Color(0xFF3D5A6C);
-  static const gradientEnd = Color(0xFF4A6572);
+  // Header/Profile Gradients (accent colors)
+  static const gradientStart = Color(0xFF18181C);
+  static const gradientMid = Color(0xFF1E1E24);
+  static const gradientEnd = Color(0xFF232329);
 }
 
 extension AppColorsX on BuildContext {
@@ -90,8 +108,14 @@ extension AppColorsX on BuildContext {
   Color get colorTextTertiary => _isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;
   Color get colorTextDisabled => _isDark ? AppColorsDark.textDisabled : AppColors.textDisabled;
   Color get colorBackground => _isDark ? AppColorsDark.background : AppColors.background;
+  Color get colorBackgroundGradientStart => _isDark ? AppColorsDark.backgroundGradientStart : AppColors.backgroundGradientStart;
+  Color get colorBackgroundGradientEnd => _isDark ? AppColorsDark.backgroundGradientEnd : AppColors.backgroundGradientEnd;
   Color get colorSurface => _isDark ? AppColorsDark.surface : AppColors.surface;
   Color get colorSurfaceVariant => _isDark ? AppColorsDark.surfaceVariant : AppColors.surfaceVariant;
+  Color get colorCardGradientStart => _isDark ? AppColorsDark.cardGradientStart : AppColors.cardGradientStart;
+  Color get colorCardGradientEnd => _isDark ? AppColorsDark.cardGradientEnd : AppColors.cardGradientEnd;
+  Color get colorCardBorder => _isDark ? AppColorsDark.cardBorder : AppColors.cardBorder;
+  Color get colorCardShadow => _isDark ? AppColorsDark.cardShadow : AppColors.cardShadow;
   Color get colorBorder => _isDark ? AppColorsDark.border : AppColors.border;
   Color get colorBorderInput => _isDark ? AppColorsDark.borderInput : AppColors.borderInput;
   Color get colorBorderFocused => _isDark ? AppColorsDark.borderFocused : AppColors.borderFocused;

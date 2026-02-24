@@ -15,6 +15,7 @@ import '../utils/expense_normalization.dart';
 import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
+import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
@@ -269,7 +270,7 @@ class _GroupDetailState extends State<GroupDetail> {
         final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
 
-        return Scaffold(
+        return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

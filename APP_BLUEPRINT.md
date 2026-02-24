@@ -210,26 +210,38 @@ Centralized design tokens in `lib/design/`:
 
 | File | Contents |
 |------|----------|
-| `colors.dart` | `AppColors` — primary, text hierarchy, backgrounds, borders, semantic colors, gradients |
-| `typography.dart` | `AppTypography` — heroTitle, screenTitle, bodyPrimary, button, sectionLabel, etc. |
+| `colors.dart` | `AppColors` + `AppColorsDark` — theme colors. `AppColorsX` extension for theme-aware access via `context.colorXxx`. |
+| `typography.dart` | `AppTypography` — text styles. `ThemedTypography` extension for theme-aware styles via `context.screenTitle`, etc. |
 | `spacing.dart` | `AppSpacing` — spacing scale (space2xs through space9xl), semantic spacing constants |
 
-### Colors (AppColors)
+### Theme Support
+
+The app supports **Light**, **Dark**, and **System** theme modes via `ThemeService` (singleton, persists to `SharedPreferences`). Toggle via animated sun/moon eclipse icon in Profile screen header.
+
+### Colors
+
+#### Light Mode (AppColors)
 
 | Token | Value | Use |
 |-------|-------|-----|
-| `background` | `0xFFF7F7F8` | Scaffold background |
-| `surface` | `Colors.white` | Cards, inputs |
-| `primary` | `0xFF1A1A1A` | Buttons, headlines, focused borders |
-| `textPrimary` | `0xFF1A1A1A` | Primary text |
-| `textSecondary` | `0xFF6B6B6B` | Body, labels |
-| `textTertiary` | `0xFF9B9B9B` | Section labels, captions |
-| `textDisabled` | `0xFFB0B0B0` | Hints, placeholders |
-| `border` | `0xFFE5E5E5` | Dividers, card borders |
-| `borderInput` | `0xFFD0D0D0` | Input borders |
-| `accent` | `0xFF5B7C99` | Links, TextButton |
-| `error` | `0xFFC62828` | Error text, destructive |
-| `warning` | `0xFFF9A825` | Pinned icon, warnings |
+| `background` | `#FFFFFF` | Scaffold background |
+| `cardGradientStart/End` | `#FFFFFF → #EFEFEF` | Card backgrounds |
+| `cardBorder` | `#DADADA` | Card borders |
+| `primary` | `#1A1A1A` | Buttons, headlines |
+| `textPrimary/Secondary` | `#1A1A1A / #6B6B6B` | Text hierarchy |
+| `gradientStart/End` | `#1A1A1A → #6B6B6B` | Profile header cards |
+
+#### Dark Mode (AppColorsDark)
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `backgroundGradientStart/End` | `#0B0B0D → #121216` | Scaffold gradient |
+| `cardGradientStart/End` | `#18181C → #232329` | Card backgrounds |
+| `cardBorder` | `#2C2C34` | Card borders |
+| `primary` | `#E5E5E5` | Buttons, headlines |
+| `textPrimary/Secondary` | `#F5F5F5 / #B0B0B0` | Text hierarchy |
+
+Use `context.colorXxx` for theme-aware color access.
 
 ### Typography
 
@@ -248,24 +260,22 @@ Semantic: `screenPaddingH` (24), `inputPadding` (16), `buttonPaddingV` (14).
 
 ### Theme (main.dart)
 
-`ThemeData` configured with:
-- `ColorScheme` from `AppColors`
-- `textTheme` mapped to `AppTypography`
-- `ElevatedButtonTheme` — primary bg, white fg, 8px radius, 0 elevation
-- `OutlinedButtonTheme` — white bg, border `AppColors.border`
-- `TextButtonTheme` — accent foreground
-- `InputDecorationTheme` — filled white, border radii, focus colors
+`_buildTheme(Brightness)` generates light/dark `ThemeData` with theme-appropriate colors for all components.
+
+### GradientScaffold (lib/widgets/gradient_scaffold.dart)
+
+Wrapper that applies dark mode background gradient (`#0B0B0D → #121216`). Used by main screens instead of plain `Scaffold`.
 
 ### Branding
 
-- **App logo** — Shown on **splash** only (`assets/images/logoWhiteBg.png`). Not shown in Groups header.
+- **App logo** — Shown on splash only.
+- **Theme toggle** — Animated sun (with rays) / crescent moon icon in Profile header.
 
 ### Components
 
-- **Primary buttons** — Use theme defaults; override with `ElevatedButton.styleFrom(minimumSize: ...)` for full-width.
-- **FAB** — `AppColors.primary` bg, `AppColors.surface` fg, 14px radius.
-- **Inputs** — Use theme defaults; InputDecorationTheme handles fill, borders.
-- **Empty states** — Centered copy using `AppTypography`, primary button CTA.
+- **Primary buttons** — Theme defaults; 8px radius, 0 elevation.
+- **FAB** — Theme-aware colors, 14px radius.
+- **Cards** — Use `context.colorCardGradientStart/End` for gradient backgrounds.
 
 ---
 
