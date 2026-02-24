@@ -491,6 +491,7 @@ class _ThemeToggleButton extends StatelessWidget {
                   painter: _EclipsePainter(
                     isDark: isDark,
                     color: theme.colorScheme.onSurface,
+                    backgroundColor: theme.scaffoldBackgroundColor,
                   ),
                 ),
               ),
@@ -505,8 +506,13 @@ class _ThemeToggleButton extends StatelessWidget {
 class _EclipsePainter extends CustomPainter {
   final bool isDark;
   final Color color;
+  final Color backgroundColor;
   
-  _EclipsePainter({required this.isDark, required this.color});
+  _EclipsePainter({
+    required this.isDark,
+    required this.color,
+    required this.backgroundColor,
+  });
   
   @override
   void paint(Canvas canvas, Size size) {
@@ -520,19 +526,18 @@ class _EclipsePainter extends CustomPainter {
     canvas.drawCircle(center, radius, paint);
     
     if (isDark) {
-      final clearPaint = Paint()
-        ..blendMode = BlendMode.clear;
+      final cutoutPaint = Paint()
+        ..color = backgroundColor
+        ..style = PaintingStyle.fill;
       
-      canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
-      canvas.drawCircle(center, radius, paint);
-      
-      final eclipseCenter = Offset(center.dx + radius * 0.35, center.dy - radius * 0.35);
-      canvas.drawCircle(eclipseCenter, radius * 0.7, clearPaint);
-      canvas.restore();
+      final eclipseCenter = Offset(center.dx + radius * 0.4, center.dy - radius * 0.4);
+      canvas.drawCircle(eclipseCenter, radius * 0.75, cutoutPaint);
     }
   }
   
   @override
   bool shouldRepaint(_EclipsePainter oldDelegate) => 
-      isDark != oldDelegate.isDark || color != oldDelegate.color;
+      isDark != oldDelegate.isDark || 
+      color != oldDelegate.color ||
+      backgroundColor != oldDelegate.backgroundColor;
 }
