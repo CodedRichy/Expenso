@@ -137,7 +137,11 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### UpiPaymentService
 
-**Location:** `lib/services/upi_payment_service.dart` — Stateless. Generates UPI deep links for direct peer-to-peer payments based on settlement routes from `SettlementEngine.computePaymentRoutes()`. `UpiPaymentData` holds payee UPI ID, name, amount (minor units), and transaction note. `createPaymentData(payeeUpiId, payeeName, amountMinor, groupName)` builds payment data with note format "Expenso • {GroupName} • Cycle". `launchUpiPayment(data)` opens UPI app via `url_launcher`; returns `UpiLaunchResult` (launched, noUpiApp, failed). On `noUpiApp`, UI shows QR code fallback via `qr_flutter`. Payments are **not tracked automatically** — users confirm with their group after paying. No Razorpay/escrow involvement.
+**Location:** `lib/services/upi_payment_service.dart` — Stateless. Generates UPI deep links for direct peer-to-peer payments based on settlement routes from `SettlementEngine.computePaymentRoutes()`. `UpiPaymentData` holds payee UPI ID, name, amount (minor units), and transaction note. `createPaymentData(payeeUpiId, payeeName, amountMinor, groupName)` builds payment data with note format "Expenso • {GroupName} • Cycle". `launchUpiPayment(data)` opens UPI app via `url_launcher`; returns `UpiLaunchResult` (launched, noUpiApp, failed). On `noUpiApp`, UI shows QR code fallback via `qr_flutter`. No Razorpay/escrow involvement.
+
+### PaymentAttempt
+
+**Location:** `lib/models/payment_attempt.dart` — Tracks state of each UPI payment attempt. `PaymentAttemptStatus` enum: `notStarted`, `initiated`, `confirmedByPayer`, `confirmedByReceiver`, `disputed`. When user taps "Pay via UPI", state transitions to `initiated` and persists to Firestore (`groups/{groupId}/payment_attempts`). After returning to app, user sees "Mark as paid" button; on tap → `confirmedByPayer`. Receiver can later confirm with `confirmedByReceiver`. Payments are **not auto-confirmed** — explicit user action required. `PaymentAttempt` stores `groupId`, `cycleId`, `fromMemberId`, `toMemberId`, `amountMinor`, `currencyCode`, `status`, `createdAt`, `initiatedAt`, `confirmedAt`. CycleRepository methods: `loadPaymentAttempts`, `getOrCreatePaymentAttempt`, `markPaymentInitiated`, `markPaymentConfirmedByPayer`, `markPaymentConfirmedByReceiver`, `markPaymentDisputed`.
 
 ### CycleRepository
 
@@ -152,7 +156,8 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`, `getMemberUpiId(memberId)`. `setGlobalProfile` persists name to Firestore and local cache. All profile updates sync to `UserProfileCache` for instant availability on next cold start. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
-| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor, for Razorpay settlement. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
+| **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
+| **Payment Attempts** | `loadPaymentAttempts(groupId)` fetches from Firestore; `getPaymentAttempts(groupId)` returns cached list; `getPaymentAttemptForRoute(groupId, fromId, toId)` finds attempt by route. `getOrCreatePaymentAttempt(...)` creates if missing. `markPaymentInitiated`, `markPaymentConfirmedByPayer`, `markPaymentConfirmedByReceiver`, `markPaymentDisputed` update status with timestamps. State persists in `groups/{groupId}/payment_attempts`. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. **Phone→UID** resolution uses `_uidForPhone` with normalized phone (digits, last 10 for IN) so parser-derived participants are not dropped when formats differ. On read, `_expenseFromFirestore` builds `participantPhones` and `splitAmountsByPhone` from `splits` and reads `splitType`; edit expense and balances use this saved data. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 | **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
@@ -164,6 +169,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 **Location:** `lib/models/`
 
 - **models.dart** — `Group`, `Member` (optional `photoURL` for avatar), `Expense` (participantIds, paidById, splitAmountsById; category; splitType; `displayDate` getter returns human-friendly format: "Today", "Yesterday", "3 days ago", "Feb 15", "Feb 15, 2025". All person references use member id, not phone.), `SettlementTransfer` (creditorPhone, creditorDisplayName, amount — phone/name filled from uid for display)
+- **payment_attempt.dart** — `PaymentAttemptStatus` (notStarted, initiated, confirmedByPayer, confirmedByReceiver, disputed), `PaymentAttempt` (id, groupId, cycleId, fromMemberId, toMemberId, amountMinor, currencyCode, status, createdAt, initiatedAt, confirmedAt). Tracks UPI payment state with Firestore persistence.
 - **cycle.dart** — `CycleStatus` (active, settling, closed), `Cycle`
 - **utils/expense_validation.dart** — `validateExpenseAmount`, `validateExpenseDescription`; repo throws `ArgumentError` with message when invalid; UI shows snackbar.
 - **utils/settlement_engine.dart** — `Debt` (fromId, toId, amount), `SettlementEngine.computeDebts(expenses, members)` (who owes whom), `SettlementEngine.computeNetBalances(expenses, members)` (member id → net: + credit, − debt). Used by Group Detail **Balances** and **Decision Clarity** card (“Your Status”).
@@ -317,6 +323,7 @@ lib/
     currency.dart              # Currency, CurrencyRegistry (ISO 4217 metadata)
     money_minor.dart           # MoneyMinor, MoneyConversion, MoneySplitter (integer money)
     normalized_expense.dart    # NormalizedExpense (UI-agnostic, ID-only, integer-based)
+    payment_attempt.dart       # PaymentAttempt, PaymentAttemptStatus (UPI payment state tracking)
   repositories/
     cycle_repository.dart      # Singleton; Firestore-backed (groups, members, cycles, expenses, identity)
   services/

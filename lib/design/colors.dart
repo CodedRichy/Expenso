@@ -30,6 +30,7 @@ abstract final class AppColors {
   static const destructive = Color(0xFFD32F2F);
   static const success = Color(0xFF2E7D32);
   static const successLight = Color(0xFF66BB6A);
+  static const successBackground = Color(0xFFE8F5E9);
   static const debtRed = Color(0xFFEF5350);
 
   // Disabled States

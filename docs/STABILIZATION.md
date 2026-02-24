@@ -98,22 +98,31 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 ### Settlement Flow
 
 1. User taps "Settle now" with dues → navigates to settlement confirmation
-2. `SettlementEngine.computePaymentRoutes()` derives minimal payment routes
-3. `getPaymentsForMember()` filters to current user's outgoing payments
-4. `UpiPaymentCard` shown per route with payee name, amount, UPI button
-5. Tap "Pay via UPI" → `UpiPaymentService.launchUpiPayment()` opens UPI app
-6. If no UPI app installed → QR code shown for scanning
-7. **Payments not tracked automatically** — user confirms externally with group
-8. Creator taps "Settle now" with no dues → `settleAndRestartCycle(groupId)` called
-9. Firestore updated: `cycleStatus: 'settling'`
-10. UI shows settling state, expense editing disabled
-11. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
-6. `FirestoreService.archiveCycleExpenses()`:
-   - Copies all expense docs to `settled_cycles/{cycleId}/expenses`
-   - Deletes expense docs from current location
-   - Creates cycle metadata doc
-7. Group updated: `activeCycleId: new_id`, `cycleStatus: 'active'`
-8. New empty cycle begins
+2. `CycleRepository.loadPaymentAttempts()` fetches existing attempts from Firestore
+3. `SettlementEngine.computePaymentRoutes()` derives minimal payment routes
+4. `getPaymentsForMember()` filters to current user's outgoing payments
+5. `UpiPaymentCard` shown per route with payee name, amount, status, UPI button
+6. Tap "Pay via UPI":
+   - `getOrCreatePaymentAttempt()` creates/retrieves `PaymentAttempt` in Firestore
+   - `markPaymentInitiated()` updates status to `initiated` with timestamp
+   - `UpiPaymentService.launchUpiPayment()` opens UPI app
+7. If no UPI app installed → QR code shown for scanning (status still `initiated`)
+8. User returns to app → sees "Mark as paid" button for `initiated` payments
+9. Tap "Mark as paid" → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
+10. Card shows green checkmark, amount struck through for confirmed payments
+11. **Payments never auto-confirmed** — explicit user action required
+12. Optional: Receiver can call `markPaymentConfirmedByReceiver()` for full confirmation
+13. Creator taps "Settle now" with no dues → `settleAndRestartCycle(groupId)` called
+14. Firestore updated: `cycleStatus: 'settling'`
+15. UI shows settling state, expense editing disabled
+16. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
+17. `FirestoreService.archiveCycleExpenses()`:
+    - Copies all expense docs to `settled_cycles/{cycleId}/expenses`
+    - Deletes expense docs from current location
+    - Creates cycle metadata doc
+18. Payment attempts for archived cycle can be deleted via `deletePaymentAttemptsForCycle()`
+19. Group updated: `activeCycleId: new_id`, `cycleStatus: 'active'`
+20. New empty cycle begins
 
 ### State Locations
 
@@ -125,6 +134,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 | Members | `CycleRepository._membersById` + `_userCache` | Cache (Firestore is source) |
 | Pinned groups | `PinnedGroupsService` (SharedPreferences) | Yes (local only) |
 | Balances/Debts | Computed on demand | Derived (not stored) |
+| Payment attempts | `CycleRepository._paymentAttemptsByGroup` | Cache (Firestore is source) |
 
 ---
 

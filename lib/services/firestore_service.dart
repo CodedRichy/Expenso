@@ -34,6 +34,7 @@ class FirestorePaths {
   static const String systemMessages = 'system_messages';
   static const String expenseRevisions = 'expense_revisions';
   static const String deletedExpenses = 'deleted_expenses';
+  static const String paymentAttempts = 'payment_attempts';
 
   static String groupDoc(String groupId) => '$groups/$groupId';
   static String groupExpenses(String groupId) => '$groups/$groupId/$expenses';
@@ -44,6 +45,7 @@ class FirestorePaths {
       '$groups/$groupId/$settledCycles/$cycleId/$expenses';
   static String groupExpenseRevisions(String groupId) => '$groups/$groupId/$expenseRevisions';
   static String groupDeletedExpenses(String groupId) => '$groups/$groupId/$deletedExpenses';
+  static String groupPaymentAttempts(String groupId) => '$groups/$groupId/$paymentAttempts';
 }
 
 /// Low-level Firestore access for users, groups, and expenses.
@@ -546,6 +548,70 @@ class FirestoreService {
     final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
     list.sort((a, b) => _compareExpenseDocs(a, b));
     return list;
+  }
+
+  // ============================================================
+  // PAYMENT ATTEMPTS
+  // ============================================================
+
+  /// Create or update a payment attempt.
+  Future<void> setPaymentAttempt(
+    String groupId,
+    String attemptId,
+    Map<String, dynamic> data,
+  ) async {
+    final ref = _firestore
+        .collection(FirestorePaths.groupPaymentAttempts(groupId))
+        .doc(attemptId);
+    await ref.set(data, SetOptions(merge: true));
+  }
+
+  /// Get all payment attempts for a group's current cycle.
+  Future<List<DocView>> getPaymentAttempts(String groupId, String cycleId) async {
+    final snap = await _firestore
+        .collection(FirestorePaths.groupPaymentAttempts(groupId))
+        .where('cycleId', isEqualTo: cycleId)
+        .get();
+    return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+  }
+
+  /// Stream payment attempts for a group's current cycle.
+  Stream<List<DocView>> paymentAttemptsStream(String groupId, String cycleId) {
+    return _firestore
+        .collection(FirestorePaths.groupPaymentAttempts(groupId))
+        .where('cycleId', isEqualTo: cycleId)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList());
+  }
+
+  /// Update payment attempt status.
+  Future<void> updatePaymentAttemptStatus(
+    String groupId,
+    String attemptId,
+    String status, {
+    int? initiatedAt,
+    int? confirmedAt,
+  }) async {
+    final ref = _firestore
+        .collection(FirestorePaths.groupPaymentAttempts(groupId))
+        .doc(attemptId);
+    final data = <String, dynamic>{'status': status};
+    if (initiatedAt != null) data['initiatedAt'] = initiatedAt;
+    if (confirmedAt != null) data['confirmedAt'] = confirmedAt;
+    await ref.update(data);
+  }
+
+  /// Delete all payment attempts for a cycle (called when archiving).
+  Future<void> deletePaymentAttemptsForCycle(String groupId, String cycleId) async {
+    final snap = await _firestore
+        .collection(FirestorePaths.groupPaymentAttempts(groupId))
+        .where('cycleId', isEqualTo: cycleId)
+        .get();
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 
 }

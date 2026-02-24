@@ -413,6 +413,32 @@ The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amountM
 
 ---
 
+### 15. PaymentAttempt
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Event / State Tracker |
+| **Ideal Mutability** | **Status Mutable** |
+| **Storage** | Firestore (`groups/{groupId}/payment_attempts/{attemptId}`) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique attempt ID (format: `pa_{timestamp}`) |
+| `groupId` | `String` | Parent group ID |
+| `cycleId` | `String` | Cycle this payment belongs to |
+| `fromMemberId` | `String` | Payer member ID |
+| `toMemberId` | `String` | Payee member ID |
+| `amountMinor` | `int` | Payment amount in minor units |
+| `currencyCode` | `String` | ISO 4217 currency code |
+| `status` | `String` | One of: `not_started`, `initiated`, `confirmed_by_payer`, `confirmed_by_receiver`, `disputed` |
+| `createdAt` | `int` | Epoch millis when attempt was created |
+| `initiatedAt` | `int?` | Epoch millis when UPI app was launched |
+| `confirmedAt` | `int?` | Epoch millis when marked as paid |
+
+**Notes:** Tracks state of each UPI payment. Created lazily when user first taps "Pay via UPI" for a route. State machine: `notStarted` → `initiated` (on UPI launch) → `confirmedByPayer` (on "Mark as paid") → optionally `confirmedByReceiver` (on receiver confirmation). `disputed` state available for conflict resolution. Payments are **never auto-confirmed**; explicit user action required. Attempts persist per-cycle; deleted when cycle archives.
+
+---
+
 ## Invariants Implied by This Spine
 
 1. **Expense amounts must be positive and finite** — enforced

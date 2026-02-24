@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../models/cycle.dart';
 import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
+import '../models/payment_attempt.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../services/user_profile_cache.dart';
@@ -1373,6 +1374,139 @@ class CycleRepository extends ChangeNotifier {
       if (creditor.amount < 0.01) c++;
     }
     return result;
+  }
+
+  // ============================================================
+  // PAYMENT ATTEMPTS
+  // ============================================================
+
+  final Map<String, List<PaymentAttempt>> _paymentAttemptsByGroup = {};
+
+  List<PaymentAttempt> getPaymentAttempts(String groupId) {
+    return _paymentAttemptsByGroup[groupId] ?? [];
+  }
+
+  PaymentAttempt? getPaymentAttemptForRoute(String groupId, String fromId, String toId) {
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    final routeKey = '${fromId}_$toId';
+    for (final attempt in attempts) {
+      if (attempt.routeKey == routeKey) return attempt;
+    }
+    return null;
+  }
+
+  Future<void> loadPaymentAttempts(String groupId) async {
+    final meta = _groupMeta[groupId];
+    if (meta == null) return;
+    
+    final docs = await FirestoreService.instance.getPaymentAttempts(groupId, meta.activeCycleId);
+    _paymentAttemptsByGroup[groupId] = docs
+        .map((d) => PaymentAttempt.fromFirestore(d.id, d.data()))
+        .toList();
+    notifyListeners();
+  }
+
+  Future<PaymentAttempt> getOrCreatePaymentAttempt({
+    required String groupId,
+    required String fromMemberId,
+    required String toMemberId,
+    required int amountMinor,
+    String currencyCode = 'INR',
+  }) async {
+    final meta = _groupMeta[groupId];
+    if (meta == null) throw StateError('Group not loaded');
+
+    final existing = getPaymentAttemptForRoute(groupId, fromMemberId, toMemberId);
+    if (existing != null) return existing;
+
+    final attempt = PaymentAttempt.create(
+      groupId: groupId,
+      cycleId: meta.activeCycleId,
+      fromMemberId: fromMemberId,
+      toMemberId: toMemberId,
+      amountMinor: amountMinor,
+      currencyCode: currencyCode,
+    );
+
+    await FirestoreService.instance.setPaymentAttempt(
+      groupId,
+      attempt.id,
+      attempt.toFirestore(),
+    );
+
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    attempts.add(attempt);
+    _paymentAttemptsByGroup[groupId] = attempts;
+    notifyListeners();
+
+    return attempt;
+  }
+
+  Future<void> markPaymentInitiated(String groupId, String attemptId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.initiated.firestoreValue,
+      initiatedAt: now,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.initiated, initiatedAt: now);
+  }
+
+  Future<void> markPaymentConfirmedByPayer(String groupId, String attemptId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.confirmedByPayer.firestoreValue,
+      confirmedAt: now,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByPayer, confirmedAt: now);
+  }
+
+  Future<void> markPaymentConfirmedByReceiver(String groupId, String attemptId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.confirmedByReceiver.firestoreValue,
+      confirmedAt: now,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByReceiver, confirmedAt: now);
+  }
+
+  Future<void> markPaymentDisputed(String groupId, String attemptId) async {
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.disputed.firestoreValue,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.disputed);
+  }
+
+  void _updateLocalAttemptStatus(
+    String groupId,
+    String attemptId,
+    PaymentAttemptStatus status, {
+    int? initiatedAt,
+    int? confirmedAt,
+  }) {
+    final attempts = _paymentAttemptsByGroup[groupId];
+    if (attempts == null) return;
+
+    final index = attempts.indexWhere((a) => a.id == attemptId);
+    if (index == -1) return;
+
+    attempts[index] = attempts[index].copyWith(
+      status: status,
+      initiatedAt: initiatedAt,
+      confirmedAt: confirmedAt,
+    );
+    notifyListeners();
   }
 
   /// Phase 1 (Freeze): Sets the current cycle's status to settling. Creator-only.
