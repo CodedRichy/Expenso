@@ -99,7 +99,7 @@ class ErrorStates extends StatelessWidget {
                       child: const Icon(Icons.access_time, color: AppColors.textSecondary, size: 32),
                     ),
                     const SizedBox(height: 32),
-                    const Text(
+                    Text(
                       'Session expired',
                       textAlign: TextAlign.center,
                       style: context.subheader,
@@ -163,7 +163,7 @@ class ErrorStates extends StatelessWidget {
                           child: const Icon(Icons.payment, color: AppColors.textSecondary, size: 32),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
+                        Text(
                           'Payment unavailable',
                           textAlign: TextAlign.center,
                           style: context.subheader,
@@ -228,7 +228,7 @@ class ErrorStates extends StatelessWidget {
                         child: const Icon(Icons.refresh, color: AppColors.textSecondary, size: 32),
                       ),
                       const SizedBox(height: 32),
-                      const Text(
+                      Text(
                         'Something went wrong',
                         textAlign: TextAlign.center,
                         style: context.subheader,

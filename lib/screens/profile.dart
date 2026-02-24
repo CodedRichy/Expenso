@@ -132,25 +132,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.chevron_left, size: 24),
-                        color: const Color(0xFF1A1A1A),
+                        color: Theme.of(context).colorScheme.onSurface,
                         padding: EdgeInsets.zero,
                         style: IconButton.styleFrom(
                           minimumSize: const Size(32, 32),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Profile',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      const _ThemeToggleButton(),
                     ],
                   ),
                 ),
@@ -378,82 +378,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                // Appearance Settings
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [_blackGradientStart, _blackGradientEnd],
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.palette_outlined,
-                              size: 20,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Appearance',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.95),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ListenableBuilder(
-                          listenable: ThemeService.instance,
-                          builder: (context, _) {
-                            return Row(
-                              children: [
-                                _ThemeOption(
-                                  icon: Icons.brightness_auto,
-                                  label: 'System',
-                                  selected: ThemeService.instance.themeMode == ThemeMode.system,
-                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.system),
-                                ),
-                                const SizedBox(width: 12),
-                                _ThemeOption(
-                                  icon: Icons.light_mode,
-                                  label: 'Light',
-                                  selected: ThemeService.instance.themeMode == ThemeMode.light,
-                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.light),
-                                ),
-                                const SizedBox(width: 12),
-                                _ThemeOption(
-                                  icon: Icons.dark_mode,
-                                  label: 'Dark',
-                                  selected: ThemeService.instance.themeMode == ThemeMode.dark,
-                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.dark),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -499,56 +423,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class _ThemeToggleButton extends StatelessWidget {
+  const _ThemeToggleButton();
 
-  const _ThemeOption({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  void _cycleTheme() {
+    final current = ThemeService.instance.themeMode;
+    final next = switch (current) {
+      ThemeMode.system => ThemeMode.light,
+      ThemeMode.light => ThemeMode.dark,
+      ThemeMode.dark => ThemeMode.system,
+    };
+    ThemeService.instance.setThemeMode(next);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? Colors.white.withValues(alpha: 0.15)
-                : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: selected
-                ? Border.all(color: Colors.white24)
-                : null,
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 24,
-                color: selected ? Colors.white : Colors.white60,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? Colors.white : Colors.white60,
+    final theme = Theme.of(context);
+    
+    return ListenableBuilder(
+      listenable: ThemeService.instance,
+      builder: (context, _) {
+        final mode = ThemeService.instance.themeMode;
+        final isDark = mode == ThemeMode.dark || 
+            (mode == ThemeMode.system && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        
+        return GestureDetector(
+          onTap: _cycleTheme,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return RotationTransition(
+                    turns: Tween(begin: 0.5, end: 1.0).animate(
+                      CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                    ),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: CustomPaint(
+                  key: ValueKey(isDark),
+                  size: const Size(22, 22),
+                  painter: _EclipsePainter(
+                    isDark: isDark,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+}
+
+class _EclipsePainter extends CustomPainter {
+  final bool isDark;
+  final Color color;
+  
+  _EclipsePainter({required this.isDark, required this.color});
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    
+    canvas.drawCircle(center, radius, paint);
+    
+    if (isDark) {
+      final clearPaint = Paint()
+        ..blendMode = BlendMode.clear;
+      
+      canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
+      canvas.drawCircle(center, radius, paint);
+      
+      final eclipseCenter = Offset(center.dx + radius * 0.35, center.dy - radius * 0.35);
+      canvas.drawCircle(eclipseCenter, radius * 0.7, clearPaint);
+      canvas.restore();
+    }
+  }
+  
+  @override
+  bool shouldRepaint(_EclipsePainter oldDelegate) => 
+      isDark != oldDelegate.isDark || color != oldDelegate.color;
 }

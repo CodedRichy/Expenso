@@ -904,14 +904,14 @@ class _DecisionClarityCard extends StatelessWidget {
       children: [
         Text(
           'Cycle Total',
-          style: context.sectionLabel.copyWith(
+          style: AppTypography.sectionLabel.copyWith(
             color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
           '₹${_fmtRupee(cycleTotal)}',
-          style: context.amountLG.copyWith(color: Colors.white),
+          style: AppTypography.amountLG.copyWith(color: Colors.white),
         ),
         SizedBox(height: AppSpacing.spaceXl),
         Row(
@@ -922,7 +922,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 children: [
                   Text(
                     'You Paid',
-                    style: context.captionSmall.copyWith(
+                    style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
@@ -930,7 +930,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   SizedBox(height: AppSpacing.space2xs),
                   Text(
                     '₹${_fmtRupee(youPaid)}',
-                    style: context.amountSM.copyWith(
+                    style: AppTypography.amountSM.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                     ),
                   ),
@@ -943,7 +943,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 children: [
                   Text(
                     hasPaymentProgress ? 'Remaining' : 'Your Status',
-                    style: context.captionSmall.copyWith(
+                    style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
@@ -952,12 +952,12 @@ class _DecisionClarityCard extends StatelessWidget {
                   if (hasPaymentProgress && !isBalanceClear) ...[
                     Text(
                       statusText,
-                      style: context.amountSM.copyWith(color: statusColor),
+                      style: AppTypography.amountSM.copyWith(color: statusColor),
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
                       'was ${myNet < 0 ? '-' : '+'}₹${_fmtRupee(myNet.abs())}',
-                      style: context.captionSmall.copyWith(
+                      style: AppTypography.captionSmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.5),
                         decoration: TextDecoration.lineThrough,
                       ),
@@ -965,7 +965,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   ] else
                     Text(
                       statusText,
-                      style: context.amountSM.copyWith(color: statusColor),
+                      style: AppTypography.amountSM.copyWith(color: statusColor),
                     ),
                 ],
               ),
@@ -1081,7 +1081,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
             Expanded(
               child: Text(
                 'You\'re all settled up',
-                style: context.listItemTitle,
+                style: AppTypography.listItemTitle,
               ),
             ),
           ],
@@ -1104,12 +1104,12 @@ class _SettlementDetailsSheet extends StatelessWidget {
         children: [
           Text(
             label,
-            style: context.caption.copyWith(color: color),
+            style: AppTypography.caption.copyWith(color: color),
           ),
           SizedBox(height: AppSpacing.spaceXs),
           Text(
             amount,
-            style: context.amountLG.copyWith(color: color),
+            style: AppTypography.amountLG.copyWith(color: color),
           ),
         ],
       ),
@@ -1122,7 +1122,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Text('BREAKDOWN', style: context.sectionLabel),
+          child: Text('BREAKDOWN', style: AppTypography.sectionLabel),
         ),
         SizedBox(height: AppSpacing.spaceLg),
         ...myDebts.map((debt) {
@@ -1158,7 +1158,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(otherName, style: context.listItemTitle),
+                          Text(otherName, style: AppTypography.listItemTitle),
                           if (showPendingBadge) ...[
                             SizedBox(width: AppSpacing.spaceSm),
                             Container(
@@ -1169,7 +1169,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                               ),
                               child: Text(
                                 'Pending',
-                                style: context.captionSmall.copyWith(
+                                style: AppTypography.captionSmall.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 10,
@@ -1182,7 +1182,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                       SizedBox(height: AppSpacing.space2xs),
                       Text(
                         direction,
-                        style: context.captionSmall.copyWith(
+                        style: AppTypography.captionSmall.copyWith(
                           color: directionColor,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1192,7 +1192,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 ),
                 Text(
                   '₹${_fmtRupee(amountDisplay)}',
-                  style: context.amountSM.copyWith(color: directionColor),
+                      style: AppTypography.amountSM.copyWith(color: directionColor),
                 ),
               ],
             ),
@@ -1748,21 +1748,30 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5E5);
+    final iconColor = theme.colorScheme.onSurfaceVariant;
+    final textColor = theme.colorScheme.onSurface;
+    final hintColor = theme.colorScheme.onSurfaceVariant;
+    final buttonBgColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFF0F0F0);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: const Color(0xFFE5E5E5), width: 1),
+          top: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A1A1A).withValues(alpha: 0.06),
+              color: (isDark ? Colors.black : const Color(0xFF1A1A1A)).withValues(alpha: isDark ? 0.3 : 0.06),
               blurRadius: 12,
               offset: const Offset(0, 2),
             ),
@@ -1791,7 +1800,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
               icon: Icon(
                 Icons.keyboard_alt_outlined,
                 size: 22,
-                color: const Color(0xFF6B6B6B),
+                color: iconColor,
               ),
               style: IconButton.styleFrom(
                 padding: const EdgeInsets.all(8),
@@ -1809,7 +1818,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                       ? 'AI cooling down — use keyboard for manual entry'
                       : 'e.g. Dinner 500 with Ash',
                   hintStyle: TextStyle(
-                    color: _inCooldown ? const Color(0xFF6B6B6B) : const Color(0xFFB0B0B0),
+                    color: hintColor,
                     fontSize: 17,
                   ),
                   border: InputBorder.none,
@@ -1820,7 +1829,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   isDense: true,
                 ),
-                style: const TextStyle(fontSize: 17, color: Color(0xFF1A1A1A)),
+                style: TextStyle(fontSize: 17, color: textColor),
               ),
             ),
             const SizedBox(width: 8),
@@ -1834,7 +1843,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: const Color(0xFF1A1A1A),
+                      color: textColor,
                     ),
                   ),
                 ),
@@ -1851,12 +1860,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   color: (_sendAllowed &&
                           _controller.text.trim().isNotEmpty &&
                           !_inCooldown)
-                      ? const Color(0xFF1A1A1A)
-                      : const Color(0xFFB0B0B0),
+                      ? textColor
+                      : hintColor,
                   size: 24,
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFFF0F0F0),
+                  backgroundColor: buttonBgColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),

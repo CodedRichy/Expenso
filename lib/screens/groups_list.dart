@@ -635,13 +635,13 @@ class _BoundedGroupsLoading extends StatelessWidget {
               children: [
                 Icon(Icons.hourglass_empty, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Taking longer than expected',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Check your connection',
                   style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,

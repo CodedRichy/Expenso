@@ -87,7 +87,7 @@ class SyncStatusIndicator extends StatelessWidget {
           const SizedBox(width: AppSpacing.spaceMd),
           Text(
             text,
-            style: context.captionSmall.copyWith(
+            style: AppTypography.captionSmall.copyWith(
               color: color,
               fontWeight: FontWeight.w500,
             ),
