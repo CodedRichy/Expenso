@@ -608,7 +608,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               icon: const Icon(Icons.payments_outlined, size: 16),
               label: const Text('Paid via cash'),
               style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                foregroundColor: isDark ? Colors.white : const Color(0xFF1A1A1A),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.spaceMd,
                   vertical: AppSpacing.spaceXs,
@@ -623,6 +623,9 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
   Widget _buildCashPaymentOption() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final buttonBg = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final buttonFg = isDark ? Colors.black : Colors.white;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -654,19 +657,20 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
         const SizedBox(height: AppSpacing.spaceMd),
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
+          child: ElevatedButton.icon(
             onPressed: widget.onPaidViaCash,
             icon: const Icon(Icons.payments_outlined, size: 18),
             label: const Text('Paid via cash'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurfaceVariant,
-              side: BorderSide(color: theme.dividerColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonBg,
+              foregroundColor: buttonFg,
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.spaceLg,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 0,
             ),
           ),
         ),

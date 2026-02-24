@@ -851,10 +851,10 @@ class _DecisionClarityCard extends StatelessWidget {
                 offset: const Offset(0, 6),
               ),
             ],
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.gradientStart, AppColors.gradientEnd],
+              colors: [context.colorGradientStart, context.colorGradientEnd],
             ),
           ),
           child: ClipRRect(
@@ -1011,9 +1011,13 @@ class _SettlementDetailsSheet extends StatelessWidget {
     final myDebts = debts.where((d) => d.fromId == myId || d.toId == myId).toList();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [context.colorGradientStart, context.colorGradientEnd],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         top: false,
@@ -1027,7 +1031,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1038,9 +1042,9 @@ class _SettlementDetailsSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Settlement details', style: context.screenTitle),
+                  Text('Settlement details', style: context.screenTitle.copyWith(color: Colors.white)),
                   SizedBox(height: AppSpacing.spaceXs),
-                  Text(groupName, style: context.bodySecondary),
+                  Text(groupName, style: context.bodySecondary.copyWith(color: Colors.white.withValues(alpha: 0.7))),
                 ],
               ),
             ),
@@ -1058,7 +1062,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.space4xl),
                     child: Text(
                       'All settled 🎉',
-                      style: context.subheader.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      style: context.subheader.copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -1128,7 +1132,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Text('BREAKDOWN', style: AppTypography.sectionLabel),
+          child: Text('BREAKDOWN', style: AppTypography.sectionLabel.copyWith(color: Colors.white.withValues(alpha: 0.7))),
         ),
         SizedBox(height: AppSpacing.spaceLg),
         ...myDebts.map((debt) {
@@ -1151,7 +1155,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: AppColors.border, width: 1),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1),
               ),
             ),
             child: Row(
@@ -1164,7 +1168,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(otherName, style: AppTypography.listItemTitle),
+                          Text(otherName, style: AppTypography.listItemTitle.copyWith(color: Colors.white)),
                           if (showPendingBadge) ...[
                             SizedBox(width: AppSpacing.spaceSm),
                             Container(

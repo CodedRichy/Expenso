@@ -76,9 +76,9 @@ abstract final class AppColorsDark {
   static const disabledBackground = Color(0xFF2A2A2A);
   static const disabledForeground = Color(0xFF606060);
 
-  static const gradientStart = Color(0xFFE5E5E5);
-  static const gradientMid = Color(0xFFB0B0B0);
-  static const gradientEnd = Color(0xFF808080);
+  static const gradientStart = Color(0xFF2C3E50);
+  static const gradientMid = Color(0xFF3D5A6C);
+  static const gradientEnd = Color(0xFF4A6572);
 }
 
 extension AppColorsX on BuildContext {

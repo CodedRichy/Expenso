@@ -600,6 +600,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             decoration: BoxDecoration(
               color: AppColors.warningBackground,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -609,7 +610,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   child: Text(
                     'After paying via UPI, tap "Mark as paid" to record your payment.',
                     style: context.caption.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

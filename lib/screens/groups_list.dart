@@ -62,10 +62,10 @@ class _GroupsListState extends State<GroupsList> {
 
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
-      AppColors.gradientStart,
+      context.colorGradientStart,
       AppColors.primaryVariant,
-      AppColors.gradientMid,
-      AppColors.gradientEnd,
+      context.colorGradientMid,
+      context.colorGradientEnd,
     ];
     final bgColor = colors[index % colors.length];
     
@@ -190,27 +190,31 @@ class _GroupsListState extends State<GroupsList> {
               ),
             ),
             const SizedBox(height: 24),
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Text(
-                  invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
+            Builder(
+              builder: (context) {
+                return Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [context.colorGradientStart, context.colorGradientEnd],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ),
-              ),
+                  child: Center(
+                    child: Text(
+                      invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Text(
