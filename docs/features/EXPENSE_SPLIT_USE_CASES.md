@@ -2,7 +2,7 @@
 
 Reference for split semantics, who-paid scenarios, and edge cases so the app stays consistent across Magic Bar, manual entry, and settlement.
 
-**AI scenario selection:** The expense parser prompt (model-agnostic; works with any LLM) includes a **SCENARIO** section so the model infers, in order: (1) who paid, (2) who shares the cost, (3) split type. The model chooses the scenario from natural language (e.g. "Rockey paid 200" → payer Rockey, participants [], even). No separate classifier; the same LLM does disambiguation via the structured prompt and few-shot examples. See `lib/services/groq_expense_parser_service.dart` (_buildSystemPrompt).
+**AI scenario selection:** The expense parser prompt (model-agnostic; works with any LLM) includes a **SCENARIO** section so the model infers, in order: (1) who paid, (2) who shares the cost, (3) split type. The model chooses the scenario from natural language (e.g. "Ash paid 200" → payer Ash, participants [], even). No separate classifier; the same LLM does disambiguation via the structured prompt and few-shot examples. See `lib/services/groq_expense_parser_service.dart` (_buildSystemPrompt).
 
 ---
 
@@ -23,7 +23,7 @@ Reference for split semantics, who-paid scenarios, and edge cases so the app sta
 | Phrase / case | Payer | Participants (even) | Result |
 |---------------|--------|----------------------|--------|
 | “I paid 500” / “paid 500” / no payer | Current user | From “with X” or [] = everyone | You paid; split by participants or everyone |
-| “Rockey paid 200” / “paid by Rockey” | Rockey | [] = **everyone** (not just payer) | Rockey paid; everyone owes equal share (e.g. 2 people → 100 each) |
+| “Ash paid 200” / “paid by Ash” | Ash | [] = **everyone** (not just payer) | Ash paid; everyone owes equal share (e.g. 2 people → 100 each) |
 | “Alice paid for me 1200” | Alice | [] = everyone | Alice paid; even split including you |
 | “Bob paid 500 for dinner” | Bob | [] = everyone | Bob paid; even split |
 
@@ -38,21 +38,21 @@ Reference for split semantics, who-paid scenarios, and edge cases so the app sta
 | “everyone” / “all” / “with everyone” | [] | allPhones | Chips for all members |
 | “with Bob” | [Bob] | [Bob] + you (implicit) | You + Bob chips, 50–50 |
 | “with Alice and Bob” | [Alice, Bob] | [Alice, Bob] + you | Three-way even |
-| “rockey paid 200” (no “with”) | [] | allPhones | Chips for all (e.g. You 100, Rockey 100) |
+| “ash paid 200” (no “with”) | [] | allPhones | Chips for all (e.g. You 100, Ash 100) |
 | “only me and Bob” | exclude others | Exclude: [Alice, Carol…] | Even between you and Bob |
 
 Manual entry: “Who’s involved” = explicit set; if empty, repo uses allPhones for Even (same as Magic Bar).
 
 ---
 
-## 4. Two-person group (Rishi + Rockey)
+## 4. Two-person group (You + Ash)
 
 | Scenario | Expected cycle total | Your share | Your status |
 |----------|----------------------|------------|-------------|
-| “rockey paid 200” (even, everyone) | 200 | 100 | −100 (you owe 100) |
-| “I paid 200” (even, everyone) | 200 | 100 | +100 (Rockey owes you 100) |
-| “200 with Rockey” (you paid) | 200 | 100 | +100 |
-| “rockey paid 200 with me” (explicit) | 200 | 100 | −100 |
+| “ash paid 200” (even, everyone) | 200 | 100 | −100 (you owe 100) |
+| “I paid 200” (even, everyone) | 200 | 100 | +100 (Ash owes you 100) |
+| “200 with Ash” (you paid) | 200 | 100 | +100 |
+| “ash paid 200 with me” (explicit) | 200 | 100 | −100 |
 
 Implementation: Even + `participantPhones.isEmpty` → repo uses `allPhones`; confirmation dialog builds slots for all members when `participantNames.isEmpty`.
 

@@ -24,7 +24,7 @@ V4 establishes the infrastructure for cross-group intelligence and the signature
 
 | Area | Description | Priority | Dependencies | Status |
 |------|-------------|----------|--------------|--------|
-| **Cross-group identity** | Unify member identity across groups using phone number as canonical ID. Same person in Group A and Group B resolves to one identity. Used for unified display names. | P0 | None | ✅ Implemented |
+| **Cross-group identity** | Unify member identity across groups using phone number as canonical ID. Ashe person in Group A and Group B resolves to one identity. Used for unified display names. | P0 | None | ✅ Implemented |
 | **Global balance view** | ~~New screen showing net balance with each contact across all groups.~~ | P0 | Cross-group identity | ❌ Removed — violates group-centric philosophy |
 | **Debt minimization ("God Mode")** | ~~Optimize payment paths across groups.~~ | P1 | Cross-group identity | ❌ Removed — violates group-centric philosophy |
 | **Cloud sync status** | Track sync state (synced/syncing/offline/error) for UI feedback. | P1 | None | ✅ Implemented (SyncStatusService) |
@@ -36,7 +36,7 @@ V4 establishes the infrastructure for cross-group intelligence and the signature
 
 ### 4.1 Cross-Group Identity
 
-**Problem:** Currently, members are stored per-group with phone as identifier, but there's no unified view. "Rekha" in Group A and "Rekha Singh" in Group B with the same phone are treated as separate entities in the UI.
+**Problem:** Currently, members are stored per-group with phone as identifier, but there's no unified view. "Ash" in Group A and "Ash Jones" in Group B with the same phone are treated as separate entities in the UI.
 
 **Solution:**
 
@@ -122,7 +122,7 @@ V4 establishes the infrastructure for cross-group intelligence and the signature
    ```
    - Input: Global net balances (aggregated across all groups)
    - Output: Minimum set of payments to settle all debts
-   - Same greedy algorithm as per-group, but applied to global balances
+   - Ashe greedy algorithm as per-group, but applied to global balances
 
 2. **UI flow:**
    - User opens Global Balance view
@@ -258,7 +258,7 @@ The following stay out of the V4 release boundary:
 |------|--------|
 | **Push notification logic** | V4 adds FCM infrastructure only. Actual notifications are V5. |
 | **Real-time join notifications** | "X invited you to a group" push. Needs FCM + backend trigger. V5. |
-| **Live activity feed** | "Rekha added Dinner" real-time updates with push. V5. |
+| **Live activity feed** | "Ash added Dinner" real-time updates with push. V5. |
 | **Multi-currency** | V4 keeps single-currency (INR) semantics. |
 | **Receipt attachments** | Photo attachments for expenses. Plus feature, not V4. |
 | **Monetization features** | Smart reminders, export, etc. Not V4. |
@@ -313,7 +313,7 @@ Location: Firestore `/users/{uid}/fcmTokens/{tokenId}`
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
 | Identity merge conflicts | Medium | Low | Last-write-wins, user can edit |
-| Optimization suggests wrong amount | Low | High | Same engine as per-group; extensive testing |
+| Optimization suggests wrong amount | Low | High | Ashe engine as per-group; extensive testing |
 | FCM permission denied | High | Low | Graceful degradation; app works without push |
 | Performance with many groups | Low | Medium | Lazy loading, pagination |
 | Offline data staleness | Medium | Low | Clear "last synced" indicator |

@@ -476,7 +476,7 @@ Scope: 2 files, +13 -0
 <details>
 <summary>Commit body</summary>
 
-Add a LICENSE file declaring the repository proprietary and view-only (copyright 2025 Rishi Praseeth Krishnan). Update README to reference the new LICENSE and state that the source is for viewing only—no use, copy, or distribution without permission.
+Add a LICENSE file declaring the repository proprietary and view-only (copyright 2025). Update README to reference the new LICENSE and state that the source is for viewing only—no use, copy, or distribution without permission.
 
 </details>
 

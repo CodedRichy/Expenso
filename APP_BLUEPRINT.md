@@ -139,7 +139,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### GroqExpenseParserService
 
-**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. The **prompt is model-agnostic** (see **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md**). Implementation calls Groq API (`llama-3.3-70b-versatile`). Expects raw JSON (same schema). Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude / Percentage / Shares).
+**Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. The **prompt is model-agnostic** (see **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md**). Implementation calls Groq API (`llama-3.3-70b-versatile`). Expects raw JSON (same schema). Injects group member names so the model can map “split with Ash” or "Ash paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude / Percentage / Shares).
 
 ### UpiPaymentService
 
@@ -179,7 +179,7 @@ On Android, shows installed UPI apps grid via `UpiAppPicker`. On iOS, limited UP
 | **Identity** | `loadFromLocalCache()` (called in `main()`) hydrates identity from `UserProfileCache` **before** Firebase resolves; `setAuthFromFirebaseUserSync` sets in-memory state and merges cached photoURL; `continueAuthFromFirebaseUser()` (post-frame) writes `users/{uid}` and starts Firestore listeners; `clearAuth()` stops listeners, clears state and local cache. |
 | **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
-| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
+| **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Ashe display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`, `getMemberUpiId(memberId)`. `setGlobalProfile` persists name to Firestore and local cache. All profile updates sync to `UserProfileCache` for instant availability on next cold start. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
@@ -306,7 +306,7 @@ Semantic: `screenPaddingH` (24), `inputPadding` (16), `buttonPaddingV` (14).
 
 ### Smart Bar (GroupDetail) — AI expense parser + manual fallback
 
-- **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Pradhyun”.
+- **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Ash”.
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
 - **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env; implementation uses Groq (`llama-3.3-70b-versatile`). System prompt is model-agnostic (see docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md). Service retries once on 429 (wait 2s) then throws `GroqRateLimitException`.
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
@@ -482,8 +482,8 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 **Implementation notes (Cloud Power):**
 
-- **Join notifications** — When you add “Pradhyun” by contact, he gets a push to join. High value, Phase 2.
-- **Live activity feed** — “Rekha added Dinner” in real time. Feels social but can feel like Splitwise noise. Only if subtle and calm.
+- **Join notifications** — When you add “a friend” by contact, they get a push to join. High value, Phase 2.
+- **Live activity feed** — “Ash added Dinner” in real time. Feels social but can feel like Splitwise noise. Only if subtle and calm.
 - **Cross-group identity** — Net balance across all groups with same person. Invisible at first, huge later. Foundation for God Mode math.
 - **Cloud backup & sync** — Not exciting; required. Do when you leave MVP.
 
@@ -506,7 +506,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 - **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last.
 - **Voice entry** — “Hey Expenso, I paid 400 for movies with the boys.” Low real value; skip or postpone indefinitely.
 - **Debt minimization** — Real intelligence. Builds on members, balances, cross-group identity. Can be your signature feature. Extremely high value.
-- **Spending insights** — “Rishi, 20% more on travel this month. Time to settle up!” Medium value; tone matters.
+- **Spending insights** — “Hey, 20% more on travel this month. Time to settle up!” Medium value; tone matters.
 
 ---
 
