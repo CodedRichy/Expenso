@@ -726,11 +726,11 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF1A1A1A),
+                color: Colors.black,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF1A1A1A),
+                color: Colors.black,
               ),
               errorStateBuilder: (context, error) => SizedBox(
                 width: 200,

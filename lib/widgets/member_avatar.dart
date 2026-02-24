@@ -1,8 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Avatar for a member: letter fallback renders IMMEDIATELY, photo loads as an upgrade layer.
-/// Zero visible waiting time - the letter is always the base layer.
 class MemberAvatar extends StatelessWidget {
   final String displayName;
   final String? photoURL;
@@ -15,17 +13,17 @@ class MemberAvatar extends StatelessWidget {
     this.size = 40,
   });
 
-  static const Color _letterBg = Color(0xFF1A1A1A);
-  static const Color _letterFg = Color(0xFFE8EAED);
-
   @override
   Widget build(BuildContext context) {
     final letter = _initial(displayName);
     final hasPhoto = photoURL != null && photoURL!.trim().isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final letterBg = isDark ? const Color(0xFF3A3A3A) : const Color(0xFF1A1A1A);
+    const letterFg = Color(0xFFE8EAED);
 
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: _letterBg,
+      backgroundColor: letterBg,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -34,7 +32,7 @@ class MemberAvatar extends StatelessWidget {
             style: TextStyle(
               fontSize: size * 0.45,
               fontWeight: FontWeight.w600,
-              color: _letterFg,
+              color: letterFg,
             ),
           ),
           if (hasPhoto)

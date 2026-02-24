@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:upi_pay/upi_pay.dart' as upi;
+import '../design/colors.dart';
 
 class UpiAppInfo {
   final String name;
@@ -215,14 +216,14 @@ class UpiPaymentService {
   static Color getStatusColor(UpiTransactionResult result) {
     switch (result.status) {
       case UpiTransactionStatus.success:
-        return const Color(0xFF2E7D32);
+        return AppColors.success;
       case UpiTransactionStatus.submitted:
-        return const Color(0xFFF9A825);
+        return AppColors.warning;
       case UpiTransactionStatus.failure:
       case UpiTransactionStatus.cancelled:
-        return const Color(0xFFC62828);
+        return AppColors.error;
       case UpiTransactionStatus.unknown:
-        return const Color(0xFF6B6B6B);
+        return AppColors.textSecondary;
     }
   }
 }

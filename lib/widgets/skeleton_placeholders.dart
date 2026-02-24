@@ -16,11 +16,16 @@ class SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final skeletonColor = isDark 
+        ? AppColorsDark.border.withValues(alpha: 0.5) 
+        : AppColors.border.withValues(alpha: 0.5);
+    
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.border.withValues(alpha: 0.5),
+        color: skeletonColor,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
@@ -34,11 +39,16 @@ class SkeletonCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final skeletonColor = isDark 
+        ? AppColorsDark.border.withValues(alpha: 0.5) 
+        : AppColors.border.withValues(alpha: 0.5);
+    
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.border.withValues(alpha: 0.5),
+        color: skeletonColor,
         shape: BoxShape.circle,
       ),
     );
@@ -87,10 +97,10 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
             return LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: const [
-                Color(0x00FFFFFF),
-                Color(0x33FFFFFF),
-                Color(0x00FFFFFF),
+              colors: [
+                Colors.white.withValues(alpha: 0.0),
+                Colors.white.withValues(alpha: 0.2),
+                Colors.white.withValues(alpha: 0.0),
               ],
               stops: [
                 _animation.value - 0.3,
@@ -117,9 +127,9 @@ class SkeletonGroupCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
@@ -154,9 +164,9 @@ class SkeletonExpenseRow extends StatelessWidget {
           horizontal: AppSpacing.screenPaddingH,
           vertical: AppSpacing.spaceLg,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AppColors.border, width: 1),
+            bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
           ),
         ),
         child: Row(
@@ -191,9 +201,9 @@ class SkeletonPaymentCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.spaceLg),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

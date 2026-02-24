@@ -33,6 +33,8 @@ class _ExpensoLoaderState extends State<ExpensoLoader> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -47,7 +49,7 @@ class _ExpensoLoaderState extends State<ExpensoLoader> with SingleTickerProvider
         textStyle: TextStyle(
           fontSize: widget.size * 0.1,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF1A1A1A),
+          color: textColor,
           letterSpacing: 1.5,
         ),
       ),
