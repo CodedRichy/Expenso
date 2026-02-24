@@ -1698,56 +1698,6 @@ class CycleRepository extends ChangeNotifier {
     return (originalMinor + adjustmentMinor) / 100.0;
   }
 
-  /// Get total amount still owed by the current user (not yet settled).
-  int getMyRemainingDuesMinor(String groupId) {
-    final cycle = getActiveCycle(groupId);
-    final members = getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-    final myRoutes = SettlementEngine.getPaymentsForMember(_currentUserId, routes);
-    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
-
-    int remainingMinor = 0;
-    for (final route in myRoutes) {
-      final attempt = attempts.firstWhere(
-        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
-        orElse: () => PaymentAttempt(
-          id: '',
-          groupId: '',
-          cycleId: '',
-          fromMemberId: '',
-          toMemberId: '',
-          amountMinor: 0,
-          currencyCode: 'INR',
-          status: PaymentAttemptStatus.notStarted,
-          createdAt: 0,
-        ),
-      );
-
-      if (!attempt.status.isSettled) {
-        remainingMinor += route.amountMinor;
-      }
-    }
-    return remainingMinor;
-  }
-
-  /// Get payments awaiting confirmation from the current user (as receiver).
-  List<PaymentAttempt> getPaymentsAwaitingMyConfirmation(String groupId) {
-    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
-    return attempts.where((a) => 
-      a.toMemberId == _currentUserId && a.status.isAwaitingReceiverAction
-    ).toList();
-  }
-
-  /// Get incoming payments to the current user (regardless of status).
-  List<PaymentRoute> getIncomingPaymentsForCurrentUser(String groupId) {
-    final cycle = getActiveCycle(groupId);
-    final members = getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-    return SettlementEngine.getPaymentsToMember(_currentUserId, routes);
-  }
-
   /// Check if all payment routes are settled for a group.
   bool isFullySettled(String groupId) {
     final cycle = getActiveCycle(groupId);

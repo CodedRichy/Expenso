@@ -65,9 +65,9 @@ class SettlementActivityFeed extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 itemCount: displayEvents.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+                separatorBuilder: (context, index) => const Divider(height: 1, indent: 48),
                 itemBuilder: (context, index) {
-                  return _EventRow(event: displayEvents[index], groupId: groupId);
+                  return _EventRow(event: displayEvents[index]);
                 },
               ),
             ],
@@ -80,9 +80,8 @@ class SettlementActivityFeed extends StatelessWidget {
 
 class _EventRow extends StatelessWidget {
   final SettlementEvent event;
-  final String groupId;
 
-  const _EventRow({required this.event, required this.groupId});
+  const _EventRow({required this.event});
 
   @override
   Widget build(BuildContext context) {
