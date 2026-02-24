@@ -193,14 +193,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
-  eventify:
+  decimal:
     dependency: transitive
     description:
-      name: eventify
-      sha256: b829429f08586cc2001c628e7499e3e3c2493a1d895fd73b00ecb23351aa5a66
+      name: decimal
+      sha256: fc706a5618b81e5b367b01dd62621def37abc096f2b46a9bd9068b64c1fa36d0
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "3.2.4"
   fake_async:
     dependency: transitive
     description:
@@ -560,6 +560,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.20.2"
   json_annotation:
     dependency: transitive
     description:
@@ -824,14 +832,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
-  razorpay_flutter:
-    dependency: "direct main"
+  rational:
+    dependency: transitive
     description:
-      name: razorpay_flutter
-      sha256: a90e05bb571fd1df5b7846d2173cb9cf1e07ec6d57df48068a05c152be177311
+      name: rational
+      sha256: cb808fb6f1a839e6fc5f7d8cb3b0a10e1db48b3be102de73938c627f0b636336
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.1"
+    version: "2.2.3"
   rxdart:
     dependency: transitive
     description:
@@ -1013,14 +1021,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  upi_india:
-    dependency: "direct main"
+  universal_io:
+    dependency: transitive
     description:
-      name: upi_india
-      sha256: "483f1425ee8f0897397861b107e50b3aa195fec71215f86e906b625e841e90dd"
+      name: universal_io
+      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "2.3.1"
+  upi_pay:
+    dependency: "direct main"
+    description:
+      name: upi_pay
+      sha256: "08c6a6418a6a71715afa61a75015978c56d8e09ffedfc8313af0b3afdd34b84a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   url_launcher:
     dependency: "direct main"
     description:

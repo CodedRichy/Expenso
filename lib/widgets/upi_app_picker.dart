@@ -203,14 +203,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    : Image.memory(
-                        appInfo.icon,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.account_balance_wallet,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
+                    : appInfo.iconBuilder(44),
               ),
             ),
             const SizedBox(height: AppSpacing.spaceSm),

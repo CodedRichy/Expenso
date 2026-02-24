@@ -1,16 +1,15 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:upi_india/upi_india.dart';
+import 'package:upi_pay/upi_pay.dart' as upi;
 
 class UpiAppInfo {
   final String name;
-  final Uint8List icon;
-  final UpiApp app;
+  final Widget Function(double size) iconBuilder;
+  final upi.ApplicationMeta appMeta;
 
   const UpiAppInfo({
     required this.name,
-    required this.icon,
-    required this.app,
+    required this.iconBuilder,
+    required this.appMeta,
   });
 }
 
@@ -75,7 +74,7 @@ class UpiTransactionResult {
 class UpiPaymentService {
   UpiPaymentService._();
 
-  static final UpiIndia _upiIndia = UpiIndia();
+  static final upi.UpiPay _upiPay = upi.UpiPay();
   static List<UpiAppInfo>? _cachedApps;
 
   static UpiPaymentData createPaymentData({
@@ -101,15 +100,12 @@ class UpiPaymentService {
     if (_cachedApps != null) return _cachedApps!;
 
     try {
-      final apps = await _upiIndia.getAllUpiApps(
-        mandatoryTransactionId: false,
-        allowNonVerifiedApps: true,
-      );
+      final apps = await _upiPay.getInstalledUpiApplications();
 
-      _cachedApps = apps.map((app) => UpiAppInfo(
-        name: app.name,
-        icon: app.icon,
-        app: app,
+      _cachedApps = apps.map((appMeta) => UpiAppInfo(
+        name: appMeta.upiApplication.getAppName(),
+        iconBuilder: (size) => appMeta.iconImage(size),
+        appMeta: appMeta,
       )).toList();
 
       _cachedApps!.sort((a, b) => _getAppPriority(a.name).compareTo(_getAppPriority(b.name)));
@@ -141,38 +137,18 @@ class UpiPaymentService {
     required UpiAppInfo appInfo,
   }) async {
     try {
-      final response = await _upiIndia.startTransaction(
-        app: appInfo.app,
-        receiverUpiId: data.payeeUpiId,
+      final response = await _upiPay.initiateTransaction(
+        app: appInfo.appMeta.upiApplication,
+        receiverUpiAddress: data.payeeUpiId,
         receiverName: data.payeeName,
-        transactionRefId: data.transactionRef,
+        transactionRef: data.transactionRef,
         transactionNote: data.transactionNote,
-        amount: data.amountDisplay,
+        amount: data.amountDisplay.toStringAsFixed(2),
       );
 
       return _parseResponse(response);
-    } on UpiIndiaAppNotInstalledException {
-      clearCache();
-      return const UpiTransactionResult(
-        status: UpiTransactionStatus.failure,
-        rawResponse: 'App not installed',
-      );
-    } on UpiIndiaUserCancelledException {
-      return const UpiTransactionResult(
-        status: UpiTransactionStatus.cancelled,
-        rawResponse: 'User cancelled',
-      );
-    } on UpiIndiaNullResponseException {
-      return const UpiTransactionResult(
-        status: UpiTransactionStatus.unknown,
-        rawResponse: 'No response from app',
-      );
-    } on UpiIndiaInvalidParametersException catch (e) {
-      return UpiTransactionResult(
-        status: UpiTransactionStatus.failure,
-        rawResponse: 'Invalid parameters: ${e.message}',
-      );
     } catch (e) {
+      debugPrint('UpiPaymentService: Transaction error: $e');
       return UpiTransactionResult(
         status: UpiTransactionStatus.failure,
         rawResponse: e.toString(),
@@ -180,17 +156,17 @@ class UpiPaymentService {
     }
   }
 
-  static UpiTransactionResult _parseResponse(UpiResponse response) {
+  static UpiTransactionResult _parseResponse(upi.UpiTransactionResponse response) {
     UpiTransactionStatus status;
     
     switch (response.status) {
-      case UpiPaymentStatus.SUCCESS:
+      case upi.UpiTransactionStatus.success:
         status = UpiTransactionStatus.success;
         break;
-      case UpiPaymentStatus.FAILURE:
+      case upi.UpiTransactionStatus.failure:
         status = UpiTransactionStatus.failure;
         break;
-      case UpiPaymentStatus.SUBMITTED:
+      case upi.UpiTransactionStatus.submitted:
         status = UpiTransactionStatus.submitted;
         break;
       default:
@@ -199,10 +175,10 @@ class UpiPaymentService {
 
     return UpiTransactionResult(
       status: status,
-      transactionId: response.transactionId,
+      transactionId: response.txnId,
       responseCode: response.responseCode,
       approvalRefNo: response.approvalRefNo,
-      rawResponse: 'Status: ${response.status ?? "unknown"}',
+      rawResponse: 'Status: ${response.status}',
     );
   }
 
