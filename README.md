@@ -38,7 +38,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
    ┌─────────────┐        ┌─────────────┐       ┌─────────────┐
    │ Add members │        │ "Dinner     │       │ Pay via UPI │
    │ via phone   │        │  1200 with  │       │ (GPay, etc) │
-   │ or contacts │        │  Ash"      │       │ or Cash     │
+   │ or contacts │        │  Ash"      │        │ or Cash     │
    └─────────────┘        └─────────────┘       └─────────────┘
                                 │                     │
                                 ▼                     ▼
@@ -63,7 +63,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         NATURAL LANGUAGE INPUT                               │
+│                         NATURAL LANGUAGE INPUT                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
   You type:                          Expenso understands:
@@ -91,7 +91,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         PAYMENT & CONFIRMATION                               │
+│                         PAYMENT & CONFIRMATION                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
   PAYER                                              RECEIVER
