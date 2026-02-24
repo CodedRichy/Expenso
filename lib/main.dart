@@ -8,6 +8,7 @@ import 'firebase_app.dart';
 import 'firebase_options.dart';
 import 'repositories/cycle_repository.dart';
 import 'services/phone_auth_service.dart';
+import 'services/user_profile_cache.dart';
 import 'screens/phone_auth.dart';
 import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
@@ -33,6 +34,12 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load local profile cache FIRST (instant, before any network)
+  // This enables immediate avatar rendering on cold start
+  await UserProfileCache.instance.load();
+  CycleRepository.instance.loadFromLocalCache();
+  
   try {
     await dotenv.load(fileName: '.env');
   } catch (e) {

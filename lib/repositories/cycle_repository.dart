@@ -6,6 +6,7 @@ import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
+import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
 import '../utils/settlement_engine.dart';
@@ -78,7 +79,7 @@ class CycleRepository extends ChangeNotifier {
   String? get currentUserUpiId => _userCache[_currentUserId]?['upiId'] as String?;
 
   /// Updates the global profile (phone, name, and optionally auth user id). Notifies listeners.
-  /// Persists to Firestore when [_currentUserId] is set so displayName stays in sync with Groq fuzzy matching.
+  /// Persists to Firestore and local cache when [_currentUserId] is set.
   void setGlobalProfile(String phone, String name, {String? authUserId}) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
@@ -88,8 +89,32 @@ class CycleRepository extends ChangeNotifier {
         debugPrint('CycleRepository.setGlobalProfile write failed: $e');
         if (kDebugMode) debugPrint(st.toString());
       });
+      // Update local cache for instant load on next cold start
+      UserProfileCache.instance.save(
+        userId: _currentUserId,
+        displayName: _currentUserName,
+        photoURL: currentUserPhotoURL,
+        upiId: currentUserUpiId,
+        phone: _currentUserPhone,
+      );
     }
     notifyListeners();
+  }
+
+  /// Load user profile from local cache (instant, before Firestore).
+  /// Call once at app start after UserProfileCache.load() completes.
+  void loadFromLocalCache() {
+    final cached = UserProfileCache.instance.getCachedProfile();
+    if (cached == null) return;
+    _currentUserId = cached.userId;
+    _currentUserName = cached.displayName;
+    _currentUserPhone = cached.phone;
+    _userCache[cached.userId] = {
+      'displayName': cached.displayName,
+      'phoneNumber': cached.phone,
+      if (cached.photoURL != null) 'photoURL': cached.photoURL,
+      if (cached.upiId != null) 'upiId': cached.upiId,
+    };
   }
 
   /// Sets in-memory identity from Firebase user. Call during build; does not notify.
@@ -102,6 +127,18 @@ class CycleRepository extends ChangeNotifier {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
     };
+    
+    // Merge with local cache if available (preserves photoURL from cache)
+    final cached = UserProfileCache.instance.getCachedProfile();
+    if (cached != null && cached.userId == uid) {
+      final cur = _userCache[uid]!;
+      if (cached.photoURL != null && cur['photoURL'] == null) {
+        cur['photoURL'] = cached.photoURL;
+      }
+      if (cached.upiId != null && cur['upiId'] == null) {
+        cur['upiId'] = cached.upiId;
+      }
+    }
   }
 
   /// Runs Firestore write, profile load, and listeners. Call after build (e.g. addPostFrameCallback).
@@ -138,6 +175,16 @@ class CycleRepository extends ChangeNotifier {
         if (u['photoURL'] != null) cur['photoURL'] = u['photoURL'];
         if (u['upiId'] != null) cur['upiId'] = u['upiId'];
         _userCache[_currentUserId] = cur;
+        
+        // Persist to local cache for instant load on next cold start
+        UserProfileCache.instance.save(
+          userId: _currentUserId,
+          displayName: _currentUserName,
+          photoURL: u['photoURL'] as String?,
+          upiId: u['upiId'] as String?,
+          phone: _currentUserPhone,
+        );
+        
         notifyListeners();
       }
     } catch (e, st) {
@@ -157,7 +204,7 @@ class CycleRepository extends ChangeNotifier {
     );
   }
 
-  /// Updates current user photo URL (e.g. after upload). Persists to Firestore.
+  /// Updates current user photo URL (e.g. after upload). Persists to Firestore and local cache.
   /// Throws if the Firestore write fails so the UI can show an error.
   Future<void> updateCurrentUserPhotoURL(String? photoURL) async {
     if (_currentUserId.isEmpty) return;
@@ -166,6 +213,8 @@ class CycleRepository extends ChangeNotifier {
     _userCache[_currentUserId]!['photoURL'] = photoURL;
     try {
       await _writeCurrentUserProfile();
+      // Update local cache for instant load on next cold start
+      UserProfileCache.instance.updatePhotoURL(photoURL);
       notifyListeners();
     } catch (e, st) {
       _userCache[_currentUserId]!['photoURL'] = previous;
@@ -176,12 +225,14 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
-  /// Updates current user UPI ID. Persists to Firestore.
+  /// Updates current user UPI ID. Persists to Firestore and local cache.
   Future<void> updateCurrentUserUpiId(String? upiId) async {
     if (_currentUserId.isEmpty) return;
     _userCache[_currentUserId] ??= <String, dynamic>{};
     _userCache[_currentUserId]!['upiId'] = upiId;
     await _writeCurrentUserProfile();
+    // Update local cache for instant load on next cold start
+    UserProfileCache.instance.updateUpiId(upiId);
     notifyListeners();
   }
 
@@ -199,7 +250,7 @@ class CycleRepository extends ChangeNotifier {
 
   DataEncryptionService? _encryption;
 
-  /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.
+  /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners and clears local cache.
   void clearAuth() {
     _stopListening();
     _encryption?.clearKeys();
@@ -218,6 +269,8 @@ class CycleRepository extends ChangeNotifier {
     _deletedIdsByGroup.clear();
     _clearLastAdded();
     _streamError = null;
+    // Clear local cache on logout
+    UserProfileCache.instance.clear();
     notifyListeners();
   }
 

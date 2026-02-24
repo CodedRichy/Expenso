@@ -624,67 +624,10 @@ class _GroupDetailState extends State<GroupDetail> {
       return;
     }
 
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Text(
-              'Settle Your Balance',
-              style: AppTypography.screenTitle,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose how you want to pay',
-              style: AppTypography.bodySecondary,
-            ),
-            const SizedBox(height: 24),
-            _SettlementOptionTile(
-              icon: Icons.qr_code,
-              title: 'Pay via UPI',
-              subtitle: 'Direct payment to each member',
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(
-                  context,
-                  '/settlement-confirmation',
-                  arguments: {'group': group, 'method': 'upi'},
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _SettlementOptionTile(
-              icon: Icons.credit_card,
-              title: 'Pay via Razorpay',
-              subtitle: 'Card, UPI, Net Banking',
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.pushNamed(
-                  context,
-                  '/settlement-confirmation',
-                  arguments: {'group': group, 'method': 'razorpay'},
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+    Navigator.pushNamed(
+      context,
+      '/settlement-confirmation',
+      arguments: {'group': group, 'method': 'upi'},
     );
   }
 
@@ -2466,74 +2409,6 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettlementOptionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _SettlementOptionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: AppColors.textPrimary, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTypography.listItemTitle,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.textTertiary,
-              ),
-            ],
-          ),
         ),
       ),
     );

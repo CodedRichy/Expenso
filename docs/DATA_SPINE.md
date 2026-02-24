@@ -29,7 +29,8 @@ This document defines the fundamental data structures that Expenso operates on. 
 |-----------|-------|
 | **Semantic Role** | State |
 | **Ideal Mutability** | Mutable |
-| **Storage** | Firestore `users/{uid}` |
+| **Primary Storage** | Firestore `users/{uid}` |
+| **Local Cache** | SharedPreferences via `UserProfileCache` |
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -40,6 +41,8 @@ This document defines the fundamental data structures that Expenso operates on. 
 | `upiId` | `String?` | Payment identifier |
 
 **Notes:** User represents the authenticated identity. Changes (name, avatar, UPI) are legitimate state updates. Phone number is effectively immutable once set (changing it breaks identity linkage).
+
+**Local Cache:** The current user's profile is cached locally in `SharedPreferences` via `UserProfileCache`. On cold start, `main()` loads this cache **before** Firebase Auth resolves, enabling instant profile avatar rendering. The cache syncs whenever Firestore data is fetched and clears on logout. Other users' profiles are not cached locally.
 
 ---
 

@@ -97,11 +97,17 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 ### Settlement Flow
 
-1. Creator taps "Settle now" → `settleAndRestartCycle(groupId)` called
-2. Firestore updated: `cycleStatus: 'settling'`
-3. UI shows settling state, expense editing disabled
-4. Members can pay via Razorpay or external UPI
-5. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
+1. User taps "Settle now" with dues → navigates to settlement confirmation
+2. `SettlementEngine.computePaymentRoutes()` derives minimal payment routes
+3. `getPaymentsForMember()` filters to current user's outgoing payments
+4. `UpiPaymentCard` shown per route with payee name, amount, UPI button
+5. Tap "Pay via UPI" → `UpiPaymentService.launchUpiPayment()` opens UPI app
+6. If no UPI app installed → QR code shown for scanning
+7. **Payments not tracked automatically** — user confirms externally with group
+8. Creator taps "Settle now" with no dues → `settleAndRestartCycle(groupId)` called
+9. Firestore updated: `cycleStatus: 'settling'`
+10. UI shows settling state, expense editing disabled
+11. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
 6. `FirestoreService.archiveCycleExpenses()`:
    - Copies all expense docs to `settled_cycles/{cycleId}/expenses`
    - Deletes expense docs from current location

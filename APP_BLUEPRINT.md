@@ -36,13 +36,15 @@
 
 **Initial route:** `/splash` → then `/`.
 
+**Cold start optimization:** In `main()`, before `runApp`, `UserProfileCache.load()` is awaited and `CycleRepository.loadFromLocalCache()` is called. This hydrates the user's identity (name, photoURL, upiId) from `SharedPreferences` **before Firebase resolves**, enabling instant avatar rendering on cold start.
+
 On launch, **SplashScreen** shows the app logo (light background) for ~1.5s, then navigates to `/`.
 
 The home route `/` uses **Firebase Auth state** first, then repo state:
 
 1. **StreamBuilder** on `PhoneAuthService.instance.authStateChanges`.
-2. If **user == null** → repo is cleared and **PhoneAuth** (login) is shown.
-3. If **user != null** → repo is synced in-memory (`setAuthFromFirebaseUserSync(uid, phone, displayName)`), then after the frame `continueAuthFromFirebaseUser()` runs (writes `users/{uid}`, starts Firestore listeners). Then:
+2. If **user == null** → repo is cleared (including local cache) and **PhoneAuth** (login) is shown.
+3. If **user != null** → repo is synced in-memory (`setAuthFromFirebaseUserSync(uid, phone, displayName)`, merging cached photoURL), then after the frame `continueAuthFromFirebaseUser()` runs (writes `users/{uid}`, starts Firestore listeners, updates local cache with fresh data). Then:
    - If `currentUserName.isEmpty` → **OnboardingNameScreen**
    - Else → **GroupsList** (ledger).
 
@@ -133,6 +135,10 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 **Location:** `lib/services/groq_expense_parser_service.dart` — Stateless. The system prompt and few-shot examples in this file are the app’s **proprietary “secret formula”** for turning casual speech into structured expenses; treat as core IP. The **prompt is model-agnostic** (see **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md**). Implementation calls Groq API (`llama-3.3-70b-versatile`). Expects raw JSON (same schema). Injects group member names so the model can map “split with Pradhyun” or "Pradhyun paid 500 for me" to names. **GROQ_API_KEY** must be set in `.env`. **Rate limiting:** on 429, waits 2s and retries once; if still 429, throws `GroqRateLimitException` (Magic Bar shows 30s cooldown and “try manual entry”). On other failure or unparseable response, caller shows snackbar. GroupDetail Magic Bar uses this and, on success, shows confirmation dialog (per-person amount on each chip; for exact splits, sum must match total or Confirm is disabled; payer defaults to current user but can be set by AI). Saving calls `CycleRepository.addExpenseFromMagicBar` so Firestore gets a full `splits` map and correct `splitType` (Even / Exact / Exclude / Percentage / Shares).
 
+### UpiPaymentService
+
+**Location:** `lib/services/upi_payment_service.dart` — Stateless. Generates UPI deep links for direct peer-to-peer payments based on settlement routes from `SettlementEngine.computePaymentRoutes()`. `UpiPaymentData` holds payee UPI ID, name, amount (minor units), and transaction note. `createPaymentData(payeeUpiId, payeeName, amountMinor, groupName)` builds payment data with note format "Expenso • {GroupName} • Cycle". `launchUpiPayment(data)` opens UPI app via `url_launcher`; returns `UpiLaunchResult` (launched, noUpiApp, failed). On `noUpiApp`, UI shows QR code fallback via `qr_flutter`. Payments are **not tracked automatically** — users confirm with their group after paying. No Razorpay/escrow involvement.
+
 ### CycleRepository
 
 **Location:** `lib/repositories/cycle_repository.dart`  
@@ -140,11 +146,11 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 | Area | Details |
 |------|---------|
-| **Identity** | `setAuthFromFirebaseUserSync` sets in-memory state; `continueAuthFromFirebaseUser()` (post-frame) writes `users/{uid}` and starts Firestore listeners. `clearAuth()` stops listeners and clears state. |
+| **Identity** | `loadFromLocalCache()` (called in `main()`) hydrates identity from `UserProfileCache` **before** Firebase resolves; `setAuthFromFirebaseUserSync` sets in-memory state and merges cached photoURL; `continueAuthFromFirebaseUser()` (post-frame) writes `users/{uid}` and starts Firestore listeners; `clearAuth()` stops listeners, clears state and local cache. |
 | **Groups** | `_groups` from Firestore (members array-contains uid). `addGroup` → `FirestoreService.createGroup`. |
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Same display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
-| **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`. `setGlobalProfile` persists name to Firestore so profile name = NLP name. |
+| **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`, `getMemberUpiId(memberId)`. `setGlobalProfile` persists name to Firestore and local cache. All profile updates sync to `UserProfileCache` for instant availability on next cold start. |
 | **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor, for Razorpay settlement. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. **Phone→UID** resolution uses `_uidForPhone` with normalized phone (digits, last 10 for IN) so parser-derived participants are not dropped when formats differ. On read, `_expenseFromFirestore` builds `participantPhones` and `splitAmountsByPhone` from `splits` and reads `splitType`; edit expense and balances use this saved data. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
@@ -317,9 +323,11 @@ lib/
     phone_auth_service.dart   # Firebase verifyPhoneNumber, codeSent, verificationCompleted, error handling
     firestore_service.dart    # Firestore: users, groups, expenses, settled_cycles; deleteGroup (creator-only)
     pinned_groups_service.dart # User pin preference (max 3 groups); SharedPreferences
+    user_profile_cache.dart   # Local cache for user profile (name, photoURL, upiId); enables instant avatar on cold start before Firestore
     groq_expense_parser_service.dart  # AI expense parser (model-agnostic prompt; implementation: Groq/Llama). Parse NL → JSON. See docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
     profile_service.dart              # Firebase Storage avatar upload (users/{uid}/avatar.jpg)
     razorpay_order_service.dart       # createRazorpayOrder(amountPaise) via Cloud Function → orderId, keyId
+    upi_payment_service.dart          # UPI deep link generation for direct P2P payments; QR fallback
     data_encryption_service.dart      # AES-GCM encryption for sensitive Firestore fields
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
@@ -332,6 +340,7 @@ lib/
   widgets/
     member_avatar.dart        # Letter avatar renders IMMEDIATELY; photo loads as upgrade layer via CachedNetworkImage. Zero visible waiting—letter is always the base.
     expenso_loader.dart       # Animated loading indicator
+    upi_payment_card.dart     # Per-payment UPI button with QR fallback; uses UpiPaymentService
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart
