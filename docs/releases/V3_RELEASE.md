@@ -63,8 +63,9 @@ No V3 behavior or UI should depend on these.
 
 ## Document Control
 
-- **Version:** 1.0  
-- **Status:** V3 Current State (current release)  
+- **Version:** 1.1  
+- **Status:** V3 Complete (current release)  
+- **Next:** [V4_RELEASE.md](V4_RELEASE.md)  
 - **Audience:** Product, Engineering, and anyone defining or implementing Expenso.  
 - **Prerequisite:** [V2_RELEASE.md](V2_RELEASE.md), [V1_RELEASE.md](V1_RELEASE.md)  
 - **Updates:** Changes to this document should be versioned; they define the V3 boundary.
