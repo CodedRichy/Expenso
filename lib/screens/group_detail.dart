@@ -2130,12 +2130,25 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     }
   }
 
-  static const Color _dialogGradientStart = Color(0xFF1A1A1A);
-  static const Color _dialogGradientEnd = Color(0xFF6B6B6B);
-
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final dialogBgColor = isDark ? theme.colorScheme.surface : const Color(0xFFF7F7F8);
+    final inputBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white;
+    final borderColor = isDark ? theme.colorScheme.outline : const Color(0xFFE5E5E5);
+    final inputBorderColor = isDark ? theme.colorScheme.outline : const Color(0xFFD0D0D0);
+    final labelColor = theme.colorScheme.onSurfaceVariant;
+    final textColor = theme.colorScheme.onSurface;
+    final secondaryTextColor = theme.colorScheme.onSurfaceVariant;
+    final primaryColor = theme.colorScheme.primary;
+    final chipBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5);
+    final placeholderChipBgColor = isDark ? theme.colorScheme.surfaceContainerHigh : const Color(0xFFE8E8E8);
+    final gradientStart = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
+    final gradientEnd = isDark ? theme.colorScheme.surfaceContainerHigh : const Color(0xFF6B6B6B);
+    final gradientTextColor = isDark ? theme.colorScheme.onSurface : Colors.white;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -2144,11 +2157,11 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F8),
+          color: dialogBgColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A1A1A).withValues(alpha: 0.15),
+              color: (isDark ? Colors.black : const Color(0xFF1A1A1A)).withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -2160,12 +2173,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [_dialogGradientStart, _dialogGradientEnd],
+                  colors: [gradientStart, gradientEnd],
                 ),
               ),
               child: Column(
@@ -2176,7 +2189,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.95),
+                      color: gradientTextColor.withValues(alpha: 0.95),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -2185,10 +2198,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                       (Match m) => '${m[1]},',
                     )}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: gradientTextColor,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -2198,7 +2211,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       _descriptionController.text.trim(),
                       style: TextStyle(
                         fontSize: 15,
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: gradientTextColor.withValues(alpha: 0.85),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -2216,7 +2229,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                   children: [
                     Text(
                       'AMOUNT',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -2225,11 +2238,11 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: const Color(0xFFE5E5E5)),
+                            color: inputBgColor,
+                            border: Border.all(color: borderColor),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF6B6B6B))),
+                          child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: secondaryTextColor)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -2240,23 +2253,23 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: inputBgColor,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               hintText: '0',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                                borderSide: BorderSide(color: inputBorderColor),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                                borderSide: BorderSide(color: inputBorderColor),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                                borderSide: BorderSide(color: textColor, width: 1.5),
                               ),
                             ),
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
                           ),
                         ),
                       ],
@@ -2264,7 +2277,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     const SizedBox(height: 20),
                     Text(
                       'DESCRIPTION',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -2273,32 +2286,32 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: inputBgColor,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         hintText: 'What was it for?',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                          borderSide: BorderSide(color: inputBorderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                          borderSide: BorderSide(color: inputBorderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF1A1A1A), width: 1.5),
+                          borderSide: BorderSide(color: textColor, width: 1.5),
                         ),
                       ),
-                      style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                      style: TextStyle(fontSize: 17, color: textColor),
                     ),
                     if (widget.result.category.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text(widget.result.category, style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B))),
+                      Text(widget.result.category, style: TextStyle(fontSize: 14, color: secondaryTextColor)),
                     ],
                     const SizedBox(height: 16),
                     Text(
                       'PAID BY',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
                     ),
                     const SizedBox(height: 8),
                     InkWell(
@@ -2307,18 +2320,18 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFFE5E5E5)),
+                          color: inputBgColor,
+                          border: Border.all(color: borderColor),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
                             Text(
                               repo.getMemberDisplayNameById(_payerId),
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: textColor),
                             ),
                             const Spacer(),
-                            Icon(Icons.arrow_drop_down, color: const Color(0xFF6B6B6B)),
+                            Icon(Icons.arrow_drop_down, color: secondaryTextColor),
                           ],
                         ),
                       ),
@@ -2326,13 +2339,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     const SizedBox(height: 12),
                     Text(
                       'Split: ${widget.splitTypeCap}',
-                      style: TextStyle(fontSize: 14, color: const Color(0xFF6B6B6B)),
+                      style: TextStyle(fontSize: 14, color: secondaryTextColor),
                     ),
                     if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
                       const SizedBox(height: 4),
                       Text(
                         'Total: ₹${(_editedAmount ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-                        style: TextStyle(fontSize: 13, color: const Color(0xFF6B6B6B)),
+                        style: TextStyle(fontSize: 13, color: secondaryTextColor),
                       ),
                     ],
                     if (_editedAmount != null && (_totalSplit - _editedAmount!).abs() >= _splitTolerance && (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')) ...[
@@ -2340,19 +2353,19 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEBEE),
+                          color: AppColors.errorBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
-                          style: TextStyle(fontSize: 13, color: const Color(0xFFC62828)),
+                          style: TextStyle(fontSize: 13, color: AppColors.error),
                         ),
                       ),
                     ],
                     const SizedBox(height: 16),
                     Text(
                       'PEOPLE',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF9B9B9B), letterSpacing: 0.3),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -2372,13 +2385,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: isPlaceholder
-                                  ? const Color(0xFFE8E8E8)
+                                  ? placeholderChipBgColor
                                   : isGuessed
                                       ? const Color(0xFFFFF8E1)
-                                      : const Color(0xFFE5E5E5),
+                                      : chipBgColor,
                               borderRadius: BorderRadius.circular(8),
                               border: isPlaceholder
-                                  ? Border.all(color: const Color(0xFF5B7C99), width: 1)
+                                  ? Border.all(color: primaryColor, width: 1)
                                   : isGuessed
                                       ? Border.all(color: const Color(0xFFF9A825), width: 1.5)
                                       : null,
@@ -2395,7 +2408,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                           : 'Select Member',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: isPlaceholder ? const Color(0xFF5B7C99) : (isGuessed ? const Color(0xFFE65100) : const Color(0xFF1A1A1A)),
+                                        color: isPlaceholder ? primaryColor : (isGuessed ? const Color(0xFFE65100) : textColor),
                                         fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
                                       ),
                                     ),
@@ -2416,13 +2429,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                         hintText: '₹',
                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFC62828))),
+                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: AppColors.error)),
                                       ),
                                       style: const TextStyle(fontSize: 14),
                                     ),
                                   ),
                                   if (isPlaceholder) const SizedBox(width: 4),
-                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: primaryColor),
                                   if (isGuessed) const SizedBox(width: 2),
                                   if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
                                 ] else ...[
@@ -2431,15 +2444,15 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: isPlaceholder
-                                          ? const Color(0xFF5B7C99)
+                                          ? primaryColor
                                           : isGuessed
                                               ? const Color(0xFFE65100)
-                                              : const Color(0xFF1A1A1A),
+                                              : textColor,
                                       fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
                                     ),
                                   ),
                                   if (isPlaceholder) const SizedBox(width: 4),
-                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: const Color(0xFF5B7C99)),
+                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: primaryColor),
                                   if (isGuessed) const SizedBox(width: 2),
                                   if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
                                 ],
@@ -2453,14 +2466,14 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       const SizedBox(height: 8),
                       Text(
                         'Highlighted names are best guesses — verify before confirming.',
-                        style: TextStyle(fontSize: 12, color: const Color(0xFF9B9B9B), fontStyle: FontStyle.italic),
+                        style: TextStyle(fontSize: 12, color: labelColor, fontStyle: FontStyle.italic),
                       ),
                     ],
                     if (_notReadyReason != null) ...[
                       const SizedBox(height: 12),
                       Text(
                         _notReadyReason!,
-                        style: const TextStyle(fontSize: 13, color: Color(0xFFC62828)),
+                        style: TextStyle(fontSize: 13, color: AppColors.error),
                       ),
                     ],
                   ],
@@ -2470,7 +2483,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F8),
+                color: dialogBgColor,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
               child: Row(
@@ -2479,8 +2492,8 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B6B6B),
-                        side: const BorderSide(color: Color(0xFFE5E5E5)),
+                        foregroundColor: secondaryTextColor,
+                        side: BorderSide(color: borderColor),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -2492,10 +2505,6 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     child: ElevatedButton(
                       onPressed: _isReadyToConfirm ? _onConfirm : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
-                        disabledBackgroundColor: const Color(0xFFE5E5E5),
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: const Color(0xFFB0B0B0),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
