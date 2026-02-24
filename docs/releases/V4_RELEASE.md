@@ -24,10 +24,10 @@ V4 establishes the infrastructure for cross-group intelligence and the signature
 
 | Area | Description | Priority | Dependencies | Status |
 |------|-------------|----------|--------------|--------|
-| **Cross-group identity** | Unify member identity across groups using phone number as canonical ID. Same person in Group A and Group B resolves to one identity. Enables global balance view and debt minimization. | P0 | None | ✅ Implemented |
-| **Global balance view** | New screen showing net balance with each contact across all groups. "You owe Rekha ₹500 total (₹300 from Trip, ₹200 from Roommates)." | P0 | Cross-group identity | ✅ Implemented |
-| **Debt minimization ("God Mode")** | Optimize payment paths across groups. If A owes B ₹500, and B owes C ₹500, suggest A pays C directly. Fewer transactions, same result. | P1 | Cross-group identity, Global balance view | ✅ Implemented |
-| **Cloud backup & sync** | Export/import group data. Restore on new device via Firebase Auth. Data already in Firestore; this adds explicit backup controls and cross-device awareness. | P1 | None | ✅ Implemented (SyncStatusService) |
+| **Cross-group identity** | Unify member identity across groups using phone number as canonical ID. Same person in Group A and Group B resolves to one identity. Used for unified display names. | P0 | None | ✅ Implemented |
+| **Global balance view** | ~~New screen showing net balance with each contact across all groups.~~ | P0 | Cross-group identity | ❌ Removed — violates group-centric philosophy |
+| **Debt minimization ("God Mode")** | ~~Optimize payment paths across groups.~~ | P1 | Cross-group identity | ❌ Removed — violates group-centric philosophy |
+| **Cloud sync status** | Track sync state (synced/syncing/offline/error) for UI feedback. | P1 | None | ✅ Implemented (SyncStatusService) |
 | **Push notification infrastructure** | Add `firebase_messaging` to pubspec. Register FCM tokens. Store tokens in Firestore per user. No notification logic yet — just the plumbing. | P2 | None | ✅ Implemented (FcmTokenService) |
 
 ---
