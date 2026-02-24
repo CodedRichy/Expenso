@@ -52,5 +52,13 @@ service cloud.firestore {
     match /groups/{groupId}/deleted_expenses/{expenseId} {
       allow read, write: if isGroupMember(groupId);
     }
+
+    match /groups/{groupId}/payment_attempts/{attemptId} {
+      allow read, write: if isGroupMember(groupId);
+    }
+
+    match /groups/{groupId}/settlement_events/{eventId} {
+      allow read, write: if isGroupMember(groupId);
+    }
   }
 }
