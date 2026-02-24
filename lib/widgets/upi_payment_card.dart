@@ -506,20 +506,41 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.spaceSm),
-        Center(
-          child: TextButton.icon(
-            onPressed: widget.onPaidViaCash,
-            icon: const Icon(Icons.payments_outlined, size: 16),
-            label: const Text('Paid via cash'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textTertiary,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spaceMd,
-                vertical: AppSpacing.spaceXs,
+        const SizedBox(height: AppSpacing.spaceMd),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: () => setState(() => _showQr = !_showQr),
+              icon: Icon(_showQr ? Icons.close : Icons.qr_code_2, size: 16),
+              label: Text(_showQr ? 'Hide QR' : 'Show QR'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.spaceMd,
+                  vertical: AppSpacing.spaceXs,
+                ),
               ),
             ),
-          ),
+            Container(
+              width: 1,
+              height: 16,
+              color: AppColors.border,
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceSm),
+            ),
+            TextButton.icon(
+              onPressed: widget.onPaidViaCash,
+              icon: const Icon(Icons.payments_outlined, size: 16),
+              label: const Text('Paid via cash'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textTertiary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.spaceMd,
+                  vertical: AppSpacing.spaceXs,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -579,43 +600,90 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
   Widget _buildQrCode() {
     final data = _paymentData!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.spaceXl),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.qr_code_scanner, size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                'Scan to pay ₹$_formattedAmount',
+                style: AppTypography.bodyPrimary.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          child: QrImageView(
-            data: data.qrData,
-            version: QrVersions.auto,
-            size: 180,
-            backgroundColor: Colors.white,
-            errorStateBuilder: (context, error) => const Center(
-              child: Text('Could not generate QR'),
+          const SizedBox(height: AppSpacing.spaceLg),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: QrImageView(
+              data: data.qrData,
+              version: QrVersions.auto,
+              size: 200,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Color(0xFF1A1A1A),
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Color(0xFF1A1A1A),
+              ),
+              errorStateBuilder: (context, error) => SizedBox(
+                width: 200,
+                height: 200,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 32, color: AppColors.error),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Could not generate QR',
+                        style: AppTypography.caption.copyWith(color: AppColors.error),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.spaceLg),
-        Text(
-          'Scan with any UPI app to pay',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
+          const SizedBox(height: AppSpacing.spaceLg),
+          Text(
+            'Open any UPI app and scan this code',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.spaceMd),
-        TextButton.icon(
-          onPressed: () => setState(() => _showQr = false),
-          icon: const Icon(Icons.close, size: 16),
-          label: const Text('Hide QR'),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textTertiary,
+          const SizedBox(height: 4),
+          Text(
+            'Works with GPay, PhonePe, Paytm, BHIM & more',
+            style: AppTypography.captionSmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -448,7 +448,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 | Feature | Verdict | When to add | Status |
 |--------|---------|-------------|--------|
 | **Receipt attachments** | ✅ Must-have polish | After settlement math, before Firebase. | Not implemented |
-| **Dynamic UPI QR generator** | 🔥 Differentiator (India hit) | Early; no backend needed. Amount from your logic. | Not implemented |
+| **Dynamic UPI QR generator** | 🔥 Differentiator (India hit) | Early; no backend needed. Amount from your logic. | ✅ Implemented in V3 — `UpiPaymentCard` shows "Show QR" toggle; generates scannable QR with pre-filled amount via `qr_flutter`. |
 | **Category intelligence** | ✅ Add later, keep dumb | After receipts/QR. Simple keyword → category map; don’t overdo NLP. | Not implemented |
 | **Smart “nudge” templates** | ✅ Good — tone matters | Opt-in only. Don’t automate sending or nag. e.g. “₹2,480 pending. Settlement: Sunday.” | Not implemented |
 | **Biometric lock** | ⏳ Nice-to-have, not urgent | After core flow is solid. Adds friction if too early; good for trust/credibility. | Not implemented |

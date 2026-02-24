@@ -30,6 +30,7 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 | **Passive social pressure** | Settlement progress shows "X of Y members settled" with "N pending" badge. In settlement details, members who owe and haven't paid show "Pending" badge (no names in public view). Daily system activity "X members still pending settlement" is emitted once per day when in settling mode. No direct reminders, no push notifications—UI only. | V3 |
 | **Skeleton placeholders** | Loading states use skeleton placeholders (shimmering cards) instead of spinners. Applied to groups list and settlement confirmation. Perceived performance improvement—content shape visible immediately. | V3 |
 | **Offline resilience** | `ConnectivityService` detects online/offline status. Offline banner ("Offline — showing last known state") appears at top of screens when disconnected. Destructive actions (delete group, confirm payment) are blocked with clear feedback. Read-only browsing of cached data remains available. | V3 |
+| **Dynamic UPI QR** | Payment cards show "Show QR" toggle alongside UPI app picker. Generates scannable QR code with amount pre-filled. Works with all UPI apps (GPay, PhonePe, Paytm, BHIM, etc.). QR displays amount prominently and includes helper text. | V3 |
 
 ---
 
@@ -55,7 +56,6 @@ The following stay out of the V3 release boundary:
 | **Rich social identity** | Beyond profile pictures (e.g. bios, status). |
 | **Engagement mechanics** | Gamification, streaks, or retention hooks. |
 | **Receipt attachments** | Photo attachments for expenses. |
-| **Dynamic UPI QR** | QR code generation for settlement. |
 
 No V3 behavior or UI should depend on these.
 
