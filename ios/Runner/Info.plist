@@ -47,5 +47,17 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>Expenso uses contacts to suggest names and numbers when inviting members to a group.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>upi</string>
+		<string>gpay</string>
+		<string>phonepe</string>
+		<string>paytm</string>
+		<string>bhim</string>
+		<string>whatsapp</string>
+		<string>amazonpay</string>
+		<string>mobikwik</string>
+		<string>freecharge</string>
+	</array>
 </dict>
 </plist>

@@ -6,6 +6,7 @@ import '../design/typography.dart';
 import '../models/money_minor.dart';
 import '../models/payment_attempt.dart';
 import '../services/upi_payment_service.dart';
+import 'upi_app_picker.dart';
 
 class UpiPaymentCard extends StatefulWidget {
   final String payeeName;
@@ -16,6 +17,7 @@ class UpiPaymentCard extends StatefulWidget {
   final PaymentAttemptStatus? attemptStatus;
   final VoidCallback? onPaymentInitiated;
   final VoidCallback? onMarkAsPaid;
+  final Function(UpiTransactionResult result)? onPaymentResult;
 
   const UpiPaymentCard({
     super.key,
@@ -27,6 +29,7 @@ class UpiPaymentCard extends StatefulWidget {
     this.attemptStatus,
     this.onPaymentInitiated,
     this.onMarkAsPaid,
+    this.onPaymentResult,
   });
 
   @override
@@ -35,7 +38,8 @@ class UpiPaymentCard extends StatefulWidget {
 
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool _showQr = false;
-  bool _launching = false;
+  bool _loading = false;
+  UpiTransactionResult? _lastResult;
 
   String get _formattedAmount {
     final display = MoneyConversion.minorToDisplay(widget.amountMinor, widget.currencyCode);
@@ -63,38 +67,44 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     );
   }
 
-  Future<void> _launchUpi() async {
+  Future<void> _showUpiAppPicker() async {
     final data = _paymentData;
     if (data == null) return;
 
-    setState(() => _launching = true);
+    setState(() => _loading = true);
 
-    final result = await UpiPaymentService.launchUpiPayment(data);
+    final apps = await UpiPaymentService.getInstalledUpiApps();
 
     if (!mounted) return;
-    setState(() => _launching = false);
+    setState(() => _loading = false);
 
-    switch (result) {
-      case UpiLaunchResult.launched:
-        widget.onPaymentInitiated?.call();
-        break;
-      case UpiLaunchResult.noUpiApp:
-        widget.onPaymentInitiated?.call();
-        setState(() => _showQr = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No UPI app found. Scan the QR code instead.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        break;
-      case UpiLaunchResult.failed:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open UPI app. Try again.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+    if (apps.isEmpty) {
+      setState(() => _showQr = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No UPI apps found. Scan the QR code to pay.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      widget.onPaymentInitiated?.call();
+      return;
+    }
+
+    final result = await UpiAppPicker.show(
+      context: context,
+      paymentData: data,
+    );
+
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() => _lastResult = result);
+      widget.onPaymentInitiated?.call();
+      widget.onPaymentResult?.call(result);
+
+      if (result.isSuccess) {
+        widget.onMarkAsPaid?.call();
+      }
     }
   }
 
@@ -147,8 +157,33 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ),
             ],
           ),
+          if (_hasUpiId && !_isConfirmed) ...[
+            const SizedBox(height: AppSpacing.spaceSm),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceMd,
+                vertical: AppSpacing.spaceXs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                widget.payeeUpiId!,
+                style: AppTypography.caption.copyWith(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.spaceLg),
           _buildActionArea(),
+          if (_lastResult != null && !_isConfirmed) ...[
+            const SizedBox(height: AppSpacing.spaceLg),
+            _buildLastResultBanner(),
+          ],
           if (_showQr && _paymentData != null) ...[
             const SizedBox(height: AppSpacing.spaceXl),
             _buildQrCode(),
@@ -162,6 +197,61 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLastResultBanner() {
+    final result = _lastResult!;
+    final color = UpiPaymentService.getStatusColor(result);
+    final icon = UpiPaymentService.getStatusIcon(result);
+    final message = UpiPaymentService.getStatusMessage(result);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.spaceLg),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: AppSpacing.spaceLg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: AppTypography.caption.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (result.transactionId != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Txn: ${result.transactionId}',
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 10,
+                      color: AppColors.textTertiary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => setState(() => _lastResult = null),
+            icon: const Icon(Icons.close, size: 16),
+            color: AppColors.textTertiary,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            visualDensity: VisualDensity.compact,
+          ),
         ],
       ),
     );
@@ -237,7 +327,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: _launching ? null : _launchUpi,
+              onPressed: _loading ? null : _showUpiAppPicker,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Pay again'),
               style: OutlinedButton.styleFrom(
@@ -286,8 +376,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: _launching ? null : _launchUpi,
-        icon: _launching
+        onPressed: _loading ? null : _showUpiAppPicker,
+        icon: _loading
             ? const SizedBox(
                 width: 16,
                 height: 16,
@@ -297,7 +387,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                 ),
               )
             : const Icon(Icons.payment, size: 18),
-        label: Text(_launching ? 'Opening...' : 'Pay via UPI'),
+        label: Text(_loading ? 'Loading...' : 'Pay via UPI'),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
