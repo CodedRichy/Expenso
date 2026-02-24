@@ -139,7 +139,6 @@ class _PhoneAuthState extends State<PhoneAuth> {
   Widget build(BuildContext context) {
     if (step == 'phone') {
       return Scaffold(
-        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -153,12 +152,12 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   children: [
                     Text(
                       'Enter phone number',
-                      style: AppTypography.heroTitle.copyWith(height: 1.2),
+                      style: context.heroTitle.copyWith(height: 1.2),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'You will receive a verification code',
-                      style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
+                      style: context.bodySecondary,
                     ),
                   ],
                 ),
@@ -174,7 +173,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                       ),
                       child: Text(
                         '+91',
-                        style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
+                        style: context.bodySecondary,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -193,7 +192,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                         },
                         onSubmitted: (_) => handlePhoneSubmit(),
                         decoration: const InputDecoration(hintText: 'Phone number'),
-                        style: AppTypography.input,
+                        style: context.input,
                       ),
                     ),
                   ],
@@ -202,7 +201,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   const SizedBox(height: 12),
                   Text(
                     _errorMessage!,
-                    style: AppTypography.bodySecondary.copyWith(color: AppColors.error),
+                    style: context.bodySecondary.copyWith(color: AppColors.error),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -228,7 +227,6 @@ class _PhoneAuthState extends State<PhoneAuth> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -242,18 +240,18 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 children: [
                   Text(
                     'Enter verification code',
-                    style: AppTypography.heroTitle.copyWith(height: 1.2),
+                    style: context.heroTitle.copyWith(height: 1.2),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Sent to +91 $phone',
-                    style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
+                    style: context.bodySecondary,
                   ),
                   if (PhoneAuthService.isTestNumber(phone)) ...[
                     const SizedBox(height: 8),
                     Text(
                       'For this test number, use the code ${PhoneAuthService.devTestCode}.',
-                      style: AppTypography.caption.copyWith(
+                      style: context.caption.copyWith(
                         color: AppColors.accent,
                         fontStyle: FontStyle.italic,
                       ),
@@ -277,13 +275,13 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 },
                 onSubmitted: (_) => handleOtpSubmit(),
                 decoration: const InputDecoration(hintText: '6-digit code'),
-                style: AppTypography.input.copyWith(letterSpacing: 8),
+                style: context.input.copyWith(letterSpacing: 8),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   _errorMessage!,
-                  style: AppTypography.bodySecondary.copyWith(color: AppColors.error),
+                  style: context.bodySecondary.copyWith(color: AppColors.error),
                 ),
               ],
               const SizedBox(height: 16),
@@ -305,7 +303,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 onPressed: _loading ? null : _goBackToPhone,
                 child: Text(
                   'Change number',
-                  style: AppTypography.bodySecondary.copyWith(
+                  style: context.bodySecondary.copyWith(
                     fontWeight: FontWeight.w500,
                     color: AppColors.accent,
                   ),

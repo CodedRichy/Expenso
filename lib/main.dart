@@ -33,13 +33,16 @@ import 'screens/error_states.dart';
 import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
 import 'services/fcm_token_service.dart';
+import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load local profile cache FIRST (instant, before any network)
-  // This enables immediate avatar rendering on cold start
-  await UserProfileCache.instance.load();
+  // Load local profile cache and theme FIRST (instant, before any network)
+  await Future.wait([
+    UserProfileCache.instance.load(),
+    ThemeService.instance.load(),
+  ]);
   CycleRepository.instance.loadFromLocalCache();
   
   try {
@@ -186,16 +189,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Expenso',
-      debugShowCheckedModeBanner: false,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-      ],
-      initialRoute: '/splash',
+    return ListenableBuilder(
+      listenable: ThemeService.instance,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Expenso',
+          debugShowCheckedModeBanner: false,
+          theme: _buildTheme(Brightness.light),
+          darkTheme: _buildTheme(Brightness.dark),
+          themeMode: ThemeService.instance.themeMode,
+          navigatorObservers: [
+            FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+          ],
+          initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/': (context) => StreamBuilder<User?>(
@@ -271,6 +277,8 @@ class MyApp extends StatelessWidget {
           return ErrorStates(type: args?['type'] as String? ?? 'generic');
         },
         '/profile': (context) => const ProfileScreen(),
+        },
+        );
       },
     );
   }

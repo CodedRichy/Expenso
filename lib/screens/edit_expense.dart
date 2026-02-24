@@ -255,7 +255,6 @@ class _EditExpenseState extends State<EditExpense> {
     }
     final canEdit = _canEdit;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -309,7 +308,6 @@ class _EditExpenseState extends State<EditExpense> {
 
   Widget _buildErrorScreen(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

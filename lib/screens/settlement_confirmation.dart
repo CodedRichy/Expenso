@@ -240,7 +240,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     final hasUpiDues = myTotalDue > 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -352,15 +351,15 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   children: [
                     Text(
                       'Incoming payments',
-                      style: AppTypography.bodyPrimary.copyWith(
+                      style: context.bodyPrimary.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${routes.length} ${routes.length == 1 ? 'payment' : 'payments'} awaiting your confirmation',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
+                      style: context.caption.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -410,14 +409,14 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                     children: [
                       Text(
                         payerName,
-                        style: AppTypography.bodyPrimary.copyWith(
+                        style: context.bodyPrimary.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '₹$amount ${isCash ? 'cash' : 'UPI'} payment',
-                        style: AppTypography.bodySecondary,
+                        style: context.bodySecondary,
                       ),
                     ],
                   ),
@@ -491,12 +490,12 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           const SizedBox(height: AppSpacing.spaceXl),
           Text(
             'You\'re all settled!',
-            style: AppTypography.screenTitle,
+            style: context.screenTitle,
           ),
           const SizedBox(height: AppSpacing.spaceMd),
           Text(
             'You have no payments to make this cycle.',
-            style: AppTypography.bodySecondary,
+            style: context.bodySecondary,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.space5xl),
@@ -532,7 +531,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                 const SizedBox(height: AppSpacing.spaceLg),
                 Text(
                   'All payments marked!',
-                  style: AppTypography.screenTitle.copyWith(
+                  style: context.screenTitle.copyWith(
                     color: AppColors.success,
                   ),
                 ),
@@ -552,7 +551,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   confirmedRoutes > 0
                       ? 'Remaining dues (${myRoutes.length - confirmedRoutes} of ${myRoutes.length})'
                       : 'Your total dues',
-                  style: AppTypography.bodySecondary,
+                  style: context.bodySecondary,
                 ),
               ],
             ],
@@ -608,8 +607,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                 Expanded(
                   child: Text(
                     'After paying via UPI, tap "Mark as paid" to record your payment.',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondary,
+                    style: context.caption.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

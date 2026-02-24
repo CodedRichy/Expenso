@@ -51,7 +51,6 @@ class _CycleHistoryState extends State<CycleHistory> {
     final groupName = group.name;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

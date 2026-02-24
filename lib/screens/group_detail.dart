@@ -253,7 +253,6 @@ class _GroupDetailState extends State<GroupDetail> {
             }
           });
           return const Scaffold(
-            backgroundColor: Color(0xFFF7F7F8),
             body: Center(child: ExpensoLoader()),
           );
         }
@@ -265,7 +264,6 @@ class _GroupDetailState extends State<GroupDetail> {
         final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
 
         return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -906,14 +904,14 @@ class _DecisionClarityCard extends StatelessWidget {
       children: [
         Text(
           'Cycle Total',
-          style: AppTypography.sectionLabel.copyWith(
+          style: context.sectionLabel.copyWith(
             color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
           '₹${_fmtRupee(cycleTotal)}',
-          style: AppTypography.amountLG.copyWith(color: Colors.white),
+          style: context.amountLG.copyWith(color: Colors.white),
         ),
         SizedBox(height: AppSpacing.spaceXl),
         Row(
@@ -924,7 +922,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 children: [
                   Text(
                     'You Paid',
-                    style: AppTypography.captionSmall.copyWith(
+                    style: context.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
@@ -932,7 +930,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   SizedBox(height: AppSpacing.space2xs),
                   Text(
                     '₹${_fmtRupee(youPaid)}',
-                    style: AppTypography.amountSM.copyWith(
+                    style: context.amountSM.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                     ),
                   ),
@@ -945,7 +943,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 children: [
                   Text(
                     hasPaymentProgress ? 'Remaining' : 'Your Status',
-                    style: AppTypography.captionSmall.copyWith(
+                    style: context.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
@@ -954,12 +952,12 @@ class _DecisionClarityCard extends StatelessWidget {
                   if (hasPaymentProgress && !isBalanceClear) ...[
                     Text(
                       statusText,
-                      style: AppTypography.amountSM.copyWith(color: statusColor),
+                      style: context.amountSM.copyWith(color: statusColor),
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
                       'was ${myNet < 0 ? '-' : '+'}₹${_fmtRupee(myNet.abs())}',
-                      style: AppTypography.captionSmall.copyWith(
+                      style: context.captionSmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.5),
                         decoration: TextDecoration.lineThrough,
                       ),
@@ -967,7 +965,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   ] else
                     Text(
                       statusText,
-                      style: AppTypography.amountSM.copyWith(color: statusColor),
+                      style: context.amountSM.copyWith(color: statusColor),
                     ),
                 ],
               ),
@@ -1034,9 +1032,9 @@ class _SettlementDetailsSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Settlement details', style: AppTypography.screenTitle),
+                  Text('Settlement details', style: context.screenTitle),
                   SizedBox(height: AppSpacing.spaceXs),
-                  Text(groupName, style: AppTypography.bodySecondary),
+                  Text(groupName, style: context.bodySecondary),
                 ],
               ),
             ),
@@ -1054,7 +1052,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.space4xl),
                     child: Text(
                       'All settled 🎉',
-                      style: AppTypography.subheader.copyWith(color: AppColors.textSecondary),
+                      style: context.subheader.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ),
                 ),
@@ -1083,7 +1081,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
             Expanded(
               child: Text(
                 'You\'re all settled up',
-                style: AppTypography.listItemTitle,
+                style: context.listItemTitle,
               ),
             ),
           ],
@@ -1106,12 +1104,12 @@ class _SettlementDetailsSheet extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.caption.copyWith(color: color),
+            style: context.caption.copyWith(color: color),
           ),
           SizedBox(height: AppSpacing.spaceXs),
           Text(
             amount,
-            style: AppTypography.amountLG.copyWith(color: color),
+            style: context.amountLG.copyWith(color: color),
           ),
         ],
       ),
@@ -1124,7 +1122,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Text('BREAKDOWN', style: AppTypography.sectionLabel),
+          child: Text('BREAKDOWN', style: context.sectionLabel),
         ),
         SizedBox(height: AppSpacing.spaceLg),
         ...myDebts.map((debt) {
@@ -1160,7 +1158,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(otherName, style: AppTypography.listItemTitle),
+                          Text(otherName, style: context.listItemTitle),
                           if (showPendingBadge) ...[
                             SizedBox(width: AppSpacing.spaceSm),
                             Container(
@@ -1171,7 +1169,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                               ),
                               child: Text(
                                 'Pending',
-                                style: AppTypography.captionSmall.copyWith(
+                                style: context.captionSmall.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 10,
@@ -1184,7 +1182,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                       SizedBox(height: AppSpacing.space2xs),
                       Text(
                         direction,
-                        style: AppTypography.captionSmall.copyWith(
+                        style: context.captionSmall.copyWith(
                           color: directionColor,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1194,7 +1192,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 ),
                 Text(
                   '₹${_fmtRupee(amountDisplay)}',
-                  style: AppTypography.amountSM.copyWith(color: directionColor),
+                  style: context.amountSM.copyWith(color: directionColor),
                 ),
               ],
             ),

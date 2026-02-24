@@ -39,7 +39,7 @@ class OfflineBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     customMessage ?? 'Offline — showing last known state',
-                    style: AppTypography.caption.copyWith(
+                    style: context.caption.copyWith(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w500,
                     ),
@@ -52,7 +52,7 @@ class OfflineBanner extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 8),
                       child: Text(
                         'Retry',
-                        style: AppTypography.caption.copyWith(
+                        style: context.caption.copyWith(
                           color: AppColors.warning,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline,

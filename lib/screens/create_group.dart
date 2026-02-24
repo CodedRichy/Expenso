@@ -79,7 +79,6 @@ class _CreateGroupState extends State<CreateGroup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,7 +103,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Create Group', style: AppTypography.screenTitle),
+                  Text('Create Group', style: context.screenTitle),
                 ],
               ),
             ),
@@ -117,7 +116,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('GROUP NAME', style: AppTypography.sectionLabel),
+                        Text('GROUP NAME', style: context.sectionLabel),
                         const SizedBox(height: 12),
                         TextField(
                           autofocus: true,
@@ -129,7 +128,7 @@ class _CreateGroupState extends State<CreateGroup> {
                           decoration: const InputDecoration(
                             hintText: 'e.g. Roommates, Trip',
                           ),
-                          style: AppTypography.input,
+                          style: context.input,
                         ),
                       ],
                     ),
@@ -137,7 +136,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('SETTLEMENT RHYTHM', style: AppTypography.sectionLabel),
+                        Text('SETTLEMENT RHYTHM', style: context.sectionLabel),
                         const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
@@ -162,7 +161,7 @@ class _CreateGroupState extends State<CreateGroup> {
                         children: [
                           Text(
                             rhythm == 'weekly' ? 'SETTLEMENT DAY' : 'SETTLEMENT DATE',
-                            style: AppTypography.sectionLabel,
+                            style: context.sectionLabel,
                           ),
                           const SizedBox(height: 12),
                           Container(
@@ -176,7 +175,7 @@ class _CreateGroupState extends State<CreateGroup> {
                               child: DropdownButton<int>(
                                 value: settlementDay,
                                 isExpanded: true,
-                                style: AppTypography.input,
+                                style: context.input,
                                 items: rhythm == 'weekly'
                                     ? _buildWeeklyOptions()
                                     : _buildMonthlyOptions(),
@@ -201,7 +200,7 @@ class _CreateGroupState extends State<CreateGroup> {
                         border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(getPreviewText(), style: AppTypography.bodySecondary),
+                      child: Text(getPreviewText(), style: context.bodySecondary),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -249,7 +248,7 @@ class _CreateGroupState extends State<CreateGroup> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: AppTypography.bodyPrimary),
+            Text(label, style: context.bodyPrimary),
             Container(
               width: 20,
               height: 20,

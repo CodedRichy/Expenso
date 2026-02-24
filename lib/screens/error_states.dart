@@ -15,7 +15,6 @@ class ErrorStates extends StatelessWidget {
   Widget build(BuildContext context) {
     if (type == 'network') {
       return Scaffold(
-        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Stack(
             children: [
@@ -46,19 +45,16 @@ class ErrorStates extends StatelessWidget {
                           child: const Icon(Icons.wifi_off, color: AppColors.textSecondary, size: 32),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
+                        Text(
                           'Connection unavailable',
                           textAlign: TextAlign.center,
-                          style: AppTypography.subheader,
+                          style: context.subheader,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Unable to load data. Check your connection and try again.',
                           textAlign: TextAlign.center,
-                          style: AppTypography.bodyPrimary.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
+                          style: context.bodySecondary.copyWith(height: 1.5),
                         ),
                         const SizedBox(height: 48),
                         ElevatedButton(
@@ -84,7 +80,6 @@ class ErrorStates extends StatelessWidget {
 
     if (type == 'session-expired') {
       return Scaffold(
-        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -107,14 +102,13 @@ class ErrorStates extends StatelessWidget {
                     const Text(
                       'Session expired',
                       textAlign: TextAlign.center,
-                      style: AppTypography.subheader,
+                      style: context.subheader,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Your session has expired. Verify your phone number to continue.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.bodyPrimary.copyWith(
-                        color: AppColors.textSecondary,
+                      style: context.bodySecondary.copyWith(
                         height: 1.5,
                       ),
                     ),
@@ -139,7 +133,6 @@ class ErrorStates extends StatelessWidget {
 
     if (type == 'payment-unavailable') {
       return Scaffold(
-        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Stack(
             children: [
@@ -173,14 +166,13 @@ class ErrorStates extends StatelessWidget {
                         const Text(
                           'Payment unavailable',
                           textAlign: TextAlign.center,
-                          style: AppTypography.subheader,
+                          style: context.subheader,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Payment processing is temporarily unavailable. You can settle manually outside the app.',
                           textAlign: TextAlign.center,
-                          style: AppTypography.bodyPrimary.copyWith(
-                            color: AppColors.textSecondary,
+                          style: context.bodySecondary.copyWith(
                             height: 1.5,
                           ),
                         ),
@@ -206,7 +198,6 @@ class ErrorStates extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -240,14 +231,13 @@ class ErrorStates extends StatelessWidget {
                       const Text(
                         'Something went wrong',
                         textAlign: TextAlign.center,
-                        style: AppTypography.subheader,
+                        style: context.subheader,
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'We had trouble loading data. Your existing data is safe.',
                         textAlign: TextAlign.center,
-                        style: AppTypography.bodyPrimary.copyWith(
-                          color: AppColors.textSecondary,
+                        style: context.bodySecondary.copyWith(
                           height: 1.5,
                         ),
                       ),

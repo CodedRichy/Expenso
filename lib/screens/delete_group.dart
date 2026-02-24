@@ -17,7 +17,6 @@ class DeleteGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,7 +41,7 @@ class DeleteGroup extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Delete Group', style: AppTypography.screenTitle),
+                  Text('Delete Group', style: context.screenTitle),
                 ],
               ),
             ),
@@ -58,7 +57,7 @@ class DeleteGroup extends StatelessWidget {
                         Text(
                           groupName.isEmpty ? 'Delete group' : 'Delete "$groupName"',
                           textAlign: TextAlign.center,
-                          style: AppTypography.subheader,
+                          style: context.subheader,
                         ),
                         const SizedBox(height: 16),
                         if (hasPendingBalance) ...[
@@ -68,20 +67,19 @@ class DeleteGroup extends StatelessWidget {
                               (Match m) => '${m[1]},',
                             )} pending',
                             textAlign: TextAlign.center,
-                            style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
+                            style: context.bodySecondary,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Deleting this group will remove all expense history. Outstanding balances will not be automatically settled.',
                             textAlign: TextAlign.center,
-                            style: AppTypography.bodySecondary,
+                            style: context.bodySecondary,
                           ),
                         ] else
                           Text(
                             'This will permanently delete the group and all expense history.',
                             textAlign: TextAlign.center,
-                            style: AppTypography.bodyPrimary.copyWith(
-                              color: AppColors.textSecondary,
+                            style: context.bodySecondary.copyWith(
                               height: 1.5,
                             ),
                           ),

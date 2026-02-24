@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/profile_service.dart';
+import '../services/theme_service.dart';
 import '../design/typography.dart';
 import '../widgets/member_avatar.dart';
 
@@ -120,7 +121,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final photoURL = repo.currentUserPhotoURL;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F7F8),
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -378,6 +378,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                // Appearance Settings
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [_blackGradientStart, _blackGradientEnd],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.palette_outlined,
+                              size: 20,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Appearance',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.95),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ListenableBuilder(
+                          listenable: ThemeService.instance,
+                          builder: (context, _) {
+                            return Row(
+                              children: [
+                                _ThemeOption(
+                                  icon: Icons.brightness_auto,
+                                  label: 'System',
+                                  selected: ThemeService.instance.themeMode == ThemeMode.system,
+                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.system),
+                                ),
+                                const SizedBox(width: 12),
+                                _ThemeOption(
+                                  icon: Icons.light_mode,
+                                  label: 'Light',
+                                  selected: ThemeService.instance.themeMode == ThemeMode.light,
+                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.light),
+                                ),
+                                const SizedBox(width: 12),
+                                _ThemeOption(
+                                  icon: Icons.dark_mode,
+                                  label: 'Dark',
+                                  selected: ThemeService.instance.themeMode == ThemeMode.dark,
+                                  onTap: () => ThemeService.instance.setThemeMode(ThemeMode.dark),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -419,6 +495,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: selected
+                ? Border.all(color: Colors.white24)
+                : null,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: selected ? Colors.white : Colors.white60,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? Colors.white : Colors.white60,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

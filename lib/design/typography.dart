@@ -1,7 +1,53 @@
 import 'package:flutter/material.dart';
+import 'colors.dart';
+
+extension ThemedTypography on BuildContext {
+  TextStyle get heroTitle => AppTypography.heroTitle.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get screenTitle => AppTypography.screenTitle.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get subheader => AppTypography.subheader.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get bodyPrimary => AppTypography.bodyPrimary.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get bodySecondary => AppTypography.bodySecondary.copyWith(
+    color: Theme.of(this).colorScheme.onSurfaceVariant,
+  );
+  TextStyle get listItemTitle => AppTypography.listItemTitle.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get caption => AppTypography.caption.copyWith(
+    color: Theme.of(this).colorScheme.onSurfaceVariant,
+  );
+  TextStyle get captionSmall => AppTypography.captionSmall.copyWith(
+    color: Theme.of(this).colorScheme.onSurfaceVariant,
+  );
+  TextStyle get sectionLabel => AppTypography.sectionLabel.copyWith(
+    color: Theme.of(this).colorScheme.onSurfaceVariant,
+  );
+  TextStyle get amountXL => AppTypography.amountXL.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get amountLG => AppTypography.amountLG.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get amountMD => AppTypography.amountMD.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get amountSM => AppTypography.amountSM.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+  TextStyle get input => AppTypography.input.copyWith(
+    color: Theme.of(this).colorScheme.onSurface,
+  );
+}
 
 abstract final class AppTypography {
-  // Hero/Page Titles
+  // Hero/Page Titles - no color = inherits from DefaultTextStyle/Theme
   static const heroTitle = TextStyle(
     fontSize: 34,
     fontWeight: FontWeight.w600,

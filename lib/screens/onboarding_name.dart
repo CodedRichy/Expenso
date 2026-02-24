@@ -31,7 +31,6 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -45,12 +44,12 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                 children: [
                   Text(
                     'What should we call you?',
-                    style: AppTypography.heroTitle.copyWith(height: 1.2),
+                    style: context.heroTitle.copyWith(height: 1.2),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'This name will appear in groups and expense logs.',
-                    style: AppTypography.bodyPrimary.copyWith(color: AppColors.textSecondary),
+                    style: context.bodySecondary,
                   ),
                 ],
               ),
@@ -62,7 +61,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                 onChanged: (_) => setState(() {}),
                 onSubmitted: (_) => handleGetStarted(),
                 decoration: const InputDecoration(hintText: 'Your name'),
-                style: AppTypography.input,
+                style: context.input,
               ),
               const SizedBox(height: 16),
               ElevatedButton(

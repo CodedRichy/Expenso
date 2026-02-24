@@ -23,9 +23,9 @@ class EmptyStates extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: Text('Groups', style: AppTypography.heroTitle),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: Text('Groups', style: context.heroTitle),
             ),
             Expanded(
               child: Center(
@@ -39,13 +39,13 @@ class EmptyStates extends StatelessWidget {
                         Text(
                           'No groups yet',
                           textAlign: TextAlign.center,
-                          style: AppTypography.listItemTitle,
+                          style: context.listItemTitle,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Create a group to start tracking shared expenses with automatic settlement cycles.',
                           textAlign: TextAlign.center,
-                          style: AppTypography.bodySecondary,
+                          style: context.bodySecondary,
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton(
@@ -66,7 +66,6 @@ class EmptyStates extends StatelessWidget {
       );
       if (!wrapInScaffold) return content;
       return Scaffold(
-        backgroundColor: AppColors.background,
         body: content,
       );
     }
@@ -83,13 +82,13 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'No expenses yet',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add expenses as they occur. The group will settle at the end of the cycle.',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodySecondary,
+                    style: context.bodySecondary,
                   ),
                 ],
               ),
@@ -110,13 +109,13 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'New cycle started',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Previous cycle is settled. Add new expenses for this cycle.',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodySecondary,
+                    style: context.bodySecondary,
                   ),
                 ],
               ),
@@ -137,13 +136,13 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'No expenses yet',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Tap the button below to start the cycle!',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodySecondary,
+                    style: context.bodySecondary,
                   ),
                 ],
               ),
@@ -153,8 +152,12 @@ class EmptyStates extends StatelessWidget {
     }
 
     if (type == 'zero-waste-cycle') {
-      final titleColor = forDarkCard ? Colors.white.withValues(alpha: 0.95) : AppColors.textPrimary;
-      final bodyColor = forDarkCard ? Colors.white.withValues(alpha: 0.75) : AppColors.textSecondary;
+      final titleColor = forDarkCard 
+          ? Colors.white.withValues(alpha: 0.95) 
+          : Theme.of(context).colorScheme.onSurface;
+      final bodyColor = forDarkCard 
+          ? Colors.white.withValues(alpha: 0.75) 
+          : Theme.of(context).colorScheme.onSurfaceVariant;
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,12 +165,12 @@ class EmptyStates extends StatelessWidget {
         children: [
           Text(
             'Zero-Waste Cycle',
-            style: AppTypography.subheader.copyWith(color: titleColor),
+            style: context.subheader.copyWith(color: titleColor),
           ),
           const SizedBox(height: 8),
           Text(
             'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
-            style: AppTypography.caption.copyWith(color: bodyColor, height: 1.35),
+            style: context.caption.copyWith(color: bodyColor, height: 1.35),
           ),
         ],
       );

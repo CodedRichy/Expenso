@@ -122,13 +122,13 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
           const SizedBox(height: AppSpacing.spaceXl),
           Text(
             _error!,
-            style: AppTypography.bodyPrimary,
+            style: context.bodyPrimary,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.spaceMd),
           Text(
             'Install a UPI app like Google Pay, PhonePe, or Paytm to make payments.',
-            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+            style: context.caption.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.spaceXl),
@@ -209,7 +209,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             const SizedBox(height: AppSpacing.spaceSm),
             Text(
               _formatAppName(appInfo.name),
-              style: AppTypography.caption.copyWith(
+              style: context.caption.copyWith(
                 fontSize: 11,
                 color: AppColors.textSecondary,
               ),
@@ -370,7 +370,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
           const SizedBox(height: AppSpacing.spaceXs),
           Text(
             'to ${widget.paymentData.payeeName}',
-            style: AppTypography.bodySecondary,
+            style: context.bodySecondary,
           ),
           const SizedBox(height: AppSpacing.spaceSm),
           Container(
@@ -384,7 +384,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
             ),
             child: Text(
               widget.paymentData.payeeUpiId,
-              style: AppTypography.caption.copyWith(
+              style: context.caption.copyWith(
                 fontFamily: 'monospace',
                 color: AppColors.textSecondary,
               ),

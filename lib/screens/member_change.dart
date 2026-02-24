@@ -41,7 +41,6 @@ class MemberChange extends StatelessWidget {
         : displayMemberPhone;
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

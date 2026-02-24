@@ -49,8 +49,8 @@ class SettlementActivityFeed extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Activity',
-                      style: AppTypography.listItemTitle.copyWith(
-                        color: AppColors.textSecondary,
+                      style: context.listItemTitle.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const Spacer(),
@@ -94,13 +94,13 @@ class _EventRow extends StatelessWidget {
           Expanded(
             child: Text(
               event.displayMessage,
-              style: AppTypography.bodyPrimary,
+              style: context.bodyPrimary,
             ),
           ),
           Text(
             event.relativeTime,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textTertiary,
+            style: context.caption.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -158,7 +158,7 @@ class _PendingBadge extends StatelessWidget {
       ),
       child: Text(
         '$count pending',
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: AppColors.warning,
           fontWeight: FontWeight.w600,
         ),
@@ -199,15 +199,15 @@ class SettlementActivitySummary extends StatelessWidget {
                   children: [
                     Text(
                       latestEvent.displayMessage,
-                      style: AppTypography.bodyPrimary,
+                      style: context.bodyPrimary,
                     ),
                     if (pendingCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           '$pendingCount member${pendingCount == 1 ? '' : 's'} pending settlement',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
+                          style: context.caption.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -216,8 +216,8 @@ class SettlementActivitySummary extends StatelessWidget {
               ),
               Text(
                 latestEvent.relativeTime,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textTertiary,
+                style: context.caption.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

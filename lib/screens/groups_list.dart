@@ -215,7 +215,7 @@ class _GroupsListState extends State<GroupsList> {
             const SizedBox(height: 20),
             Text(
               invitation.groupName,
-              style: AppTypography.subheader,
+              style: context.subheader,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -232,7 +232,7 @@ class _GroupsListState extends State<GroupsList> {
                   const SizedBox(width: 6),
                   Text(
                     'Group invitation',
-                    style: AppTypography.sectionLabel.copyWith(color: AppColors.textSecondary),
+                    style: context.sectionLabel,
                   ),
                 ],
               ),
@@ -266,7 +266,7 @@ class _GroupsListState extends State<GroupsList> {
                       child: Center(
                         child: Text(
                           'Decline',
-                          style: AppTypography.button.copyWith(color: AppColors.textSecondary),
+                          style: AppTypography.button.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),
@@ -307,7 +307,7 @@ class _GroupsListState extends State<GroupsList> {
                       child: Center(
                         child: Text(
                           'Join Group',
-                          style: AppTypography.button.copyWith(color: AppColors.surface),
+                          style: AppTypography.button.copyWith(color: Theme.of(context).colorScheme.surface),
                         ),
                       ),
                     ),
@@ -350,7 +350,7 @@ class _GroupsListState extends State<GroupsList> {
         title: const Text('Delete Group'),
         content: Text(
           'Permanently delete "${group.name}" and all expense history?',
-          style: AppTypography.bodySecondary.copyWith(fontSize: 16),
+          style: context.bodySecondary.copyWith(fontSize: 16),
         ),
         actions: [
           TextButton(
@@ -406,7 +406,6 @@ class _GroupsListState extends State<GroupsList> {
           });
         }
         return Scaffold(
-          backgroundColor: AppColors.background,
           floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
@@ -445,8 +444,8 @@ class _GroupsListState extends State<GroupsList> {
                             padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
                             child: Row(
                               children: [
-                                const Expanded(
-                                  child: Text('Groups', style: AppTypography.heroTitle),
+                                Expanded(
+                                  child: Text('Groups', style: context.heroTitle),
                                 ),
                                 GestureDetector(
                                   onTap: () => Navigator.pushNamed(context, '/profile'),
@@ -550,7 +549,7 @@ class _GroupsListState extends State<GroupsList> {
                                                 children: [
                                                   Text(
                                                     group.name,
-                                                    style: AppTypography.listItemTitle.copyWith(
+                                                    style: context.listItemTitle.copyWith(
                                                       fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
                                                     ),
                                                   ),
@@ -563,24 +562,26 @@ class _GroupsListState extends State<GroupsList> {
                                                             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                                                             (Match m) => '${m[1]},',
                                                           )}',
-                                                          style: AppTypography.amountSM,
+                                                          style: context.amountSM.copyWith(
+                                                            color: Theme.of(context).colorScheme.onSurface,
+                                                          ),
                                                         ),
                                                         const SizedBox(width: 8),
-                                                        Text('pending', style: AppTypography.bodySecondary),
+                                                        Text('pending', style: context.bodySecondary),
                                                       ],
                                                     ),
                                                     const SizedBox(height: 6),
                                                     Text(
                                                       group.statusLine,
-                                                      style: AppTypography.bodySecondary.copyWith(
-                                                        color: isClosing ? AppColors.textPrimary : AppColors.textSecondary,
+                                                      style: context.bodySecondary.copyWith(
+                                                        color: isClosing ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                                                         fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
                                                       ),
                                                     ),
                                                   ] else
                                                     Text(
                                                       'All balances cleared',
-                                                      style: AppTypography.bodySecondary.copyWith(color: AppColors.textTertiary),
+                                                      style: context.bodySecondary.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                     ),
                                                 ],
                                               ),
@@ -632,17 +633,17 @@ class _BoundedGroupsLoading extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.hourglass_empty, size: 48, color: Color(0xFF9B9B9B)),
+                Icon(Icons.hourglass_empty, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 16),
                 const Text(
                   'Taking longer than expected',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Check your connection',
-                  style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+                  style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -652,8 +653,8 @@ class _BoundedGroupsLoading extends StatelessWidget {
                     CycleRepository.instance.restartListening();
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A1A1A),
-                    side: const BorderSide(color: Color(0xFFE5E5E5)),
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   ),
                   child: const Text('Retry'),

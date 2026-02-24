@@ -341,7 +341,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
     if (showConfirmation && parsedData != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -499,7 +498,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -78,8 +78,8 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                       allSettled
                           ? 'All members settled'
                           : '$membersSettled of $membersTotal members settled',
-                      style: AppTypography.bodyPrimary.copyWith(
-                        color: allSettled ? AppColors.success : AppColors.textPrimary,
+                      style: context.bodyPrimary.copyWith(
+                        color: allSettled ? AppColors.success : Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -93,7 +93,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                       ),
                       child: Text(
                         '$pendingMembers pending',
-                        style: AppTypography.caption.copyWith(
+                        style: context.caption.copyWith(
                           color: AppColors.warning,
                           fontWeight: FontWeight.w500,
                           fontSize: 11,
@@ -118,8 +118,8 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                 const SizedBox(height: 8),
                 Text(
                   '$settled of $total payments complete',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textTertiary,
+                  style: context.caption.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

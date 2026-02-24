@@ -212,7 +212,6 @@ class _InviteMembersState extends State<InviteMembers> {
         }
         final filteredContacts = _getFilteredContacts(existingPhones);
         return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         bottom: false,
         child: Column(

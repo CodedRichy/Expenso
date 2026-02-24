@@ -21,7 +21,6 @@ class PaymentResult extends StatelessWidget {
       return const Scaffold(body: SizedBox.shrink());
     }
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
       body: SafeArea(
         child: Center(
           child: Padding(
