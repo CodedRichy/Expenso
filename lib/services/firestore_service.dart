@@ -35,6 +35,7 @@ class FirestorePaths {
   static const String expenseRevisions = 'expense_revisions';
   static const String deletedExpenses = 'deleted_expenses';
   static const String paymentAttempts = 'payment_attempts';
+  static const String settlementEvents = 'settlement_events';
 
   static String groupDoc(String groupId) => '$groups/$groupId';
   static String groupExpenses(String groupId) => '$groups/$groupId/$expenses';
@@ -46,6 +47,7 @@ class FirestorePaths {
   static String groupExpenseRevisions(String groupId) => '$groups/$groupId/$expenseRevisions';
   static String groupDeletedExpenses(String groupId) => '$groups/$groupId/$deletedExpenses';
   static String groupPaymentAttempts(String groupId) => '$groups/$groupId/$paymentAttempts';
+  static String groupSettlementEvents(String groupId) => '$groups/$groupId/$settlementEvents';
 }
 
 /// Low-level Firestore access for users, groups, and expenses.
@@ -239,6 +241,45 @@ class FirestoreService {
         .limit(50)
         .snapshots()
         .map((s) => s.docs.map((d) => d.data()).toList());
+  }
+
+  /// Add a settlement event to the group activity feed.
+  Future<void> addSettlementEvent(
+    String groupId, {
+    required String type,
+    int? amountMinor,
+    String? paymentAttemptId,
+  }) async {
+    final now = DateTime.now();
+    final id = 'se_${now.millisecondsSinceEpoch}';
+    final ref = _firestore.collection(FirestorePaths.groupSettlementEvents(groupId)).doc(id);
+    await ref.set({
+      'id': id,
+      'type': type,
+      if (amountMinor != null) 'amountMinor': amountMinor,
+      'timestamp': now.millisecondsSinceEpoch,
+      if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
+    });
+  }
+
+  /// Stream of settlement events for a group (most recent first).
+  Stream<List<Map<String, dynamic>>> settlementEventsStream(String groupId) {
+    return _firestore
+        .collection(FirestorePaths.groupSettlementEvents(groupId))
+        .orderBy('timestamp', descending: true)
+        .limit(20)
+        .snapshots()
+        .map((s) => s.docs.map((d) => d.data()).toList());
+  }
+
+  /// Get settlement events for a group (one-time fetch).
+  Future<List<Map<String, dynamic>>> getSettlementEvents(String groupId) async {
+    final snap = await _firestore
+        .collection(FirestorePaths.groupSettlementEvents(groupId))
+        .orderBy('timestamp', descending: true)
+        .limit(20)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
   }
 
   static const int _deleteBatchSize = 500;

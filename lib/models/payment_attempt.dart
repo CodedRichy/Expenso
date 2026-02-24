@@ -57,6 +57,7 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
   bool get isConfirmedByReceiver => this == PaymentAttemptStatus.confirmedByReceiver;
   bool get isDisputed => this == PaymentAttemptStatus.disputed;
   bool get isSettled => isConfirmedByPayer || isConfirmedByReceiver;
+  bool get isFullyConfirmed => isConfirmedByReceiver;
 }
 
 class PaymentAttempt {

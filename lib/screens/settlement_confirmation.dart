@@ -7,6 +7,7 @@ import '../models/payment_attempt.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
+import '../widgets/settlement_activity_feed.dart';
 import '../widgets/upi_payment_card.dart';
 
 class SettlementConfirmation extends StatefulWidget {
@@ -317,6 +318,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               ],
             ),
           ),
+        const SizedBox(height: AppSpacing.space3xl),
+        SettlementActivityFeed(groupId: group.id, maxItems: 5),
         const SizedBox(height: AppSpacing.space3xl),
         _buildBackButton(context),
       ],

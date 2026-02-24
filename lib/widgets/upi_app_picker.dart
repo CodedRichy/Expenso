@@ -6,7 +6,7 @@ import '../services/upi_payment_service.dart';
 
 class UpiAppPicker extends StatefulWidget {
   final UpiPaymentData paymentData;
-  final Function(UpiApp app, UpiTransactionResult result) onPaymentComplete;
+  final Function(UpiAppInfo app, UpiTransactionResult result) onPaymentComplete;
   final VoidCallback? onCancel;
 
   const UpiAppPicker({
@@ -33,10 +33,10 @@ class UpiAppPicker extends StatefulWidget {
 }
 
 class _UpiAppPickerState extends State<UpiAppPicker> {
-  List<UpiApp>? _apps;
+  List<UpiAppInfo>? _apps;
   bool _loading = true;
   String? _error;
-  UpiApp? _processingApp;
+  UpiAppInfo? _processingApp;
 
   @override
   void initState() {
@@ -64,17 +64,17 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
     }
   }
 
-  Future<void> _onAppTap(UpiApp app) async {
-    setState(() => _processingApp = app);
+  Future<void> _onAppTap(UpiAppInfo appInfo) async {
+    setState(() => _processingApp = appInfo);
 
     final result = await UpiPaymentService.initiateTransaction(
       data: widget.paymentData,
-      app: app,
+      appInfo: appInfo,
     );
 
     if (mounted) {
       setState(() => _processingApp = null);
-      widget.onPaymentComplete(app, result);
+      widget.onPaymentComplete(appInfo, result);
     }
   }
 
@@ -154,12 +154,12 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
     );
   }
 
-  Widget _buildAppTile(UpiApp app) {
-    final isProcessing = _processingApp == app;
+  Widget _buildAppTile(UpiAppInfo appInfo) {
+    final isProcessing = _processingApp == appInfo;
     final isDisabled = _processingApp != null && !isProcessing;
 
     return GestureDetector(
-      onTap: isDisabled ? null : () => _onAppTap(app),
+      onTap: isDisabled ? null : () => _onAppTap(appInfo),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 150),
         opacity: isDisabled ? 0.4 : 1.0,
@@ -192,9 +192,9 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
                         ),
                       )
                     : Image.memory(
-                        app.icon,
+                        appInfo.icon,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorBuilder: (context, error, stackTrace) => const Icon(
                           Icons.account_balance_wallet,
                           color: AppColors.textTertiary,
                         ),
@@ -203,7 +203,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             ),
             const SizedBox(height: AppSpacing.spaceSm),
             Text(
-              _formatAppName(app.name),
+              _formatAppName(appInfo.name),
               style: AppTypography.caption.copyWith(
                 fontSize: 11,
                 color: AppColors.textSecondary,
@@ -238,7 +238,7 @@ class _UpiAppPickerSheet extends StatefulWidget {
 class _UpiAppPickerSheetState extends State<_UpiAppPickerSheet> {
   UpiTransactionResult? _result;
 
-  void _handlePaymentComplete(UpiApp app, UpiTransactionResult result) {
+  void _handlePaymentComplete(UpiAppInfo app, UpiTransactionResult result) {
     setState(() => _result = result);
 
     Future.delayed(const Duration(milliseconds: 1500), () {

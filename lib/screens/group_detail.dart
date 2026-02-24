@@ -15,6 +15,7 @@ import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/settlement_progress_indicator.dart';
 import 'empty_states.dart';
 
 class _StyledDescription {
@@ -330,82 +331,98 @@ class _GroupDetailState extends State<GroupDetail> {
                 isPassive: isPassive,
               ),
             ),
-            if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
+            if (isPassive)
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (isPassive) {
-                      if (repo.isCurrentUserCreator(groupId)) {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Start new cycle?'),
-                            content: const Text(
-                              'This will archive current expenses and start a fresh cycle.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: SettlementProgressIndicator(groupId: groupId),
+              ),
+            if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
+              Builder(
+                builder: (context) {
+                  final fullySettled = isPassive && repo.isFullySettled(groupId);
+                  final isCreator = repo.isCurrentUserCreator(groupId);
+                  
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (isPassive) {
+                          if (isCreator) {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Start new cycle?'),
+                                content: Text(
+                                  fullySettled
+                                      ? 'All payments are complete. Ready to start a fresh cycle.'
+                                      : 'This will archive current expenses and start a fresh cycle.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Confirm'),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Confirm'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed != true || !context.mounted) return;
-                        try {
-                          await repo.archiveAndRestart(groupId);
-                          if (context.mounted) {
+                            );
+                            if (confirmed != true || !context.mounted) return;
+                            try {
+                              await repo.archiveAndRestart(groupId);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('New cycle started.'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('New cycle started.'),
+                                content: Text('Only the group creator can start a new cycle.'),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
+                        } else {
+                          _showSettlementOptions(context, defaultGroup, groupId);
                         }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Only the group creator can start a new cycle.'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    } else {
-                      _showSettlementOptions(context, defaultGroup, groupId);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: fullySettled ? AppColors.success : const Color(0xFF1A1A1A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child: Text(
+                        isPassive
+                            ? (isCreator 
+                                ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
+                                : 'Waiting for creator to restart')
+                            : 'Settle now',
+                        style: AppTypography.button,
+                      ),
                     ),
-                    elevation: 0,
-                    minimumSize: const Size(double.infinity, 0),
-                  ),
-                  child: Text(
-                    isPassive
-                        ? (repo.isCurrentUserCreator(groupId) ? 'Start New Cycle' : 'Waiting for creator to restart')
-                        : 'Settle now',
-                    style: AppTypography.button,
-                  ),
-                ),
+                  );
+                },
               ),
             ],
             if (hasExpenses)

@@ -101,12 +101,16 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 2. `CycleRepository.loadPaymentAttempts()` fetches existing attempts from Firestore
 3. `SettlementEngine.computePaymentRoutes()` derives minimal payment routes
 4. `getPaymentsForMember()` filters to current user's outgoing payments
-5. `UpiPaymentCard` shown per route with payee name, amount, status, UPI button
+5. `UpiPaymentCard` shown per route with payee name, amount, UPI ID, status, UPI button
 6. Tap "Pay via UPI":
-   - `getOrCreatePaymentAttempt()` creates/retrieves `PaymentAttempt` in Firestore
+   - `UpiPaymentService.getInstalledUpiApps()` queries installed UPI apps
+   - `UpiAppPicker` bottom sheet shows app grid (GPay, PhonePe, Paytm, etc.)
+   - User taps an app → `getOrCreatePaymentAttempt()` creates `PaymentAttempt` in Firestore
    - `markPaymentInitiated()` updates status to `initiated` with timestamp
-   - `UpiPaymentService.launchUpiPayment()` opens UPI app
-7. If no UPI app installed → QR code shown for scanning (status still `initiated`)
+   - `UpiPaymentService.initiateTransaction()` launches selected UPI app with pre-filled data
+7. Transaction result displayed in-sheet (`UpiTransactionResult`): success, failure, submitted, cancelled
+8. If success → auto-calls `markPaymentConfirmedByPayer()` for convenience
+9. If no UPI apps installed → QR code shown for scanning (status still `initiated`)
 8. User returns to app → sees "Mark as paid" button for `initiated` payments
 9. Tap "Mark as paid" → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
 10. Card shows green checkmark, amount struck through for confirmed payments

@@ -2,20 +2,16 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:upi_india/upi_india.dart';
 
-class UpiApp {
+class UpiAppInfo {
   final String name;
-  final String packageName;
   final Uint8List icon;
-  final UpiApplication _app;
+  final UpiApp app;
 
-  UpiApp({
+  const UpiAppInfo({
     required this.name,
-    required this.packageName,
     required this.icon,
-    required UpiApplication app,
-  }) : _app = app;
-
-  UpiApplication get application => _app;
+    required this.app,
+  });
 }
 
 class UpiPaymentData {
@@ -80,7 +76,7 @@ class UpiPaymentService {
   UpiPaymentService._();
 
   static final UpiIndia _upiIndia = UpiIndia();
-  static List<UpiApp>? _cachedApps;
+  static List<UpiAppInfo>? _cachedApps;
 
   static UpiPaymentData createPaymentData({
     required String payeeUpiId,
@@ -101,7 +97,7 @@ class UpiPaymentService {
     );
   }
 
-  static Future<List<UpiApp>> getInstalledUpiApps() async {
+  static Future<List<UpiAppInfo>> getInstalledUpiApps() async {
     if (_cachedApps != null) return _cachedApps!;
 
     try {
@@ -110,14 +106,13 @@ class UpiPaymentService {
         allowNonVerifiedApps: true,
       );
 
-      _cachedApps = apps.map((app) => UpiApp(
+      _cachedApps = apps.map((app) => UpiAppInfo(
         name: app.name,
-        packageName: app.packageName,
         icon: app.icon,
         app: app,
       )).toList();
 
-      _cachedApps!.sort((a, b) => _getAppPriority(a.packageName).compareTo(_getAppPriority(b.packageName)));
+      _cachedApps!.sort((a, b) => _getAppPriority(a.name).compareTo(_getAppPriority(b.name)));
 
       return _cachedApps!;
     } catch (e) {
@@ -126,16 +121,15 @@ class UpiPaymentService {
     }
   }
 
-  static int _getAppPriority(String packageName) {
-    const priorities = {
-      'com.google.android.apps.nbu.paisa.user': 0,
-      'com.phonepe.app': 1,
-      'net.one97.paytm': 2,
-      'in.org.npci.upiapp': 3,
-      'com.amazon.mShop.android.shopping': 4,
-      'com.whatsapp': 5,
-    };
-    return priorities[packageName] ?? 99;
+  static int _getAppPriority(String appName) {
+    final name = appName.toLowerCase();
+    if (name.contains('google') || name.contains('gpay')) return 0;
+    if (name.contains('phonepe')) return 1;
+    if (name.contains('paytm')) return 2;
+    if (name.contains('bhim')) return 3;
+    if (name.contains('amazon')) return 4;
+    if (name.contains('whatsapp')) return 5;
+    return 99;
   }
 
   static void clearCache() {
@@ -144,11 +138,11 @@ class UpiPaymentService {
 
   static Future<UpiTransactionResult> initiateTransaction({
     required UpiPaymentData data,
-    required UpiApp app,
+    required UpiAppInfo appInfo,
   }) async {
     try {
       final response = await _upiIndia.startTransaction(
-        app: app.application,
+        app: appInfo.app,
         receiverUpiId: data.payeeUpiId,
         receiverName: data.payeeName,
         transactionRefId: data.transactionRef,
@@ -187,19 +181,28 @@ class UpiPaymentService {
   }
 
   static UpiTransactionResult _parseResponse(UpiResponse response) {
-    final status = switch (response.status) {
-      UpiPaymentStatus.SUCCESS => UpiTransactionStatus.success,
-      UpiPaymentStatus.FAILURE => UpiTransactionStatus.failure,
-      UpiPaymentStatus.SUBMITTED => UpiTransactionStatus.submitted,
-      null => UpiTransactionStatus.unknown,
-    };
+    UpiTransactionStatus status;
+    
+    switch (response.status) {
+      case UpiPaymentStatus.SUCCESS:
+        status = UpiTransactionStatus.success;
+        break;
+      case UpiPaymentStatus.FAILURE:
+        status = UpiTransactionStatus.failure;
+        break;
+      case UpiPaymentStatus.SUBMITTED:
+        status = UpiTransactionStatus.submitted;
+        break;
+      default:
+        status = UpiTransactionStatus.unknown;
+    }
 
     return UpiTransactionResult(
       status: status,
       transactionId: response.transactionId,
       responseCode: response.responseCode,
       approvalRefNo: response.approvalRefNo,
-      rawResponse: response.rawResponse,
+      rawResponse: 'Status: ${response.status ?? "unknown"}',
     );
   }
 

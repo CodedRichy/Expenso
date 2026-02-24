@@ -23,6 +23,9 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 | **Local profile cache** | User profile (name, photoURL, upiId) is persisted to SharedPreferences via `UserProfileCache`. On cold start, profile is loaded from cache **before** Firebase resolves, enabling instant avatar rendering even on slow networks. Cache syncs with Firestore updates and clears on logout. | V3 |
 | **Bounded loading states** | Loading indicators are time-bounded (6–8s). After timeout, UI shows slow-loading hint with retry option instead of spinning indefinitely. Applied to groups list and cycle history. | V3 |
 | **Explicit error handling** | Error messages are human-readable and calm. All error screens have back buttons. Network failures show clear feedback ("Check your connection") without erasing existing data. | V3 |
+| **Settlement activity feed** | Read-only activity feed for settlement events (payment initiated, confirmed, cycle closed). Shows in SettlementConfirmation screen. Neutral system voice, no names unless necessary, no chat or reactions. Events stored in Firestore `settlement_events` subcollection. | V3 |
+| **Settlement progress indicator** | "X of Y payments settled" with subtle progress bar in GroupDetail. Shows only when cycle is in settling mode. Updates in real-time based on payment attempt states. | V3 |
+| **Auto-detect full settlement** | When all payment routes are confirmed, system emits "Cycle fully settled" event. Button turns green and shows "Start New Cycle ✓" for creator. No manual checking required. | V3 |
 
 ---
 

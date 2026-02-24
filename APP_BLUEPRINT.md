@@ -89,7 +89,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 
 | Route | Screen | Notes |
 |-------|--------|--------|
-| `/settlement-confirmation` | SettlementConfirmation | Args: `Group` or `{ group, method }` (method: `'system'` \| `'upi'` \| `'razorpay'`). When method is **razorpay**: shows current user's dues (from `getSettlementTransfersForCurrentUser`), "Pay ₹X" opens Razorpay Checkout; success → `/payment-result`. When system/upi: "Cycle total", "Close Cycle" (creator only). |
+| `/settlement-confirmation` | SettlementConfirmation | Args: `Group` or `{ group, method }` (method: `'system'` \| `'upi'` \| `'razorpay'`). Shows current user's dues per creditor with UpiPaymentCard for each. Includes **SettlementActivityFeed** showing recent settlement events (payment initiated, confirmed, cycle closed). Neutral system voice, no names unless necessary. |
 | `/payment-result` | PaymentResult | After payment. |
 | `/cycle-settled` | CycleSettled | Cycle settled. |
 | `/cycle-history` | CycleHistory | Past cycles. |
@@ -137,7 +137,18 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 
 ### UpiPaymentService
 
-**Location:** `lib/services/upi_payment_service.dart` — Stateless. Generates UPI deep links for direct peer-to-peer payments based on settlement routes from `SettlementEngine.computePaymentRoutes()`. `UpiPaymentData` holds payee UPI ID, name, amount (minor units), and transaction note. `createPaymentData(payeeUpiId, payeeName, amountMinor, groupName)` builds payment data with note format "Expenso • {GroupName} • Cycle". `launchUpiPayment(data)` opens UPI app via `url_launcher`; returns `UpiLaunchResult` (launched, noUpiApp, failed). On `noUpiApp`, UI shows QR code fallback via `qr_flutter`. No Razorpay/escrow involvement.
+**Location:** `lib/services/upi_payment_service.dart` — Uses `upi_india` package for industry-grade UPI integration. Core classes:
+- **`UpiAppInfo`**: Wrapper for installed UPI app (name, icon, underlying `UpiApp`).
+- **`UpiPaymentData`**: Holds payee UPI ID, name, amount (minor units), transaction note, and reference ID. `qrData` getter returns UPI deep link string for QR fallback.
+- **`UpiTransactionResult`**: Payment outcome with status (`success`, `failure`, `submitted`, `cancelled`, `unknown`), transaction ID, response code, and approval ref.
+
+Key methods:
+- `getInstalledUpiApps()` → returns list of `UpiAppInfo` (cached); sorted by priority (GPay, PhonePe, Paytm first).
+- `createPaymentData(...)` → builds `UpiPaymentData` with note "Expenso • {GroupName} • Cycle".
+- `initiateTransaction(data, appInfo)` → launches selected UPI app, handles exceptions (`UpiIndiaAppNotInstalledException`, `UpiIndiaUserCancelledException`, etc.), returns `UpiTransactionResult`.
+- `getStatusMessage/Icon/Color(result)` → UI helpers for displaying transaction outcome.
+
+On Android, shows installed UPI apps grid via `UpiAppPicker`. On iOS, limited UPI support; falls back to QR code. No Razorpay/escrow involvement.
 
 ### PaymentAttempt
 
@@ -324,6 +335,7 @@ lib/
     money_minor.dart           # MoneyMinor, MoneyConversion, MoneySplitter (integer money)
     normalized_expense.dart    # NormalizedExpense (UI-agnostic, ID-only, integer-based)
     payment_attempt.dart       # PaymentAttempt, PaymentAttemptStatus (UPI payment state tracking)
+    settlement_event.dart      # SettlementEvent, SettlementEventType (activity feed events for settlement)
   repositories/
     cycle_repository.dart      # Singleton; Firestore-backed (groups, members, cycles, expenses, identity)
   services/
@@ -347,7 +359,10 @@ lib/
   widgets/
     member_avatar.dart        # Letter avatar renders IMMEDIATELY; photo loads as upgrade layer via CachedNetworkImage. Zero visible waiting—letter is always the base.
     expenso_loader.dart       # Animated loading indicator
-    upi_payment_card.dart     # Per-payment UPI button with QR fallback; uses UpiPaymentService
+    upi_payment_card.dart     # Per-payment UPI card with app picker, QR fallback, and payment attempt state tracking
+    upi_app_picker.dart       # Bottom sheet showing installed UPI apps grid; handles app selection and transaction flow
+    settlement_activity_feed.dart  # Read-only activity feed for settlement events; neutral system voice, no names
+    settlement_progress_indicator.dart  # "X of Y payments settled" with progress bar; shows during settling cycle
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s
     phone_auth.dart

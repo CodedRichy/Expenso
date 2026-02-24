@@ -181,7 +181,27 @@ This document defines the fundamental data structures that Expenso operates on. 
 
 ---
 
-### 8. Debt
+### 8. SettlementEvent
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Event |
+| **Ideal Mutability** | **Immutable** |
+| **Storage** | Firestore `groups/{groupId}/settlement_events/{eventId}` |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `String` | Unique event identifier (`se_{timestamp}`) |
+| `type` | `String` | `'cycle_settlement_started'`, `'payment_initiated'`, `'payment_confirmed_by_payer'`, `'payment_confirmed_by_receiver'`, `'payment_disputed'`, `'cycle_archived'` |
+| `amountMinor` | `int?` | Payment amount in minor units (for payment events) |
+| `timestamp` | `int` | Milliseconds since epoch |
+| `paymentAttemptId` | `String?` | Reference to related PaymentAttempt |
+
+**Notes:** Read-only activity feed for settlement progress. Append-only, no user names stored (neutral system voice). Events are logged automatically by CycleRepository when payment status changes or cycle state transitions occur.
+
+---
+
+### 9. Debt
 
 | Attribute | Value |
 |-----------|-------|
@@ -221,7 +241,7 @@ This document defines the fundamental data structures that Expenso operates on. 
 
 ---
 
-### 9. SettlementTransfer
+### 10. SettlementTransfer
 
 | Attribute | Value |
 |-----------|-------|
@@ -241,7 +261,7 @@ This document defines the fundamental data structures that Expenso operates on. 
 
 ---
 
-### 10. NetBalance (implicit)
+### 11. NetBalance (implicit)
 
 | Attribute | Value |
 |-----------|-------|

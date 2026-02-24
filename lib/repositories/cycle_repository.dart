@@ -5,6 +5,7 @@ import '../models/cycle.dart';
 import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
 import '../models/payment_attempt.dart';
+import '../models/settlement_event.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../services/user_profile_cache.dart';
@@ -268,6 +269,8 @@ class CycleRepository extends ChangeNotifier {
     _userCache.clear();
     _revisionsByGroup.clear();
     _deletedIdsByGroup.clear();
+    _paymentAttemptsByGroup.clear();
+    _fullySettledEmitted.clear();
     _clearLastAdded();
     _streamError = null;
     // Clear local cache on logout
@@ -1452,6 +1455,12 @@ class CycleRepository extends ChangeNotifier {
     );
 
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.initiated, initiatedAt: now);
+    
+    final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+    );
+    _logSettlementEvent(groupId, SettlementEventType.paymentInitiated, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
   }
 
   Future<void> markPaymentConfirmedByPayer(String groupId, String attemptId) async {
@@ -1464,6 +1473,8 @@ class CycleRepository extends ChangeNotifier {
     );
 
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByPayer, confirmedAt: now);
+    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByPayer, paymentAttemptId: attemptId);
+    _checkAndEmitFullySettled(groupId);
   }
 
   Future<void> markPaymentConfirmedByReceiver(String groupId, String attemptId) async {
@@ -1476,6 +1487,8 @@ class CycleRepository extends ChangeNotifier {
     );
 
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByReceiver, confirmedAt: now);
+    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, paymentAttemptId: attemptId);
+    _checkAndEmitFullySettled(groupId);
   }
 
   Future<void> markPaymentDisputed(String groupId, String attemptId) async {
@@ -1486,6 +1499,7 @@ class CycleRepository extends ChangeNotifier {
     );
 
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.disputed);
+    _logSettlementEvent(groupId, SettlementEventType.paymentDisputed, paymentAttemptId: attemptId);
   }
 
   void _updateLocalAttemptStatus(
@@ -1518,6 +1532,7 @@ class CycleRepository extends ChangeNotifier {
     FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
     _groupMeta[groupId] = _GroupMeta(activeCycleId: meta.activeCycleId, cycleStatus: 'settling');
     _refreshGroupAmounts();
+    _logSettlementEvent(groupId, SettlementEventType.cycleSettlementStarted);
     notifyListeners();
   }
 
@@ -1551,7 +1566,10 @@ class CycleRepository extends ChangeNotifier {
     _groupMeta[groupId] = _GroupMeta(activeCycleId: newCycleId, cycleStatus: 'active');
     _expensesByCycleId.remove(meta.activeCycleId);
     _expensesByCycleId[newCycleId] = [];
+    _paymentAttemptsByGroup.remove(groupId);
+    _fullySettledEmitted.remove(groupId);
     _refreshGroupAmounts();
+    _logSettlementEvent(groupId, SettlementEventType.cycleArchived);
     notifyListeners();
   }
 
@@ -1581,6 +1599,82 @@ class CycleRepository extends ChangeNotifier {
       debugPrint('CycleRepository.getHistory failed for $groupId: $e');
       return [];
     }
+  }
+
+  /// Stream of settlement events for a group (most recent first).
+  Stream<List<SettlementEvent>> settlementEventsStream(String groupId) {
+    return FirestoreService.instance.settlementEventsStream(groupId).map(
+      (list) => list.map((data) => SettlementEvent.fromFirestore(data)).toList(),
+    );
+  }
+
+  /// Get settlement events for a group (one-time fetch).
+  Future<List<SettlementEvent>> getSettlementEvents(String groupId) async {
+    final data = await FirestoreService.instance.getSettlementEvents(groupId);
+    return data.map((d) => SettlementEvent.fromFirestore(d)).toList();
+  }
+
+  /// Compute pending settlement count (members who haven't completed payment).
+  int getPendingSettlementCount(String groupId) {
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    return attempts.where((a) => !a.status.isFullyConfirmed).length;
+  }
+
+  /// Check if all payment routes are settled for a group.
+  bool isFullySettled(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    if (members.isEmpty) return false;
+
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    if (routes.isEmpty) return true;
+
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    for (final route in routes) {
+      final attempt = attempts.firstWhere(
+        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        orElse: () => PaymentAttempt(
+          id: '',
+          groupId: '',
+          cycleId: '',
+          fromMemberId: '',
+          toMemberId: '',
+          amountMinor: 0,
+          currencyCode: 'INR',
+          status: PaymentAttemptStatus.notStarted,
+          createdAt: 0,
+        ),
+      );
+      if (!attempt.status.isSettled) return false;
+    }
+    return true;
+  }
+
+  final Set<String> _fullySettledEmitted = {};
+
+  void _checkAndEmitFullySettled(String groupId) {
+    if (_fullySettledEmitted.contains(groupId)) return;
+    
+    final meta = _groupMeta[groupId];
+    if (meta == null || meta.cycleStatus != 'settling') return;
+
+    if (isFullySettled(groupId)) {
+      _fullySettledEmitted.add(groupId);
+      _logSettlementEvent(groupId, SettlementEventType.cycleFullySettled);
+      notifyListeners();
+    }
+  }
+
+  void _logSettlementEvent(String groupId, SettlementEventType type, {int? amountMinor, String? paymentAttemptId}) {
+    FirestoreService.instance.addSettlementEvent(
+      groupId,
+      type: type.firestoreValue,
+      amountMinor: amountMinor,
+      paymentAttemptId: paymentAttemptId,
+    ).catchError((e) {
+      debugPrint('CycleRepository._logSettlementEvent failed: $e');
+    });
   }
 }
 
