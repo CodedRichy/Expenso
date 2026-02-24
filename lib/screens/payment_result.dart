@@ -15,6 +15,7 @@ class PaymentResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final group = RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
@@ -34,7 +35,7 @@ class PaymentResult extends StatelessWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: status == 'success' ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5E5),
+                      color: status == 'success' ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -43,7 +44,7 @@ class PaymentResult extends StatelessWidget {
                           : status == 'failed'
                               ? Icons.error_outline
                               : Icons.close,
-                      color: status == 'success' ? Colors.white : const Color(0xFF6B6B6B),
+                      color: status == 'success' ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
                       size: 32,
                     ),
                   ),
@@ -60,7 +61,7 @@ class PaymentResult extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1A1A1A),
+                          color: theme.colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -74,7 +75,7 @@ class PaymentResult extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         if (transactionId != null) ...[
@@ -84,7 +85,7 @@ class PaymentResult extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
-                              color: const Color(0xFF9B9B9B),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -95,7 +96,7 @@ class PaymentResult extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       if (status == 'cancelled')
@@ -104,7 +105,7 @@ class PaymentResult extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -119,8 +120,6 @@ class PaymentResult extends StatelessWidget {
                         );
                       },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

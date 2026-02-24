@@ -25,9 +25,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _upiDirty = false;
   bool _uploadingPhoto = false;
 
-  static const Color _blackGradientStart = Color(0xFF1A1A1A);
-  static const Color _blackGradientEnd = Color(0xFF6B6B6B);
-
   @override
   void initState() {
     super.initState();
@@ -113,6 +110,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return ListenableBuilder(
       listenable: CycleRepository.instance,
       builder: (context, _) {
@@ -155,7 +155,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Identity card (black gradient)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -164,15 +163,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
+                          color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.3 : 0.12),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
                       ],
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [_blackGradientStart, _blackGradientEnd],
+                        colors: isDark 
+                            ? [theme.colorScheme.surfaceContainerHighest, theme.colorScheme.surfaceContainerHigh]
+                            : [const Color(0xFF1A1A1A), const Color(0xFF6B6B6B)],
                       ),
                     ),
                     child: Column(
@@ -212,11 +213,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   bottom: 0,
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF1A1A1A),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                    child: Icon(Icons.camera_alt, size: 16, color: theme.colorScheme.onPrimary),
                                   ),
                                 ),
                             ],
@@ -228,7 +229,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: isDark 
+                                ? theme.colorScheme.onSurfaceVariant 
+                                : Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -237,15 +240,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _nameController,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: isDark ? theme.colorScheme.onSurface : Colors.white,
                                 ),
                                 decoration: InputDecoration(
                                   isDense: true,
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.12),
+                                  fillColor: isDark 
+                                      ? theme.colorScheme.surfaceContainerLow 
+                                      : Colors.white.withValues(alpha: 0.12),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
@@ -262,7 +267,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: _nameDirty ? Colors.white : Colors.white54,
+                                  color: _nameDirty 
+                                      ? (isDark ? theme.colorScheme.primary : Colors.white) 
+                                      : (isDark ? theme.colorScheme.onSurfaceVariant : Colors.white54),
                                 ),
                               ),
                             ),
@@ -273,7 +280,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'This name is used in groups and for Magic Bar matching.',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: isDark 
+                                ? theme.colorScheme.onSurfaceVariant 
+                                : Colors.white.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -281,7 +290,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Payment Settings
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -290,15 +298,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
+                          color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.2 : 0.08),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                       ],
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [_blackGradientStart, _blackGradientEnd],
+                        colors: isDark 
+                            ? [theme.colorScheme.surfaceContainerHighest, theme.colorScheme.surfaceContainerHigh]
+                            : [const Color(0xFF1A1A1A), const Color(0xFF6B6B6B)],
                       ),
                     ),
                     child: Column(
@@ -309,7 +319,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Icon(
                               Icons.payment,
                               size: 20,
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: isDark 
+                                  ? theme.colorScheme.onSurface.withValues(alpha: 0.9) 
+                                  : Colors.white.withValues(alpha: 0.9),
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -317,7 +329,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.95),
+                                color: isDark 
+                                    ? theme.colorScheme.onSurface 
+                                    : Colors.white.withValues(alpha: 0.95),
                               ),
                             ),
                           ],
@@ -328,7 +342,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: isDark 
+                                ? theme.colorScheme.onSurfaceVariant 
+                                : Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -339,19 +355,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 controller: _upiController,
                                 keyboardType: TextInputType.emailAddress,
                                 autocorrect: false,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
-                                  color: Colors.white,
+                                  color: isDark ? theme.colorScheme.onSurface : Colors.white,
                                 ),
                                 decoration: InputDecoration(
                                   hintText: 'e.g. name@upi',
                                   hintStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.5),
+                                    color: isDark 
+                                        ? theme.colorScheme.onSurfaceVariant 
+                                        : Colors.white.withValues(alpha: 0.5),
                                     fontSize: 16,
                                   ),
                                   isDense: true,
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.12),
+                                  fillColor: isDark 
+                                      ? theme.colorScheme.surfaceContainerLow 
+                                      : Colors.white.withValues(alpha: 0.12),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
@@ -368,7 +388,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: _upiDirty ? Colors.white : Colors.white54,
+                                  color: _upiDirty 
+                                      ? (isDark ? theme.colorScheme.primary : Colors.white) 
+                                      : (isDark ? theme.colorScheme.onSurfaceVariant : Colors.white54),
                                 ),
                               ),
                             ),

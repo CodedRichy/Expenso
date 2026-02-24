@@ -57,8 +57,9 @@ class _EditExpenseState extends State<EditExpense> {
     }
   }
 
-  Widget _buildDateChip(String label, bool canEdit) {
+  Widget _buildDateChip(String label, bool canEdit, ThemeData theme) {
     final isSelected = _selectedDateDisplay == label;
+    final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: canEdit
           ? () {
@@ -76,15 +77,15 @@ class _EditExpenseState extends State<EditExpense> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1A1A1A) : Colors.white,
-          border: Border.all(color: const Color(0xFFE5E5E5)),
+          color: isSelected ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+          border: Border.all(color: theme.dividerColor),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 15,
-            color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
           ),
         ),
       ),
@@ -141,30 +142,33 @@ class _EditExpenseState extends State<EditExpense> {
     final repo = CycleRepository.instance;
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Who paid?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Who paid?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                ),
               ),
-            ),
-            ...repo.getMembersForGroup(_groupId!).where((m) => !m.id.startsWith('p_')).map((m) {
-              final displayName = repo.getMemberDisplayNameById(m.id);
-              return ListTile(
-                title: Text(displayName),
-                onTap: () {
-                  setState(() => _selectedPayerId = m.id);
-                  Navigator.pop(ctx);
-                },
-              );
-            }),
-          ],
-        ),
-      ),
+              ...repo.getMembersForGroup(_groupId!).where((m) => !m.id.startsWith('p_')).map((m) {
+                final displayName = repo.getMemberDisplayNameById(m.id);
+                return ListTile(
+                  title: Text(displayName),
+                  onTap: () {
+                    setState(() => _selectedPayerId = m.id);
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -279,20 +283,26 @@ class _EditExpenseState extends State<EditExpense> {
                     ],
                     if (canEdit) ...[
                       const SizedBox(height: 32),
-                      OutlinedButton.icon(
-                        onPressed: handleDelete,
-                        icon: const Icon(Icons.delete_outline, size: 20),
-                        label: const Text('Delete Expense'),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF6B6B6B),
-                          side: const BorderSide(color: Color(0xFFE5E5E5)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          minimumSize: const Size(double.infinity, 0),
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final theme = Theme.of(context);
+                          final isDark = theme.brightness == Brightness.dark;
+                          return OutlinedButton.icon(
+                            onPressed: handleDelete,
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            label: const Text('Delete Expense'),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                              foregroundColor: theme.colorScheme.onSurfaceVariant,
+                              side: BorderSide(color: theme.dividerColor),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: const Size(double.infinity, 0),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ],
@@ -307,6 +317,7 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildErrorScreen(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -317,7 +328,7 @@ class _EditExpenseState extends State<EditExpense> {
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.chevron_left, size: 24),
-                color: const Color(0xFF1A1A1A),
+                color: theme.colorScheme.onSurface,
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
                 constraints: const BoxConstraints(),
@@ -339,7 +350,7 @@ class _EditExpenseState extends State<EditExpense> {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: const Color(0xFF9B9B9B),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 24),
                         Text(
@@ -348,7 +359,7 @@ class _EditExpenseState extends State<EditExpense> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -357,7 +368,7 @@ class _EditExpenseState extends State<EditExpense> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                             height: 1.5,
                           ),
                         ),
@@ -367,8 +378,6 @@ class _EditExpenseState extends State<EditExpense> {
                           child: ElevatedButton(
                             onPressed: () => Navigator.pop(context),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1A1A),
-                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -391,6 +400,7 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: Column(
@@ -399,7 +409,7 @@ class _EditExpenseState extends State<EditExpense> {
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.chevron_left, size: 24),
-            color: const Color(0xFF1A1A1A),
+            color: theme.colorScheme.onSurface,
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
             constraints: const BoxConstraints(),
@@ -414,7 +424,7 @@ class _EditExpenseState extends State<EditExpense> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF1A1A1A),
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -424,6 +434,8 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildDescriptionField({required bool readOnly}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -432,7 +444,7 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -442,24 +454,24 @@ class _EditExpenseState extends State<EditExpense> {
           readOnly: readOnly,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+              borderSide: BorderSide(color: theme.colorScheme.primary),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           style: TextStyle(
             fontSize: 17,
-            color: const Color(0xFF1A1A1A),
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -467,6 +479,8 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildAmountField({required bool readOnly}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -475,7 +489,7 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -485,15 +499,15 @@ class _EditExpenseState extends State<EditExpense> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFE5E5E5)),
+                color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                border: Border.all(color: theme.dividerColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '₹',
                 style: TextStyle(
                   fontSize: 17,
-                  color: const Color(0xFF6B6B6B),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -508,24 +522,24 @@ class _EditExpenseState extends State<EditExpense> {
                 ],
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                    borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
                 style: TextStyle(
                   fontSize: 17,
-                  color: const Color(0xFF1A1A1A),
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -536,6 +550,9 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildDateField(bool canEdit) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isCustomDate = !['Today', 'Yesterday'].contains(_selectedDateDisplay);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -544,7 +561,7 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -552,19 +569,17 @@ class _EditExpenseState extends State<EditExpense> {
         if (canEdit)
           Row(
             children: [
-              _buildDateChip('Today', canEdit),
+              _buildDateChip('Today', canEdit, theme),
               const SizedBox(width: 8),
-              _buildDateChip('Yesterday', canEdit),
+              _buildDateChip('Yesterday', canEdit, theme),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: !['Today', 'Yesterday'].contains(_selectedDateDisplay)
-                        ? const Color(0xFF1A1A1A)
-                        : Colors.white,
-                    border: Border.all(color: const Color(0xFFE5E5E5)),
+                    color: isCustomDate ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+                    border: Border.all(color: theme.dividerColor),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -573,15 +588,13 @@ class _EditExpenseState extends State<EditExpense> {
                       Icon(
                         Icons.calendar_today,
                         size: 16,
-                        color: !['Today', 'Yesterday'].contains(_selectedDateDisplay)
-                            ? Colors.white
-                            : const Color(0xFF9B9B9B),
+                        color: isCustomDate ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
                       ),
-                      if (!['Today', 'Yesterday'].contains(_selectedDateDisplay)) ...[
+                      if (isCustomDate) ...[
                         const SizedBox(width: 6),
                         Text(
                           _selectedDateDisplay,
-                          style: const TextStyle(fontSize: 15, color: Colors.white),
+                          style: TextStyle(fontSize: 15, color: theme.colorScheme.onPrimary),
                         ),
                       ],
                     ],
@@ -594,13 +607,13 @@ class _EditExpenseState extends State<EditExpense> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFE5E5E5)),
+              color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+              border: Border.all(color: theme.dividerColor),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               _selectedDateDisplay,
-              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+              style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
             ),
           ),
       ],
@@ -610,6 +623,8 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildPayerField(bool canEdit) {
     final repo = CycleRepository.instance;
     final displayName = repo.getMemberDisplayNameById(_selectedPayerId);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -618,7 +633,7 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -629,18 +644,18 @@ class _EditExpenseState extends State<EditExpense> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFD0D0D0)),
+                color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                border: Border.all(color: theme.dividerColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
                   Text(
                     displayName,
-                    style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                    style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
                   ),
                   const Spacer(),
-                  Icon(Icons.arrow_drop_down, color: const Color(0xFF6B6B6B)),
+                  Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant),
                 ],
               ),
             ),
@@ -649,13 +664,13 @@ class _EditExpenseState extends State<EditExpense> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFE5E5E5)),
+              color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+              border: Border.all(color: theme.dividerColor),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               displayName,
-              style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+              style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
             ),
           ),
       ],
@@ -665,6 +680,7 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildSplitAndPeopleSection() {
     final expense = _expense!;
     final repo = CycleRepository.instance;
+    final theme = Theme.of(context);
     final isExact = expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty;
     final splitLabel = expense.splitType.isNotEmpty ? expense.splitType : (isExact ? 'Exact' : 'Even');
     final participants = isExact
@@ -679,14 +695,14 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           splitLabel,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
         ),
         const SizedBox(height: 12),
         Text(
@@ -694,7 +710,7 @@ class _EditExpenseState extends State<EditExpense> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -709,11 +725,11 @@ class _EditExpenseState extends State<EditExpense> {
               children: [
                 Text(
                   name,
-                  style: TextStyle(fontSize: 15, color: const Color(0xFF1A1A1A)),
+                  style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
                 ),
                 Text(
                   '₹${amt.toStringAsFixed(0)}',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A)),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
                 ),
               ],
             ),
@@ -725,12 +741,13 @@ class _EditExpenseState extends State<EditExpense> {
 
   Widget _buildSaveButton() {
     if (!_canEdit) return const SizedBox.shrink();
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: const Color(0xFFE5E5E5),
+            color: theme.dividerColor,
             width: 1,
           ),
         ),
@@ -740,10 +757,6 @@ class _EditExpenseState extends State<EditExpense> {
             ? handleSave
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1A1A1A),
-          disabledBackgroundColor: const Color(0xFFE5E5E5),
-          foregroundColor: Colors.white,
-          disabledForegroundColor: const Color(0xFFB0B0B0),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

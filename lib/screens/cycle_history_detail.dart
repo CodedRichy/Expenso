@@ -7,6 +7,7 @@ class CycleHistoryDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final args = RouteArgs.getMap(context);
     if (args == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
@@ -40,7 +41,7 @@ class CycleHistoryDetail extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -55,7 +56,7 @@ class CycleHistoryDetail extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -64,7 +65,7 @@ class CycleHistoryDetail extends StatelessWidget {
                     cycleDate,
                     style: TextStyle(
                       fontSize: 17,
-                      color: const Color(0xFF6B6B6B),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -75,7 +76,7 @@ class CycleHistoryDetail extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: const Color(0xFFE5E5E5),
+                    color: theme.dividerColor,
                     width: 1,
                   ),
                 ),
@@ -91,7 +92,7 @@ class CycleHistoryDetail extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.9,
                       height: 1.1,
                     ),
@@ -101,7 +102,7 @@ class CycleHistoryDetail extends StatelessWidget {
                     'settled',
                     style: TextStyle(
                       fontSize: 15,
-                      color: const Color(0xFF6B6B6B),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -118,7 +119,7 @@ class CycleHistoryDetail extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF9B9B9B),
+                        color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -134,7 +135,7 @@ class CycleHistoryDetail extends StatelessWidget {
                           decoration: BoxDecoration(
                             border: Border(
                               top: index > 0
-                                  ? const BorderSide(color: Color(0xFFE5E5E5), width: 1)
+                                  ? BorderSide(color: theme.dividerColor, width: 1)
                                   : BorderSide.none,
                             ),
                           ),
@@ -150,7 +151,7 @@ class CycleHistoryDetail extends StatelessWidget {
                                       expense.description,
                                       style: TextStyle(
                                         fontSize: 17,
-                                        color: const Color(0xFF1A1A1A),
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -158,7 +159,7 @@ class CycleHistoryDetail extends StatelessWidget {
                                       expense.displayDate,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: const Color(0xFF9B9B9B),
+                                        color: theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -173,7 +174,7 @@ class CycleHistoryDetail extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1A1A1A),
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ],

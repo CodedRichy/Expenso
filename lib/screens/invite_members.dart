@@ -197,6 +197,9 @@ class _InviteMembersState extends State<InviteMembers> {
     final String displayGroupName = groupArg?.name ?? (routeArgs is String ? routeArgs : widget.groupName);
     final repo = CycleRepository.instance;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
@@ -227,7 +230,7 @@ class _InviteMembersState extends State<InviteMembers> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -242,7 +245,7 @@ class _InviteMembersState extends State<InviteMembers> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -251,7 +254,7 @@ class _InviteMembersState extends State<InviteMembers> {
                     'Invite members',
                     style: TextStyle(
                       fontSize: 17,
-                      color: const Color(0xFF6B6B6B),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -267,7 +270,7 @@ class _InviteMembersState extends State<InviteMembers> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9B9B9B),
+                      color: theme.colorScheme.onSurfaceVariant,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -277,8 +280,8 @@ class _InviteMembersState extends State<InviteMembers> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                        border: Border.all(color: theme.dividerColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -289,14 +292,14 @@ class _InviteMembersState extends State<InviteMembers> {
                               Icon(
                                 Icons.link,
                                 size: 20,
-                                color: const Color(0xFF6B6B6B),
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 linkCopied ? 'Link copied' : 'Copy invite link',
                                 style: TextStyle(
                                   fontSize: 17,
-                                  color: const Color(0xFF1A1A1A),
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -304,7 +307,7 @@ class _InviteMembersState extends State<InviteMembers> {
                           Icon(
                             linkCopied ? Icons.check : Icons.content_copy,
                             size: 20,
-                            color: linkCopied ? const Color(0xFF1A1A1A) : const Color(0xFF6B6B6B),
+                            color: linkCopied ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -323,7 +326,7 @@ class _InviteMembersState extends State<InviteMembers> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9B9B9B),
+                      color: theme.colorScheme.onSurfaceVariant,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -335,24 +338,24 @@ class _InviteMembersState extends State<InviteMembers> {
                     }),
                     decoration: InputDecoration(
                       hintText: 'Name (optional)',
-                      hintStyle: TextStyle(color: const Color(0xFFB0B0B0)),
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+                        borderSide: BorderSide(color: theme.colorScheme.onSurface),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
-                    style: TextStyle(fontSize: 17, color: const Color(0xFF1A1A1A)),
+                    style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
                   ),
                   const SizedBox(height: 12),
                   if (!_contactsPermissionGranted && _contactsPermissionChecked) ...[
@@ -362,7 +365,7 @@ class _InviteMembersState extends State<InviteMembers> {
                         'Contacts access was denied. You can still add members by entering a number below.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: const Color(0xFF6B6B6B),
+                          color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                       ),
@@ -371,13 +374,13 @@ class _InviteMembersState extends State<InviteMembers> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: TextButton.icon(
                         onPressed: _requestContactsAndLoad,
-                        icon: Icon(Icons.contacts_outlined, size: 18, color: const Color(0xFF5B7C99)),
+                        icon: Icon(Icons.contacts_outlined, size: 18, color: theme.colorScheme.primary),
                         label: Text(
                           'Access Contacts',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF5B7C99),
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         style: TextButton.styleFrom(
@@ -392,8 +395,8 @@ class _InviteMembersState extends State<InviteMembers> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFFE5E5E5)),
+                          color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                          border: Border.all(color: theme.dividerColor),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: PopupMenuButton<String>(
@@ -414,10 +417,10 @@ class _InviteMembersState extends State<InviteMembers> {
                               children: [
                                 Text(
                                   _selectedCountryCode,
-                                  style: const TextStyle(fontSize: 17, color: Color(0xFF1A1A1A)),
+                                  style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.arrow_drop_down, size: 20, color: Color(0xFF6B6B6B)),
+                                Icon(Icons.arrow_drop_down, size: 20, color: theme.colorScheme.onSurfaceVariant),
                               ],
                             ),
                           ),
@@ -440,27 +443,27 @@ class _InviteMembersState extends State<InviteMembers> {
                           decoration: InputDecoration(
                             hintText: 'Phone number',
                             hintStyle: TextStyle(
-                              color: const Color(0xFFB0B0B0),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                              borderSide: BorderSide(color: theme.dividerColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                              borderSide: BorderSide(color: theme.dividerColor),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+                              borderSide: BorderSide(color: theme.colorScheme.onSurface),
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           ),
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF1A1A1A),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -468,10 +471,6 @@ class _InviteMembersState extends State<InviteMembers> {
                       ElevatedButton(
                         onPressed: phone.length == 10 ? handleAddMember : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A1A1A),
-                          disabledBackgroundColor: const Color(0xFFE5E5E5),
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: const Color(0xFFB0B0B0),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -495,7 +494,7 @@ class _InviteMembersState extends State<InviteMembers> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF9B9B9B),
+                        color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -503,8 +502,8 @@ class _InviteMembersState extends State<InviteMembers> {
                     Container(
                       constraints: const BoxConstraints(maxHeight: 280),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+                        color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                        border: Border.all(color: theme.dividerColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: filteredContacts.isEmpty
@@ -518,7 +517,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                         : 'All contacts already added',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: const Color(0xFF6B6B6B),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             )
@@ -543,7 +542,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                     decoration: BoxDecoration(
                                       border: Border(
                                         top: index > 0
-                                            ? const BorderSide(color: Color(0xFFE5E5E5), width: 1)
+                                            ? BorderSide(color: theme.dividerColor, width: 1)
                                             : BorderSide.none,
                                       ),
                                     ),
@@ -558,7 +557,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                                 style: TextStyle(
                                                   fontSize: 17,
                                                   fontWeight: FontWeight.w500,
-                                                  color: const Color(0xFF1A1A1A),
+                                                  color: theme.colorScheme.onSurface,
                                                 ),
                                               ),
                                               if (phoneDisplay.isNotEmpty) ...[
@@ -567,7 +566,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                                   phoneDisplay,
                                                   style: TextStyle(
                                                     fontSize: 15,
-                                                    color: const Color(0xFF6B6B6B),
+                                                    color: theme.colorScheme.onSurfaceVariant,
                                                   ),
                                                 ),
                                               ],
@@ -577,7 +576,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                         Icon(
                                           Icons.person_add_outlined,
                                           size: 20,
-                                          color: const Color(0xFF9B9B9B),
+                                          color: theme.colorScheme.onSurfaceVariant,
                                         ),
                                       ],
                                     ),
@@ -595,7 +594,7 @@ class _InviteMembersState extends State<InviteMembers> {
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
-                      color: const Color(0xFFE5E5E5),
+                      color: theme.dividerColor,
                       width: 1,
                     ),
                   ),
@@ -610,7 +609,7 @@ class _InviteMembersState extends State<InviteMembers> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF9B9B9B),
+                          color: theme.colorScheme.onSurfaceVariant,
                           letterSpacing: 0.3,
                         ),
                       ),
@@ -626,7 +625,7 @@ class _InviteMembersState extends State<InviteMembers> {
                             decoration: BoxDecoration(
                               border: Border(
                                 top: index > 0
-                                    ? const BorderSide(color: Color(0xFFE5E5E5), width: 1)
+                                    ? BorderSide(color: theme.dividerColor, width: 1)
                                     : BorderSide.none,
                               ),
                             ),
@@ -637,7 +636,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                   repo.getMemberDisplayName(member.phone),
                                   style: TextStyle(
                                     fontSize: 17,
-                                    color: const Color(0xFF1A1A1A),
+                                    color: theme.colorScheme.onSurface,
                                   ),
                                 ),
                                 if (member.name.isNotEmpty)
@@ -645,7 +644,7 @@ class _InviteMembersState extends State<InviteMembers> {
                                     member.phone,
                                     style: TextStyle(
                                       fontSize: 15,
-                                      color: const Color(0xFF6B6B6B),
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                               ],
@@ -666,10 +665,10 @@ class _InviteMembersState extends State<InviteMembers> {
                 bottom: 12 + MediaQuery.of(context).padding.bottom,
               ),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F8),
+                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFF7F7F8),
                 border: Border(
                   top: BorderSide(
-                    color: const Color(0xFFE5E5E5),
+                    color: theme.dividerColor,
                     width: 1,
                   ),
                 ),
@@ -692,8 +691,6 @@ class _InviteMembersState extends State<InviteMembers> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

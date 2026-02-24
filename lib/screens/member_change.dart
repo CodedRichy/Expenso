@@ -15,6 +15,8 @@ class MemberChange extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final args = ModalRoute.of(context)?.settings.arguments;
     final String displayGroupId;
     final String displayGroupName;
@@ -55,7 +57,7 @@ class MemberChange extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -70,7 +72,7 @@ class MemberChange extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -92,7 +94,7 @@ class MemberChange extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            color: theme.colorScheme.onSurface,
                             letterSpacing: -0.4,
                           ),
                         ),
@@ -104,7 +106,7 @@ class MemberChange extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -113,7 +115,7 @@ class MemberChange extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                             height: 1.5,
                           ),
                         ),
@@ -128,8 +130,8 @@ class MemberChange extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD32F2F),
-                                foregroundColor: Colors.white,
+                                backgroundColor: theme.colorScheme.error,
+                                foregroundColor: theme.colorScheme.onError,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -151,9 +153,9 @@ class MemberChange extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1A1A1A),
-                                side: const BorderSide(color: Color(0xFFE5E5E5)),
+                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                                foregroundColor: theme.colorScheme.onSurface,
+                                side: BorderSide(color: theme.dividerColor),
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),

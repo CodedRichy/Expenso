@@ -283,7 +283,7 @@ class _GroupDetailState extends State<GroupDetail> {
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: Theme.of(context).colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     style: IconButton.styleFrom(
@@ -297,10 +297,10 @@ class _GroupDetailState extends State<GroupDetail> {
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -314,7 +314,7 @@ class _GroupDetailState extends State<GroupDetail> {
                       );
                     },
                     icon: const Icon(Icons.people_outline, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: Theme.of(context).colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     style: IconButton.styleFrom(
@@ -413,8 +413,7 @@ class _GroupDetailState extends State<GroupDetail> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: fullySettled ? AppColors.success : const Color(0xFF1A1A1A),
-                        foregroundColor: Colors.white,
+                        backgroundColor: fullySettled ? AppColors.success : null,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -447,7 +446,7 @@ class _GroupDetailState extends State<GroupDetail> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF9B9B9B),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -475,7 +474,7 @@ class _GroupDetailState extends State<GroupDetail> {
                               decoration: BoxDecoration(
                                 border: Border(
                                   top: index > 0
-                                      ? const BorderSide(color: Color(0xFFE5E5E5), width: 1)
+                                      ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
                                       : BorderSide.none,
                                 ),
                               ),
@@ -499,18 +498,18 @@ class _GroupDetailState extends State<GroupDetail> {
                                                 children: [
                                                   TextSpan(
                                                     text: desc.main,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 17,
-                                                      color: Color(0xFF1A1A1A),
+                                                      color: Theme.of(context).colorScheme.onSurface,
                                                     ),
                                                   ),
                                                   if (desc.suffix != null) ...[
                                                     const TextSpan(text: '  '),
                                                     TextSpan(
                                                       text: desc.suffix,
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontSize: 14,
-                                                        color: Color(0xFF9B9B9B),
+                                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                       ),
                                                     ),
                                                   ],
@@ -524,7 +523,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                           expense.displayDate,
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: const Color(0xFF9B9B9B),
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -539,7 +538,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF1A1A1A),
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                 ],
@@ -580,7 +579,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                     width: 6,
                                     height: 6,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF9B9B9B),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -590,7 +589,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                       text,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: const Color(0xFF9B9B9B),
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -599,7 +598,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                     msg.date,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: const Color(0xFFB0B0B0),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],

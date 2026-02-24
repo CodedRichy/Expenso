@@ -6,6 +6,8 @@ class CycleSettled extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final group = RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
@@ -26,7 +28,7 @@ class CycleSettled extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -41,7 +43,7 @@ class CycleSettled extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -63,7 +65,7 @@ class CycleSettled extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 38,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            color: theme.colorScheme.onSurface,
                             letterSpacing: -0.9,
                             height: 1.1,
                           ),
@@ -77,7 +79,7 @@ class CycleSettled extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -86,7 +88,7 @@ class CycleSettled extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                             height: 1.5,
                           ),
                         ),
@@ -103,8 +105,6 @@ class CycleSettled extends StatelessWidget {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A1A1A),
-                                foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -126,9 +126,9 @@ class CycleSettled extends StatelessWidget {
                                 Navigator.pushNamed(context, '/cycle-history', arguments: group);
                               },
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1A1A1A),
-                                side: const BorderSide(color: Color(0xFFE5E5E5)),
+                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                                foregroundColor: theme.colorScheme.onSurface,
+                                side: BorderSide(color: theme.dividerColor),
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),

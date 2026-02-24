@@ -43,6 +43,7 @@ class _CycleHistoryState extends State<CycleHistory> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final group = ModalRoute.of(context)?.settings.arguments as Group?;
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
@@ -65,7 +66,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -77,19 +78,19 @@ class _CycleHistoryState extends State<CycleHistory> {
                   const SizedBox(height: 20),
                   Text(
                     groupName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Settlement history',
                     style: TextStyle(
                       fontSize: 17,
-                      color: Color(0xFF6B6B6B),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -135,7 +136,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF1A1A1A),
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -144,7 +145,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: const Color(0xFF6B6B6B),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -166,7 +167,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF9B9B9B),
+                            color: theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -203,8 +204,8 @@ class _CycleHistoryState extends State<CycleHistory> {
                               decoration: BoxDecoration(
                                 border: Border(
                                   top: index > 0
-                                      ? const BorderSide(
-                                          color: Color(0xFFE5E5E5),
+                                      ? BorderSide(
+                                          color: theme.dividerColor,
                                           width: 1,
                                         )
                                       : BorderSide.none,
@@ -222,7 +223,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                           style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w500,
-                                            color: const Color(0xFF1A1A1A),
+                                            color: theme.colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -236,7 +237,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                               style: TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.w600,
-                                                color: const Color(0xFF1A1A1A),
+                                                color: theme.colorScheme.onSurface,
                                               ),
                                             ),
                                             const SizedBox(width: 8),
@@ -244,7 +245,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                               'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
                                               style: TextStyle(
                                                 fontSize: 15,
-                                                color: const Color(0xFF6B6B6B),
+                                                color: theme.colorScheme.onSurfaceVariant,
                                               ),
                                             ),
                                           ],
@@ -256,7 +257,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                   Icon(
                                     Icons.chevron_right,
                                     size: 20,
-                                    color: const Color(0xFFB0B0B0),
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ],
                               ),
@@ -302,6 +303,7 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (_timedOut) {
       return Center(
         child: Padding(
@@ -309,35 +311,35 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.hourglass_empty, size: 48, color: Color(0xFF9B9B9B)),
+              Icon(Icons.hourglass_empty, size: 48, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Taking longer than expected',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Check your connection',
-                style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+                style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
           ),
         ),
       );
     }
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A1A1A)),
+            child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.onSurface),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Loading history...',
-            style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+            style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -353,6 +355,8 @@ class _ErrorWithRetry extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -362,30 +366,30 @@ class _ErrorWithRetry extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE5E5E5),
+              decoration: BoxDecoration(
+                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.wifi_off, size: 28, color: Color(0xFF6B6B6B)),
+              child: Icon(Icons.wifi_off, size: 28, color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             Text(
               message,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Check your connection and try again',
-              style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+              style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             OutlinedButton(
               onPressed: onRetry,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF1A1A1A),
-                side: const BorderSide(color: Color(0xFFE5E5E5)),
+                foregroundColor: theme.colorScheme.onSurface,
+                side: BorderSide(color: theme.dividerColor),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: const Text('Try again'),

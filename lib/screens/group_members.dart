@@ -17,6 +17,9 @@ class GroupMembers extends StatelessWidget {
     }
     final repo = CycleRepository.instance;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
@@ -27,9 +30,9 @@ class GroupMembers extends StatelessWidget {
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
           });
-          return const Scaffold(
-            backgroundColor: Color(0xFFF7F7F8),
-            body: Center(child: ExpensoLoader()),
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: const Center(child: ExpensoLoader()),
           );
         }
         final listMembers = repo.getMembersForGroup(group.id);
@@ -55,7 +58,7 @@ class GroupMembers extends StatelessWidget {
                           Navigator.pop(context);
                         },
                         icon: const Icon(Icons.chevron_left, size: 24),
-                        color: const Color(0xFF1A1A1A),
+                        color: theme.colorScheme.onSurface,
                         padding: EdgeInsets.zero,
                         alignment: Alignment.centerLeft,
                         constraints: const BoxConstraints(),
@@ -70,7 +73,7 @@ class GroupMembers extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1A1A1A),
+                          color: theme.colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -79,7 +82,7 @@ class GroupMembers extends StatelessWidget {
                         '${listMembers.length} member${listMembers.length != 1 ? 's' : ''}',
                         style: TextStyle(
                           fontSize: 17,
-                          color: const Color(0xFF6B6B6B),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -92,7 +95,7 @@ class GroupMembers extends StatelessWidget {
                             'No members yet',
                             style: TextStyle(
                               fontSize: 17,
-                              color: const Color(0xFF6B6B6B),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         )
@@ -107,7 +110,7 @@ class GroupMembers extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF9B9B9B),
+                                    color: theme.colorScheme.onSurfaceVariant,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -162,8 +165,8 @@ class GroupMembers extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       border: Border(
                                         top: index > 0
-                                            ? const BorderSide(
-                                                color: Color(0xFFE5E5E5),
+                                            ? BorderSide(
+                                                color: theme.dividerColor,
                                                 width: 1,
                                               )
                                             : BorderSide.none,
@@ -188,7 +191,7 @@ class GroupMembers extends StatelessWidget {
                                                     repo.getMemberDisplayName(member.phone),
                                                     style: TextStyle(
                                                       fontSize: 17,
-                                                      color: isPending ? const Color(0xFF9B9B9B) : const Color(0xFF1A1A1A),
+                                                      color: isPending ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface,
                                                     ),
                                                   ),
                                                   if (isCreator) ...[
@@ -200,7 +203,7 @@ class GroupMembers extends StatelessWidget {
                                                     Container(
                                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                       decoration: BoxDecoration(
-                                                        color: const Color(0xFFE5E5E5),
+                                                        color: theme.dividerColor,
                                                         borderRadius: BorderRadius.circular(4),
                                                       ),
                                                       child: Text(
@@ -208,7 +211,7 @@ class GroupMembers extends StatelessWidget {
                                                         style: TextStyle(
                                                           fontSize: 12,
                                                           fontWeight: FontWeight.w500,
-                                                          color: const Color(0xFF6B6B6B),
+                                                          color: theme.colorScheme.onSurfaceVariant,
                                                         ),
                                                       ),
                                                     ),
@@ -221,7 +224,7 @@ class GroupMembers extends StatelessWidget {
                                                   member.phone,
                                                   style: TextStyle(
                                                     fontSize: 14,
-                                                    color: const Color(0xFF9B9B9B),
+                                                    color: theme.colorScheme.onSurfaceVariant,
                                                   ),
                                                 ),
                                               ],
@@ -231,7 +234,7 @@ class GroupMembers extends StatelessWidget {
                                         if (canRemove)
                                           Icon(
                                             Icons.chevron_right,
-                                            color: const Color(0xFF9B9B9B),
+                                            color: theme.colorScheme.onSurfaceVariant,
                                             size: 20,
                                           ),
                                       ],
@@ -255,8 +258,8 @@ class GroupMembers extends StatelessWidget {
                       arguments: currentGroup,
                     );
                   },
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  child: const Icon(Icons.person_add, color: Colors.white),
+                  backgroundColor: theme.colorScheme.primary,
+                  child: Icon(Icons.person_add, color: theme.colorScheme.onPrimary),
                 )
               : null,
         );

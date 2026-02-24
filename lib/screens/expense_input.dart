@@ -169,6 +169,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
     final repo = CycleRepository.instance;
     final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
     if (members.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,7 +179,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -194,14 +196,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
               onSelected: (selected) {
                 if (selected) setState(() => _paidById = member.id);
               },
-              selectedColor: const Color(0xFF1A1A1A),
+              selectedColor: theme.colorScheme.primary,
               labelStyle: TextStyle(
                 fontSize: 15,
-                color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+                color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
               ),
-              backgroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.surface,
               side: BorderSide(
-                color: isSelected ? const Color(0xFF1A1A1A) : const Color(0xFFE5E5E5),
+                color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
               ),
             );
           }).toList(),
@@ -216,6 +218,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
     if (members.isEmpty) return const SizedBox.shrink();
     final allIds = members.map((m) => m.id).toSet();
     final allSelected = allIds.isNotEmpty && selectedMemberIds.containsAll(allIds);
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,7 +227,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF9B9B9B),
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -258,7 +261,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         }
                       });
                     },
-                    activeColor: const Color(0xFF1A1A1A),
+                    activeColor: theme.colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -270,7 +273,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -308,7 +311,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           }
                         });
                       },
-                      activeColor: const Color(0xFF1A1A1A),
+                      activeColor: theme.colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -319,7 +322,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     displayName,
                     style: TextStyle(
                       fontSize: 17,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -340,6 +343,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
     }
 
     if (showConfirmation && parsedData != null) {
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
       return Scaffold(
         body: SafeArea(
           child: Column(
@@ -353,7 +358,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     IconButton(
                       onPressed: handleEdit,
                       icon: const Icon(Icons.chevron_left, size: 24),
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       padding: EdgeInsets.zero,
                       alignment: Alignment.centerLeft,
                       constraints: const BoxConstraints(),
@@ -368,7 +373,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A1A),
+                        color: theme.colorScheme.onSurface,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -389,7 +394,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         style: TextStyle(
                           fontSize: 52,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1A1A1A),
+                          color: theme.colorScheme.onSurface,
                           letterSpacing: -1.2,
                           height: 1.1,
                         ),
@@ -399,7 +404,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         parsedData!.description,
                         style: TextStyle(
                           fontSize: 17,
-                          color: const Color(0xFF1A1A1A),
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       if (_paidById != null && _paidById!.isNotEmpty) ...[
@@ -408,7 +413,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           'Paid by ${CycleRepository.instance.getMemberDisplayNameById(_paidById!)}',
                           style: TextStyle(
                             fontSize: 15,
-                            color: const Color(0xFF6B6B6B),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -422,14 +427,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE5E5E5),
+                                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 displayName,
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: const Color(0xFF1A1A1A),
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             );
@@ -445,7 +450,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
-                      color: const Color(0xFFE5E5E5),
+                      color: theme.dividerColor,
                       width: 1,
                     ),
                   ),
@@ -460,10 +465,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           ? handleConfirm
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
-                        disabledBackgroundColor: const Color(0xFFE5E5E5),
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: const Color(0xFFB0B0B0),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -484,7 +485,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF5B7C99),
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -497,6 +498,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
       );
     }
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -512,7 +515,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -527,7 +530,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -539,7 +542,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: const Color(0xFFE5E5E5),
+                    color: theme.dividerColor,
                     width: 1,
                   ),
                 ),
@@ -555,7 +558,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.9,
                       height: 1.1,
                     ),
@@ -565,7 +568,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     'pending · ${group.statusLine}',
                     style: TextStyle(
                       fontSize: 15,
-                      color: const Color(0xFF6B6B6B),
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -581,7 +584,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9B9B9B),
+                      color: theme.colorScheme.onSurfaceVariant,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -599,27 +602,27 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     decoration: InputDecoration(
                       hintText: 'e.g. Dinner 1200 with',
                       hintStyle: TextStyle(
-                        color: const Color(0xFFB0B0B0),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF1A1A1A)),
+                        borderSide: BorderSide(color: theme.colorScheme.primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
                     style: TextStyle(
                       fontSize: 17,
-                      color: const Color(0xFF1A1A1A),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -630,10 +633,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ElevatedButton(
                     onPressed: _canSubmit ? handleSubmit : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      disabledBackgroundColor: const Color(0xFFE5E5E5),
-                      foregroundColor: Colors.white,
-                      disabledForegroundColor: const Color(0xFFB0B0B0),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -652,7 +651,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 'Format: Description Amount with Name, Name',
                 style: TextStyle(
                   fontSize: 14,
-                  color: const Color(0xFF9B9B9B),
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
