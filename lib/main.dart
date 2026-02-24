@@ -63,20 +63,20 @@ void main() async {
 ThemeData _buildTheme(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
   
-  final primary = isDark ? AppColors.primaryDark : AppColors.primaryLight;
-  final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-  final background = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-  final error = isDark ? AppColors.errorDark : AppColors.errorLight;
-  final textPrimary = isDark ? const Color(0xFFF5F5F5) : const Color(0xFF1A1A1A);
-  final textSecondary = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF6B6B6B);
-  final textTertiary = isDark ? const Color(0xFF808080) : const Color(0xFF9B9B9B);
-  final textDisabled = isDark ? const Color(0xFF606060) : const Color(0xFFB0B0B0);
-  final border = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5);
-  final borderInput = isDark ? const Color(0xFF4A4A4A) : const Color(0xFFD0D0D0);
-  final borderFocused = isDark ? const Color(0xFFE5E5E5) : const Color(0xFF1A1A1A);
-  final accent = isDark ? const Color(0xFF7BA3C4) : const Color(0xFF5B7C99);
-  final disabledBg = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5);
-  final disabledFg = isDark ? const Color(0xFF606060) : const Color(0xFFB0B0B0);
+  final primary = isDark ? AppColorsDark.primary : AppColors.primary;
+  final surface = isDark ? AppColorsDark.surface : AppColors.surface;
+  final background = isDark ? AppColorsDark.background : AppColors.background;
+  final error = isDark ? AppColorsDark.error : AppColors.error;
+  final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+  final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+  final textTertiary = isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;
+  final textDisabled = isDark ? AppColorsDark.textDisabled : AppColors.textDisabled;
+  final border = isDark ? AppColorsDark.border : AppColors.border;
+  final borderInput = isDark ? AppColorsDark.borderInput : AppColors.borderInput;
+  final borderFocused = isDark ? AppColorsDark.borderFocused : AppColors.borderFocused;
+  final accent = isDark ? AppColorsDark.accent : AppColors.accent;
+  final disabledBg = isDark ? AppColorsDark.disabledBackground : AppColors.disabledBackground;
+  final disabledFg = isDark ? AppColorsDark.disabledForeground : AppColors.disabledForeground;
 
   return ThemeData(
     useMaterial3: true,
