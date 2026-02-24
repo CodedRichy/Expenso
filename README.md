@@ -101,7 +101,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
   │  "Settle now"   │                          │                 │
   │                 │                          │                 │
   │  You owe ₹450   │                          │  ₹450 incoming  │
-  │  to Ash         │                          │  from Ash    │
+  │  to Ash         │                          │  from Ash       │
   └────────┬────────┘                          └────────┬────────┘
            │                                            │
            ▼                                            │
@@ -121,7 +121,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
            │                                            ▼
            │                                   ┌─────────────────┐
            │                                   │  Confirm        │
-           │                                   │  received? ✓    │
+           │                                   │  received? ✓    │ 
            │                                   └────────┬────────┘
            │                                            │
            ▼                                            ▼
@@ -138,7 +138,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         ALWAYS KNOW WHERE YOU STAND                          │
+│                         ALWAYS KNOW WHERE YOU STAND                         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
                     ┌─────────────────────────────────┐
@@ -178,7 +178,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              DATA FLOW                                       │
+│                              DATA FLOW                                      │
 └─────────────────────────────────────────────────────────────────────────────┘
 
   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
