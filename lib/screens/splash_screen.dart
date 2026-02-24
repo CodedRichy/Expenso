@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+import '../widgets/expenso_loader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -8,43 +9,59 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  static const _fadeInDuration = Duration(milliseconds: 500);
-  static const _holdDuration = Duration(milliseconds: 1200);
-  static const _fadeOutDuration = Duration(milliseconds: 400);
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  static const _logoFadeInDuration = Duration(milliseconds: 400);
+  static const _logoHoldDuration = Duration(milliseconds: 1000);
+  static const _logoFadeOutDuration = Duration(milliseconds: 300);
+  static const _loaderFadeInDuration = Duration(milliseconds: 300);
+  static const _loaderHoldDuration = Duration(milliseconds: 1500);
 
-  late AnimationController _fadeController;
-  late Animation<double> _opacity;
+  late AnimationController _logoController;
+  late Animation<double> _logoOpacity;
+  
+  bool _showLoader = false;
 
   @override
   void initState() {
     super.initState();
     
-    _fadeController = AnimationController(
-      duration: _fadeInDuration,
+    _logoController = AnimationController(
+      duration: _logoFadeInDuration,
       vsync: this,
     );
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
+    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeOut),
     );
     
-    _fadeController.forward();
+    _logoController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(_fadeInDuration + _holdDuration, () {
+      // Fade out logo
+      Future.delayed(_logoFadeInDuration + _logoHoldDuration, () {
         if (!mounted) return;
-        _fadeController.reverse();
+        _logoController.reverse();
       });
-      Future.delayed(_fadeInDuration + _holdDuration + _fadeOutDuration, () {
+      
+      // Show loader after logo fades out
+      Future.delayed(_logoFadeInDuration + _logoHoldDuration + _logoFadeOutDuration, () {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/');
+        setState(() => _showLoader = true);
       });
+      
+      // Navigate after loader shows
+      Future.delayed(
+        _logoFadeInDuration + _logoHoldDuration + _logoFadeOutDuration + _loaderFadeInDuration + _loaderHoldDuration,
+        () {
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/');
+        },
+      );
     });
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _logoController.dispose();
     super.dispose();
   }
 
@@ -52,30 +69,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColorsDark.background : AppColors.background;
+    final logoPath = isDark ? 'assets/app_icon_dark.png' : 'assets/app_icon_light.png';
     
     return Scaffold(
       backgroundColor: bgColor,
       body: Center(
-        child: AnimatedBuilder(
-          animation: _fadeController,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _opacity.value,
-              child: child,
-            );
-          },
-          child: ColorFiltered(
-            colorFilter: ColorFilter.mode(
-              isDark ? Colors.white : Colors.black,
-              BlendMode.srcIn,
-            ),
-            child: Image.asset(
-              'assets/images/logoTransparent.png',
-              width: 150,
-              height: 150,
-            ),
-          ),
-        ),
+        child: _showLoader
+            ? AnimatedOpacity(
+                opacity: 1.0,
+                duration: _loaderFadeInDuration,
+                child: const ExpensoLoader(),
+              )
+            : AnimatedBuilder(
+                animation: _logoController,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _logoOpacity.value,
+                    child: child,
+                  );
+                },
+                child: Image.asset(
+                  logoPath,
+                  width: 150,
+                  height: 150,
+                ),
+              ),
       ),
     );
   }

@@ -14,6 +14,7 @@ import 'screens/phone_auth.dart';
 import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
 import 'screens/group_list_skeleton.dart';
+import 'widgets/expenso_loader.dart';
 import 'screens/create_group.dart';
 import 'screens/invite_members.dart';
 import 'screens/group_detail.dart';
@@ -208,19 +209,8 @@ class MyApp extends StatelessWidget {
           stream: PhoneAuthService.instance.authStateChanges,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(
-                body: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
-                        child: Text('Groups', style: Theme.of(context).textTheme.displayLarge),
-                      ),
-                      const Expanded(child: GroupListSkeleton()),
-                    ],
-                  ),
-                ),
+              return const Scaffold(
+                body: Center(child: ExpensoLoader()),
               );
             }
             final user = snapshot.data;
