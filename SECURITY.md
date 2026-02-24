@@ -1,11 +1,11 @@
 # Security Policy
 
 ## Supported Versions
-We are currently in active development for V1.
+We are currently at V3.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
+| 3.0.x   | :white_check_mark: |
 | 2.0.x   | :white_check_mark: |
 | < 2.0   | :x:                |
 

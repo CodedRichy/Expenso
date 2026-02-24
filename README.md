@@ -89,7 +89,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status
 
-Expenso is a **stabilized v1**. Core logic (expense recording, split calculation, settlement engine, cycle management) is considered frozen. All primary flows are implemented, tested where critical, and documented. Future changes should be incremental and cautious—consult [docs/STABILIZATION.md](docs/STABILIZATION.md) for invariants, known limitations, and change safety guidance before modifying core behavior.
+Expenso is at **V3**. Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, tested where critical, and documented. V3 adds logout, international phone number support (15 countries), and human-friendly date display. Future changes should be incremental and cautious—consult [docs/STABILIZATION.md](docs/STABILIZATION.md) for invariants and [docs/releases/V3_RELEASE.md](docs/releases/V3_RELEASE.md) for the current release contract.
 
 **Planned features** (not yet implemented) are listed in APP_BLUEPRINT.md Section 9. No timeline commitments.
 
@@ -97,7 +97,7 @@ Expenso is a **stabilized v1**. Core logic (expense recording, split calculation
 
 ## Contributing
 
-This repository is shared for reference. If you have permission to contribute: prefer small, focused PRs; follow the logic and conventions in APP_BLUEPRINT.md and the existing code style; run `flutter test` before submitting. For behavioral or product changes, align with the V1 contract in `docs/V1_RELEASE.md` where applicable.
+This repository is shared for reference. If you have permission to contribute: prefer small, focused PRs; follow the logic and conventions in APP_BLUEPRINT.md and the existing code style; run `flutter test` before submitting. For behavioral or product changes, align with the release contracts in `docs/releases/`.
 
 ---
 

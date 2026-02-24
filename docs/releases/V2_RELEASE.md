@@ -1,7 +1,7 @@
 # Expenso V2 Release Document
 
-**Lead Product Engineering · V2 Current State**  
-Expenso is currently at **V2**. This document is the single source of truth for the V2 release: what is in scope (building on V1), what defines “V2,” and what is deferred to V3. It builds on the [V1 Release contract](V1_RELEASE.md), which remains the base for Magic Bar, Decision Clarity, Authority, and the SettlementEngine.
+**Lead Product Engineering · V2 (Superseded by V3)**  
+Expenso is currently at **V3**. See [V3_RELEASE.md](V3_RELEASE.md) for the current release. This document is the single source of truth for the V2 release: what is in scope (building on V1), what defines “V2,” and what is deferred to V3. It builds on the [V1 Release contract](V1_RELEASE.md), which remains the base for Magic Bar, Decision Clarity, Authority, and the SettlementEngine.
 
 ---
 
@@ -60,7 +60,7 @@ No V2 behavior or UI should depend on these.
 ## Document Control
 
 - **Version:** 1.0  
-- **Status:** V2 Current State (current release)  
+- **Status:** V2 (superseded by V3)  
 - **Audience:** Product, Engineering, and anyone defining or implementing Expenso.  
 - **Prerequisite:** [V1_RELEASE.md](V1_RELEASE.md)  
 - **Updates:** Changes to this document should be versioned; they define the V2 boundary.

@@ -219,6 +219,6 @@ A "simple rename" requires: data migration, versioned read logic, and testing ag
 
 **Conclusion:** Expenso can safely evolve without major refactor.
 
-The codebase is functional, coherent, and reasonably well-structured for its scope. The singleton repository pattern, while not ideal for testability, provides clear state ownership. Critical business logic (balance calculation, settlement) is isolated in `SettlementEngine` with unit test coverage. The main risks are around the mutable expense model and lack of audit trails, but these are acceptable trade-offs for a v1 expense tracker.
+The codebase is functional, coherent, and reasonably well-structured for its scope. The singleton repository pattern, while not ideal for testability, provides clear state ownership. Critical business logic (balance calculation, settlement) is isolated in `SettlementEngine` with unit test coverage. The main risks are around the mutable expense model and lack of audit trails, but these are acceptable trade-offs for this stage of the expense tracker.
 
 The app should not be frozen—it has room for incremental feature work (offline support, better date handling, expense history) without architectural upheaval. However, any changes to the settlement engine or cycle archive flow should be approached with caution and require test coverage expansion. A v2 rewrite is not justified unless the scope expands significantly (multi-currency, recurring expenses, enterprise features).
