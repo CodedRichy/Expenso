@@ -19,6 +19,23 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    plugins.withId("com.android.library") {
+        configure<com.android.build.gradle.LibraryExtension> {
+            if (namespace.isNullOrEmpty()) {
+                val manifestFile = file("src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    val packageName = Regex("""package\s*=\s*"([^"]+)"""")
+                        .find(manifestFile.readText())?.groupValues?.get(1)
+                    if (!packageName.isNullOrEmpty()) {
+                        namespace = packageName
+                    }
+                }
+            }
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
