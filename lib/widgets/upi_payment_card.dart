@@ -148,15 +148,22 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = _isConfirmed 
+        ? AppColors.successBackground 
+        : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white);
+    final borderColor = _isConfirmed 
+        ? AppColors.success.withValues(alpha: 0.3) 
+        : theme.dividerColor;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.spaceLg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: _isConfirmed ? AppColors.successBackground : AppColors.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isConfirmed ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,6 +181,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                             'Pay ${widget.payeeName}',
                             style: AppTypography.bodyPrimary.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -186,7 +194,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                       '₹$_formattedAmount',
                       style: AppTypography.heroTitle.copyWith(
                         fontSize: 24,
-                        color: _isConfirmed ? AppColors.success : AppColors.textPrimary,
+                        color: _isConfirmed ? AppColors.success : theme.colorScheme.onSurface,
                         decoration: _isConfirmed ? TextDecoration.lineThrough : null,
                       ),
                     ),
@@ -203,7 +211,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                 vertical: AppSpacing.spaceXs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: isDark ? theme.colorScheme.surfaceContainerHigh : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -211,7 +219,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                 style: AppTypography.caption.copyWith(
                   fontFamily: 'monospace',
                   fontSize: 11,
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -231,7 +239,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
             Text(
               '${widget.payeeName} hasn\'t added their UPI ID yet. Ask them to update their profile.',
               style: AppTypography.caption.copyWith(
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -486,6 +494,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     }
 
     if (_showMarkAsPaid) {
+      final theme = Theme.of(context);
       return Row(
         children: [
           Expanded(
@@ -494,8 +503,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Pay again'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.border),
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                side: BorderSide(color: theme.dividerColor),
                 padding: const EdgeInsets.symmetric(
                   vertical: AppSpacing.spaceLg,
                 ),
@@ -536,6 +545,10 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildPayButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final buttonBg = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final buttonFg = isDark ? Colors.black : Colors.white;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -544,19 +557,19 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
           child: ElevatedButton.icon(
             onPressed: _loading ? null : _showUpiAppPicker,
             icon: _loading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: buttonFg,
                     ),
                   )
                 : const Icon(Icons.payment, size: 18),
             label: Text(_loading ? 'Loading...' : 'Pay via UPI'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: buttonBg,
+              foregroundColor: buttonFg,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.spaceXl,
                 vertical: AppSpacing.spaceLg,
@@ -577,7 +590,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               icon: Icon(_showQr ? Icons.close : Icons.qr_code_2, size: 16),
               label: Text(_showQr ? 'Hide QR' : 'Show QR'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.spaceMd,
                   vertical: AppSpacing.spaceXs,
@@ -587,7 +600,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
             Container(
               width: 1,
               height: 16,
-              color: AppColors.border,
+              color: theme.dividerColor,
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceSm),
             ),
             TextButton.icon(
@@ -595,7 +608,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               icon: const Icon(Icons.payments_outlined, size: 16),
               label: const Text('Paid via cash'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textTertiary,
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.spaceMd,
                   vertical: AppSpacing.spaceXs,
@@ -609,6 +622,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildCashPaymentOption() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -645,8 +659,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
             icon: const Icon(Icons.payments_outlined, size: 18),
             label: const Text('Paid via cash'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              side: const BorderSide(color: AppColors.border),
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+              side: BorderSide(color: theme.dividerColor),
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.spaceLg,
               ),
@@ -662,10 +676,12 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
   Widget _buildQrCode() {
     final data = _paymentData!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: isDark ? theme.colorScheme.surfaceContainerHigh : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -674,12 +690,13 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.qr_code_scanner, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.qr_code_scanner, size: 18, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
                 'Scan to pay ₹$_formattedAmount',
                 style: AppTypography.bodyPrimary.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -734,14 +751,14 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
           Text(
             'Open any UPI app and scan this code',
             style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Works with GPay, PhonePe, Paytm, BHIM & more',
             style: AppTypography.captionSmall.copyWith(
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

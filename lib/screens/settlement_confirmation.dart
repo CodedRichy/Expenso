@@ -227,6 +227,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
     final group = _group!;
     final repo = CycleRepository.instance;
+    final theme = Theme.of(context);
     final myPaymentRoutes = _getMyPaymentRoutes(group.id);
     final receivingRoutes = _getReceivingRoutes(group.id);
     
@@ -260,7 +261,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -272,10 +273,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   const SizedBox(height: 20),
                   Text(
                     group.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -538,10 +539,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               ] else ...[
                 Text(
                   '₹$totalDisplay',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -1.2,
                     height: 1.1,
                   ),
@@ -563,7 +564,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.textTertiary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 0.3,
           ),
         ),
@@ -624,17 +625,21 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   }
 
   Widget _buildBackButton(BuildContext context) {
-    return OutlinedButton(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final buttonBg = isDark ? Colors.white : Colors.white;
+    final buttonFg = isDark ? Colors.black : const Color(0xFF1A1A1A);
+    return ElevatedButton(
       onPressed: () => Navigator.pop(context),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        side: const BorderSide(color: AppColors.border),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: buttonBg,
+        foregroundColor: buttonFg,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         minimumSize: const Size(double.infinity, 0),
+        elevation: 0,
       ),
-      child: const Text('Back to Group', style: AppTypography.button),
+      child: Text('Back to Group', style: AppTypography.button.copyWith(color: buttonFg)),
     );
   }
 }
