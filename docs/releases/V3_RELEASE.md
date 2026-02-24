@@ -1,7 +1,7 @@
 # Expenso V3 Release Document
 
-**Lead Product Engineering · V3 Current State**  
-Expenso is currently at **V3**. This document is the single source of truth for the V3 release: what is in scope (building on V2), what defines "V3," and what is deferred to V4. It builds on [V2_RELEASE.md](V2_RELEASE.md) and [V1_RELEASE.md](V1_RELEASE.md), which remain the base contracts.
+**Lead Product Engineering · V3 Release**  
+This document is the single source of truth for the V3 release: what is in scope (building on V2), what defines "V3," and what was deferred to V4. It builds on [V2_RELEASE.md](V2_RELEASE.md) and [V1_RELEASE.md](V1_RELEASE.md), which remain the base contracts. **Note:** Expenso is now at V4; see [V4_RELEASE.md](V4_RELEASE.md) for current work.
 
 ---
 
@@ -64,8 +64,8 @@ No V3 behavior or UI should depend on these.
 ## Document Control
 
 - **Version:** 1.1  
-- **Status:** V3 Complete (current release)  
-- **Next:** [V4_RELEASE.md](V4_RELEASE.md)  
+- **Status:** V3 Complete  
+- **Current:** [V4_RELEASE.md](V4_RELEASE.md) (in progress)  
 - **Audience:** Product, Engineering, and anyone defining or implementing Expenso.  
 - **Prerequisite:** [V2_RELEASE.md](V2_RELEASE.md), [V1_RELEASE.md](V1_RELEASE.md)  
 - **Updates:** Changes to this document should be versioned; they define the V3 boundary.

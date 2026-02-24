@@ -334,7 +334,7 @@ Location: Firestore `/users/{uid}/fcmTokens/{tokenId}`
 ## Document Control
 
 - **Version:** 1.0  
-- **Status:** V4 Planning (not yet implemented)  
+- **Status:** V4 In Progress (current release)  
 - **Audience:** Product, Engineering, and anyone defining or implementing Expenso.  
 - **Prerequisite:** [V3_RELEASE.md](V3_RELEASE.md), [V2_RELEASE.md](V2_RELEASE.md), [V1_RELEASE.md](V1_RELEASE.md)  
 - **Updates:** Changes to this document should be versioned; they define the V4 boundary.

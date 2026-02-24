@@ -56,10 +56,10 @@
 
 | Document | Purpose |
 |----------|---------|
-| [V1_RELEASE.md](releases/V1_RELEASE.md) | V1 contract (Magic Bar, Decision Clarity, SettlementEngine) |
+| [V1_RELEASE.md](releases/V1_RELEASE.md) | V1 (Magic Bar, Decision Clarity, SettlementEngine) |
 | [V2_RELEASE.md](releases/V2_RELEASE.md) | V2 (Profile pictures, UPI deep-linking) |
-| [V3_RELEASE.md](releases/V3_RELEASE.md) | V3 current (Settlement activity, offline resilience, Dynamic UPI QR) |
-| [V4_RELEASE.md](releases/V4_RELEASE.md) | V4 planned (Cross-group identity, God Mode debt minimization) |
+| [V3_RELEASE.md](releases/V3_RELEASE.md) | V3 (Settlement activity, offline resilience, Dynamic UPI QR) |
+| [V4_RELEASE.md](releases/V4_RELEASE.md) | **V4 current** (Cross-group identity, God Mode debt minimization) |
 
 ---
 

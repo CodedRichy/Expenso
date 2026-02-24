@@ -329,6 +329,100 @@ class SettlementEngine {
     )).toList();
   }
 
+  // ============================================================
+  // GOD MODE: Cross-Group Optimization
+  // ============================================================
+
+  /// Computes optimized payment routes from global net balances.
+  /// 
+  /// This is the "God Mode" feature: given net balances aggregated across
+  /// all groups (keyed by phone number in E.164 format), computes the
+  /// minimum number of transactions to settle all debts.
+  /// 
+  /// Example: If across all groups:
+  /// - Alice is owed ₹500 by Bob
+  /// - Bob is owed ₹500 by Carol
+  /// Instead of 2 transactions, suggest: Carol pays Alice ₹500 directly.
+  /// 
+  /// Input: Map of phone (E.164) -> net balance in minor units
+  /// (positive = owed to them, negative = they owe)
+  /// 
+  /// Output: List of optimized payment routes (fromPhone, toPhone, amount)
+  static List<OptimizedRoute> computeOptimizedGlobalRoutes(
+    Map<String, int> globalNetBalances,
+    String currencyCode,
+  ) {
+    final debtors = globalNetBalances.entries
+        .where((e) => e.value < 0)
+        .map((e) => _BalanceEntry(e.key, -e.value))
+        .toList();
+    final creditors = globalNetBalances.entries
+        .where((e) => e.value > 0)
+        .map((e) => _BalanceEntry(e.key, e.value))
+        .toList();
+
+    debtors.sort((a, b) => b.amount.compareTo(a.amount));
+    creditors.sort((a, b) => b.amount.compareTo(a.amount));
+
+    final routes = <OptimizedRoute>[];
+    int d = 0, c = 0;
+
+    while (d < debtors.length && c < creditors.length) {
+      final debtor = debtors[d];
+      final creditor = creditors[c];
+      final transferAmount = debtor.amount < creditor.amount
+          ? debtor.amount
+          : creditor.amount;
+
+      if (transferAmount <= 0) break;
+
+      routes.add(OptimizedRoute(
+        fromPhone: debtor.id,
+        toPhone: creditor.id,
+        amountMinor: transferAmount,
+        currencyCode: currencyCode,
+      ));
+
+      debtor.amount -= transferAmount;
+      creditor.amount -= transferAmount;
+
+      if (debtor.amount <= 0) d++;
+      if (creditor.amount <= 0) c++;
+    }
+
+    return routes;
+  }
+
+  /// Compares original per-group routes vs optimized global routes.
+  /// 
+  /// Returns (originalCount, optimizedCount, savingsCount)
+  static (int, int, int) compareOptimization(
+    int originalRouteCount,
+    List<OptimizedRoute> optimizedRoutes,
+  ) {
+    final optimizedCount = optimizedRoutes.length;
+    final savings = originalRouteCount - optimizedCount;
+    return (originalRouteCount, optimizedCount, savings > 0 ? savings : 0);
+  }
+
+}
+
+/// An optimized payment route for cross-group settlement.
+/// Uses phone numbers (E.164) as identifiers instead of member IDs.
+class OptimizedRoute {
+  final String fromPhone;
+  final String toPhone;
+  final int amountMinor;
+  final String currencyCode;
+
+  const OptimizedRoute({
+    required this.fromPhone,
+    required this.toPhone,
+    required this.amountMinor,
+    required this.currencyCode,
+  });
+
+  double get amountDisplay => amountMinor / 100;
 }
 
 class _BalanceEntry {

@@ -2,12 +2,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../models/global_balance.dart';
 import '../models/money_minor.dart';
 import '../models/normalized_expense.dart';
 import '../models/payment_attempt.dart';
 import '../models/settlement_event.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
+import '../services/identity_service.dart';
 import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
@@ -275,6 +277,7 @@ class CycleRepository extends ChangeNotifier {
     _streamError = null;
     // Clear local cache on logout
     UserProfileCache.instance.clear();
+    IdentityService.instance.clear();
     notifyListeners();
   }
 
@@ -570,7 +573,12 @@ class CycleRepository extends ChangeNotifier {
         if (kDebugMode) debugPrint(st.toString());
       }
     }
+    _rebuildGlobalIdentities();
     notifyListeners();
+  }
+
+  void _rebuildGlobalIdentities() {
+    IdentityService.instance.buildFromGroups(_groups, _membersById, _userCache);
   }
 
   /// Refreshes user profile data for all members of a group.
@@ -780,11 +788,27 @@ class CycleRepository extends ChangeNotifier {
     if (uid.isEmpty) return '';
     if (uid == _currentUserId) return _currentUserName.isNotEmpty ? _currentUserName : 'You';
     final m = _membersById[uid];
-    if (m != null) return m.name.isNotEmpty ? m.name : _formatPhone(m.phone);
+    if (m != null) {
+      // Check IdentityService for unified cross-group name
+      if (m.phone.isNotEmpty) {
+        final identity = IdentityService.instance.getIdentity(m.phone);
+        if (identity != null && identity.displayName.isNotEmpty) {
+          return identity.displayName;
+        }
+      }
+      return m.name.isNotEmpty ? m.name : _formatPhone(m.phone);
+    }
     final u = _userCache[uid];
     if (u != null) {
       final name = u['displayName'] as String? ?? '';
       final phone = u['phoneNumber'] as String? ?? '';
+      // Check IdentityService for unified cross-group name
+      if (phone.isNotEmpty) {
+        final identity = IdentityService.instance.getIdentity(phone);
+        if (identity != null && identity.displayName.isNotEmpty) {
+          return identity.displayName;
+        }
+      }
       return name.isNotEmpty ? name : _formatPhone(phone);
     }
     return 'Unknown';
@@ -795,6 +819,11 @@ class CycleRepository extends ChangeNotifier {
     if (_looksLikeUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
     if (_normalizePhone(phoneOrUid) == _normalizePhone(_currentUserPhone)) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
+    }
+    // Check IdentityService for cross-group unified name
+    final identity = IdentityService.instance.getIdentity(phoneOrUid);
+    if (identity != null && identity.displayName.isNotEmpty) {
+      return identity.displayName;
     }
     for (final m in _membersById.values) {
       if (_normalizePhone(m.phone) == _normalizePhone(phoneOrUid)) {
@@ -1377,6 +1406,147 @@ class CycleRepository extends ChangeNotifier {
       if (creditor.amount < 0.01) c++;
     }
     return result;
+  }
+
+  // ============================================================
+  // GLOBAL BALANCES (Cross-Group)
+  // ============================================================
+
+  List<GlobalBalance> computeGlobalBalances() {
+    final balancesByPhone = <String, Map<String, int>>{};
+    final groupNames = <String, String>{};
+
+    for (final group in _groups) {
+      groupNames[group.id] = group.name;
+      final members = getMembersForGroup(group.id);
+      final cycle = getActiveCycle(group.id);
+      final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+
+      final myBalance = netBalances[_currentUserId] ?? 0;
+      if (myBalance == 0) continue;
+
+      for (final entry in netBalances.entries) {
+        if (entry.key == _currentUserId) continue;
+        if (entry.value == 0) continue;
+
+        final member = members.firstWhere(
+          (m) => m.id == entry.key,
+          orElse: () => Member(id: '', phone: '', name: ''),
+        );
+        if (member.phone.isEmpty) continue;
+
+        final phone = IdentityService.normalizePhone(member.phone);
+        balancesByPhone.putIfAbsent(phone, () => {});
+
+        final theirBalance = entry.value;
+        int contributionToMe = 0;
+        if (myBalance > 0 && theirBalance < 0) {
+          contributionToMe = -theirBalance.clamp(0, myBalance);
+        } else if (myBalance < 0 && theirBalance > 0) {
+          contributionToMe = -theirBalance.clamp(0, -myBalance);
+        }
+
+        if (contributionToMe != 0) {
+          balancesByPhone[phone]![group.id] =
+              (balancesByPhone[phone]![group.id] ?? 0) + contributionToMe;
+        }
+      }
+    }
+
+    final result = <GlobalBalance>[];
+    for (final entry in balancesByPhone.entries) {
+      final phone = entry.key;
+      final groupBalances = entry.value;
+      if (groupBalances.isEmpty) continue;
+
+      final netMinor = groupBalances.values.fold<int>(0, (sum, v) => sum + v);
+      if (netMinor == 0) continue;
+
+      final identity = IdentityService.instance.getIdentity(phone);
+      final breakdown = groupBalances.entries
+          .where((e) => e.value != 0)
+          .map((e) => GroupContribution(
+                groupId: e.key,
+                groupName: groupNames[e.key] ?? 'Unknown Group',
+                balanceMinor: e.value,
+              ))
+          .toList();
+
+      result.add(GlobalBalance(
+        contactPhone: phone,
+        contactName: identity?.displayName ?? _formatPhone(phone),
+        contactPhotoURL: identity?.photoURL,
+        netBalanceMinor: netMinor,
+        breakdown: breakdown,
+      ));
+    }
+
+    result.sort((a, b) => b.netBalanceMinor.abs().compareTo(a.netBalanceMinor.abs()));
+    return result;
+  }
+
+  Map<String, int> computeGlobalNetBalances() {
+    final netByPhone = <String, int>{};
+
+    for (final group in _groups) {
+      final members = getMembersForGroup(group.id);
+      final cycle = getActiveCycle(group.id);
+      final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+
+      final myBalance = netBalances[_currentUserId] ?? 0;
+      if (myBalance == 0) continue;
+
+      for (final entry in netBalances.entries) {
+        if (entry.key == _currentUserId) continue;
+        if (entry.value == 0) continue;
+
+        final member = members.firstWhere(
+          (m) => m.id == entry.key,
+          orElse: () => Member(id: '', phone: '', name: ''),
+        );
+        if (member.phone.isEmpty) continue;
+
+        final phone = IdentityService.normalizePhone(member.phone);
+        final theirBalance = entry.value;
+
+        int contribution = 0;
+        if (myBalance > 0 && theirBalance < 0) {
+          contribution = -theirBalance.clamp(0, myBalance);
+        } else if (myBalance < 0 && theirBalance > 0) {
+          contribution = -theirBalance.clamp(0, -myBalance);
+        }
+
+        if (contribution != 0) {
+          netByPhone[phone] = (netByPhone[phone] ?? 0) + contribution;
+        }
+      }
+    }
+
+    return netByPhone;
+  }
+
+  List<OptimizedRoute> computeOptimizedRoutes() {
+    final globalNet = computeGlobalNetBalances();
+    return SettlementEngine.computeOptimizedGlobalRoutes(globalNet, 'INR');
+  }
+
+  int countPerGroupRoutes() {
+    int count = 0;
+    for (final group in _groups) {
+      final members = getMembersForGroup(group.id);
+      final cycle = getActiveCycle(group.id);
+      final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+      final myRoutes = routes.where((r) => r.fromMemberId == _currentUserId || r.toMemberId == _currentUserId);
+      count += myRoutes.length;
+    }
+    return count;
+  }
+
+  (int original, int optimized, int savings) getOptimizationComparison() {
+    final originalCount = countPerGroupRoutes();
+    final optimizedRoutes = computeOptimizedRoutes();
+    return SettlementEngine.compareOptimization(originalCount, optimizedRoutes);
   }
 
   // ============================================================

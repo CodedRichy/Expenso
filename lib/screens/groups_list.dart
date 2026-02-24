@@ -449,6 +449,23 @@ class _GroupsListState extends State<GroupsList> {
                                   child: Text('Groups', style: AppTypography.heroTitle),
                                 ),
                                 GestureDetector(
+                                  onTap: () => Navigator.pushNamed(context, '/global-balances'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: AppColors.border),
+                                    ),
+                                    child: const Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      size: 22,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
                                   onTap: () => Navigator.pushNamed(context, '/profile'),
                                   child: MemberAvatar(
                                     displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,

@@ -30,6 +30,7 @@ import 'screens/cycle_history.dart';
 import 'screens/cycle_history_detail.dart';
 import 'screens/empty_states.dart';
 import 'screens/error_states.dart';
+import 'screens/global_balances.dart';
 import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
 
@@ -226,6 +227,7 @@ class MyApp extends StatelessWidget {
           return ErrorStates(type: args?['type'] as String? ?? 'generic');
         },
         '/profile': (context) => const ProfileScreen(),
+        '/global-balances': (context) => const GlobalBalancesScreen(),
       },
     );
   }
