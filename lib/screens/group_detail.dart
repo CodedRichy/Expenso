@@ -386,28 +386,7 @@ class _GroupDetailState extends State<GroupDetail> {
                         );
                       }
                     } else {
-                      final transfers = repo.getSettlementTransfersForCurrentUser(groupId);
-                      final totalDue = transfers.fold<double>(0, (s, t) => s + t.amount);
-                      
-                      if (totalDue >= 0.01) {
-                        Navigator.pushNamed(
-                          context,
-                          '/settlement-confirmation',
-                          arguments: {'group': defaultGroup, 'method': 'razorpay'},
-                        );
-                      } else {
-                        final isLeader = repo.isCurrentUserCreator(groupId);
-                        if (isLeader) {
-                          _showSettleConfirmDialog(context, repo, groupId);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Request sent to group leader.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      }
+                      _showSettlementOptions(context, defaultGroup, groupId);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -425,27 +404,6 @@ class _GroupDetailState extends State<GroupDetail> {
                         ? (repo.isCurrentUserCreator(groupId) ? 'Start New Cycle' : 'Waiting for creator to restart')
                         : 'Settle now',
                     style: AppTypography.button,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/settlement-confirmation',
-                      arguments: {'group': defaultGroup, 'method': 'razorpay'},
-                    );
-                  },
-                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-                  child: const Text(
-                    'Settle up',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF5B7C99),
-                    ),
                   ),
                 ),
               ),
@@ -639,6 +597,94 @@ class _GroupDetailState extends State<GroupDetail> {
       ),
     );
       },
+    );
+  }
+
+  void _showSettlementOptions(BuildContext context, Group group, String groupId) {
+    final repo = CycleRepository.instance;
+    final members = repo.getMembersForGroup(groupId);
+    final cycle = repo.getActiveCycle(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
+    final hasDues = myRoutes.isNotEmpty;
+    final isCreator = repo.isCurrentUserCreator(groupId);
+
+    if (!hasDues) {
+      if (isCreator) {
+        _showSettleConfirmDialog(context, repo, groupId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have no payments to make. The group creator can close the cycle.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Settle Your Balance',
+              style: AppTypography.screenTitle,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose how you want to pay',
+              style: AppTypography.bodySecondary,
+            ),
+            const SizedBox(height: 24),
+            _SettlementOptionTile(
+              icon: Icons.qr_code,
+              title: 'Pay via UPI',
+              subtitle: 'Direct payment to each member',
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(
+                  context,
+                  '/settlement-confirmation',
+                  arguments: {'group': group, 'method': 'upi'},
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _SettlementOptionTile(
+              icon: Icons.credit_card,
+              title: 'Pay via Razorpay',
+              subtitle: 'Card, UPI, Net Banking',
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(
+                  context,
+                  '/settlement-confirmation',
+                  arguments: {'group': group, 'method': 'razorpay'},
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2420,6 +2466,74 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettlementOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettlementOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppColors.textPrimary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.listItemTitle,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );

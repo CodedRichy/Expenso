@@ -104,7 +104,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | Route | Screen |
 |-------|--------|
 | `/empty-states` | EmptyStates. Types: `no-groups`, `no-expenses`, `new-cycle`, `no-expenses-new-cycle`, `zero-waste-cycle` (optional `forDarkCard` for Decision Clarity card). |
-| `/error-states` | ErrorStates. Args: `type` ('network', 'session-expired', 'generic'). Pushed on Firestore stream error (GroupsList), auth session expired (PhoneAuth). "Try Again" calls `CycleRepository.restartListening()` and pop. |
+| `/error-states` | ErrorStates. Args: `type` ('network', 'session-expired', 'payment-unavailable', 'generic'). Pushed on Firestore stream error (GroupsList), auth session expired (PhoneAuth). All error screens have a back button and clear, calm messaging that reassures users their data is safe. "Try Again" calls `CycleRepository.restartListening()` and pop. |
 
 ---
 
@@ -151,6 +151,7 @@ All writes use the real Firebase Auth `User.uid` (e.g. test number +91 79022 032
 | **Authority** | Only `creatorId` can call `settleAndRestartCycle` and `archiveAndRestart`. GroupDetail shows "Start New Cycle" only for creator when settling. |
 | **Last-added / Undo** | After `addExpense` or `addExpenseFromMagicBar`, repo stores `lastAddedGroupId`, `lastAddedExpenseId`, `lastAddedDescription`, `lastAddedAmount`. GroupDetail pushes `/undo-expense` with those; UndoExpense screen shows 5s countdown, Undo → `deleteExpense` + `clearLastAdded` + pop, timeout → pop. |
 | **Stream error / ErrorStates** | `streamError` set when groups or expenses stream `onError`; `clearStreamError()`, `restartListening()`. GroupsList pushes `/error-states` (type `network`) when `streamError != null`; ErrorStates "Try Again" calls `restartListening()` and pop. |
+| **Bounded loading** | Loading states are time-bounded (6–8s) to prevent indefinite spinners. After timeout, UI shows a slow-loading hint with retry option. Groups list and cycle history both use bounded loading. |
 
 ### Models
 
@@ -323,13 +324,13 @@ lib/
   utils/
     expense_validation.dart   # validateExpenseAmount, validateExpenseDescription
     route_args.dart          # RouteArgs.getGroup, getMap — safe route arguments (avoids crash on missing/wrong type)
-    settlement_engine.dart     # Debt, computeDebts, computeNetBalances (integer-based)
+    settlement_engine.dart     # Debt, PaymentRoute, computeDebts, computeNetBalances, computePaymentRoutes, getPaymentsForMember (integer-based, greedy debt minimization)
     ledger_delta.dart          # LedgerDelta, toLedgerDeltas, expenseToLedgerDeltas (integer-based)
     expense_normalization.dart # Re-exports normalization_workflow.dart
     normalization_workflow.dart # UI workflow: normalizeExpense, ParticipantSlot, NormalizationResult
     expense_revision.dart      # Expense lifecycle guards (edit/delete validation)
   widgets/
-    member_avatar.dart        # Letter avatar or CachedNetworkImage from photoURL (Deep Navy/Slate)
+    member_avatar.dart        # Letter avatar renders IMMEDIATELY; photo loads as upgrade layer via CachedNetworkImage. Zero visible waiting—letter is always the base.
     expenso_loader.dart       # Animated loading indicator
   screens/
     splash_screen.dart          # Logo splash; navigates to / after ~1.5s

@@ -18,10 +18,25 @@ class GroupsList extends StatefulWidget {
 }
 
 class _GroupsListState extends State<GroupsList> {
+  DateTime? _loadingStartedAt;
+  bool _showSlowLoadingHint = false;
+
   @override
   void initState() {
     super.initState();
     PinnedGroupsService.instance.load();
+    _loadingStartedAt = DateTime.now();
+    _startLoadingTimeout();
+  }
+
+  void _startLoadingTimeout() {
+    Future.delayed(const Duration(seconds: 6), () {
+      if (!mounted) return;
+      final repo = CycleRepository.instance;
+      if (repo.groupsLoading && repo.groups.isEmpty) {
+        setState(() => _showSlowLoadingHint = true);
+      }
+    });
   }
 
   Widget _buildInvitationsSection(BuildContext context, CycleRepository repo) {
@@ -232,7 +247,10 @@ class _GroupsListState extends State<GroupsList> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                            SnackBar(
+                              content: Text('Could not decline invitation. Check your connection and try again.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
                           );
                         }
                       }
@@ -270,7 +288,10 @@ class _GroupsListState extends State<GroupsList> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+                            SnackBar(
+                              content: Text('Could not join group. Check your connection and try again.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
                           );
                         }
                       }
@@ -346,7 +367,10 @@ class _GroupsListState extends State<GroupsList> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not delete: $e'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Could not delete group. Check your connection and try again.'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -385,7 +409,7 @@ class _GroupsListState extends State<GroupsList> {
                 )
               : null,
           body: loading
-              ? const Center(child: ExpensoLoader())
+              ? _BoundedGroupsLoading(showSlowHint: _showSlowLoadingHint)
               : groups.isEmpty && repo.pendingInvitations.isEmpty
                   ? EmptyStates(
                       type: 'no-groups',
@@ -565,6 +589,62 @@ class _GroupsListState extends State<GroupsList> {
                     ),
                   );
       },
+    );
+  }
+}
+
+class _BoundedGroupsLoading extends StatelessWidget {
+  final bool showSlowHint;
+  
+  const _BoundedGroupsLoading({this.showSlowHint = false});
+  
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showSlowHint) ...[
+                const Icon(Icons.hourglass_empty, size: 48, color: Color(0xFF9B9B9B)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Taking longer than expected',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Check your connection',
+                  style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: () {
+                    CycleRepository.instance.restartListening();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1A1A1A),
+                    side: const BorderSide(color: Color(0xFFE5E5E5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ] else ...[
+                const ExpensoLoader(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Loading groups...',
+                  style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

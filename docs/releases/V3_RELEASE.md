@@ -19,6 +19,9 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 | **Logout** | Profile screen includes a Log out button with confirmation dialog. Clears auth state and returns user to login. | V3 |
 | **International country codes** | InviteMembers supports 15 country codes (IN, US, UK, UAE, SG, AU, DE, FR, JP, CN, KR, BR, MX, RU, ZA) via a dropdown picker. Phone storage format updated to support international numbers. | V3 |
 | **Human-friendly dates** | Expense model includes `displayDate` getter that shows "Today", "Yesterday", "3 days ago", "Feb 15", or "Feb 15, 2025" based on expense date relative to now. | V3 |
+| **Instant avatar rendering** | MemberAvatar shows letter fallback immediately; photo loads as an upgrade layer via CachedNetworkImage with fade transition. Zero visible waiting for avatars. | V3 |
+| **Bounded loading states** | Loading indicators are time-bounded (6–8s). After timeout, UI shows slow-loading hint with retry option instead of spinning indefinitely. Applied to groups list and cycle history. | V3 |
+| **Explicit error handling** | Error messages are human-readable and calm. All error screens have back buttons. Network failures show clear feedback ("Check your connection") without erasing existing data. | V3 |
 
 ---
 
@@ -28,6 +31,9 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 - Logout requires confirmation to prevent accidental sign-out.
 - Country code picker defaults to India (+91) for backward compatibility.
 - Date display is purely cosmetic; underlying storage format unchanged.
+- **Avatar UX:** Letter placeholder renders instantly; no loaders or empty circles ever shown.
+- **Loading resilience:** No unbounded spinners; UI degrades gracefully after timeout with retry option.
+- **Error UX:** Errors surface clear feedback, never silently fail, and never erase existing screen data.
 
 ---
 

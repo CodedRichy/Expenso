@@ -54,6 +54,8 @@ dependencies:
   shared_preferences: ^2.3.3
   razorpay_flutter: ^1.4.1
   permission_handler: ^11.3.1
+  url_launcher: ^6.3.2
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

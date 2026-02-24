@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Avatar for a member: photo from [photoURL] if set, otherwise letter from [displayName].
-/// Matches black gradient theme when showing letter fallback.
+/// Avatar for a member: letter fallback renders IMMEDIATELY, photo loads as an upgrade layer.
+/// Zero visible waiting time - the letter is always the base layer.
 class MemberAvatar extends StatelessWidget {
   final String displayName;
   final String? photoURL;
@@ -21,52 +21,38 @@ class MemberAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final letter = _initial(displayName);
-
-    if (photoURL != null && photoURL!.trim().isNotEmpty) {
-      return CircleAvatar(
-        radius: size / 2,
-        backgroundColor: _letterBg,
-        child: ClipOval(
-          child: CachedNetworkImage(
-            imageUrl: photoURL!,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Center(
-              child: Text(
-                letter,
-                style: TextStyle(
-                  fontSize: size * 0.45,
-                  fontWeight: FontWeight.w600,
-                  color: _letterFg,
-                ),
-              ),
-            ),
-            errorWidget: (context, url, error) => Center(
-              child: Text(
-                letter,
-                style: TextStyle(
-                  fontSize: size * 0.45,
-                  fontWeight: FontWeight.w600,
-                  color: _letterFg,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    final hasPhoto = photoURL != null && photoURL!.trim().isNotEmpty;
 
     return CircleAvatar(
       radius: size / 2,
       backgroundColor: _letterBg,
-      child: Text(
-        letter,
-        style: TextStyle(
-          fontSize: size * 0.45,
-          fontWeight: FontWeight.w600,
-          color: _letterFg,
-        ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            letter,
+            style: TextStyle(
+              fontSize: size * 0.45,
+              fontWeight: FontWeight.w600,
+              color: _letterFg,
+            ),
+          ),
+          if (hasPhoto)
+            ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: photoURL!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                memCacheWidth: (size * 2).toInt(),
+                memCacheHeight: (size * 2).toInt(),
+                fadeInDuration: const Duration(milliseconds: 200),
+                fadeOutDuration: const Duration(milliseconds: 100),
+                placeholder: (_, __) => const SizedBox.shrink(),
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+        ],
       ),
     );
   }

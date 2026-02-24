@@ -196,6 +196,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 - **`SettlementEngine.computeNetBalances()`** — Existing tests cover basic cases. Extend tests before modifying.
 - **`SettlementEngine.computeDebts()`** — Debt minimization algorithm. Incorrect changes cause users to pay wrong amounts.
+- **`SettlementEngine.computePaymentRoutes()`** — Greedy debt minimization algorithm. Returns minimal payment instructions from net balances. Use `getPaymentsForMember()` to filter payments for a specific member.
 - **Cycle archive flow** (`archiveCycleExpenses`) — Data loss risk if expenses are deleted but not copied.
 - **Firestore security rules** — Not in this codebase but critical. Changes can expose or lock out data.
 

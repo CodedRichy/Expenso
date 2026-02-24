@@ -198,6 +198,26 @@ This document defines the fundamental data structures that Expenso operates on. 
 
 ---
 
+### 8b. PaymentRoute
+
+| Attribute | Value |
+|-----------|-------|
+| **Name** | PaymentRoute |
+| **Mutability** | Immutable (derived) |
+| **Storage** | Memory only (computed by SettlementEngine) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `fromMemberId` | `String` | Payer UID |
+| `toMemberId` | `String` | Recipient UID |
+| `amount` | `MoneyMinor` | Amount in minor units |
+
+**💰 MONEY TRUTH:** Represents a computed payment instruction. Derived from net balances using greedy debt minimization.
+
+**Notes:** Computed by `SettlementEngine.computePaymentRoutes()`. Returns minimal payment instructions to settle all balances. Use `getPaymentsForMember()` to filter to payments a specific member must make, or `getPaymentsToMember()` for incoming payments. Never stored — always recalculated.
+
+---
+
 ### 9. SettlementTransfer
 
 | Attribute | Value |

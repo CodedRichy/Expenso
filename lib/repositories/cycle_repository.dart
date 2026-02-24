@@ -191,6 +191,12 @@ class CycleRepository extends ChangeNotifier {
     return _userCache[memberId]?['photoURL'] as String?;
   }
 
+  /// Returns UPI ID for a member (by uid). Null for pending members or when not set.
+  String? getMemberUpiId(String memberId) {
+    if (memberId.startsWith('p_')) return null;
+    return _userCache[memberId]?['upiId'] as String?;
+  }
+
   DataEncryptionService? _encryption;
 
   /// Clears auth-derived identity (e.g. on sign-out). Stops Firestore listeners.

@@ -16,6 +16,9 @@
 | `SettlementEngine.computeNetBalances()` | Compute per-member net balance (credit/debt) |
 | `SettlementEngine._buildNetBalances()` | Internal implementation of balance calculation |
 | `SettlementEngine.computeDebts()` | Derive minimal debt transfers from net balances |
+| `SettlementEngine.computePaymentRoutes()` | Derive minimal payment instructions from net balances (greedy algorithm) |
+| `SettlementEngine.getPaymentsForMember()` | Filter payment routes to those a member must make |
+| `SettlementEngine.getPaymentsToMember()` | Filter payment routes to those a member will receive |
 
 ### Secondary Location (Repository Wrappers)
 

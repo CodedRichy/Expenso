@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../design/colors.dart';
+import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/razorpay_order_service.dart';
 import '../utils/route_args.dart';
+import '../utils/settlement_engine.dart';
+import '../widgets/upi_payment_card.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   const SettlementConfirmation({super.key});
@@ -111,26 +115,36 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     }
     final method = RouteArgs.getSettlementMethod(context) ?? 'system';
     final isRazorpay = method == 'razorpay';
+    final isUpi = method == 'upi';
     final repo = CycleRepository.instance;
     final transfers = isRazorpay ? repo.getSettlementTransfersForCurrentUser(group.id) : null;
     final totalDue = transfers != null ? transfers.fold<double>(0, (s, t) => s + t.amount) : 0.0;
     final hasDues = totalDue >= 0.01;
 
+    final myPaymentRoutes = isUpi ? _getMyPaymentRoutes(group.id) : <PaymentRoute>[];
+    final myTotalDue = myPaymentRoutes.fold<int>(0, (s, r) => s + r.amountMinor);
+    final hasUpiDues = myTotalDue > 0;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: const Color(0xFF1A1A1A),
+                    color: AppColors.textPrimary,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -145,7 +159,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -154,81 +168,88 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPaddingH,
+                  vertical: AppSpacing.space3xl,
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '₹${isRazorpay && hasDues ? _formatAmount(totalDue) : _formatAmount(group.amount)}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 52,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                          letterSpacing: -1.2,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isRazorpay && hasDues ? 'Your dues' : 'Cycle total',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          color: Color(0xFF6B6B6B),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _subtitleText(method, isRazorpay, hasDues),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF6B6B6B),
-                          height: 1.5,
-                        ),
-                      ),
-                      if (isRazorpay && transfers != null && transfers.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        ...transfers.map(
-                          (t) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  t.creditorDisplayName,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    color: Color(0xFF1A1A1A),
-                                  ),
-                                ),
-                                Text(
-                                  '₹${_formatAmount(t.amount)}',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF1A1A1A),
-                                  ),
-                                ),
-                              ],
-                            ),
+                      if (isUpi) ...[
+                        _buildUpiSection(group, myPaymentRoutes, hasUpiDues, myTotalDue),
+                      ] else ...[
+                        Text(
+                          '₹${isRazorpay && hasDues ? _formatAmount(totalDue) : _formatAmount(group.amount)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -1.2,
+                            height: 1.1,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          isRazorpay && hasDues ? 'Your dues' : 'Cycle total',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _subtitleText(method, isRazorpay, hasDues),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                        if (isRazorpay && transfers != null && transfers.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          ...transfers.map(
+                            (t) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    t.creditorDisplayName,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₹${_formatAmount(t.amount)}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        _buildPendingSettlements(group.id, isRazorpay),
+                        const SizedBox(height: 48),
+                        _buildActions(
+                          context,
+                          group: group,
+                          method: method,
+                          isRazorpay: isRazorpay,
+                          hasDues: hasDues,
+                          totalDue: totalDue,
+                          onPayPressed: () => _startRazorpayCheckout(group, (totalDue * 100).round()),
+                        ),
                       ],
-                      _buildPendingSettlements(group.id, isRazorpay),
-                      const SizedBox(height: 48),
-                      _buildActions(
-                        context,
-                        group: group,
-                        method: method,
-                        isRazorpay: isRazorpay,
-                        hasDues: hasDues,
-                        totalDue: totalDue,
-                        onPayPressed: () => _startRazorpayCheckout(group, (totalDue * 100).round()),
-                      ),
                     ],
                   ),
                 ),
@@ -240,12 +261,147 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     );
   }
 
+  List<PaymentRoute> _getMyPaymentRoutes(String groupId) {
+    final repo = CycleRepository.instance;
+    final cycle = repo.getActiveCycle(groupId);
+    final members = repo.getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    return SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
+  }
+
+  Widget _buildUpiSection(
+    Group group,
+    List<PaymentRoute> myRoutes,
+    bool hasUpiDues,
+    int totalMinor,
+  ) {
+    final repo = CycleRepository.instance;
+
+    if (!hasUpiDues) {
+      return Column(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: AppColors.success,
+          ),
+          const SizedBox(height: AppSpacing.spaceXl),
+          Text(
+            'You\'re all settled!',
+            style: AppTypography.screenTitle,
+          ),
+          const SizedBox(height: AppSpacing.spaceMd),
+          Text(
+            'You have no payments to make this cycle.',
+            style: AppTypography.bodySecondary,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.space5xl),
+          _buildBackButton(),
+        ],
+      );
+    }
+
+    final totalDisplay = (totalMinor / 100).toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Column(
+            children: [
+              Text(
+                '₹$totalDisplay',
+                style: const TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -1.2,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spaceMd),
+              Text(
+                'Your total dues',
+                style: AppTypography.bodySecondary,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.space4xl),
+        Text(
+          'PAY INDIVIDUALLY',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textTertiary,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spaceXl),
+        ...myRoutes.map((route) {
+          final payeeName = repo.getMemberDisplayNameById(route.toMemberId);
+          final payeeUpiId = repo.getMemberUpiId(route.toMemberId);
+          return UpiPaymentCard(
+            payeeName: payeeName,
+            payeeUpiId: payeeUpiId,
+            amountMinor: route.amountMinor,
+            groupName: group.name,
+            currencyCode: route.currencyCode,
+          );
+        }),
+        const SizedBox(height: AppSpacing.space3xl),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          decoration: BoxDecoration(
+            color: AppColors.warningBackground,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+              const SizedBox(width: AppSpacing.spaceLg),
+              Expanded(
+                child: Text(
+                  'Payments are not tracked automatically. Confirm with your group after paying.',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.space3xl),
+        _buildBackButton(),
+      ],
+    );
+  }
+
+  Widget _buildBackButton() {
+    return OutlinedButton(
+      onPressed: () => Navigator.pop(context),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        side: const BorderSide(color: AppColors.border),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        minimumSize: const Size(double.infinity, 0),
+      ),
+      child: const Text('Back to Group', style: AppTypography.button),
+    );
+  }
+
   String _subtitleText(String method, bool isRazorpay, bool hasDues) {
     if (isRazorpay) {
       if (hasDues) return 'Pay securely via card, UPI, or net banking.';
       return 'You have nothing to pay this cycle.';
     }
-    if (method == 'upi') return 'You will be redirected to complete payment via UPI.';
     return 'This will close the current cycle. All pending balances will be cleared.';
   }
 

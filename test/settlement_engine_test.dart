@@ -611,4 +611,203 @@ void main() {
       expect(netDouble['u2'], -350.0);
     });
   });
+
+  group('SettlementEngine.computePaymentRoutes (debt minimization)', () {
+    test('3 members: one creditor, two debtors - minimizes to 2 payments', () {
+      final netBalances = {
+        'alice': 10000,
+        'bob': -6000,
+        'carol': -4000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      expect(routes.length, 2);
+
+      final totalToAlice = routes
+          .where((r) => r.toMemberId == 'alice')
+          .fold(0, (sum, r) => sum + r.amountMinor);
+      expect(totalToAlice, 10000);
+
+      final bobPayments = SettlementEngine.getPaymentsForMember('bob', routes);
+      expect(bobPayments.length, 1);
+      expect(bobPayments[0].amountMinor, 6000);
+      expect(bobPayments[0].toMemberId, 'alice');
+
+      final carolPayments = SettlementEngine.getPaymentsForMember('carol', routes);
+      expect(carolPayments.length, 1);
+      expect(carolPayments[0].amountMinor, 4000);
+      expect(carolPayments[0].toMemberId, 'alice');
+    });
+
+    test('4 members: two creditors, two debtors - greedy matching', () {
+      final netBalances = {
+        'alice': 8000,
+        'bob': 2000,
+        'carol': -7000,
+        'dave': -3000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      expect(routes.length, lessThanOrEqualTo(3));
+
+      final totalCredits = 8000 + 2000;
+      final totalDebts = 7000 + 3000;
+      expect(totalCredits, totalDebts);
+
+      final totalPaid = routes.fold(0, (sum, r) => sum + r.amountMinor);
+      expect(totalPaid, 10000);
+
+      for (final route in routes) {
+        expect(route.amountMinor, greaterThan(0));
+        expect(route.currencyCode, 'INR');
+      }
+    });
+
+    test('5 members: complex scenario with chain reduction', () {
+      final netBalances = {
+        'u1': 15000,
+        'u2': 5000,
+        'u3': -8000,
+        'u4': -7000,
+        'u5': -5000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      expect(routes.length, lessThanOrEqualTo(4));
+
+      final netAfterRoutes = <String, int>{};
+      for (final entry in netBalances.entries) {
+        netAfterRoutes[entry.key] = entry.value;
+      }
+      for (final route in routes) {
+        netAfterRoutes[route.fromMemberId] = 
+            (netAfterRoutes[route.fromMemberId] ?? 0) + route.amountMinor;
+        netAfterRoutes[route.toMemberId] = 
+            (netAfterRoutes[route.toMemberId] ?? 0) - route.amountMinor;
+      }
+
+      for (final balance in netAfterRoutes.values) {
+        expect(balance, 0);
+      }
+    });
+
+    test('all members balanced - no payments needed', () {
+      final netBalances = {
+        'alice': 0,
+        'bob': 0,
+        'carol': 0,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+      expect(routes, isEmpty);
+    });
+
+    test('two members - single payment', () {
+      final netBalances = {
+        'alice': 5000,
+        'bob': -5000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      expect(routes.length, 1);
+      expect(routes[0].fromMemberId, 'bob');
+      expect(routes[0].toMemberId, 'alice');
+      expect(routes[0].amountMinor, 5000);
+    });
+
+    test('getPaymentsForMember returns only outgoing payments', () {
+      final netBalances = {
+        'alice': 10000,
+        'bob': -6000,
+        'carol': -4000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      final alicePayments = SettlementEngine.getPaymentsForMember('alice', routes);
+      expect(alicePayments, isEmpty);
+
+      final bobPayments = SettlementEngine.getPaymentsForMember('bob', routes);
+      expect(bobPayments.length, 1);
+      expect(bobPayments.every((r) => r.fromMemberId == 'bob'), true);
+    });
+
+    test('getPaymentsToMember returns only incoming payments', () {
+      final netBalances = {
+        'alice': 10000,
+        'bob': -6000,
+        'carol': -4000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      final aliceReceives = SettlementEngine.getPaymentsToMember('alice', routes);
+      expect(aliceReceives.length, 2);
+      expect(aliceReceives.every((r) => r.toMemberId == 'alice'), true);
+
+      final bobReceives = SettlementEngine.getPaymentsToMember('bob', routes);
+      expect(bobReceives, isEmpty);
+    });
+
+    test('PaymentRoute equality and toString', () {
+      final route1 = PaymentRoute(
+        fromMemberId: 'bob',
+        toMemberId: 'alice',
+        amount: MoneyMinor(5000, 'INR'),
+      );
+      final route2 = PaymentRoute(
+        fromMemberId: 'bob',
+        toMemberId: 'alice',
+        amount: MoneyMinor(5000, 'INR'),
+      );
+      final route3 = PaymentRoute(
+        fromMemberId: 'carol',
+        toMemberId: 'alice',
+        amount: MoneyMinor(5000, 'INR'),
+      );
+
+      expect(route1, equals(route2));
+      expect(route1, isNot(equals(route3)));
+      expect(route1.hashCode, route2.hashCode);
+      expect(route1.toString(), contains('bob'));
+      expect(route1.toString(), contains('alice'));
+      expect(route1.toString(), contains('5000'));
+    });
+
+    test('6 members: realistic group expense scenario', () {
+      final netBalances = {
+        'anna': 25000,
+        'ben': 15000,
+        'carl': -12000,
+        'diana': -10000,
+        'eve': -8000,
+        'frank': -10000,
+      };
+
+      final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+
+      expect(routes.length, lessThanOrEqualTo(5));
+
+      final Map<String, int> verification = Map.from(netBalances);
+      for (final route in routes) {
+        verification[route.fromMemberId] = 
+            verification[route.fromMemberId]! + route.amountMinor;
+        verification[route.toMemberId] = 
+            verification[route.toMemberId]! - route.amountMinor;
+      }
+
+      for (final entry in verification.entries) {
+        expect(entry.value, 0, reason: '${entry.key} should be settled');
+      }
+
+      final carlPayments = SettlementEngine.getPaymentsForMember('carl', routes);
+      expect(carlPayments.isNotEmpty, true);
+      final carlTotal = carlPayments.fold(0, (sum, r) => sum + r.amountMinor);
+      expect(carlTotal, 12000);
+    });
+  });
 }

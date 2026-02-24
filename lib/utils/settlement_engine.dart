@@ -14,11 +14,45 @@ class Debt {
     required this.amount,
   });
 
-  /// Convenience getter for amount in minor units.
   int get amountMinor => amount.amountMinor;
 
-  /// Convenience getter for currency code.
   String get currencyCode => amount.currencyCode;
+}
+
+/// A payment instruction: [fromMemberId] pays [toMemberId] [amount].
+/// 
+/// Used by [SettlementEngine.computePaymentRoutes] to output the minimal
+/// set of payments needed to settle all balances.
+class PaymentRoute {
+  final String fromMemberId;
+  final String toMemberId;
+  final MoneyMinor amount;
+
+  const PaymentRoute({
+    required this.fromMemberId,
+    required this.toMemberId,
+    required this.amount,
+  });
+
+  int get amountMinor => amount.amountMinor;
+
+  String get currencyCode => amount.currencyCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PaymentRoute &&
+          fromMemberId == other.fromMemberId &&
+          toMemberId == other.toMemberId &&
+          amountMinor == other.amountMinor &&
+          currencyCode == other.currencyCode;
+
+  @override
+  int get hashCode => Object.hash(fromMemberId, toMemberId, amountMinor, currencyCode);
+
+  @override
+  String toString() =>
+      'PaymentRoute($fromMemberId -> $toMemberId: ${amount.amountMinor} ${amount.currencyCode})';
 }
 
 /// Computes who owes whom from expenses and members.
@@ -174,6 +208,87 @@ class SettlementEngine {
       if (creditor.amount <= 0) c++;
     }
     return result;
+  }
+
+  /// Computes minimal payment routes from net balances using a greedy algorithm.
+  /// 
+  /// Takes a map of member IDs to net balances (positive = credit, negative = debt)
+  /// and returns the minimal set of payment instructions to settle all balances.
+  /// 
+  /// The greedy algorithm sorts debtors and creditors by amount (descending),
+  /// then repeatedly matches the largest debtor to the largest creditor.
+  /// This produces at most n-1 transactions for n members with non-zero balances.
+  /// 
+  /// Example:
+  /// ```dart
+  /// final netBalances = {'alice': 10000, 'bob': -6000, 'carol': -4000}; // minor units
+  /// final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+  /// // routes: [bob -> alice: 6000, carol -> alice: 4000]
+  /// ```
+  static List<PaymentRoute> computePaymentRoutes(
+    Map<String, int> netBalances,
+    String currencyCode,
+  ) {
+    final debtors = netBalances.entries
+        .where((e) => e.value < 0)
+        .map((e) => _BalanceEntry(e.key, -e.value))
+        .toList();
+    final creditors = netBalances.entries
+        .where((e) => e.value > 0)
+        .map((e) => _BalanceEntry(e.key, e.value))
+        .toList();
+
+    debtors.sort((a, b) => b.amount.compareTo(a.amount));
+    creditors.sort((a, b) => b.amount.compareTo(a.amount));
+
+    final List<PaymentRoute> routes = [];
+    int d = 0, c = 0;
+
+    while (d < debtors.length && c < creditors.length) {
+      final debtor = debtors[d];
+      final creditor = creditors[c];
+      final transferAmount = debtor.amount < creditor.amount 
+          ? debtor.amount 
+          : creditor.amount;
+
+      if (transferAmount <= 0) break;
+
+      routes.add(PaymentRoute(
+        fromMemberId: debtor.id,
+        toMemberId: creditor.id,
+        amount: MoneyMinor(transferAmount, currencyCode),
+      ));
+
+      debtor.amount -= transferAmount;
+      creditor.amount -= transferAmount;
+
+      if (debtor.amount <= 0) d++;
+      if (creditor.amount <= 0) c++;
+    }
+
+    return routes;
+  }
+
+  /// Returns only the payments that a specific member needs to make.
+  /// 
+  /// Filters [routes] to include only those where [memberId] is the payer
+  /// (fromMemberId). Use this to show each user only their outgoing payments.
+  static List<PaymentRoute> getPaymentsForMember(
+    String memberId,
+    List<PaymentRoute> routes,
+  ) {
+    return routes.where((r) => r.fromMemberId == memberId).toList();
+  }
+
+  /// Returns payments that a specific member will receive.
+  /// 
+  /// Filters [routes] to include only those where [memberId] is the recipient
+  /// (toMemberId). Use this to show incoming payments.
+  static List<PaymentRoute> getPaymentsToMember(
+    String memberId,
+    List<PaymentRoute> routes,
+  ) {
+    return routes.where((r) => r.toMemberId == memberId).toList();
   }
 
   // ============================================================
