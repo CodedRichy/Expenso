@@ -26,6 +26,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
 
   Future<void> _loadPaymentAttempts() async {
     await CycleRepository.instance.loadPaymentAttempts(widget.groupId);
+    CycleRepository.instance.checkAndEmitPendingReminder(widget.groupId);
     if (mounted) setState(() => _loaded = true);
   }
 
@@ -39,6 +40,8 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
       listenable: CycleRepository.instance,
       builder: (context, _) {
         final progress = _computeProgress();
+        final memberStatus = CycleRepository.instance.getMemberSettlementStatus(widget.groupId);
+        
         if (progress == null) return const SizedBox.shrink();
 
         final (settled, total) = progress;
@@ -46,6 +49,9 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
 
         final fraction = total > 0 ? settled / total : 0.0;
         final allSettled = settled == total;
+        
+        final (membersSettled, membersTotal, _) = memberStatus;
+        final pendingMembers = membersTotal - membersSettled;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -62,7 +68,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
               Row(
                 children: [
                   Icon(
-                    allSettled ? Icons.check_circle : Icons.hourglass_empty,
+                    allSettled ? Icons.check_circle : Icons.group,
                     size: 18,
                     color: allSettled ? AppColors.success : AppColors.textSecondary,
                   ),
@@ -70,19 +76,28 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                   Expanded(
                     child: Text(
                       allSettled
-                          ? 'All payments complete'
-                          : '$settled of $total payments settled',
+                          ? 'All members settled'
+                          : '$membersSettled of $membersTotal members settled',
                       style: AppTypography.bodyPrimary.copyWith(
                         color: allSettled ? AppColors.success : AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  if (!allSettled)
-                    Text(
-                      '${(fraction * 100).toInt()}%',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
+                  if (!allSettled && pendingMembers > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningBackground,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '$pendingMembers pending',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                 ],
@@ -99,10 +114,10 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                   ),
                 ),
               ),
-              if (!allSettled && (total - settled) > 0) ...[
+              if (!allSettled) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Waiting for ${total - settled} payment${(total - settled) == 1 ? '' : 's'}',
+                  '$settled of $total payments complete',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textTertiary,
                   ),

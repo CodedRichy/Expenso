@@ -128,6 +128,7 @@ class _EventIcon extends StatelessWidget {
       SettlementEventType.cashConfirmed => (Icons.payments, AppColors.success),
       SettlementEventType.cycleFullySettled => (Icons.celebration_outlined, AppColors.success),
       SettlementEventType.cycleArchived => (Icons.inventory_2_outlined, AppColors.textSecondary),
+      SettlementEventType.pendingReminder => (Icons.schedule, AppColors.warning),
     };
 
     return Container(

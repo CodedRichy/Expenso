@@ -249,6 +249,7 @@ class FirestoreService {
     required String type,
     int? amountMinor,
     String? paymentAttemptId,
+    int? pendingCount,
   }) async {
     final now = DateTime.now();
     final id = 'se_${now.millisecondsSinceEpoch}';
@@ -259,6 +260,7 @@ class FirestoreService {
       if (amountMinor != null) 'amountMinor': amountMinor,
       'timestamp': now.millisecondsSinceEpoch,
       if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
+      if (pendingCount != null) 'pendingCount': pendingCount,
     });
   }
 

@@ -12,6 +12,7 @@ enum SettlementEventType {
   cashConfirmed,
   cycleFullySettled,
   cycleArchived,
+  pendingReminder,
 }
 
 extension SettlementEventTypeX on SettlementEventType {
@@ -39,6 +40,8 @@ extension SettlementEventTypeX on SettlementEventType {
         return 'cycle_fully_settled';
       case SettlementEventType.cycleArchived:
         return 'cycle_archived';
+      case SettlementEventType.pendingReminder:
+        return 'pending_reminder';
     }
   }
 
@@ -66,6 +69,8 @@ extension SettlementEventTypeX on SettlementEventType {
         return SettlementEventType.cycleFullySettled;
       case 'cycle_archived':
         return SettlementEventType.cycleArchived;
+      case 'pending_reminder':
+        return SettlementEventType.pendingReminder;
       default:
         return SettlementEventType.cycleSettlementStarted;
     }
@@ -78,6 +83,7 @@ class SettlementEvent {
   final int? amountMinor;
   final int timestamp;
   final String? paymentAttemptId;
+  final int? pendingCount;
 
   const SettlementEvent({
     required this.id,
@@ -85,6 +91,7 @@ class SettlementEvent {
     this.amountMinor,
     required this.timestamp,
     this.paymentAttemptId,
+    this.pendingCount,
   });
 
   factory SettlementEvent.fromFirestore(Map<String, dynamic> data) {
@@ -94,6 +101,7 @@ class SettlementEvent {
       amountMinor: data['amountMinor'] as int?,
       timestamp: data['timestamp'] as int? ?? 0,
       paymentAttemptId: data['paymentAttemptId'] as String?,
+      pendingCount: data['pendingCount'] as int?,
     );
   }
 
@@ -104,6 +112,7 @@ class SettlementEvent {
       if (amountMinor != null) 'amountMinor': amountMinor,
       'timestamp': timestamp,
       if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
+      if (pendingCount != null) 'pendingCount': pendingCount,
     };
   }
 
@@ -143,6 +152,11 @@ class SettlementEvent {
         return 'Cycle fully settled';
       case SettlementEventType.cycleArchived:
         return 'Cycle closed';
+      case SettlementEventType.pendingReminder:
+        if (pendingCount != null && pendingCount! > 0) {
+          return '$pendingCount member${pendingCount == 1 ? '' : 's'} still pending settlement';
+        }
+        return 'Settlement still pending';
     }
   }
 

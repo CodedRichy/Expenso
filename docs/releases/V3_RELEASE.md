@@ -27,6 +27,7 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 | **Settlement progress indicator** | "X of Y payments settled" with subtle progress bar in GroupDetail. Shows only when cycle is in settling mode. Updates in real-time based on payment attempt states. | V3 |
 | **Auto-detect full settlement** | When all payment routes are confirmed, system emits "Cycle fully settled" event. Button turns green and shows "Start New Cycle ✓" for creator. No manual checking required. | V3 |
 | **Cash payment flow** | Payer can mark a settlement route as "Paid via cash" (creates `CASH_CONFIRMATION_REQUESTED` event). Receiver sees "Confirm cash received" button. On confirmation, route is settled and `CASH_CONFIRMED` event is emitted. No edits allowed after confirmation. Both actions logged as system events. | V3 |
+| **Passive social pressure** | Settlement progress shows "X of Y members settled" with "N pending" badge. In settlement details, members who owe and haven't paid show "Pending" badge (no names in public view). Daily system activity "X members still pending settlement" is emitted once per day when in settling mode. No direct reminders, no push notifications—UI only. | V3 |
 
 ---
 

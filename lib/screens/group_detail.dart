@@ -789,10 +789,12 @@ class _DecisionClarityCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _SettlementDetailsSheet(
         repo: repo,
+        groupId: groupId,
         groupName: groupName,
         debts: debts,
         myId: myId,
         myNet: myNet,
+        isPassive: isPassive,
       ),
     );
   }
@@ -973,17 +975,21 @@ class _DecisionClarityCard extends StatelessWidget {
 
 class _SettlementDetailsSheet extends StatelessWidget {
   final CycleRepository repo;
+  final String groupId;
   final String groupName;
   final List<Debt> debts;
   final String myId;
   final double myNet;
+  final bool isPassive;
 
   const _SettlementDetailsSheet({
     required this.repo,
+    required this.groupId,
     required this.groupName,
     required this.debts,
     required this.myId,
     required this.myNet,
+    required this.isPassive,
   });
 
   @override
@@ -1124,6 +1130,10 @@ class _SettlementDetailsSheet extends StatelessWidget {
           final directionColor = iOwe ? AppColors.error : AppColors.success;
           final amountDisplay = MoneyConversion.toDisplay(debt.amount);
 
+          final showPendingBadge = isPassive && 
+              !iOwe && 
+              !repo.isMemberSettled(groupId, otherId);
+
           return Container(
             padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.screenPaddingH,
@@ -1142,7 +1152,29 @@ class _SettlementDetailsSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(otherName, style: AppTypography.listItemTitle),
+                      Row(
+                        children: [
+                          Text(otherName, style: AppTypography.listItemTitle),
+                          if (showPendingBadge) ...[
+                            SizedBox(width: AppSpacing.spaceSm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.warningBackground,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Pending',
+                                style: AppTypography.captionSmall.copyWith(
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       SizedBox(height: AppSpacing.space2xs),
                       Text(
                         direction,

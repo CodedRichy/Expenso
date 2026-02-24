@@ -1744,15 +1744,134 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
-  void _logSettlementEvent(String groupId, SettlementEventType type, {int? amountMinor, String? paymentAttemptId}) {
+  void _logSettlementEvent(String groupId, SettlementEventType type, {int? amountMinor, String? paymentAttemptId, int? pendingCount}) {
     FirestoreService.instance.addSettlementEvent(
       groupId,
       type: type.firestoreValue,
       amountMinor: amountMinor,
       paymentAttemptId: paymentAttemptId,
+      pendingCount: pendingCount,
     ).catchError((e) {
       debugPrint('CycleRepository._logSettlementEvent failed: $e');
     });
+  }
+
+  final Map<String, DateTime> _lastPendingReminderDate = {};
+
+  /// Check if a pending reminder should be emitted for this group today.
+  /// Emits a "X members still pending settlement" event once per day when in settling mode.
+  Future<void> checkAndEmitPendingReminder(String groupId) async {
+    final meta = _groupMeta[groupId];
+    if (meta == null || meta.cycleStatus != 'settling') return;
+
+    final (_, pendingCount, _) = getMemberSettlementStatus(groupId);
+    if (pendingCount == 0) return;
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final lastEmitted = _lastPendingReminderDate[groupId];
+    
+    if (lastEmitted != null && !lastEmitted.isBefore(todayDate)) {
+      return;
+    }
+
+    final events = await FirestoreService.instance.getSettlementEvents(groupId, limit: 20);
+    for (final data in events) {
+      if (data['type'] == 'pending_reminder') {
+        final ts = data['timestamp'] as int? ?? 0;
+        final eventDate = DateTime.fromMillisecondsSinceEpoch(ts);
+        final eventDay = DateTime(eventDate.year, eventDate.month, eventDate.day);
+        if (!eventDay.isBefore(todayDate)) {
+          _lastPendingReminderDate[groupId] = todayDate;
+          return;
+        }
+        break;
+      }
+    }
+
+    _logSettlementEvent(groupId, SettlementEventType.pendingReminder, pendingCount: pendingCount);
+    _lastPendingReminderDate[groupId] = todayDate;
+  }
+
+  /// Get member settlement status: returns (settledCount, totalWithDues, pendingMemberIds).
+  /// A member is "settled" if all their outgoing payment routes are confirmed.
+  /// Members with no dues (net balance >= 0) are not counted.
+  (int settled, int total, List<String> pendingIds) getMemberSettlementStatus(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    if (members.isEmpty) return (0, 0, []);
+
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+
+    final membersWithDues = <String>{};
+    final memberRoutes = <String, List<PaymentRoute>>{};
+
+    for (final route in routes) {
+      membersWithDues.add(route.fromMemberId);
+      memberRoutes.putIfAbsent(route.fromMemberId, () => []).add(route);
+    }
+
+    if (membersWithDues.isEmpty) return (0, 0, []);
+
+    int settledCount = 0;
+    final pendingIds = <String>[];
+
+    for (final memberId in membersWithDues) {
+      final myRoutes = memberRoutes[memberId] ?? [];
+      bool allSettled = true;
+
+      for (final route in myRoutes) {
+        final attempt = attempts.firstWhere(
+          (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+          orElse: () => PaymentAttempt(
+            id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+            amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
+          ),
+        );
+        if (!attempt.status.isSettled) {
+          allSettled = false;
+          break;
+        }
+      }
+
+      if (allSettled) {
+        settledCount++;
+      } else {
+        pendingIds.add(memberId);
+      }
+    }
+
+    return (settledCount, membersWithDues.length, pendingIds);
+  }
+
+  /// Check if a specific member has completed all their payment obligations.
+  bool isMemberSettled(String groupId, String memberId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    if (members.isEmpty) return true;
+
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final myRoutes = routes.where((r) => r.fromMemberId == memberId).toList();
+
+    if (myRoutes.isEmpty) return true;
+
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+
+    for (final route in myRoutes) {
+      final attempt = attempts.firstWhere(
+        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        orElse: () => PaymentAttempt(
+          id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+          amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
+        ),
+      );
+      if (!attempt.status.isSettled) return false;
+    }
+
+    return true;
   }
 }
 
