@@ -91,7 +91,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status
 
-Expenso is at **V4** (in progress). Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, tested where critical, and documented. V4 adds cross-group identity, global balance view, and debt minimization ("God Mode"). See [docs/releases/V4_RELEASE.md](docs/releases/V4_RELEASE.md) for the current release scope.
+Expenso is at **V4** (in progress). Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, tested where critical, and documented. V4 adds cross-group identity, global balance view, and debt minimization. See [docs/releases/V4_RELEASE.md](docs/releases/V4_RELEASE.md) for the current release scope.
 
 **Past releases:** V3 added logout, international phone number support (15 countries), settlement activity feed, offline resilience, and Dynamic UPI QR. See [docs/releases/V3_RELEASE.md](docs/releases/V3_RELEASE.md).
 

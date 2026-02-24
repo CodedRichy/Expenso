@@ -483,6 +483,81 @@ Payments are **never auto-confirmed**; explicit user action required. Attempts p
 
 ---
 
+## GlobalIdentity (V4)
+
+|-----------|-------|
+| **Semantic Role** | Identity Aggregate |
+| **Ideal Mutability** | **Derived / Cached** |
+| **Storage** | In-memory only (`IdentityService._identities`) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `phoneE164` | `String` | Canonical phone number in E.164 format (primary key) |
+| `displayName` | `String` | Best known display name across all groups |
+| `photoURL` | `String?` | Profile photo URL (Firebase Storage) |
+| `upiId` | `String?` | UPI ID for payments |
+| `groupIds` | `Set<String>` | Groups where this identity appears |
+| `lastUpdated` | `int` | Epoch millis of last update |
+
+**Notes:** Cross-group identity resolution. Built by scanning all groups and merging member data by phone number. Uses latest-timestamp-wins strategy for conflicting names. Cleared on logout.
+
+---
+
+## GlobalBalance (V4)
+
+|-----------|-------|
+| **Semantic Role** | Computed View |
+| **Ideal Mutability** | **Derived** |
+| **Storage** | Computed on-demand (not persisted) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `contactPhone` | `String` | Contact's phone in E.164 format |
+| `contactName` | `String` | Display name from GlobalIdentity |
+| `contactPhotoURL` | `String?` | Profile photo URL |
+| `netBalanceMinor` | `int` | Net balance across all groups (positive = they owe you) |
+| `breakdown` | `List<GroupContribution>` | Per-group contribution to the net balance |
+
+**Notes:** Aggregates balances with the same contact across all groups. Used by God Mode optimization to minimize cross-group payments.
+
+---
+
+## OptimizedRoute (V4)
+
+|-----------|-------|
+| **Semantic Role** | Suggested Payment |
+| **Ideal Mutability** | **Derived** |
+| **Storage** | Computed on-demand (not persisted) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `fromPhone` | `String` | Payer's phone in E.164 format |
+| `toPhone` | `String` | Payee's phone in E.164 format |
+| `amountMinor` | `int` | Optimized payment amount in minor units |
+| `currencyCode` | `String` | ISO 4217 currency code |
+
+**Notes:** Result of God Mode optimization. May suggest payments that span multiple groups (A pays C directly instead of A→B→C). UI suggestion only; actual payments still use per-group settlement routes.
+
+---
+
+## FcmToken (V4)
+
+|-----------|-------|
+| **Semantic Role** | Device Registration |
+| **Ideal Mutability** | **Replaceable** |
+| **Storage** | Firestore (`users/{userId}/fcmTokens/{tokenId}`) |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `token` | `String` | FCM registration token |
+| `platform` | `String` | Device platform (`android`, `ios`) |
+| `createdAt` | `Timestamp` | When token was first registered |
+| `lastRefresh` | `Timestamp` | Last token refresh time |
+
+**Notes:** Infrastructure for future push notifications. Multiple tokens per user (multi-device support). Tokens are deleted on logout. No notification logic yet — just token management.
+
+---
+
 ## Invariants Implied by This Spine
 
 1. **Expense amounts must be positive and finite** — enforced

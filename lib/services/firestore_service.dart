@@ -657,4 +657,34 @@ class FirestoreService {
     await batch.commit();
   }
 
+  // ============================================================
+  // FCM TOKENS
+  // ============================================================
+
+  Future<void> storeFcmToken(String userId, String token, String platform) async {
+    final tokenId = token.hashCode.toRadixString(16);
+    final ref = _firestore
+        .collection(FirestorePaths.users)
+        .doc(userId)
+        .collection('fcmTokens')
+        .doc(tokenId);
+    await ref.set({
+      'token': token,
+      'platform': platform,
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastRefresh': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteFcmToken(String userId, String token) async {
+    final tokenId = token.hashCode.toRadixString(16);
+    final ref = _firestore
+        .collection(FirestorePaths.users)
+        .doc(userId)
+        .collection('fcmTokens')
+        .doc(tokenId);
+    await ref.delete();
+  }
+
 }
+

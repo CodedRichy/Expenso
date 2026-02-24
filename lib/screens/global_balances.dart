@@ -212,6 +212,109 @@ class _GlobalBalancesScreenState extends State<GlobalBalancesScreen> {
     return groups.length;
   }
 
+  Widget _buildOptimizationBanner() {
+    final savings = _originalCount - _optimizedCount;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        0,
+        AppSpacing.screenPaddingH,
+        AppSpacing.spaceXl,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: _showOptimized ? AppColors.successBackground : AppColors.accentBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _showOptimized ? AppColors.success : AppColors.accent,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: _showOptimized ? AppColors.success : AppColors.accent,
+              ),
+              const SizedBox(width: AppSpacing.spaceMd),
+              Expanded(
+                child: Text(
+                  'God Mode',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: _showOptimized ? AppColors.success : AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.spaceMd,
+                  vertical: AppSpacing.spaceXs,
+                ),
+                decoration: BoxDecoration(
+                  color: _showOptimized ? AppColors.success : AppColors.accent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '-$savings payment${savings == 1 ? '' : 's'}',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.spaceMd),
+          Text(
+            _showOptimized
+                ? 'Showing optimized payments: $_optimizedCount instead of $_originalCount'
+                : 'Optimize $_originalCount payments down to $_optimizedCount',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spaceLg),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => setState(() => _showOptimized = !_showOptimized),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _showOptimized ? AppColors.success : AppColors.accent,
+                side: BorderSide(
+                  color: _showOptimized ? AppColors.success : AppColors.accent,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.spaceLg),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(_showOptimized ? 'Show per-contact view' : 'Show optimized payments'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptimizedRoutesList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+      itemCount: _optimizedRoutes.length + 1,
+      itemBuilder: (context, index) {
+        if (index == _optimizedRoutes.length) {
+          return const SizedBox(height: AppSpacing.bottomNavClearance);
+        }
+        final route = _optimizedRoutes[index];
+        return _OptimizedRouteCard(route: route, index: index + 1);
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
     return Expanded(
       child: Center(
@@ -425,6 +528,101 @@ class _BalanceCardState extends State<_BalanceCard> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OptimizedRouteCard extends StatelessWidget {
+  final OptimizedRoute route;
+  final int index;
+
+  const _OptimizedRouteCard({required this.route, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = CycleRepository.instance;
+    final fromIdentity = IdentityService.instance.getIdentity(route.fromPhone);
+    final toIdentity = IdentityService.instance.getIdentity(route.toPhone);
+    
+    final isYouPaying = route.fromPhone == IdentityService.normalizePhone(repo.currentUserPhone);
+    final isYouReceiving = route.toPhone == IdentityService.normalizePhone(repo.currentUserPhone);
+    
+    final fromName = isYouPaying ? 'You' : (fromIdentity?.displayName ?? route.fromPhone);
+    final toName = isYouReceiving ? 'You' : (toIdentity?.displayName ?? route.toPhone);
+    final amountDisplay = (route.amountMinor / 100).toStringAsFixed(0);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.accentBackground,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$index',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.spaceXl),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: AppTypography.bodyPrimary,
+                    children: [
+                      TextSpan(
+                        text: fromName,
+                        style: TextStyle(
+                          fontWeight: isYouPaying ? FontWeight.w600 : FontWeight.w400,
+                          color: isYouPaying ? AppColors.debtRed : AppColors.textPrimary,
+                        ),
+                      ),
+                      const TextSpan(text: ' pays '),
+                      TextSpan(
+                        text: toName,
+                        style: TextStyle(
+                          fontWeight: isYouReceiving ? FontWeight.w600 : FontWeight.w400,
+                          color: isYouReceiving ? AppColors.success : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Direct settlement',
+                  style: AppTypography.captionSmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '₹$amountDisplay',
+            style: AppTypography.h3.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

@@ -33,6 +33,7 @@ import 'screens/error_states.dart';
 import 'screens/global_balances.dart';
 import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
+import 'services/fcm_token_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,6 +189,8 @@ class MyApp extends StatelessWidget {
             );
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               await repo.continueAuthFromFirebaseUser();
+              // Initialize FCM after auth is complete
+              FcmTokenService.instance.initialize(user.uid);
             });
             return ListenableBuilder(
               listenable: repo,

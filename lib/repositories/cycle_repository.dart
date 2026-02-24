@@ -10,6 +10,7 @@ import '../models/settlement_event.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../services/identity_service.dart';
+import '../services/sync_status_service.dart';
 import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
@@ -366,6 +367,7 @@ class CycleRepository extends ChangeNotifier {
         if (kDebugMode && st != null) debugPrint(st.toString());
         _groupsLoading = false;
         _streamError = e.toString();
+        SyncStatusService.instance.markError(e.toString());
         notifyListeners();
       },
     );
@@ -431,6 +433,7 @@ class CycleRepository extends ChangeNotifier {
 
   void _onGroupsSnapshot(List<DocView> docs) {
     _groupsLoading = false;
+    SyncStatusService.instance.markSynced();
     final newIds = docs.map((d) => d.id).toSet();
     for (final id in _expenseSubs.keys.toList()) {
       if (!newIds.contains(id)) {

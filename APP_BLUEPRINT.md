@@ -9,8 +9,8 @@
 **Release docs:** See `docs/releases/` for version contracts:
 - [V1_RELEASE.md](docs/releases/V1_RELEASE.md) — Core identity (Magic Bar, Decision Clarity, SettlementEngine)
 - [V2_RELEASE.md](docs/releases/V2_RELEASE.md) — Profile pictures, UPI deep-linking, push foundation
-- [V3_RELEASE.md](docs/releases/V3_RELEASE.md) — Settlement activity, offline resilience, Dynamic UPI QR
-- [V4_RELEASE.md](docs/releases/V4_RELEASE.md) — Cross-group identity, God Mode debt minimization (current)
+- [V3_RELEASE.md](docs/releases/V3_RELEASE.md) — Settlement activity, offline resilience, Dynamic UPI QR (complete)
+- [V4_RELEASE.md](docs/releases/V4_RELEASE.md) — Cross-group identity, God Mode debt minimization, FCM infrastructure (current)
 
 ---
 
@@ -477,8 +477,8 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 |--------|---------|-------------|--------|
 | **Real-time “join” notifications** | ✅ High value | Phase 2. Needs auth, push, backend identity. Add too early = chaos. | Not implemented |
 | **Live activity feed** | ⚠️ Only if subtle | After join notifications. Risk: noise, notification fatigue, anxiety. Keep calm. | Not implemented |
-| **Cross-group identity** | 🔥 Long-term core | Backend + stable member identity. Unlocks debt minimization later. Very high value. | 🚧 In progress (V4) — see [V4_RELEASE.md](docs/releases/V4_RELEASE.md) |
-| **Cloud backup & sync** | ✅ Mandatory (boring) | Required once you leave MVP. Non-negotiable; users assume it. | 🚧 In progress (V4) |
+| **Cross-group identity** | 🔥 Long-term core | Backend + stable member identity. Unlocks debt minimization later. Very high value. | ✅ Implemented in V4 — `IdentityService` unifies phone→identity across groups |
+| **Cloud backup & sync** | ✅ Mandatory (boring) | Required once you leave MVP. Non-negotiable; users assume it. | ✅ Implemented in V4 — `SyncStatusService` tracks sync state |
 
 **Implementation notes (Cloud Power):**
 
@@ -497,7 +497,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 |--------|---------|-------------|--------|
 | **Bill splitting via camera (OCR)** | 🚫 Do NOT touch early | After everything else works. Not MVP, not Phase 2. OCR + item–person matching = support nightmare. | Not implemented |
 | **Voice command entry** | ❌ Skip or postpone | Low real usage. Accent/noise/debug pain. Sounds cool, rarely used. | Not implemented |
-| **Debt minimization (“God Mode” math)** | 🔥 Signature feature | After cross-group identity. A owes B, B owes C → A pays C. Saves money, fewer txns, feels magical. | 🚧 In progress (V4) |
+| **Debt minimization (“God Mode” math)** | 🔥 Signature feature | After cross-group identity. A owes B, B owes C → A pays C. Saves money, fewer txns, feels magical. | ✅ Implemented in V4 |
 | **Spending insights** | ⚠️ Optional, tone-sensitive | If done wrong, feels like a finance app and breaks “calm.” Useful but can feel preachy. | Not implemented |
 
 **Implementation notes (AI & Hit-Maker):**

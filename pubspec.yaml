@@ -43,6 +43,7 @@ dependencies:
   firebase_storage: ^12.3.6
   cloud_functions: ^5.2.1
   firebase_analytics: ^11.4.2
+  firebase_messaging: ^15.2.4
   cryptography: ^2.7.0
 
   # Env and UX
