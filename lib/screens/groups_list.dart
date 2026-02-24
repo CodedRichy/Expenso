@@ -5,9 +5,11 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../services/pinned_groups_service.dart';
-import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/offline_banner.dart';
+import '../widgets/skeleton_placeholders.dart';
 import 'empty_states.dart';
 
 class GroupsList extends StatefulWidget {
@@ -332,6 +334,15 @@ class _GroupsListState extends State<GroupsList> {
   }
 
   Future<void> _confirmDeleteGroup(BuildContext context, Group group) async {
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete group while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     final repo = CycleRepository.instance;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -408,16 +419,26 @@ class _GroupsListState extends State<GroupsList> {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: loading
-              ? _BoundedGroupsLoading(showSlowHint: _showSlowLoadingHint)
-              : groups.isEmpty && repo.pendingInvitations.isEmpty
-                  ? EmptyStates(
-                      type: 'no-groups',
-                      wrapInScaffold: false,
-                      onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
-                    )
-                  : SafeArea(
-                      child: Column(
+          body: Column(
+            children: [
+              OfflineBanner(
+                onRetry: () {
+                  ConnectivityService.instance.checkNow();
+                  CycleRepository.instance.restartListening();
+                },
+              ),
+              Expanded(
+                child: loading
+                    ? _BoundedGroupsLoading(showSlowHint: _showSlowLoadingHint)
+                    : groups.isEmpty && repo.pendingInvitations.isEmpty
+                        ? EmptyStates(
+                            type: 'no-groups',
+                            wrapInScaffold: false,
+                            onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
+                          )
+                        : SafeArea(
+                            top: false,
+                            child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
@@ -587,7 +608,10 @@ class _GroupsListState extends State<GroupsList> {
                         ],
                       ),
                     ),
-                  );
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -600,14 +624,14 @@ class _BoundedGroupsLoading extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (showSlowHint) ...[
+    if (showSlowHint) {
+      return SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 const Icon(Icons.hourglass_empty, size: 48, color: Color(0xFF9B9B9B)),
                 const SizedBox(height: 16),
                 const Text(
@@ -624,6 +648,7 @@ class _BoundedGroupsLoading extends StatelessWidget {
                 const SizedBox(height: 24),
                 OutlinedButton(
                   onPressed: () {
+                    ConnectivityService.instance.checkNow();
                     CycleRepository.instance.restartListening();
                   },
                   style: OutlinedButton.styleFrom(
@@ -633,16 +658,22 @@ class _BoundedGroupsLoading extends StatelessWidget {
                   ),
                   child: const Text('Retry'),
                 ),
-              ] else ...[
-                const ExpensoLoader(),
-                const SizedBox(height: 16),
-                const Text(
-                  'Loading groups...',
-                  style: TextStyle(fontSize: 15, color: Color(0xFF6B6B6B)),
-                ),
               ],
-            ],
+            ),
           ),
+        ),
+      );
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          children: const [
+            SkeletonGroupCard(),
+            SkeletonGroupCard(),
+            SkeletonGroupCard(),
+          ],
         ),
       ),
     );

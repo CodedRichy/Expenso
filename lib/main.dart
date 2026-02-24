@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,7 @@ void main() async {
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     setFirebaseAuthAvailable(true);
+    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
     debugPrint("Firebase initialized.");
   } catch (e, st) {
     debugPrint("Firebase not configured (run: dart run flutterfire configure): $e");
@@ -146,6 +148,9 @@ class MyApp extends StatelessWidget {
           space: 0,
         ),
       ),
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),

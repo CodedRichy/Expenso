@@ -5,9 +5,12 @@ import '../design/typography.dart';
 import '../models/models.dart';
 import '../models/payment_attempt.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
+import '../widgets/skeleton_placeholders.dart';
 import '../widgets/upi_payment_card.dart';
 
 class SettlementConfirmation extends StatefulWidget {
@@ -58,6 +61,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
   Future<void> _handlePaymentInitiated(PaymentRoute route) async {
     if (_group == null) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot initiate payment while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     final repo = CycleRepository.instance;
 
     final attempt = await repo.getOrCreatePaymentAttempt(
@@ -77,6 +91,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
   Future<void> _handleMarkAsPaid(PaymentRoute route) async {
     if (_group == null) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot confirm payment while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     final repo = CycleRepository.instance;
 
     final attempt = repo.getPaymentAttemptForRoute(
@@ -101,6 +126,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
   Future<void> _handlePaidViaCash(PaymentRoute route) async {
     if (_group == null) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot record payment while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     final repo = CycleRepository.instance;
 
     final attempt = await repo.getOrCreatePaymentAttempt(
@@ -128,6 +164,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
   Future<void> _handleConfirmCashReceived(PaymentRoute route) async {
     if (_group == null) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot confirm payment while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     final repo = CycleRepository.instance;
 
     final attempt = repo.getPaymentAttemptForRoute(
@@ -186,6 +233,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            OfflineBanner(
+              onRetry: () => ConnectivityService.instance.checkNow(),
+            ),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH,
@@ -223,7 +273,16 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             ),
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Padding(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                      child: Column(
+                        children: const [
+                          SkeletonPaymentCard(),
+                          SkeletonPaymentCard(),
+                          SkeletonPaymentCard(),
+                        ],
+                      ),
+                    )
                   : ListenableBuilder(
                       listenable: repo,
                       builder: (context, _) => SingleChildScrollView(

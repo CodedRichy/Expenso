@@ -9,14 +9,17 @@ import '../models/models.dart';
 import '../models/cycle.dart';
 import '../models/normalized_expense.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../services/groq_expense_parser_service.dart';
 import '../utils/expense_normalization.dart';
 import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/settlement_progress_indicator.dart';
+import '../widgets/skeleton_placeholders.dart';
 import 'empty_states.dart';
 
 class _StyledDescription {
@@ -267,6 +270,9 @@ class _GroupDetailState extends State<GroupDetail> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            OfflineBanner(
+              onRetry: () => ConnectivityService.instance.checkNow(),
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
