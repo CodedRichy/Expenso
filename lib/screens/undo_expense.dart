@@ -67,6 +67,11 @@ class _UndoExpenseState extends State<UndoExpense> {
     final repo = CycleRepository.instance;
     final description = widget.description ?? repo.lastAddedDescription ?? '';
     final amount = widget.amount ?? repo.lastAddedAmount ?? 0.0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final toastBg = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
+    final toastText = isDark ? theme.colorScheme.onSurface : Colors.white;
+    final toastSecondary = isDark ? theme.colorScheme.onSurfaceVariant : Colors.white70;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -80,7 +85,7 @@ class _UndoExpenseState extends State<UndoExpense> {
               constraints: const BoxConstraints(maxWidth: 430),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: toastBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -95,7 +100,7 @@ class _UndoExpenseState extends State<UndoExpense> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: toastText,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -103,7 +108,7 @@ class _UndoExpenseState extends State<UndoExpense> {
                           '$description · ₹${amount.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: const Color(0xFFB0B0B0),
+                            color: toastSecondary,
                           ),
                         ),
                       ],
@@ -112,17 +117,17 @@ class _UndoExpenseState extends State<UndoExpense> {
                   const SizedBox(width: 16),
                   TextButton.icon(
                     onPressed: _undo,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.refresh,
                       size: 16,
-                      color: Colors.white,
+                      color: toastText,
                     ),
                     label: Text(
                       'Undo',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: toastText,
                       ),
                     ),
                     style: TextButton.styleFrom(

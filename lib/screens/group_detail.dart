@@ -143,6 +143,12 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final toastBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
+    final toastTextColor = isDark ? theme.colorScheme.onSurface : Colors.white;
+    final toastSecondaryColor = isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFFB0B0B0);
+
     return Material(
       color: Colors.transparent,
       child: Stack(
@@ -155,7 +161,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
               constraints: const BoxConstraints(maxWidth: 430),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: toastBgColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -170,7 +176,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: toastTextColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -178,7 +184,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
                           '${widget.description} · ₹${widget.amount.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: const Color(0xFFB0B0B0),
+                            color: toastSecondaryColor,
                           ),
                         ),
                       ],
@@ -190,10 +196,10 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
                       _timer?.cancel();
                       widget.onUndo();
                     },
-                    icon: const Icon(Icons.refresh, size: 16, color: Colors.white),
+                    icon: Icon(Icons.refresh, size: 16, color: toastTextColor),
                     label: Text(
                       'Undo',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: toastTextColor),
                     ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -658,6 +664,7 @@ class _GroupDetailState extends State<GroupDetail> {
   }
 
   void _showSettleConfirmDialog(BuildContext context, CycleRepository repo, String groupId) {
+    final theme = Theme.of(context);
     final instructions = repo.getSettlementInstructions(groupId);
     showDialog(
       context: context,
@@ -667,7 +674,7 @@ class _GroupDetailState extends State<GroupDetail> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1A1A1A),
+            color: theme.colorScheme.onSurface,
           ),
         ),
         content: SingleChildScrollView(
@@ -679,7 +686,7 @@ class _GroupDetailState extends State<GroupDetail> {
                 instructions.isEmpty ? 'No balances to settle.' : 'The following will close this cycle:',
                 style: TextStyle(
                   fontSize: 15,
-                  color: const Color(0xFF6B6B6B),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               if (instructions.isNotEmpty) ...[
@@ -691,7 +698,7 @@ class _GroupDetailState extends State<GroupDetail> {
                       s,
                       style: TextStyle(
                         fontSize: 15,
-                        color: const Color(0xFF1A1A1A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -708,7 +715,7 @@ class _GroupDetailState extends State<GroupDetail> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF5B7C99),
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -741,7 +748,7 @@ class _GroupDetailState extends State<GroupDetail> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A1A1A),
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -1981,6 +1988,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   void _pickPayer() {
     final repo = widget.repo;
+    final theme = Theme.of(context);
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -1991,7 +1999,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Who paid?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
               ),
             ),
             ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
@@ -2012,6 +2020,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   void _pickMember(int slotIndex) {
     final repo = widget.repo;
+    final theme = Theme.of(context);
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -2022,7 +2031,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Select member',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A1A)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
               ),
             ),
             ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
