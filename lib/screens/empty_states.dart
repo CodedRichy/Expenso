@@ -24,7 +24,7 @@ class EmptyStates extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(24, 40, 24, 32),
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 32),
               child: Text('Groups', style: AppTypography.heroTitle),
             ),
             Expanded(

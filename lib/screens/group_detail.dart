@@ -278,7 +278,7 @@ class _GroupDetailState extends State<GroupDetail> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 40, 8, 12),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1809,7 +1809,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 decoration: InputDecoration(
                   hintText: _inCooldown
                       ? 'AI cooling down — use keyboard for manual entry'
-                      : 'e.g. Dinner 500 with Pradhyun',
+                      : 'e.g. Dinner 500 with Ash',
                   hintStyle: TextStyle(
                     color: _inCooldown ? const Color(0xFF6B6B6B) : const Color(0xFFB0B0B0),
                     fontSize: 17,

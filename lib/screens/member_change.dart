@@ -47,7 +47,7 @@ class MemberChange extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

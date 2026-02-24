@@ -437,12 +437,12 @@ class _GroupsListState extends State<GroupsList> {
                             onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
                           )
                         : SafeArea(
-                            top: false,
+                            bottom: false,
                             child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 40, 16, 32),
+                            padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
                             child: Row(
                               children: [
                                 const Expanded(

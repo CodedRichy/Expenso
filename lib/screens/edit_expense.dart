@@ -315,7 +315,7 @@ class _EditExpenseState extends State<EditExpense> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.chevron_left, size: 24),
@@ -394,7 +394,7 @@ class _EditExpenseState extends State<EditExpense> {
 
   Widget _buildHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
