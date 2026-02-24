@@ -1502,6 +1502,43 @@ class CycleRepository extends ChangeNotifier {
     _logSettlementEvent(groupId, SettlementEventType.paymentDisputed, paymentAttemptId: attemptId);
   }
 
+  Future<void> markPaymentAsCash(String groupId, String attemptId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.cashPending.firestoreValue,
+      initiatedAt: now,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.cashPending, initiatedAt: now);
+
+    final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+    );
+    _logSettlementEvent(groupId, SettlementEventType.cashConfirmationRequested, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+  }
+
+  Future<void> confirmCashReceived(String groupId, String attemptId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await FirestoreService.instance.updatePaymentAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.cashConfirmed.firestoreValue,
+      confirmedAt: now,
+    );
+
+    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.cashConfirmed, confirmedAt: now);
+
+    final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+    );
+    _logSettlementEvent(groupId, SettlementEventType.cashConfirmed, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _checkAndEmitFullySettled(groupId);
+  }
+
   void _updateLocalAttemptStatus(
     String groupId,
     String attemptId,
@@ -1618,6 +1655,97 @@ class CycleRepository extends ChangeNotifier {
   int getPendingSettlementCount(String groupId) {
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     return attempts.where((a) => !a.status.isFullyConfirmed).length;
+  }
+
+  /// Calculate remaining balance for a member after accounting for settled payments.
+  /// Returns the net balance (positive = owed to member, negative = member owes)
+  /// adjusted by any payments marked as settled.
+  double getRemainingBalance(String groupId, String memberId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+
+    int originalMinor = netBalances[memberId] ?? 0;
+    int adjustmentMinor = 0;
+
+    for (final route in routes) {
+      final attempt = attempts.firstWhere(
+        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        orElse: () => PaymentAttempt(
+          id: '',
+          groupId: '',
+          cycleId: '',
+          fromMemberId: '',
+          toMemberId: '',
+          amountMinor: 0,
+          currencyCode: 'INR',
+          status: PaymentAttemptStatus.notStarted,
+          createdAt: 0,
+        ),
+      );
+
+      if (attempt.status.isSettled) {
+        if (route.fromMemberId == memberId) {
+          adjustmentMinor += route.amountMinor;
+        } else if (route.toMemberId == memberId) {
+          adjustmentMinor -= route.amountMinor;
+        }
+      }
+    }
+
+    return (originalMinor + adjustmentMinor) / 100.0;
+  }
+
+  /// Get total amount still owed by the current user (not yet settled).
+  int getMyRemainingDuesMinor(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final myRoutes = SettlementEngine.getPaymentsForMember(_currentUserId, routes);
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+
+    int remainingMinor = 0;
+    for (final route in myRoutes) {
+      final attempt = attempts.firstWhere(
+        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        orElse: () => PaymentAttempt(
+          id: '',
+          groupId: '',
+          cycleId: '',
+          fromMemberId: '',
+          toMemberId: '',
+          amountMinor: 0,
+          currencyCode: 'INR',
+          status: PaymentAttemptStatus.notStarted,
+          createdAt: 0,
+        ),
+      );
+
+      if (!attempt.status.isSettled) {
+        remainingMinor += route.amountMinor;
+      }
+    }
+    return remainingMinor;
+  }
+
+  /// Get payments awaiting confirmation from the current user (as receiver).
+  List<PaymentAttempt> getPaymentsAwaitingMyConfirmation(String groupId) {
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    return attempts.where((a) => 
+      a.toMemberId == _currentUserId && a.status.isAwaitingReceiverAction
+    ).toList();
+  }
+
+  /// Get incoming payments to the current user (regardless of status).
+  List<PaymentRoute> getIncomingPaymentsForCurrentUser(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    return SettlementEngine.getPaymentsToMember(_currentUserId, routes);
   }
 
   /// Check if all payment routes are settled for a group.

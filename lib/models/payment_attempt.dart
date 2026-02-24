@@ -4,6 +4,8 @@ enum PaymentAttemptStatus {
   confirmedByPayer,
   confirmedByReceiver,
   disputed,
+  cashPending,
+  cashConfirmed,
 }
 
 extension PaymentAttemptStatusX on PaymentAttemptStatus {
@@ -19,6 +21,10 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
         return 'confirmed_by_receiver';
       case PaymentAttemptStatus.disputed:
         return 'disputed';
+      case PaymentAttemptStatus.cashPending:
+        return 'cash_pending';
+      case PaymentAttemptStatus.cashConfirmed:
+        return 'cash_confirmed';
     }
   }
 
@@ -32,6 +38,10 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
         return PaymentAttemptStatus.confirmedByReceiver;
       case 'disputed':
         return PaymentAttemptStatus.disputed;
+      case 'cash_pending':
+        return PaymentAttemptStatus.cashPending;
+      case 'cash_confirmed':
+        return PaymentAttemptStatus.cashConfirmed;
       default:
         return PaymentAttemptStatus.notStarted;
     }
@@ -49,6 +59,10 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
         return 'Confirmed received';
       case PaymentAttemptStatus.disputed:
         return 'Disputed';
+      case PaymentAttemptStatus.cashPending:
+        return 'Cash payment pending';
+      case PaymentAttemptStatus.cashConfirmed:
+        return 'Cash received';
     }
   }
 
@@ -56,8 +70,11 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
   bool get isConfirmedByPayer => this == PaymentAttemptStatus.confirmedByPayer;
   bool get isConfirmedByReceiver => this == PaymentAttemptStatus.confirmedByReceiver;
   bool get isDisputed => this == PaymentAttemptStatus.disputed;
-  bool get isSettled => isConfirmedByPayer || isConfirmedByReceiver;
-  bool get isFullyConfirmed => isConfirmedByReceiver;
+  bool get isCashPending => this == PaymentAttemptStatus.cashPending;
+  bool get isCashConfirmed => this == PaymentAttemptStatus.cashConfirmed;
+  bool get isSettled => isConfirmedByPayer || isConfirmedByReceiver || isCashConfirmed;
+  bool get isFullyConfirmed => isConfirmedByReceiver || isCashConfirmed;
+  bool get isAwaitingReceiverAction => isConfirmedByPayer || isCashPending;
 }
 
 class PaymentAttempt {

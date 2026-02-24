@@ -67,7 +67,7 @@ class SettlementActivityFeed extends StatelessWidget {
                 itemCount: displayEvents.length,
                 separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
                 itemBuilder: (context, index) {
-                  return _EventRow(event: displayEvents[index]);
+                  return _EventRow(event: displayEvents[index], groupId: groupId);
                 },
               ),
             ],
@@ -80,8 +80,45 @@ class SettlementActivityFeed extends StatelessWidget {
 
 class _EventRow extends StatelessWidget {
   final SettlementEvent event;
+  final String groupId;
 
-  const _EventRow({required this.event});
+  const _EventRow({required this.event, required this.groupId});
+
+  String _getEnrichedMessage() {
+    final repo = CycleRepository.instance;
+    
+    if (event.paymentAttemptId == null) {
+      return event.displayMessage;
+    }
+
+    final attempts = repo.getPaymentAttempts(groupId);
+    final attempt = attempts.where((a) => a.id == event.paymentAttemptId).firstOrNull;
+    
+    if (attempt == null) {
+      return event.displayMessage;
+    }
+
+    final fromName = repo.getMemberDisplayNameById(attempt.fromMemberId);
+    final toName = repo.getMemberDisplayNameById(attempt.toMemberId);
+    final amount = '₹${(attempt.amountMinor / 100).toStringAsFixed(0)}';
+
+    switch (event.type) {
+      case SettlementEventType.paymentInitiated:
+        return '$fromName initiated $amount to $toName';
+      case SettlementEventType.paymentConfirmedByPayer:
+        return '$fromName marked $amount as paid to $toName';
+      case SettlementEventType.paymentConfirmedByReceiver:
+        return '$toName confirmed receiving $amount from $fromName';
+      case SettlementEventType.paymentDisputed:
+        return '$toName disputed payment from $fromName';
+      case SettlementEventType.cashConfirmationRequested:
+        return '$fromName requested cash confirmation ($amount) from $toName';
+      case SettlementEventType.cashConfirmed:
+        return '$toName confirmed cash receipt ($amount) from $fromName';
+      default:
+        return event.displayMessage;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +130,7 @@ class _EventRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              event.displayMessage,
+              _getEnrichedMessage(),
               style: AppTypography.bodyPrimary,
             ),
           ),

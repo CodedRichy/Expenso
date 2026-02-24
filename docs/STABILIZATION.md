@@ -124,9 +124,17 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 11. If no UPI apps installed → QR code shown for scanning
 12. User returns to app → sees "Mark as paid" button for `initiated` payments
 13. Tap "Mark as paid" → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
-10. Card shows green checkmark, amount struck through for confirmed payments
-11. **Payments never auto-confirmed** — explicit user action required
-12. Optional: Receiver can call `markPaymentConfirmedByReceiver()` for full confirmation
+14. Card shows green checkmark, amount struck through for confirmed payments
+15. **Payments never auto-confirmed** — explicit user action required
+16. Balance updates:
+    - `getRemainingBalance()` subtracts settled payments from original net balance
+    - Group detail card shows "Remaining: ₹X" (with original amount struck through)
+    - Settlement screen shows pending total after confirmed payments
+17. Receiver confirmation flow:
+    - Receiver's settlement screen shows "Incoming payments" section
+    - Lists UPI payments marked `confirmed_by_payer` and cash payments `cash_pending`
+    - Receiver taps "Confirm" → `markPaymentConfirmedByReceiver()` → status `confirmed_by_receiver`
+18. Activity feed shows enriched messages: "Rishi marked ₹500 as paid to Priya", "Priya confirmed receiving ₹500"
 13. Creator taps "Settle now" with no dues → `settleAndRestartCycle(groupId)` called
 14. Firestore updated: `cycleStatus: 'settling'`
 15. UI shows settling state, expense editing disabled

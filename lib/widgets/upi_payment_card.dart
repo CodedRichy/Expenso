@@ -17,7 +17,10 @@ class UpiPaymentCard extends StatefulWidget {
   final PaymentAttemptStatus? attemptStatus;
   final VoidCallback? onPaymentInitiated;
   final VoidCallback? onMarkAsPaid;
+  final VoidCallback? onPaidViaCash;
+  final VoidCallback? onConfirmCashReceived;
   final Function(UpiTransactionResult result)? onPaymentResult;
+  final bool isReceiver;
 
   const UpiPaymentCard({
     super.key,
@@ -29,7 +32,10 @@ class UpiPaymentCard extends StatefulWidget {
     this.attemptStatus,
     this.onPaymentInitiated,
     this.onMarkAsPaid,
+    this.onPaidViaCash,
+    this.onConfirmCashReceived,
     this.onPaymentResult,
+    this.isReceiver = false,
   });
 
   @override
@@ -320,6 +326,14 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
         bgColor = AppColors.errorBackground;
         textColor = AppColors.error;
         break;
+      case PaymentAttemptStatus.cashPending:
+        bgColor = AppColors.warningBackground;
+        textColor = AppColors.warning;
+        break;
+      case PaymentAttemptStatus.cashConfirmed:
+        bgColor = AppColors.successBackground;
+        textColor = AppColors.success;
+        break;
       default:
         return const SizedBox.shrink();
     }
@@ -346,14 +360,20 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
   Widget _buildActionArea() {
     if (_isConfirmed) {
+      String message;
+      if (_status == PaymentAttemptStatus.cashConfirmed) {
+        message = 'Cash received';
+      } else if (_status == PaymentAttemptStatus.confirmedByReceiver) {
+        message = 'Payment confirmed';
+      } else {
+        message = 'Marked as paid';
+      }
       return Row(
         children: [
           Icon(Icons.check_circle, color: AppColors.success, size: 20),
           const SizedBox(width: AppSpacing.spaceSm),
           Text(
-            _status == PaymentAttemptStatus.confirmedByReceiver
-                ? 'Payment confirmed'
-                : 'Marked as paid',
+            message,
             style: AppTypography.bodySecondary.copyWith(
               color: AppColors.success,
               fontWeight: FontWeight.w500,
@@ -361,6 +381,46 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
           ),
         ],
       );
+    }
+
+    if (_status.isCashPending) {
+      if (widget.isReceiver) {
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: widget.onConfirmCashReceived,
+            icon: const Icon(Icons.payments, size: 18),
+            label: const Text('Confirm cash received'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.spaceLg,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+          ),
+        );
+      } else {
+        return Row(
+          children: [
+            Icon(Icons.hourglass_empty, color: AppColors.warning, size: 20),
+            const SizedBox(width: AppSpacing.spaceSm),
+            Expanded(
+              child: Text(
+                'Waiting for ${widget.payeeName} to confirm',
+                style: AppTypography.bodySecondary.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
     }
 
     if (_showMarkAsPaid) {
@@ -407,61 +467,113 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     }
 
     if (!_hasUpiId) {
-      return _buildNoUpiChip();
+      return _buildCashPaymentOption();
     }
 
     return _buildPayButton();
   }
 
   Widget _buildPayButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _loading ? null : _showUpiAppPicker,
-        icon: _loading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.payment, size: 18),
-        label: Text(_loading ? 'Loading...' : 'Pay via UPI'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.spaceXl,
-            vertical: AppSpacing.spaceLg,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _loading ? null : _showUpiAppPicker,
+            icon: _loading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.payment, size: 18),
+            label: Text(_loading ? 'Loading...' : 'Pay via UPI'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceXl,
+                vertical: AppSpacing.spaceLg,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          elevation: 0,
         ),
-      ),
+        const SizedBox(height: AppSpacing.spaceSm),
+        Center(
+          child: TextButton.icon(
+            onPressed: widget.onPaidViaCash,
+            icon: const Icon(Icons.payments_outlined, size: 16),
+            label: const Text('Paid via cash'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textTertiary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceMd,
+                vertical: AppSpacing.spaceXs,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildNoUpiChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.spaceLg,
-        vertical: AppSpacing.spaceMd,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.warningBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'No UPI ID',
-        style: AppTypography.caption.copyWith(
-          color: AppColors.warning,
-          fontWeight: FontWeight.w500,
+  Widget _buildCashPaymentOption() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.spaceLg,
+            vertical: AppSpacing.spaceMd,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.warningBackground,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.spaceSm),
+              Expanded(
+                child: Text(
+                  '${widget.payeeName} hasn\'t added UPI ID',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.spaceMd),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: widget.onPaidViaCash,
+            icon: const Icon(Icons.payments_outlined, size: 18),
+            label: const Text('Paid via cash'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              side: const BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.spaceLg,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

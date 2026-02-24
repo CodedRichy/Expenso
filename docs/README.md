@@ -4,6 +4,20 @@
 
 ---
 
+## Quick Navigation
+
+| Category | Focus |
+|----------|-------|
+| [Core](#core) | Data model, flows, stability |
+| [Features](#features) | Money logic, splits, encryption |
+| [Releases](#releases) | Version contracts |
+| [Architecture](#architecture) | Module structure, dev history |
+| [Research](#research) | Parsing, settlement explorations |
+| [Internal](#internal) | Strategy, audits |
+| [Future](#future) | Planned capabilities |
+
+---
+
 ## Portfolio & Interviews
 
 | Document | Purpose |
@@ -20,12 +34,7 @@
 | [DATA_FLOW_TABLES.md](DATA_FLOW_TABLES.md) | Screen-to-database data mapping (SQL table format) |
 | [STABILIZATION.md](STABILIZATION.md) | Invariants, limitations, change safety |
 
-## Releases
-
-| Document | Purpose |
-|----------|---------|
-| [V1_RELEASE.md](releases/V1_RELEASE.md) | V1 contract |
-| [V2_RELEASE.md](releases/V2_RELEASE.md) | V2 state and V3 deferrals |
+---
 
 ## Features
 
@@ -41,6 +50,28 @@
 | [DATA_ENCRYPTION.md](features/DATA_ENCRYPTION.md) | Encryption coverage |
 | [DATA_ENCRYPTION_SETUP.md](features/DATA_ENCRYPTION_SETUP.md) | Setup guide |
 
+---
+
+## Releases
+
+| Document | Purpose |
+|----------|---------|
+| [V1_RELEASE.md](releases/V1_RELEASE.md) | V1 contract |
+| [V2_RELEASE.md](releases/V2_RELEASE.md) | V2 state and V3 deferrals |
+| [V3_RELEASE.md](releases/V3_RELEASE.md) | V3 scope |
+
+---
+
+## Architecture
+
+| Document | Purpose |
+|----------|---------|
+| [ARCHITECTURE.md](architecture/ARCHITECTURE.md) | Module structure |
+| [DEVELOPMENT.md](architecture/DEVELOPMENT.md) | Dev timeline |
+| [BLUEPRINT_GAPS_VERIFICATION.md](architecture/BLUEPRINT_GAPS_VERIFICATION.md) | Blueprint vs implementation |
+
+---
+
 ## Research
 
 | Document | Purpose |
@@ -52,16 +83,19 @@
 | [SETTLEMENT_LOGIC_NOTES.md](research/SETTLEMENT_LOGIC_NOTES.md) | Settlement debugging notes |
 | [SURVEY_FEATURE_REQUESTS.md](research/SURVEY_FEATURE_REQUESTS.md) | User survey summary |
 
+---
+
 ## Internal
 
 | Document | Purpose |
 |----------|---------|
 | [LOGIC_AUDIT.md](internal/LOGIC_AUDIT.md) | Known issues, fixes, limitations |
+| [MONETIZATION_EXECUTION.md](internal/MONETIZATION_EXECUTION.md) | Pricing, paywalls, rollout plan |
 
-## Architecture
+---
+
+## Future
 
 | Document | Purpose |
 |----------|---------|
-| [ARCHITECTURE.md](architecture/ARCHITECTURE.md) | Module structure |
-| [DEVELOPMENT.md](architecture/DEVELOPMENT.md) | Dev timeline |
-| [BLUEPRINT_GAPS_VERIFICATION.md](architecture/BLUEPRINT_GAPS_VERIFICATION.md) | Blueprint vs implementation |
+| [DESKTOP_WEB_WORKSPACE.md](future/DESKTOP_WEB_WORKSPACE.md) | Desktop/web workspace vision (Pro-only) |

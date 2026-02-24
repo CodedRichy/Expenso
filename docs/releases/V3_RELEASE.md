@@ -26,6 +26,7 @@ Expenso is currently at **V3**. This document is the single source of truth for 
 | **Settlement activity feed** | Read-only activity feed for settlement events. Shows in both GroupDetail (when settling) and SettlementConfirmation screens. Event types: payment initiated/pending/confirmed/failed, cash confirmation requested/confirmed, cycle settled/archived. Neutral system voice, no names, no chat, no reactions. Events stored in Firestore `settlement_events` subcollection. | V3 |
 | **Settlement progress indicator** | "X of Y payments settled" with subtle progress bar in GroupDetail. Shows only when cycle is in settling mode. Updates in real-time based on payment attempt states. | V3 |
 | **Auto-detect full settlement** | When all payment routes are confirmed, system emits "Cycle fully settled" event. Button turns green and shows "Start New Cycle ✓" for creator. No manual checking required. | V3 |
+| **Cash payment flow** | Payer can mark a settlement route as "Paid via cash" (creates `CASH_CONFIRMATION_REQUESTED` event). Receiver sees "Confirm cash received" button. On confirmation, route is settled and `CASH_CONFIRMED` event is emitted. No edits allowed after confirmation. Both actions logged as system events. | V3 |
 
 ---
 

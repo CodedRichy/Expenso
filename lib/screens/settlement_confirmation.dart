@@ -47,6 +47,15 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     return SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
   }
 
+  List<PaymentRoute> _getReceivingRoutes(String groupId) {
+    final repo = CycleRepository.instance;
+    final cycle = repo.getActiveCycle(groupId);
+    final members = repo.getMembersForGroup(groupId);
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    return allRoutes.where((r) => r.toMemberId == repo.currentUserId).toList();
+  }
+
   Future<void> _handlePaymentInitiated(PaymentRoute route) async {
     if (_group == null) return;
     final repo = CycleRepository.instance;
@@ -90,6 +99,57 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     }
   }
 
+  Future<void> _handlePaidViaCash(PaymentRoute route) async {
+    if (_group == null) return;
+    final repo = CycleRepository.instance;
+
+    final attempt = await repo.getOrCreatePaymentAttempt(
+      groupId: _group!.id,
+      fromMemberId: route.fromMemberId,
+      toMemberId: route.toMemberId,
+      amountMinor: route.amountMinor,
+      currencyCode: route.currencyCode,
+    );
+
+    if (attempt.status == PaymentAttemptStatus.notStarted || 
+        attempt.status == PaymentAttemptStatus.initiated) {
+      await repo.markPaymentAsCash(_group!.id, attempt.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cash payment recorded. Waiting for confirmation.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> _handleConfirmCashReceived(PaymentRoute route) async {
+    if (_group == null) return;
+    final repo = CycleRepository.instance;
+
+    final attempt = repo.getPaymentAttemptForRoute(
+      _group!.id,
+      route.fromMemberId,
+      route.toMemberId,
+    );
+
+    if (attempt != null && attempt.status == PaymentAttemptStatus.cashPending) {
+      await repo.confirmCashReceived(_group!.id, attempt.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cash payment confirmed'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {});
+      }
+    }
+  }
+
   PaymentAttemptStatus _getAttemptStatus(PaymentRoute route) {
     if (_group == null) return PaymentAttemptStatus.notStarted;
     final attempt = CycleRepository.instance.getPaymentAttemptForRoute(
@@ -109,6 +169,14 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     final group = _group!;
     final repo = CycleRepository.instance;
     final myPaymentRoutes = _getMyPaymentRoutes(group.id);
+    final receivingRoutes = _getReceivingRoutes(group.id);
+    
+    final pendingConfirmations = receivingRoutes.where((r) {
+      final status = _getAttemptStatus(r);
+      return status == PaymentAttemptStatus.cashPending || 
+             status == PaymentAttemptStatus.confirmedByPayer;
+    }).toList();
+    
     final myTotalDue = myPaymentRoutes.fold<int>(0, (s, r) => s + r.amountMinor);
     final hasUpiDues = myTotalDue > 0;
 
@@ -165,13 +233,22 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                         ),
                         child: SizedBox(
                           width: double.infinity,
-                          child: _buildUpiSection(
-                            context,
-                            group,
-                            repo,
-                            myPaymentRoutes,
-                            hasUpiDues,
-                            myTotalDue,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (pendingConfirmations.isNotEmpty) ...[
+                                _buildPendingConfirmations(repo, pendingConfirmations),
+                                const SizedBox(height: AppSpacing.space4xl),
+                              ],
+                              _buildUpiSection(
+                                context,
+                                group,
+                                repo,
+                                myPaymentRoutes,
+                                hasUpiDues,
+                                myTotalDue,
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -181,6 +258,147 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         ),
       ),
     );
+  }
+
+  Widget _buildPendingConfirmations(CycleRepository repo, List<PaymentRoute> routes) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          decoration: BoxDecoration(
+            color: AppColors.accentBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.account_balance_wallet, color: AppColors.accent, size: 24),
+              const SizedBox(width: AppSpacing.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Incoming payments',
+                      style: AppTypography.bodyPrimary.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${routes.length} ${routes.length == 1 ? 'payment' : 'payments'} awaiting your confirmation',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spaceXl),
+        ...routes.map((route) {
+          final payerName = repo.getMemberDisplayNameById(route.fromMemberId);
+          final status = _getAttemptStatus(route);
+          final isCash = status == PaymentAttemptStatus.cashPending;
+          final amount = (route.amountMinor / 100).toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]},',
+          );
+          return Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isCash 
+                        ? AppColors.warningBackground 
+                        : AppColors.accentBackground,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isCash ? Icons.payments : Icons.phone_android,
+                    size: 20,
+                    color: isCash ? AppColors.warning : AppColors.accent,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        payerName,
+                        style: AppTypography.bodyPrimary.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '₹$amount ${isCash ? 'cash' : 'UPI'} payment',
+                        style: AppTypography.bodySecondary,
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => isCash 
+                      ? _handleConfirmCashReceived(route) 
+                      : _handleConfirmUpiReceived(route),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.spaceLg,
+                      vertical: AppSpacing.spaceMd,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Future<void> _handleConfirmUpiReceived(PaymentRoute route) async {
+    if (_group == null) return;
+    final repo = CycleRepository.instance;
+
+    final attempt = repo.getPaymentAttemptForRoute(
+      _group!.id,
+      route.fromMemberId,
+      route.toMemberId,
+    );
+
+    if (attempt != null && attempt.status == PaymentAttemptStatus.confirmedByPayer) {
+      await repo.markPaymentConfirmedByReceiver(_group!.id, attempt.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment confirmed as received'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {});
+      }
+    }
   }
 
   Widget _buildUpiSection(
@@ -293,6 +511,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             attemptStatus: status,
             onPaymentInitiated: () => _handlePaymentInitiated(route),
             onMarkAsPaid: () => _handleMarkAsPaid(route),
+            onPaidViaCash: () => _handlePaidViaCash(route),
+            isReceiver: false,
           );
         }),
         const SizedBox(height: AppSpacing.space3xl),

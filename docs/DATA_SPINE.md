@@ -274,9 +274,28 @@ This document defines the fundamental data structures that Expenso operates on. 
 | `memberId` | `String` | UID |
 | `balance` | `double` | Positive = credit, negative = debt |
 
-**💰 MONEY TRUTH:** The fundamental "who owes what" calculation.
+**💰 MONEY TRUTH:** The fundamental "who owes what" calculation from expenses.
 
-**Notes:** Computed by `SettlementEngine.computeNetBalances()`. This is the source of truth for the Decision Clarity card and Balances section. Sum across all members must equal zero.
+**Notes:** Computed by `SettlementEngine.computeNetBalances()`. This is the original balance based on expenses only. Sum across all members must equal zero.
+
+---
+
+### 11b. RemainingBalance (implicit)
+
+| Attribute | Value |
+|-----------|-------|
+| **Semantic Role** | Derived View |
+| **Ideal Mutability** | N/A (computed) |
+| **Storage** | In-memory only |
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `memberId` | `String` | UID |
+| `remainingBalance` | `double` | NetBalance adjusted for settled payments |
+
+**💰 MONEY TRUTH:** The actual remaining balance after accounting for payments.
+
+**Notes:** Computed by `CycleRepository.getRemainingBalance()`. Takes the original NetBalance and adjusts it based on PaymentAttempts with `isSettled` status (`confirmedByPayer`, `confirmedByReceiver`, or `cashConfirmed`). This is what the Decision Clarity card shows when there are in-progress payments. If a member originally owed ₹500 and marked ₹500 as paid, their remaining balance shows "All clear" while the original is struck through.
 
 ---
 
@@ -450,12 +469,16 @@ The `expenseToLedgerDeltas()` function uses ONLY explicitly stored data (amountM
 | `toMemberId` | `String` | Payee member ID |
 | `amountMinor` | `int` | Payment amount in minor units |
 | `currencyCode` | `String` | ISO 4217 currency code |
-| `status` | `String` | One of: `not_started`, `initiated`, `confirmed_by_payer`, `confirmed_by_receiver`, `disputed` |
+| `status` | `String` | One of: `not_started`, `initiated`, `confirmed_by_payer`, `confirmed_by_receiver`, `disputed`, `cash_pending`, `cash_confirmed` |
 | `createdAt` | `int` | Epoch millis when attempt was created |
 | `initiatedAt` | `int?` | Epoch millis when UPI app was launched |
 | `confirmedAt` | `int?` | Epoch millis when marked as paid |
 
-**Notes:** Tracks state of each UPI payment. Created lazily when user first taps "Pay via UPI" for a route. State machine: `notStarted` → `initiated` (on UPI launch) → `confirmedByPayer` (on "Mark as paid") → optionally `confirmedByReceiver` (on receiver confirmation). `disputed` state available for conflict resolution. Payments are **never auto-confirmed**; explicit user action required. Attempts persist per-cycle; deleted when cycle archives.
+**Notes:** Tracks state of each UPI payment or cash settlement. Created lazily when user first taps "Pay via UPI" or "Paid via cash" for a route. State machines: 
+- **UPI flow:** `notStarted` → `initiated` (on UPI launch) → `confirmedByPayer` (on "Mark as paid") → optionally `confirmedByReceiver` (on receiver confirmation). `disputed` state available for conflict resolution.
+- **Cash flow:** `notStarted` → `cashPending` (on "Paid via cash") → `cashConfirmed` (on receiver confirmation). No edits allowed after `cashConfirmed`.
+
+Payments are **never auto-confirmed**; explicit user action required. Attempts persist per-cycle; deleted when cycle archives.
 
 ---
 

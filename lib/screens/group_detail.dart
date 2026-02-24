@@ -814,9 +814,13 @@ class _DecisionClarityCard extends StatelessWidget {
 
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
-    final isCredit = myNet > 0;
-    final isDebt = myNet < 0;
-    final isBalanceClear = myNet.abs() < 0.01;
+
+    final myRemaining = repo.getRemainingBalance(groupId, myId);
+    final hasPaymentProgress = (myNet - myRemaining).abs() > 0.01;
+
+    final isCredit = myRemaining > 0;
+    final isDebt = myRemaining < 0;
+    final isBalanceClear = myRemaining.abs() < 0.01;
 
     final isMuted = isPassive;
 
@@ -851,6 +855,8 @@ class _DecisionClarityCard extends StatelessWidget {
                       cycleTotal: cycleTotal,
                       youPaid: youPaid,
                       myNet: myNet,
+                      myRemaining: myRemaining,
+                      hasPaymentProgress: hasPaymentProgress,
                       isCredit: isCredit,
                       isDebt: isDebt,
                       isBalanceClear: isBalanceClear,
@@ -867,6 +873,8 @@ class _DecisionClarityCard extends StatelessWidget {
     required double cycleTotal,
     required double youPaid,
     required double myNet,
+    required double myRemaining,
+    required bool hasPaymentProgress,
     required bool isCredit,
     required bool isDebt,
     required bool isBalanceClear,
@@ -882,7 +890,7 @@ class _DecisionClarityCard extends StatelessWidget {
         ? 'Cycle settled — pending restart'
         : isBalanceClear
             ? 'All clear'
-            : '${isCredit ? '+' : '-'}₹${_fmtRupee(myNet.abs())}';
+            : '${isCredit ? '+' : '-'}₹${_fmtRupee(myRemaining.abs())}';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -928,17 +936,31 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your Status',
+                    hasPaymentProgress ? 'Remaining' : 'Your Status',
                     style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   SizedBox(height: AppSpacing.space2xs),
-                  Text(
-                    statusText,
-                    style: AppTypography.amountSM.copyWith(color: statusColor),
-                  ),
+                  if (hasPaymentProgress && !isBalanceClear) ...[
+                    Text(
+                      statusText,
+                      style: AppTypography.amountSM.copyWith(color: statusColor),
+                    ),
+                    SizedBox(height: AppSpacing.space2xs),
+                    Text(
+                      'was ${myNet < 0 ? '-' : '+'}₹${_fmtRupee(myNet.abs())}',
+                      style: AppTypography.captionSmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      statusText,
+                      style: AppTypography.amountSM.copyWith(color: statusColor),
+                    ),
                 ],
               ),
             ),

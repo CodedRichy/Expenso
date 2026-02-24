@@ -23,6 +23,7 @@ abstract final class AppColors {
 
   // Semantic
   static const accent = Color(0xFF5B7C99);
+  static const accentBackground = Color(0xFFE8EEF3);
   static const error = Color(0xFFC62828);
   static const errorBackground = Color(0xFFFFEBEE);
   static const warning = Color(0xFFF9A825);
