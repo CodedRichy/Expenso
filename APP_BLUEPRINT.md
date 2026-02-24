@@ -150,6 +150,15 @@ Key methods:
 
 On Android, shows installed UPI apps grid via `UpiAppPicker`. On iOS, limited UPI support; falls back to QR code. No Razorpay/escrow involvement.
 
+**Payment Flow (Zomato-style):**
+1. User taps "Pay via UPI" → `UpiAppPicker` shows bottom sheet with app grid
+2. User selects app → full-screen `UpiPaymentWaitingOverlay` appears
+3. Overlay shows: animated pulse, amount card, 90-second countdown timer
+4. UPI app launches with pre-filled payment data
+5. User returns → overlay shows result (success/failure/pending/cancelled)
+6. Actions: "I've already paid" (manual confirm), "Try Again" (retry), "Cancel" (back to app grid)
+7. On success or manual confirm → `UpiAppPickerResult.isSuccess = true` → payment marked as paid
+
 ### PaymentAttempt
 
 **Location:** `lib/models/payment_attempt.dart` — Tracks state of each UPI payment attempt. `PaymentAttemptStatus` enum: `notStarted`, `initiated`, `confirmedByPayer`, `confirmedByReceiver`, `disputed`. When user taps "Pay via UPI", state transitions to `initiated` and persists to Firestore (`groups/{groupId}/payment_attempts`). After returning to app, user sees "Mark as paid" button; on tap → `confirmedByPayer`. Receiver can later confirm with `confirmedByReceiver`. Payments are **not auto-confirmed** — explicit user action required. `PaymentAttempt` stores `groupId`, `cycleId`, `fromMemberId`, `toMemberId`, `amountMinor`, `currencyCode`, `status`, `createdAt`, `initiatedAt`, `confirmedAt`. CycleRepository methods: `loadPaymentAttempts`, `getOrCreatePaymentAttempt`, `markPaymentInitiated`, `markPaymentConfirmedByPayer`, `markPaymentConfirmedByReceiver`, `markPaymentDisputed`.
@@ -360,7 +369,8 @@ lib/
     member_avatar.dart        # Letter avatar renders IMMEDIATELY; photo loads as upgrade layer via CachedNetworkImage. Zero visible waiting—letter is always the base.
     expenso_loader.dart       # Animated loading indicator
     upi_payment_card.dart     # Per-payment UPI card with app picker, QR fallback, and payment attempt state tracking
-    upi_app_picker.dart       # Bottom sheet showing installed UPI apps grid; handles app selection and transaction flow
+    upi_app_picker.dart       # Full UPI payment flow: app grid → waiting overlay → result handling
+    upi_payment_waiting.dart  # Zomato-style waiting overlay with countdown, pulse animation, manual confirm option
     settlement_activity_feed.dart  # Read-only activity feed for settlement events; neutral system voice, no names
     settlement_progress_indicator.dart  # "X of Y payments settled" with progress bar; shows during settling cycle
   screens/

@@ -3,9 +3,13 @@ import '../utils/money_format.dart';
 enum SettlementEventType {
   cycleSettlementStarted,
   paymentInitiated,
+  paymentPending,
   paymentConfirmedByPayer,
   paymentConfirmedByReceiver,
+  paymentFailed,
   paymentDisputed,
+  cashConfirmationRequested,
+  cashConfirmed,
   cycleFullySettled,
   cycleArchived,
 }
@@ -17,12 +21,20 @@ extension SettlementEventTypeX on SettlementEventType {
         return 'cycle_settlement_started';
       case SettlementEventType.paymentInitiated:
         return 'payment_initiated';
+      case SettlementEventType.paymentPending:
+        return 'payment_pending';
       case SettlementEventType.paymentConfirmedByPayer:
         return 'payment_confirmed_by_payer';
       case SettlementEventType.paymentConfirmedByReceiver:
         return 'payment_confirmed_by_receiver';
+      case SettlementEventType.paymentFailed:
+        return 'payment_failed';
       case SettlementEventType.paymentDisputed:
         return 'payment_disputed';
+      case SettlementEventType.cashConfirmationRequested:
+        return 'cash_confirmation_requested';
+      case SettlementEventType.cashConfirmed:
+        return 'cash_confirmed';
       case SettlementEventType.cycleFullySettled:
         return 'cycle_fully_settled';
       case SettlementEventType.cycleArchived:
@@ -36,12 +48,20 @@ extension SettlementEventTypeX on SettlementEventType {
         return SettlementEventType.cycleSettlementStarted;
       case 'payment_initiated':
         return SettlementEventType.paymentInitiated;
+      case 'payment_pending':
+        return SettlementEventType.paymentPending;
       case 'payment_confirmed_by_payer':
         return SettlementEventType.paymentConfirmedByPayer;
       case 'payment_confirmed_by_receiver':
         return SettlementEventType.paymentConfirmedByReceiver;
+      case 'payment_failed':
+        return SettlementEventType.paymentFailed;
       case 'payment_disputed':
         return SettlementEventType.paymentDisputed;
+      case 'cash_confirmation_requested':
+        return SettlementEventType.cashConfirmationRequested;
+      case 'cash_confirmed':
+        return SettlementEventType.cashConfirmed;
       case 'cycle_fully_settled':
         return SettlementEventType.cycleFullySettled;
       case 'cycle_archived':
@@ -96,12 +116,29 @@ class SettlementEvent {
           return '${formatMoney(amountMinor!)} payment initiated';
         }
         return 'Payment initiated';
+      case SettlementEventType.paymentPending:
+        if (amountMinor != null) {
+          return 'Payment pending: ${formatMoney(amountMinor!)}';
+        }
+        return 'Payment pending';
       case SettlementEventType.paymentConfirmedByPayer:
         return 'Payment confirmed';
       case SettlementEventType.paymentConfirmedByReceiver:
         return 'Payment received';
+      case SettlementEventType.paymentFailed:
+        return 'Payment failed';
       case SettlementEventType.paymentDisputed:
         return 'Payment disputed';
+      case SettlementEventType.cashConfirmationRequested:
+        if (amountMinor != null) {
+          return 'Cash payment requested: ${formatMoney(amountMinor!)}';
+        }
+        return 'Cash payment requested';
+      case SettlementEventType.cashConfirmed:
+        if (amountMinor != null) {
+          return 'Cash payment confirmed: ${formatMoney(amountMinor!)}';
+        }
+        return 'Cash payment confirmed';
       case SettlementEventType.cycleFullySettled:
         return 'Cycle fully settled';
       case SettlementEventType.cycleArchived:

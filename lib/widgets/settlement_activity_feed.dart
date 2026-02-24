@@ -119,9 +119,14 @@ class _EventIcon extends StatelessWidget {
     final (IconData icon, Color color) = switch (type) {
       SettlementEventType.cycleSettlementStarted => (Icons.flag_outlined, AppColors.accent),
       SettlementEventType.paymentInitiated => (Icons.send_outlined, AppColors.warning),
+      SettlementEventType.paymentPending => (Icons.hourglass_empty, AppColors.warning),
       SettlementEventType.paymentConfirmedByPayer => (Icons.check_circle_outline, AppColors.accent),
       SettlementEventType.paymentConfirmedByReceiver => (Icons.verified_outlined, AppColors.success),
+      SettlementEventType.paymentFailed => (Icons.cancel_outlined, AppColors.error),
       SettlementEventType.paymentDisputed => (Icons.error_outline, AppColors.error),
+      SettlementEventType.cashConfirmationRequested => (Icons.payments_outlined, AppColors.warning),
+      SettlementEventType.cashConfirmed => (Icons.payments, AppColors.success),
+      SettlementEventType.cycleFullySettled => (Icons.celebration_outlined, AppColors.success),
       SettlementEventType.cycleArchived => (Icons.inventory_2_outlined, AppColors.textSecondary),
     };
 

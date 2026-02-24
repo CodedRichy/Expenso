@@ -1,8 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../services/upi_payment_service.dart';
+import 'upi_payment_waiting.dart';
+
+class UpiAppPickerResult {
+  final UpiTransactionResult? transactionResult;
+  final bool manuallyConfirmed;
+
+  const UpiAppPickerResult({
+    this.transactionResult,
+    this.manuallyConfirmed = false,
+  });
+
+  bool get isSuccess => transactionResult?.isSuccess == true || manuallyConfirmed;
+}
 
 class UpiAppPicker extends StatefulWidget {
   final UpiPaymentData paymentData;
@@ -16,15 +30,22 @@ class UpiAppPicker extends StatefulWidget {
     this.onCancel,
   });
 
-  static Future<UpiTransactionResult?> show({
+  static Future<UpiAppPickerResult?> show({
     required BuildContext context,
     required UpiPaymentData paymentData,
   }) {
-    return showModalBottomSheet<UpiTransactionResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _UpiAppPickerSheet(paymentData: paymentData),
+    return Navigator.of(context).push<UpiAppPickerResult>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.transparent,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return _UpiPaymentFlow(paymentData: paymentData);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
     );
   }
 
@@ -64,18 +85,9 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
     }
   }
 
-  Future<void> _onAppTap(UpiAppInfo appInfo) async {
+  void _onAppTap(UpiAppInfo appInfo) {
     setState(() => _processingApp = appInfo);
-
-    final result = await UpiPaymentService.initiateTransaction(
-      data: widget.paymentData,
-      appInfo: appInfo,
-    );
-
-    if (mounted) {
-      setState(() => _processingApp = null);
-      widget.onPaymentComplete(appInfo, result);
-    }
+    widget.onPaymentComplete(appInfo, const UpiTransactionResult(status: UpiTransactionStatus.unknown));
   }
 
   @override
@@ -226,180 +238,203 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
   }
 }
 
-class _UpiAppPickerSheet extends StatefulWidget {
+enum _FlowState { appSelection, waiting }
+
+class _UpiPaymentFlow extends StatefulWidget {
   final UpiPaymentData paymentData;
 
-  const _UpiAppPickerSheet({required this.paymentData});
+  const _UpiPaymentFlow({required this.paymentData});
 
   @override
-  State<_UpiAppPickerSheet> createState() => _UpiAppPickerSheetState();
+  State<_UpiPaymentFlow> createState() => _UpiPaymentFlowState();
 }
 
-class _UpiAppPickerSheetState extends State<_UpiAppPickerSheet> {
-  UpiTransactionResult? _result;
+class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
+  _FlowState _state = _FlowState.appSelection;
+  UpiAppInfo? _selectedApp;
+  Completer<UpiTransactionResult>? _transactionCompleter;
 
-  void _handlePaymentComplete(UpiAppInfo app, UpiTransactionResult result) {
-    setState(() => _result = result);
+  void _onAppSelected(UpiAppInfo app, UpiTransactionResult _) {
+    setState(() {
+      _selectedApp = app;
+      _state = _FlowState.waiting;
+    });
+    _startTransaction(app);
+  }
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        Navigator.of(context).pop(result);
-      }
+  Future<void> _startTransaction(UpiAppInfo app) async {
+    _transactionCompleter = Completer<UpiTransactionResult>();
+
+    final result = await UpiPaymentService.initiateTransaction(
+      data: widget.paymentData,
+      appInfo: app,
+    );
+
+    if (!_transactionCompleter!.isCompleted) {
+      _transactionCompleter!.complete(result);
+    }
+  }
+
+  void _onRetry() {
+    if (_selectedApp != null) {
+      _startTransaction(_selectedApp!);
+    }
+  }
+
+  void _onManualConfirm() {
+    Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true));
+  }
+
+  void _onCancel() {
+    Navigator.of(context).pop();
+  }
+
+  void _onBackToAppSelection() {
+    setState(() {
+      _state = _FlowState.appSelection;
+      _selectedApp = null;
+      _transactionCompleter = null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
         children: [
-          const SizedBox(height: AppSpacing.spaceMd),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
+          GestureDetector(
+            onTap: _state == _FlowState.appSelection ? _onCancel : null,
+            child: Container(color: Colors.black54),
           ),
-          const SizedBox(height: AppSpacing.spaceXl),
-          if (_result != null)
-            _buildResultView()
+          if (_state == _FlowState.appSelection)
+            _buildAppSelectionSheet()
           else
-            _buildPaymentView(),
+            _buildWaitingOverlay(),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentView() {
+  Widget _buildAppSelectionSheet() {
+    final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.spaceMd),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spaceXl),
+            _buildPaymentHeader(),
+            const SizedBox(height: AppSpacing.space3xl),
+            _buildPayUsingDivider(),
+            const SizedBox(height: AppSpacing.spaceLg),
+            UpiAppPicker(
+              paymentData: widget.paymentData,
+              onPaymentComplete: _onAppSelected,
+              onCancel: _onCancel,
+            ),
+            const SizedBox(height: AppSpacing.spaceLg),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentHeader() {
     final amount = (widget.paymentData.amountMinor / 100).toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Column(
-            children: [
-              Text(
-                'Pay ₹$amount',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.spaceXs),
-              Text(
-                'to ${widget.paymentData.payeeName}',
-                style: AppTypography.bodySecondary,
-              ),
-              const SizedBox(height: AppSpacing.spaceSm),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.spaceLg,
-                  vertical: AppSpacing.spaceXs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  widget.paymentData.payeeUpiId,
-                  style: AppTypography.caption.copyWith(
-                    fontFamily: 'monospace',
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+      child: Column(
+        children: [
+          Text(
+            'Pay ₹$amount',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.space3xl),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Row(
-            children: [
-              const Expanded(child: Divider(color: AppColors.border)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceLg),
-                child: Text(
-                  'PAY USING',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textTertiary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              const Expanded(child: Divider(color: AppColors.border)),
-            ],
+          const SizedBox(height: AppSpacing.spaceXs),
+          Text(
+            'to ${widget.paymentData.payeeName}',
+            style: AppTypography.bodySecondary,
           ),
-        ),
-        const SizedBox(height: AppSpacing.spaceLg),
-        UpiAppPicker(
-          paymentData: widget.paymentData,
-          onPaymentComplete: _handlePaymentComplete,
-          onCancel: () => Navigator.of(context).pop(),
-        ),
-        const SizedBox(height: AppSpacing.spaceLg),
-      ],
+          const SizedBox(height: AppSpacing.spaceSm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.spaceLg,
+              vertical: AppSpacing.spaceXs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              widget.paymentData.payeeUpiId,
+              style: AppTypography.caption.copyWith(
+                fontFamily: 'monospace',
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildResultView() {
-    final result = _result!;
-    final icon = UpiPaymentService.getStatusIcon(result);
-    final color = UpiPaymentService.getStatusColor(result);
-    final message = UpiPaymentService.getStatusMessage(result);
-
+  Widget _buildPayUsingDivider() {
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.space3xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+      child: Row(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 36, color: color),
-          ),
-          const SizedBox(height: AppSpacing.spaceXl),
-          Text(
-            message,
-            style: AppTypography.bodyPrimary.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (result.transactionId != null) ...[
-            const SizedBox(height: AppSpacing.spaceMd),
-            Text(
-              'Txn ID: ${result.transactionId}',
-              style: AppTypography.caption.copyWith(
+          const Expanded(child: Divider(color: AppColors.border)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceLg),
+            child: Text(
+              'PAY USING',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textTertiary,
-                fontFamily: 'monospace',
+                letterSpacing: 0.5,
               ),
             ),
-          ],
+          ),
+          const Expanded(child: Divider(color: AppColors.border)),
         ],
       ),
+    );
+  }
+
+  Widget _buildWaitingOverlay() {
+    return UpiPaymentWaitingOverlay(
+      payeeName: widget.paymentData.payeeName,
+      amountMinor: widget.paymentData.amountMinor,
+      appName: _selectedApp?.name ?? 'UPI',
+      transactionFuture: _transactionCompleter!.future,
+      onRetry: _onRetry,
+      onManualConfirm: _onManualConfirm,
+      onCancel: _onBackToAppSelection,
     );
   }
 }

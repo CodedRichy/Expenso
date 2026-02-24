@@ -39,7 +39,7 @@ class UpiPaymentCard extends StatefulWidget {
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool _showQr = false;
   bool _loading = false;
-  UpiTransactionResult? _lastResult;
+  UpiAppPickerResult? _lastResult;
 
   String get _formattedAmount {
     final display = MoneyConversion.minorToDisplay(widget.amountMinor, widget.currencyCode);
@@ -100,7 +100,10 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     if (result != null) {
       setState(() => _lastResult = result);
       widget.onPaymentInitiated?.call();
-      widget.onPaymentResult?.call(result);
+      
+      if (result.transactionResult != null) {
+        widget.onPaymentResult?.call(result.transactionResult!);
+      }
 
       if (result.isSuccess) {
         widget.onMarkAsPaid?.call();
@@ -203,10 +206,48 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildLastResultBanner() {
-    final result = _lastResult!;
-    final color = UpiPaymentService.getStatusColor(result);
-    final icon = UpiPaymentService.getStatusIcon(result);
-    final message = UpiPaymentService.getStatusMessage(result);
+    final pickerResult = _lastResult!;
+    
+    if (pickerResult.manuallyConfirmed) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.spaceLg),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, size: 20, color: AppColors.success),
+            const SizedBox(width: AppSpacing.spaceLg),
+            Expanded(
+              child: Text(
+                'Payment manually confirmed',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => setState(() => _lastResult = null),
+              icon: const Icon(Icons.close, size: 16),
+              color: AppColors.textTertiary,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final txnResult = pickerResult.transactionResult;
+    if (txnResult == null) return const SizedBox.shrink();
+    
+    final color = UpiPaymentService.getStatusColor(txnResult);
+    final icon = UpiPaymentService.getStatusIcon(txnResult);
+    final message = UpiPaymentService.getStatusMessage(txnResult);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.spaceLg),
@@ -230,10 +271,10 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (result.transactionId != null) ...[
+                if (txnResult.transactionId != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Txn: ${result.transactionId}',
+                    'Txn: ${txnResult.transactionId}',
                     style: AppTypography.caption.copyWith(
                       fontSize: 10,
                       color: AppColors.textTertiary,

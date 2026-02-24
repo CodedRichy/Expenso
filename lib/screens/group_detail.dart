@@ -15,6 +15,7 @@ import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/settlement_activity_feed.dart';
 import '../widgets/settlement_progress_indicator.dart';
 import 'empty_states.dart';
 
@@ -331,11 +332,16 @@ class _GroupDetailState extends State<GroupDetail> {
                 isPassive: isPassive,
               ),
             ),
-            if (isPassive)
+            if (isPassive) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: SettlementProgressIndicator(groupId: groupId),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: SettlementActivityFeed(groupId: groupId, maxItems: 5),
+              ),
+            ],
             if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
               Builder(
                 builder: (context) {

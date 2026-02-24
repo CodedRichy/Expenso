@@ -192,7 +192,7 @@ This document defines the fundamental data structures that Expenso operates on. 
 | Field | Type | Notes |
 |-------|------|-------|
 | `id` | `String` | Unique event identifier (`se_{timestamp}`) |
-| `type` | `String` | `'cycle_settlement_started'`, `'payment_initiated'`, `'payment_confirmed_by_payer'`, `'payment_confirmed_by_receiver'`, `'payment_disputed'`, `'cycle_archived'` |
+| `type` | `String` | `'cycle_settlement_started'`, `'payment_initiated'`, `'payment_pending'`, `'payment_confirmed_by_payer'`, `'payment_confirmed_by_receiver'`, `'payment_failed'`, `'payment_disputed'`, `'cash_confirmation_requested'`, `'cash_confirmed'`, `'cycle_fully_settled'`, `'cycle_archived'` |
 | `amountMinor` | `int?` | Payment amount in minor units (for payment events) |
 | `timestamp` | `int` | Milliseconds since epoch |
 | `paymentAttemptId` | `String?` | Reference to related PaymentAttempt |

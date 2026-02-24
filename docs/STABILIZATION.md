@@ -104,15 +104,26 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 5. `UpiPaymentCard` shown per route with payee name, amount, UPI ID, status, UPI button
 6. Tap "Pay via UPI":
    - `UpiPaymentService.getInstalledUpiApps()` queries installed UPI apps
-   - `UpiAppPicker` bottom sheet shows app grid (GPay, PhonePe, Paytm, etc.)
-   - User taps an app → `getOrCreatePaymentAttempt()` creates `PaymentAttempt` in Firestore
-   - `markPaymentInitiated()` updates status to `initiated` with timestamp
-   - `UpiPaymentService.initiateTransaction()` launches selected UPI app with pre-filled data
-7. Transaction result displayed in-sheet (`UpiTransactionResult`): success, failure, submitted, cancelled
-8. If success → auto-calls `markPaymentConfirmedByPayer()` for convenience
-9. If no UPI apps installed → QR code shown for scanning (status still `initiated`)
-8. User returns to app → sees "Mark as paid" button for `initiated` payments
-9. Tap "Mark as paid" → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
+   - `UpiAppPicker` shows bottom sheet with app grid (GPay, PhonePe, Paytm, etc.)
+   - User taps an app → full-screen `UpiPaymentWaitingOverlay` appears (Zomato-style)
+7. Waiting overlay shows:
+   - Animated pulsing circle with spinner
+   - Payment amount and payee name card
+   - 90-second countdown timer
+   - "I've already paid" button for manual confirmation
+   - "Cancel" to return to app grid
+8. `UpiPaymentService.initiateTransaction()` launches selected UPI app
+9. User completes payment in UPI app and returns:
+   - **Success**: Green checkmark, "Payment Successful!", transaction ID shown
+   - **Failure**: Red X, "Payment Failed", "Try Again" button
+   - **Pending/Submitted**: Orange hourglass, "Payment Pending", manual confirm option
+   - **Cancelled**: "Payment Cancelled", retry or cancel options
+10. On success or "I've already paid" tap:
+    - `getOrCreatePaymentAttempt()` creates `PaymentAttempt` in Firestore
+    - `markPaymentInitiated()` → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
+11. If no UPI apps installed → QR code shown for scanning
+12. User returns to app → sees "Mark as paid" button for `initiated` payments
+13. Tap "Mark as paid" → `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`
 10. Card shows green checkmark, amount struck through for confirmed payments
 11. **Payments never auto-confirmed** — explicit user action required
 12. Optional: Receiver can call `markPaymentConfirmedByReceiver()` for full confirmation
