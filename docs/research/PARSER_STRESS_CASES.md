@@ -7,6 +7,22 @@ Use these inputs to test the CLI parser and to curate training/fine-tuning data.
 - Groq (and similar APIs) limit tokens per minute. A long system prompt + many in-prompt examples can push a single request over the limit (e.g. 11–12K).
 - **CLI:** Recent log examples are capped (default 5) to keep prompt size bounded. If you see rate-limit errors, reduce that cap or temporarily disable log-driven examples.
 
+## Running stress cases via CLI
+
+Pass the stress inputs to the CLI in batch so each line is one API call, with throttling between requests (avoids blowing the rate limit):
+
+```bash
+dart tool/parser_cli.dart --stress
+```
+
+Uses `tool/parser_stress_inputs.txt` by default (one input per line). To use another file:
+
+```bash
+dart tool/parser_cli.dart --stress path/to/inputs.txt
+```
+
+Each run is throttled (e.g. 4s between requests), logged to `tool/parser_runs.log`, and the outcome (CONFIDENT / CONSTRAINED / REJECT or ERROR) is printed per line.
+
 ---
 
 ## Amount ambiguity / missing

@@ -358,84 +358,109 @@ class _GroupDetailState extends State<GroupDetail> {
                 builder: (context) {
                   final fullySettled = isPassive && repo.isFullySettled(groupId);
                   final isCreator = repo.isCurrentUserCreator(groupId);
-                  
+                  final cycle = repo.getActiveCycle(groupId);
+                  final members = repo.getMembersForGroup(groupId);
+                  final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+                  final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+                  final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
+                  final hasDues = myRoutes.isNotEmpty;
+
+                  final payLabel = isPassive
+                      ? 'View settlement'
+                      : (hasDues ? 'Pay / Settle' : 'View settlement');
+
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (isPassive) {
-                          if (isCreator) {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Start new cycle?'),
-                                content: Text(
-                                  fullySettled
-                                      ? 'All payments are complete. Ready to start a fresh cycle.'
-                                      : 'This will archive current expenses and start a fresh cycle.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Confirm'),
-                                  ),
-                                ],
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/settlement-confirmation',
+                              arguments: {'group': defaultGroup, 'method': 'upi'},
                             );
-                            if (confirmed != true || !context.mounted) return;
-                            try {
-                              await repo.archiveAndRestart(groupId);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('New cycle started.'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Only the group creator can start a new cycle.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } else {
-                          _showSettlementOptions(context, defaultGroup, groupId);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: fullySettled ? AppColors.success : null,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 0),
+                          ),
+                          child: Text(payLabel, style: AppTypography.button),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
-                      ),
-                      child: Text(
-                        isPassive
-                            ? (isCreator 
-                                ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
-                                : 'Waiting for creator to restart')
-                            : 'Settle now',
-                        style: AppTypography.button,
-                      ),
+                        if (isCreator) ...[
+                          const SizedBox(height: 10),
+                          OutlinedButton(
+                            onPressed: () async {
+                              if (isPassive) {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Start new cycle?'),
+                                    content: Text(
+                                      fullySettled
+                                          ? 'All payments are complete. Ready to start a fresh cycle.'
+                                          : 'This will archive current expenses and start a fresh cycle.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, true),
+                                        child: const Text('Confirm'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed != true || !context.mounted) return;
+                              } else {
+                                _showSettleConfirmDialog(context, repo, groupId);
+                                return;
+                              }
+                              try {
+                                await repo.archiveAndRestart(groupId);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('New cycle started.'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: const Size(double.infinity, 0),
+                            ),
+                            child: Text(
+                              isPassive
+                                  ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
+                                  : 'Close cycle',
+                              style: AppTypography.button,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   );
                 },
@@ -630,37 +655,6 @@ class _GroupDetailState extends State<GroupDetail> {
       ),
     );
       },
-    );
-  }
-
-  void _showSettlementOptions(BuildContext context, Group group, String groupId) {
-    final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(groupId);
-    final cycle = repo.getActiveCycle(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-    final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
-    final hasDues = myRoutes.isNotEmpty;
-    final isCreator = repo.isCurrentUserCreator(groupId);
-
-    if (!hasDues) {
-      if (isCreator) {
-        _showSettleConfirmDialog(context, repo, groupId);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You have no payments to make. The group creator can close the cycle.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-
-    Navigator.pushNamed(
-      context,
-      '/settlement-confirmation',
-      arguments: {'group': group, 'method': 'upi'},
     );
   }
 

@@ -49,121 +49,15 @@ void main(List<String> args) async {
   if (currentUser != null) stdout.writeln('Current user: $currentUser');
   stdout.writeln('---');
 
-  final recentExamples = _loadRecentExamplesFromLog(_maxRecentExamples);
-  if (recentExamples.isNotEmpty) stdout.writeln('Using ${recentExamples.length} recent examples from log.');
-  final systemPrompt = _buildSystemPrompt(memberList, currentUser, recentExamples);
-  final body = {
-    'model': _model,
-    'messages': [
-      {'role': 'system', 'content': systemPrompt},
-      {'role': 'user', 'content': userInput.trim()},
-    ],
-    'temperature': 0,
-    'max_tokens': 256,
-  };
-
-  await _throttleForRateLimit();
-  http.Response response = await _post(apiKey, body);
-  _markRequestDone();
-  if (response.statusCode == 429) {
-    final waitSeconds = _retryAfterSeconds(response);
-    stdout.writeln('429 rate limit; waiting ${waitSeconds}s...');
-    await Future<void>.delayed(Duration(seconds: waitSeconds));
-    response = await _post(apiKey, body);
-    _markRequestDone();
-    if (response.statusCode == 429) {
-      stderr.writeln('Still rate limited. Try again later.');
-      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: '429 rate limit');
-      exit(1);
-    }
-  }
-
-  if (response.statusCode != 200) {
-    stderr.writeln('API ${response.statusCode}: ${response.body}');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
+  final run = await _runOne(apiKey, userInput, memberListStr, currentUser);
+  if (run.error != null) {
+    stderr.writeln(run.error!);
     exit(1);
   }
-
-  final map = jsonDecode(response.body) as Map<String, dynamic>?;
-  if (map == null) {
-    stderr.writeln('Invalid API response.');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Invalid API response');
-    exit(1);
-  }
-
-  final choices = map['choices'] as List?;
-  final first = choices?.isNotEmpty == true ? choices!.first : null;
-  final message = first is Map<String, dynamic> ? first['message'] : null;
-  final content = message is Map<String, dynamic> ? message['content'] : null;
-  String raw = (content is String) ? content.trim() : '';
-
-  if (raw.isEmpty) {
-    stderr.writeln('Empty content from API.');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Empty content from API');
-    exit(1);
-  }
-
-  raw = raw.replaceAll('\uFEFF', '');
-  raw = _extractJson(raw);
-  raw = _fixCommonJsonIssues(raw);
-
+  final result = run.result!;
   stdout.writeln('Raw JSON from API:');
-  stdout.writeln(raw);
+  stdout.writeln(run.rawJson ?? '');
   stdout.writeln('---');
-
-  final decoded = _tryDecodeJson(raw);
-  if (decoded == null) {
-    stderr.writeln('Failed to decode JSON.');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'Failed to decode JSON');
-    exit(1);
-  }
-
-  ParsedExpenseResult result;
-  try {
-    result = ParsedExpenseResult.fromJson(decoded);
-  } catch (e) {
-    stderr.writeln('fromJson error: $e');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'fromJson: $e');
-    exit(1);
-  }
-
-  final validationError = _validateResult(result);
-  if (validationError != null) {
-    stderr.writeln('Validation: $validationError');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'Validation: $validationError');
-    exit(1);
-  }
-
-  final gap = result.parseConfidence == 'confident' ? _findGap(result) : null;
-  if (gap != null) {
-    stderr.writeln('GAP: $gap');
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'GAP: $gap');
-    exit(1);
-  }
-
-  if (result.description.trim().isEmpty) {
-    result = ParsedExpenseResult(
-      amount: result.amount,
-      description: 'Expense',
-      category: result.category,
-      splitType: result.splitType,
-      participantNames: result.participantNames,
-      payerName: result.payerName,
-      excludedNames: result.excludedNames,
-      exactAmountsByName: result.exactAmountsByName,
-      percentageByName: result.percentageByName,
-      sharesByName: result.sharesByName,
-      needsClarification: result.needsClarification,
-      clarificationQuestion: result.clarificationQuestion,
-      parseConfidence: result.parseConfidence,
-      constraintFlags: result.constraintFlags,
-      notes: result.notes,
-      rejectReason: result.rejectReason,
-    );
-  }
-
-  _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: null);
-
   final outcome = result.parseConfidence == 'reject'
       ? 'REJECT'
       : result.parseConfidence == 'constrained'
@@ -216,7 +110,7 @@ void _recordRun({
   final buf = StringBuffer();
   buf.writeln('');
   buf.writeln('---');
-  buf.writeln('$ts');
+  buf.writeln(ts);
   buf.writeln('INPUT: "$userInput"');
   buf.writeln('MEMBERS: $members');
   if (rawJson != null) buf.writeln('RAW_JSON: $rawJson');
@@ -244,6 +138,130 @@ void _recordRun({
     final file = File(_logPath);
     file.writeAsStringSync(buf.toString(), mode: FileMode.append);
   } catch (_) {}
+}
+
+Future<void> _runBatch(String apiKey, String path) async {
+  final file = File(path);
+  if (!file.existsSync()) {
+    stderr.writeln('File not found: $path');
+    exit(1);
+  }
+  final lines = file
+      .readAsStringSync()
+      .split('\n')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  const memberListStr = 'Rishi, Prasi, Alex, Sam, Jordan';
+  const currentUser = 'Rishi';
+  stdout.writeln('Stress run: ${lines.length} inputs from $path (${_minIntervalSeconds}s between requests)');
+  stdout.writeln('---');
+  for (var i = 0; i < lines.length; i++) {
+    final input = lines[i];
+    final preview = input.length > 55 ? '${input.substring(0, 55)}...' : input;
+    final run = await _runOne(apiKey, input, memberListStr, currentUser);
+    final status = run.error != null ? 'ERROR: ${run.error}' : (run.result!.parseConfidence == 'reject' ? 'REJECT' : run.result!.parseConfidence == 'constrained' ? 'CONSTRAINED' : 'CONFIDENT');
+    stdout.writeln('[${i + 1}/${lines.length}] $preview ... $status');
+  }
+  stdout.writeln('Done. All runs recorded to $_logPath');
+}
+
+Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
+  String apiKey,
+  String userInput,
+  String memberListStr,
+  String? currentUser,
+) async {
+  final memberList = ' $memberListStr';
+  final recentExamples = _loadRecentExamplesFromLog(_maxRecentExamples);
+  final systemPrompt = _buildSystemPrompt(memberList, currentUser, recentExamples);
+  final body = {
+    'model': _model,
+    'messages': [
+      {'role': 'system', 'content': systemPrompt},
+      {'role': 'user', 'content': userInput.trim()},
+    ],
+    'temperature': 0,
+    'max_tokens': 256,
+  };
+  await _throttleForRateLimit();
+  http.Response response = await _post(apiKey, body);
+  _markRequestDone();
+  if (response.statusCode == 429) {
+    final waitSeconds = _retryAfterSeconds(response);
+    await Future<void>.delayed(Duration(seconds: waitSeconds));
+    response = await _post(apiKey, body);
+    _markRequestDone();
+    if (response.statusCode == 429) {
+      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: '429 rate limit');
+      return (result: null, rawJson: null, error: '429 rate limit');
+    }
+  }
+  if (response.statusCode != 200) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
+    return (result: null, rawJson: null, error: 'API ${response.statusCode}');
+  }
+  final map = jsonDecode(response.body) as Map<String, dynamic>?;
+  if (map == null) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Invalid API response');
+    return (result: null, rawJson: null, error: 'Invalid API response');
+  }
+  final choices = map['choices'] as List?;
+  final first = choices?.isNotEmpty == true ? choices!.first : null;
+  final message = first is Map<String, dynamic> ? first['message'] : null;
+  final content = message is Map<String, dynamic> ? message['content'] : null;
+  String raw = (content is String) ? content.trim() : '';
+  if (raw.isEmpty) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Empty content from API');
+    return (result: null, rawJson: null, error: 'Empty content from API');
+  }
+  raw = raw.replaceAll('\uFEFF', '');
+  raw = _extractJson(raw);
+  raw = _fixCommonJsonIssues(raw);
+  final decoded = _tryDecodeJson(raw);
+  if (decoded == null) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'Failed to decode JSON');
+    return (result: null, rawJson: raw, error: 'Failed to decode JSON');
+  }
+  ParsedExpenseResult result;
+  try {
+    result = ParsedExpenseResult.fromJson(decoded);
+  } catch (e) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'fromJson: $e');
+    return (result: null, rawJson: null, error: 'fromJson: $e');
+  }
+  final validationError = _validateResult(result);
+  if (validationError != null) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'Validation: $validationError');
+    return (result: result, rawJson: raw, error: validationError);
+  }
+  final gap = result.parseConfidence == 'confident' ? _findGap(result) : null;
+  if (gap != null) {
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'GAP: $gap');
+    return (result: result, rawJson: raw, error: gap);
+  }
+  if (result.description.trim().isEmpty) {
+    result = ParsedExpenseResult(
+      amount: result.amount,
+      description: 'Expense',
+      category: result.category,
+      splitType: result.splitType,
+      participantNames: result.participantNames,
+      payerName: result.payerName,
+      excludedNames: result.excludedNames,
+      exactAmountsByName: result.exactAmountsByName,
+      percentageByName: result.percentageByName,
+      sharesByName: result.sharesByName,
+      needsClarification: result.needsClarification,
+      clarificationQuestion: result.clarificationQuestion,
+      parseConfidence: result.parseConfidence,
+      constraintFlags: result.constraintFlags,
+      notes: result.notes,
+      rejectReason: result.rejectReason,
+    );
+  }
+  _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: null);
+  return (result: result, rawJson: raw, error: null);
 }
 
 List<({String input, String json})> _loadRecentExamplesFromLog(int maxCount) {
@@ -477,7 +495,7 @@ Future<void> _throttleForRateLimit() async {
   if (elapsed < _minIntervalSeconds) {
     final wait = (_minIntervalSeconds - elapsed).ceil();
     if (wait > 0) {
-      stdout.writeln('Rate limit $_rateLimitTpm TPM: waiting ${wait}s...');
+      stderr.writeln('Rate limit $_rateLimitTpm TPM: waiting ${wait}s...');
       await Future<void>.delayed(Duration(seconds: wait));
     }
   }
