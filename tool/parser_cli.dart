@@ -2,8 +2,11 @@
 // Iterate on this CLI until perfect; do not touch the app parser (groq_expense_parser_service.dart) until then.
 // Includes "curious student" behavior: when unclear, output needsClarification + clarificationQuestion instead of guessing.
 // Records each run to tool/parser_runs.log (input + raw JSON + parsed params) for debugging splits.
+// Prompt size is capped (e.g. _maxRecentExamples) to avoid Groq rate limits on single-request tokens.
 // Run: dart tool/parser_cli.dart "Dinner 500"
 //      dart tool/parser_cli.dart "my food 400 alex 200" "Rishi, Prasi, Alex" "Rishi"
+// Batch (stress cases, rate-limited): dart tool/parser_cli.dart --stress [file]
+//      Default file: tool/parser_stress_inputs.txt
 
 import 'dart:convert';
 import 'dart:io';
@@ -15,6 +18,7 @@ const _model = 'llama-3.3-70b-versatile';
 const _logPath = 'tool/parser_runs.log';
 const _rateLimitTpm = 12000;
 const _minIntervalSeconds = 4;
+const _maxRecentExamples = 5;
 
 const _lastRequestStampPath = 'tool/.parser_last_request';
 
@@ -39,7 +43,7 @@ void main(List<String> args) async {
   if (currentUser != null) stdout.writeln('Current user: $currentUser');
   stdout.writeln('---');
 
-  final recentExamples = _loadRecentExamplesFromLog(10);
+  final recentExamples = _loadRecentExamplesFromLog(_maxRecentExamples);
   if (recentExamples.isNotEmpty) stdout.writeln('Using ${recentExamples.length} recent examples from log.');
   final systemPrompt = _buildSystemPrompt(memberList, currentUser, recentExamples);
   final body = {
