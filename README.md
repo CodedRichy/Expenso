@@ -98,10 +98,10 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
   ─────                                              ────────
 
   ┌─────────────────┐                          ┌─────────────────┐
-  │  "Settle now"   │                          │                 │
-  │                 │                          │                 │
-  │  You owe ₹450   │                          │  ₹450 incoming  │
-  │  to Ash         │                          │  from Ash       │
+  │  Pay / Settle   │                          │                 │
+  │  (or View       │                          │  ₹450 incoming  │
+  │   settlement)   │                          │  from Ash       │
+  │  You owe ₹450   │                          │                 │
   └────────┬────────┘                          └────────┬────────┘
            │                                            │
            ▼                                            │
@@ -271,7 +271,7 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 
 - **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only).
 - **Expenses:** In group detail, use the Magic Bar (e.g. "Dinner 1200 with Ash") or tap to add manually. Choose payer, split type, and participants; confirm. Recent add shows an undo screen for a few seconds.
-- **Settlement:** Creator taps "Settle now" to freeze the cycle; when status is "Settling", creator taps "Start New Cycle" to archive and begin a new cycle. Members pay dues via UPI (in-app picker shows installed apps) or mark cash payments; receivers confirm receipt.
+- **Settlement:** Everyone sees **Pay / Settle** (or **View settlement** when you have no dues), which opens the settlement screen (UPI, Mark as paid, cash). **Creator only** also sees **Close cycle** (or **Start New Cycle** when cycle is settling); confirm in the dialog archives the cycle and starts a new one. Members pay dues via UPI (in-app picker) or mark cash; receivers confirm receipt.
 - **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID. Log out to switch accounts.
 
 Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
