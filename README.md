@@ -75,7 +75,7 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 
   "Groceries 800 exclude Ash" ──►  ₹800 • Groceries • Exclude Ash from split
 
-  "Movie 300 Ash Ash"           ──►  ₹300 • Movie • Split: You + Ash + Ash
+  "Movie 300 me and Ash"         ──►  ₹300 • Movie • Split: You + Ash
 
                                           │
                                           ▼
@@ -281,6 +281,7 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 - [DATA_FLOW_TABLES.md](docs/DATA_FLOW_TABLES.md) — Screen-to-database data mapping (SQL table format)
 - [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
 - [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
+- [features/SETTLEMENT_UI_FLOW.md](docs/features/SETTLEMENT_UI_FLOW.md) — Group Detail settlement buttons (Pay / Settle, Close cycle)
 - [features/MONEY_CANONICALIZATION.md](docs/features/MONEY_CANONICALIZATION.md) — Canonical implementation plan
 - [features/MONEY_PHASE2.md](docs/features/MONEY_PHASE2.md) — Phase 2 invariant enforcement plan
 

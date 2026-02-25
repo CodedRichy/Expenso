@@ -97,7 +97,7 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 ### Settlement Flow
 
-1. User taps "Settle now" with dues → navigates to settlement confirmation
+1. User taps "Pay / Settle" or "View settlement" → navigates to settlement confirmation
 2. `CycleRepository.loadPaymentAttempts()` fetches existing attempts from Firestore
 3. `SettlementEngine.computePaymentRoutes()` derives minimal payment routes
 4. `getPaymentsForMember()` filters to current user's outgoing payments
@@ -135,8 +135,8 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
     - Lists UPI payments marked `confirmed_by_payer` and cash payments `cash_pending`
     - Receiver taps "Confirm" → `markPaymentConfirmedByReceiver()` → status `confirmed_by_receiver`
 18. Activity feed shows enriched messages: "Ash marked ₹500 as paid to Ash", "Ash confirmed receiving ₹500"
-13. Creator taps "Settle now" with no dues → `settleAndRestartCycle(groupId)` called
-14. Firestore updated: `cycleStatus: 'settling'`
+13. Creator taps "Close cycle" (or "Start New Cycle" when settling) → dialog; on Confirm, `settleAndRestartCycle(groupId)` or `archiveAndRestart(groupId)` called
+14. (When creator confirms Close cycle) Firestore updated: `cycleStatus: 'settling'`
 15. UI shows settling state, expense editing disabled
 16. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
 17. `FirestoreService.archiveCycleExpenses()`:

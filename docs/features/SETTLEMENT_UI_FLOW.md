@@ -1,12 +1,8 @@
 # Settlement & Close-Cycle UI Flow
 
-Single source of truth for what the main button on Group Detail does and when you see UPI vs close-cycle.
+Single source of truth for Group Detail settlement actions (Pay / Settle, View settlement, Close cycle).
 
----
-
-## The one main button
-
-On **Group Detail**, when the cycle is not settled, you see **one primary button**. Its label and behavior depend on **cycle state** and **your role**.
+**Current implementation:** Two buttons — **Pay / Settle** (or **View settlement**) for everyone; **Close cycle** / **Start New Cycle** for creator only. See **Current implementation** at the end of this doc.
 
 ---
 

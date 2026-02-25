@@ -292,10 +292,10 @@ Wrapper that applies dark mode background gradient (`#0B0B0D → #121216`). Used
 ### Settlement — Passive state (Freeze before Wipe) & God Mode (GroupDetail)
 
 - **CycleStatus:** `active` → **settling** (Phase 1: freeze) → **closed** + new active (Phase 2: archive & restart).
-- **Settlement UI (Group Detail):** Two actions. (1) **Pay / Settle** or **View settlement** (everyone): opens `/settlement-confirmation`. (2) **Close cycle** or **Start New Cycle** (creator only): dialog; on Confirm, active cycle → `settleAndRestartCycle(groupId)` (Phase 1: `CycleStatus.settling`); settling cycle → `archiveAndRestart(groupId)` (Phase 2). See **docs/features/SETTLEMENT_UI_FLOW.md**..
+- **Settlement UI (Group Detail):** Two actions. (1) **Pay / Settle** or **View settlement** (everyone): opens `/settlement-confirmation`. (2) **Close cycle** or **Start New Cycle** (creator only): dialog; on Confirm, active cycle → `settleAndRestartCycle(groupId)` (Phase 1: `CycleStatus.settling`); settling cycle → `archiveAndRestart(groupId)` (Phase 2). See **docs/features/SETTLEMENT_UI_FLOW.md**.
 - **Passive state (`isPassive = activeCycle.status == CycleStatus.settling`):** Amount and status use muted gray (0xFF9B9B9B); status text “Cycle Settled - Pending Restart”. Hide “Add expense” row. Disable expense log item taps (no navigation to edit). “Settle up” remains visible. Only “Start New Cycle” performs the wipe.
 - **Permissions:** `canEditCycle` returns false when cycle is **settling** for everyone (including leader). Edit screen and add expense are read-only / hidden.
-- **If member:** “Settle now” → snackbar “Request sent to group leader.”
+- **If member (non-creator):** Only Pay / Settle or View settlement; no Close cycle button.
 - **“Pay via UPI”** (secondary): navigates to settlement-confirmation with `{ group, method: 'razorpay' }`. User sees their dues and can pay via Razorpay Checkout. Design: primary button black, borderRadius 8, no elevation; balanced vertical padding before Expense Log.
 
 ### Recording vs settlement (we only mark it down)
