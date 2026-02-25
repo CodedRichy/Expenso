@@ -154,16 +154,22 @@ Future<void> _runBatch(String apiKey, String path) async {
       .toList();
   const memberListStr = 'Rishi, Prasi, Alex, Sam, Jordan';
   const currentUser = 'Rishi';
+  var rateLimited = 0;
   stdout.writeln('Stress run: ${lines.length} inputs from $path (${_minIntervalSeconds}s between requests)');
   stdout.writeln('---');
   for (var i = 0; i < lines.length; i++) {
     final input = lines[i];
     final preview = input.length > 55 ? '${input.substring(0, 55)}...' : input;
     final run = await _runOne(apiKey, input, memberListStr, currentUser);
-    final status = run.error != null ? 'ERROR: ${run.error}' : (run.result!.parseConfidence == 'reject' ? 'REJECT' : run.result!.parseConfidence == 'constrained' ? 'CONSTRAINED' : 'CONFIDENT');
-    stdout.writeln('[${i + 1}/${lines.length}] $preview ... $status');
+    if (run.error == '429 rate limit') {
+      rateLimited++;
+      stdout.writeln('[${i + 1}/${lines.length}] $preview ... rate-limited');
+    } else {
+      final status = run.error != null ? 'ERROR: ${run.error}' : (run.result!.parseConfidence == 'reject' ? 'REJECT' : run.result!.parseConfidence == 'constrained' ? 'CONSTRAINED' : 'CONFIDENT');
+      stdout.writeln('[${i + 1}/${lines.length}] $preview ... $status');
+    }
   }
-  stdout.writeln('Done. All runs recorded to $_logPath');
+  stdout.writeln('Done. ${rateLimited > 0 ? '$rateLimited rate-limited. ' : ''}Runs recorded to $_logPath');
 }
 
 Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
@@ -193,7 +199,6 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
     response = await _post(apiKey, body);
     _markRequestDone();
     if (response.statusCode == 429) {
-      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: '429 rate limit');
       return (result: null, rawJson: null, error: '429 rate limit');
     }
   }
