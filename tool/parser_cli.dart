@@ -21,6 +21,7 @@ const _minIntervalSeconds = 4;
 const _maxRecentExamples = 5;
 
 const _lastRequestStampPath = 'tool/.parser_last_request';
+const _stressInputsPath = 'tool/parser_stress_inputs.txt';
 
 void main(List<String> args) async {
   final env = _loadEnv();
@@ -28,6 +29,11 @@ void main(List<String> args) async {
   if (apiKey == null || apiKey.isEmpty) {
     stderr.writeln('Set GROQTRIAL_API_KEY in .env');
     exit(1);
+  }
+
+  if (args.isNotEmpty && args[0] == '--stress') {
+    await _runBatch(apiKey, args.length > 1 ? args[1] : _stressInputsPath);
+    return;
   }
 
   final userInput = args.isEmpty ? 'Dinner 500' : args[0];
