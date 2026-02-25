@@ -1,5 +1,7 @@
 # Expenso
 
+[![Build Android](https://github.com/CodedRichy/Expenso/actions/workflows/build.yml/badge.svg)](https://github.com/CodedRichy/Expenso/actions/workflows/build.yml)
+
 **Group expense tracking done right.** Track who paid what, see who owes whom, settle via UPI, repeat.
 
 ```
