@@ -163,6 +163,37 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 
 ## 4. Invariants & Safety Rules
 
+### 4.1 Ledger-safe state machine (parser → ledger)
+
+Parsed intents move through the following states. This is the backbone for production-grade handling.
+
+| State | Meaning |
+|-------|--------|
+| **NEW** | Raw parsed intent. Nothing touched. |
+| **VALIDATED** | Schema + invariants checked (amount > 0, payer exists, intent allowed). No balances updated yet. |
+| **FROZEN** | Used for constrained expenses, advances, deferred splits. Stored, visible, not applied. |
+| **APPLIED** | Balances updated. Irreversible without an adjustment. Only CONFIDENT events reach here. |
+| **CANCELLED** | Rejected or invalidated. |
+
+**Allowed transitions:**
+
+- `NEW → VALIDATED → APPLIED`
+- `NEW → VALIDATED → FROZEN`
+- `NEW → CANCELLED`
+- `FROZEN → APPLIED`
+
+**Never:** `FROZEN → CANCELLED` (history matters); `APPLIED → EDITED` (use adjustment); `SETTLEMENT → FROZEN` (settlements are applied or rejected).
+
+### 4.2 Ledger invariants (parser/ledger)
+
+- **Sum of balances = 0** across all members.
+- **Applied events are append-only.** No in-place edit; use compensation or adjustment.
+- **Settlements never create debt.** They only clear or transfer existing balances.
+- **Notes never affect money.** NOTE intents must not touch balances.
+- **Confidence can downgrade, never upgrade automatically.** If confidence is wrong, the ledger is wrong.
+
+### 4.3 System invariants (reference)
+
 | # | Invariant | Status |
 |---|-----------|--------|
 | 1 | **Expense amounts must be positive and finite** | ✅ Enforced by code (`validateExpenseAmount`, `SettlementEngine` skips invalid) |
