@@ -142,13 +142,34 @@ class ParsedExpenseResult {
 class GroqExpenseParserService {
   GroqExpenseParserService._();
 
-  /// Returns an error message if [result] is invalid (amount not positive or not finite); null if valid.
+  /// Returns an error message if [result] is invalid; null if valid.
+  /// Checks: amount valid, and for exact/percentage splits that amounts sum correctly (no gap).
   static String? validateResult(ParsedExpenseResult result) {
     if (result.amount.isNaN || result.amount.isInfinite) {
       return 'Amount must be a valid number.';
     }
     if (result.amount <= 0) {
       return 'Amount must be greater than 0.';
+    }
+    final gap = _findGap(result);
+    if (gap != null) return gap;
+    return null;
+  }
+
+  /// Returns a description of a gap if split amounts don't match total; null if no gap.
+  static String? _findGap(ParsedExpenseResult result) {
+    const tolerance = 0.01;
+    if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
+      final sum = result.exactAmountsByName.values.fold<double>(0, (a, b) => a + b);
+      if ((sum - result.amount).abs() > tolerance) {
+        return 'Exact split gap: amounts sum to $sum but total is ${result.amount}.';
+      }
+    }
+    if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
+      final sum = result.percentageByName.values.fold<double>(0, (a, b) => a + b);
+      if ((sum - 100).abs() > tolerance) {
+        return 'Percentage split gap: percentages sum to $sum, should be 100.';
+      }
     }
     return null;
   }
@@ -165,7 +186,10 @@ class GroqExpenseParserService {
   /// System prompt for expense parsing. Designed to work with any LLM (model-agnostic).
   /// When a parse error occurs: document it in docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
   /// and add a rule, anti-pattern in COMMON MISTAKES, or few-shot example. Preserve splitType order: exact → percentage → shares → exclude → even.
-  static String _buildSystemPrompt(String memberList) {
+  static String _buildSystemPrompt(String memberList, [String? currentUserName]) {
+    final currentUserLine = currentUserName != null && currentUserName.isNotEmpty
+        ? '\nCurrent user (I/me/my — use this name in exactAmounts and sharesAmounts when the message says "I had X", "my X was N", "I took N shares", or "rest between me and X"): $currentUserName'
+        : '';
     return '''
 You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly one JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
 
@@ -175,30 +199,32 @@ Optional: payer (string), excluded (array), exactAmounts (name→number), percen
 Example shape: {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
 
 --- SCENARIO (infer in this order) ---
-1) WHO PAID? "X paid", "paid by X", "X bought/got/covered" → payer X. Else omit payer (current user).
-2) WHO SHARES? "with X" / "for me and X" → participants = [X] or [X,Y] (never "me"). "everyone"/"all"/"the group" OR payer named but no "with Y" → participants = [].
+1) WHO PAID? "X paid", "paid by X", "X bought/got/covered" → payer X (only if X is in member list). "I paid", "I had to pay", or payer name not in list (e.g. slang) → omit payer.
+2) WHO SHARES? "with X" / "for me and X" → participants = [X] or [X,Y] — never include current user in participants. "everyone"/"all"/"the group" OR payer named but no "with Y" → participants = [].
 3) SPLIT TYPE? Per-person amounts → exact. Percentages → percentage. Share counts (nights, etc.) → shares. Someone excluded → exclude. Else → even.
 Key: "X paid 200" (no "with Y") = payer:X, participants:[], even. "200 with X" or "dinner with X 200" = participants:[X], even.
 
 --- MEMBER LIST (use ONLY these spellings) ---
-$memberList
-Match typos/nicknames to this list; output exact spelling only.
+$memberList$currentUserLine
+Match typos/nicknames to this list; output exact spelling only. Payer must be from this list or omit.
 
 --- FIELD RULES ---
 • amount: One numeric total. Strip currency and thousand separators (1,200 → 1200). Decimals OK.
 • description: 1–3 words, title-case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
 • category: Food/Transport/Utilities when obvious; "" otherwise.
-• splitType (first match): (a) exact — per-person amounts; exactAmounts, no "me". (b) percentage — percentageAmounts sum 100. (c) shares — sharesAmounts (e.g. nights). (d) exclude — excluded list; triggers: except/exclude/not/skip/minus/bar/didn't eat/only for me and Y. (e) even — default.
-• participants: Others only (app adds current user). "with X" → [X]. "me and A and B" → [A,B]. "everyone" or payer-only → [].
-• payer: Set only when someone else paid; omit for "I paid" or unspecified.
+• splitType (first match): (a) exact — per-person amounts; exactAmounts must include everyone in the split; sum must equal total. (b) percentage — percentageAmounts sum 100. (c) shares — sharesAmounts must include everyone. (d) exclude — excluded list. (e) even — default.
+• participants: Others only — never include current user. "Split between A, B, C" when current user is A → participants:[B,C]. "with X" → [X]. "everyone" or payer-only → [].
+• exactAmounts: Must include current user when message says "I had X", "my X was N", or "rest between me and X". Use current user name from the prompt so sum = total.
+• sharesAmounts: Must include current user when message says "I took N shares". Use current user name so every person in the split has an entry.
+• payer: Only from member list. Omit for "I paid" or if name not in list.
 
 --- EDGE CASES ---
 Unmatched name → use as written or best guess from list. Ambiguous amount → use main total. Even vs exact unclear → prefer even unless per-person amounts given. Output valid JSON: double-quoted keys/strings, no trailing commas.
 
 --- COMMON MISTAKES (wrong → right) ---
-"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B] (not [] or ["me",…]). Other person paid → RIGHT: include payer. "amount with A and B" → RIGHT: participants:["A","B"]. "dinner with X 200" → RIGHT: participants:[X].
+"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B] (not [] or ["me",…]). "Split between A, B, C" with current user A → RIGHT: participants:[B,C] (not [A,B,C]). "I had 800, B 200" total 1000 → RIGHT: exactAmounts include current user: {"A":800,"B":200} so sum=1000. "I took 2 shares, B 1" → RIGHT: sharesAmounts {"A":2,"B":1}. Payer name not in list (e.g. "lowk paid") → RIGHT: omit payer. "amount with A and B" → RIGHT: participants:["A","B"]. "dinner with X 200" → RIGHT: participants:[X].
 
---- EXAMPLES (member list: A, B, C) ---
+--- EXAMPLES (member list: A, B, C; current user: A) ---
 "ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}
 "dinr 450 w b" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
 "bt groceries 800 w everyone" -> {"amount":800,"description":"Groceries","category":"Food","splitType":"even","participants":[]}
@@ -213,10 +239,10 @@ Unmatched name → use as written or best guess from list. Ambiguous amount → 
 "Dinner 2000 split all except C" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
 "1500 for pizza exclude B" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["B"]}
 "Dinner 800 not C" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
-"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":600}}
+"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
 "Lunch 500 A 200 C 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":200,"C":300}}
-"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"B":200}}
-"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"B":800}}
+"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":200}}
+"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":700,"B":800}}
 "Rent 10000 split 60-40 with B" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
 "Bill 1200 A 30% B 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":30,"B":70}}
 "Airbnb 1500 A 2 nights B 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"B":3}}
@@ -228,9 +254,12 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
   /// Returns parsed expense. Allows partial success: if amount is valid, returns a result
   /// even when description or participants are missing. If the API fails, falls back to
   /// local number extraction so the Magic Bar never fails as long as a number is typed.
+  /// [currentUserDisplayName] when set is injected into the prompt so "I"/"me"/"my" map to
+  /// that name in exactAmounts/sharesAmounts and payer is omitted when the user says they paid.
   static Future<ParsedExpenseResult> parse({
     required String userInput,
     required List<String> groupMemberNames,
+    String? currentUserDisplayName,
   }) async {
     final apiKey = _apiKey;
     if (apiKey == null) {
@@ -242,7 +271,7 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
     final memberList = groupMemberNames.isEmpty
         ? ' (no members listed)'
         : ' ${groupMemberNames.join(", ")}';
-    final systemPrompt = _buildSystemPrompt(memberList);
+    final systemPrompt = _buildSystemPrompt(memberList, currentUserDisplayName?.trim());
 
     final body = {
       'model': _model,
@@ -258,7 +287,8 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
       http.Response response = await _post(apiKey, body);
 
       if (response.statusCode == 429) {
-        await Future<void>.delayed(const Duration(seconds: 2));
+        final waitSeconds = _retryAfterSeconds(response);
+        await Future<void>.delayed(Duration(seconds: waitSeconds));
         response = await _post(apiKey, body);
         if (response.statusCode == 429) {
           debugPrint('Groq API rate limit (429) after retry: ${response.body}');
@@ -428,6 +458,15 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
   static String _fixCommonJsonIssues(String raw) {
     raw = raw.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
     return raw;
+  }
+
+  static int _retryAfterSeconds(http.Response response) {
+    final v = response.headers['retry-after']?.trim();
+    if (v == null || v.isEmpty) return 2;
+    final s = int.tryParse(v);
+    if (s == null || s < 1) return 2;
+    if (s > 60) return 60;
+    return s;
   }
 
   static Future<http.Response> _post(String apiKey, Map<String, dynamic> body) {

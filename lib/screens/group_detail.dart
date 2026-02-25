@@ -1518,6 +1518,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       final result = await GroqExpenseParserService.parse(
         userInput: input,
         groupMemberNames: memberNames,
+        currentUserDisplayName: repo.currentUserName.isEmpty ? null : repo.currentUserName,
       );
       if (!mounted) return;
       

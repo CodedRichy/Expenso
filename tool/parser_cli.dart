@@ -1,0 +1,549 @@
+// CLI for testing the expense parser. Uses GROQTRIAL_API_KEY from .env.
+// Iterate on this CLI until perfect; do not touch the app parser (groq_expense_parser_service.dart) until then.
+// Includes "curious student" behavior: when unclear, output needsClarification + clarificationQuestion instead of guessing.
+// Records each run to tool/parser_runs.log (input + raw JSON + parsed params) for debugging splits.
+// Run: dart tool/parser_cli.dart "Dinner 500"
+//      dart tool/parser_cli.dart "my food 400 alex 200" "Rishi, Prasi, Alex" "Rishi"
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+
+const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
+const _model = 'llama-3.3-70b-versatile';
+const _logPath = 'tool/parser_runs.log';
+const _rateLimitTpm = 12000;
+const _minIntervalSeconds = 4;
+
+const _lastRequestStampPath = 'tool/.parser_last_request';
+
+void main(List<String> args) async {
+  final env = _loadEnv();
+  final apiKey = env['GROQTRIAL_API_KEY']?.trim();
+  if (apiKey == null || apiKey.isEmpty) {
+    stderr.writeln('Set GROQTRIAL_API_KEY in .env');
+    exit(1);
+  }
+
+  final userInput = args.isEmpty ? 'Dinner 500' : args[0];
+  final memberListStr = args.length > 1
+      ? args[1].split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).join(", ")
+      : 'Rishi, Prasi, Alex, Sam, Jordan';
+  final memberList = ' $memberListStr';
+  final members = memberListStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  final currentUser = args.length > 2 ? args[2].trim() : (members.isNotEmpty ? members.first : null);
+
+  stdout.writeln('Input: "$userInput"');
+  stdout.writeln('Members:$memberList');
+  if (currentUser != null) stdout.writeln('Current user: $currentUser');
+  stdout.writeln('---');
+
+  final systemPrompt = _buildSystemPrompt(memberList, currentUser);
+  final body = {
+    'model': _model,
+    'messages': [
+      {'role': 'system', 'content': systemPrompt},
+      {'role': 'user', 'content': userInput.trim()},
+    ],
+    'temperature': 0,
+    'max_tokens': 256,
+  };
+
+  await _throttleForRateLimit();
+  http.Response response = await _post(apiKey, body);
+  _markRequestDone();
+  if (response.statusCode == 429) {
+    final waitSeconds = _retryAfterSeconds(response);
+    stdout.writeln('429 rate limit; waiting ${waitSeconds}s...');
+    await Future<void>.delayed(Duration(seconds: waitSeconds));
+    response = await _post(apiKey, body);
+    _markRequestDone();
+    if (response.statusCode == 429) {
+      stderr.writeln('Still rate limited. Try again later.');
+      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: '429 rate limit');
+      exit(1);
+    }
+  }
+
+  if (response.statusCode != 200) {
+    stderr.writeln('API ${response.statusCode}: ${response.body}');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
+    exit(1);
+  }
+
+  final map = jsonDecode(response.body) as Map<String, dynamic>?;
+  if (map == null) {
+    stderr.writeln('Invalid API response.');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Invalid API response');
+    exit(1);
+  }
+
+  final choices = map['choices'] as List?;
+  final first = choices?.isNotEmpty == true ? choices!.first : null;
+  final message = first is Map<String, dynamic> ? first['message'] : null;
+  final content = message is Map<String, dynamic> ? message['content'] : null;
+  String raw = (content is String) ? content.trim() : '';
+
+  if (raw.isEmpty) {
+    stderr.writeln('Empty content from API.');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Empty content from API');
+    exit(1);
+  }
+
+  raw = raw.replaceAll('\uFEFF', '');
+  raw = _extractJson(raw);
+  raw = _fixCommonJsonIssues(raw);
+
+  stdout.writeln('Raw JSON from API:');
+  stdout.writeln(raw);
+  stdout.writeln('---');
+
+  final decoded = _tryDecodeJson(raw);
+  if (decoded == null) {
+    stderr.writeln('Failed to decode JSON.');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'Failed to decode JSON');
+    exit(1);
+  }
+
+  ParsedExpenseResult result;
+  try {
+    result = ParsedExpenseResult.fromJson(decoded);
+  } catch (e) {
+    stderr.writeln('fromJson error: $e');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'fromJson: $e');
+    exit(1);
+  }
+
+  final validationError = _validateResult(result);
+  if (validationError != null) {
+    stderr.writeln('Validation: $validationError');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'Validation: $validationError');
+    exit(1);
+  }
+
+  final gap = result.parseConfidence == 'confident' ? _findGap(result) : null;
+  if (gap != null) {
+    stderr.writeln('GAP: $gap');
+    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'GAP: $gap');
+    exit(1);
+  }
+
+  if (result.description.trim().isEmpty) {
+    result = ParsedExpenseResult(
+      amount: result.amount,
+      description: 'Expense',
+      category: result.category,
+      splitType: result.splitType,
+      participantNames: result.participantNames,
+      payerName: result.payerName,
+      excludedNames: result.excludedNames,
+      exactAmountsByName: result.exactAmountsByName,
+      percentageByName: result.percentageByName,
+      sharesByName: result.sharesByName,
+      needsClarification: result.needsClarification,
+      clarificationQuestion: result.clarificationQuestion,
+      parseConfidence: result.parseConfidence,
+      constraintFlags: result.constraintFlags,
+    );
+  }
+
+  _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: null);
+
+  final outcome = result.parseConfidence == 'reject'
+      ? 'REJECT'
+      : result.parseConfidence == 'constrained'
+          ? 'CONSTRAINED'
+          : 'CONFIDENT';
+  stdout.writeln('Outcome: $outcome');
+  if (result.constraintFlags.isNotEmpty) stdout.writeln('  constraintFlags: ${result.constraintFlags}');
+  stdout.writeln('Parsed: amount=${result.amount} description="${result.description}" category="${result.category}" splitType=${result.splitType} participants=${result.participantNames} payer=${result.payerName}');
+  if (result.excludedNames.isNotEmpty) stdout.writeln('  excluded: ${result.excludedNames}');
+  if (result.exactAmountsByName.isNotEmpty) stdout.writeln('  exactAmounts: ${result.exactAmountsByName}');
+  if (result.percentageByName.isNotEmpty) stdout.writeln('  percentageAmounts: ${result.percentageByName}');
+  if (result.sharesByName.isNotEmpty) stdout.writeln('  sharesAmounts: ${result.sharesByName}');
+  if (result.parseConfidence == 'reject') {
+    stdout.writeln('(Needs clarification — no questions; do not write to ledger)');
+  } else if (result.needsClarification && result.clarificationQuestion != null) {
+    stdout.writeln('NEEDS CLARIFICATION: ${result.clarificationQuestion}');
+  }
+  stdout.writeln('OK');
+  stdout.writeln('Recorded to $_logPath');
+}
+
+String? _findGap(ParsedExpenseResult result) {
+  const tolerance = 0.01;
+  if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
+    final sum = result.exactAmountsByName.values.fold<double>(0, (a, b) => a + b);
+    if ((sum - result.amount).abs() > tolerance) {
+      return 'Exact split: amounts sum to $sum but total is ${result.amount}.';
+    }
+  }
+  if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
+    final sum = result.percentageByName.values.fold<double>(0, (a, b) => a + b);
+    if ((sum - 100).abs() > tolerance) {
+      return 'Percentage split: sum is $sum, should be 100.';
+    }
+  }
+  return null;
+}
+
+void _recordRun({
+  required String userInput,
+  required String members,
+  required String? rawJson,
+  required ParsedExpenseResult? result,
+  required String? error,
+}) {
+  final now = DateTime.now().toUtc();
+  final ts = '${now.toIso8601String().replaceFirst('T', ' ').substring(0, 19)}Z';
+  final buf = StringBuffer();
+  buf.writeln('');
+  buf.writeln('---');
+  buf.writeln('$ts');
+  buf.writeln('INPUT: "$userInput"');
+  buf.writeln('MEMBERS: $members');
+  if (rawJson != null) buf.writeln('RAW_JSON: $rawJson');
+  if (error != null) buf.writeln('ERROR: $error');
+  if (result != null) {
+    buf.writeln('PARAMS:');
+    buf.writeln('  amount: ${result.amount}');
+    buf.writeln('  description: "${result.description}"');
+    buf.writeln('  category: "${result.category}"');
+    buf.writeln('  splitType: ${result.splitType}');
+    buf.writeln('  participants: ${result.participantNames}');
+    buf.writeln('  payer: ${result.payerName ?? "(none)"}');
+    buf.writeln('  excluded: ${result.excludedNames}');
+    buf.writeln('  exactAmounts: ${result.exactAmountsByName}');
+    buf.writeln('  percentageAmounts: ${result.percentageByName}');
+    buf.writeln('  sharesAmounts: ${result.sharesByName}');
+    buf.writeln('  parseConfidence: ${result.parseConfidence}');
+    if (result.constraintFlags.isNotEmpty) buf.writeln('  constraintFlags: ${result.constraintFlags}');
+    if (result.needsClarification) buf.writeln('  needsClarification: true');
+    if (result.clarificationQuestion != null) buf.writeln('  clarificationQuestion: "${result.clarificationQuestion}"');
+  }
+  try {
+    final file = File(_logPath);
+    file.writeAsStringSync(buf.toString(), mode: FileMode.append);
+  } catch (_) {}
+}
+
+Map<String, String> _loadEnv() {
+  final file = File('.env');
+  if (!file.existsSync()) return {};
+  final out = <String, String>{};
+  for (final line in file.readAsStringSync().split('\n')) {
+    final t = line.trim();
+    if (t.isEmpty || t.startsWith('#')) continue;
+    final i = t.indexOf('=');
+    if (i <= 0) continue;
+    final k = t.substring(0, i).trim();
+    var v = t.substring(i + 1).trim();
+    if (v.startsWith('"') && v.endsWith('"')) v = v.substring(1, v.length - 1);
+    if (v.startsWith("'") && v.endsWith("'")) v = v.substring(1, v.length - 1);
+    out[k] = v;
+  }
+  return out;
+}
+
+String _buildSystemPrompt(String memberList, [String? currentUserName]) {
+  final currentUserLine = currentUserName != null && currentUserName.isNotEmpty
+      ? '\nCurrent user (I/me/my — use this name in exactAmounts and sharesAmounts when the message says "I had X", "my X was N", "I took N shares", or "rest between me and X"): $currentUserName'
+      : '';
+  return '''
+You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly one JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
+
+--- OUTPUT SCHEMA (required every time) ---
+parseConfidence ("confident"|"constrained"|"reject"), amount (number; use 0 if unknown), description (string), category (string or ""), splitType ("even"|"exact"|"exclude"|"percentage"|"shares"), participants (array; [] = everyone when appropriate).
+Optional: payer (string), excluded (array), exactAmounts, percentageAmounts, sharesAmounts, constraintFlags (array of strings; only when parseConfidence is "constrained"), needsClarification (boolean; true when reject). When parseConfidence is "reject" do NOT set clarificationQuestion (no questions).
+Example: {"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+
+--- SCENARIO (infer in this order) ---
+1) WHO PAID? "X paid", "paid by X", "X bought/got/covered" → payer X (only if X is in member list). "I paid", "I had to pay", or payer name not in list (e.g. slang) → omit payer.
+2) WHO SHARES? "with X" / "for me and X" → participants = [X] or [X,Y] — never include current user in participants. "everyone"/"all"/"the group" OR payer named but no "with Y" → participants = [].
+3) SPLIT TYPE? Per-person amounts → exact. Percentages → percentage. Share counts (nights, etc.) → shares. Someone excluded → exclude. Else → even.
+Key: "X paid 200" (no "with Y") = payer:X, participants:[], even. "200 with X" or "dinner with X 200" = participants:[X], even.
+
+--- MEMBER LIST (use ONLY these spellings) ---
+$memberList$currentUserLine
+Match typos/nicknames to this list; output exact spelling only. Payer must be from this list or omit.
+
+--- FIELD RULES ---
+• amount: One numeric total. Strip currency and thousand separators (1,200 → 1200). Decimals OK.
+• description: 1–3 words, title-case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
+• category: Food/Transport/Utilities when obvious; "" otherwise.
+• splitType (first match): (a) exact — per-person amounts; exactAmounts must include everyone in the split; sum must equal total. (b) percentage — percentageAmounts sum 100. (c) shares — sharesAmounts must include everyone. (d) exclude — excluded list. (e) even — default.
+• participants: Others only — never include current user. "Split between A, B, C" when current user is A → participants:[B,C]. "with X" → [X]. "everyone" or payer-only → [].
+• exactAmounts: Must include current user when message says "I had X", "my X was N", or "rest between me and X". Use current user name from the prompt so sum = total.
+• sharesAmounts: Must include current user when message says "I took N shares". Use current user name so every person in the split has an entry.
+• payer: Only from member list. Omit for "I paid" or if name not in list.
+
+--- OUTCOME CONTRACT (anything else corrupts balances) ---
+• Confident parse → parseConfidence: "confident". Full valid expense; no flags. Write to ledger.
+• Constrained parse → parseConfidence: "constrained". Intent clear but something missing/ambiguous. Fill what you can; set constraintFlags (e.g. amountUnresolved, participantsUnknown, participantWeightsAmbiguous, pendingSettlement, advanceNotDistributed, cloneFromLast, selfOnly, balanceSmoothingNote). Write partial/flagged entry.
+• Reject → parseConfidence: "reject", needsClarification: true. Do NOT set clarificationQuestion (no questions). Use when: no participants and no rule, no amount, or impossible to infer safely. Do not write.
+
+--- WHEN UNCLEAR ---
+If you can still record a constrained partial (e.g. payer known, amount missing → amountUnresolved), use parseConfidence "constrained" and constraintFlags. If impossible to infer safely (e.g. "some of us ordered more" with no rule), use parseConfidence "reject"; never ask a question.
+
+--- EDGE CASES ---
+Unmatched name → use as written or best guess. Ambiguous amount → use main total or amountUnresolved. Reject when no amount and debt/ledger mutation implied. Output valid JSON: double-quoted keys/strings, no trailing commas.
+
+--- COMMON MISTAKES (wrong → right) ---
+"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B] (not [] or ["me",…]). "Split between A, B, C" with current user A → RIGHT: participants:[B,C] (not [A,B,C]). "I had 800, B 200" total 1000 → RIGHT: exactAmounts include current user: {"A":800,"B":200} so sum=1000. "I took 2 shares, B 1" → RIGHT: sharesAmounts {"A":2,"B":1}. Payer name not in list (e.g. "lowk paid") → RIGHT: omit payer. Unclear who is in the split or how to split → RIGHT: needsClarification: true, clarificationQuestion: one short question; do not guess. "amount with A and B" → RIGHT: participants:["A","B"]. "dinner with X 200" → RIGHT: participants:[X].
+
+--- EXAMPLES (member list: A, B, C; current user: A) ---
+"ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}
+"dinr 450 w b" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+"bt groceries 800 w everyone" -> {"amount":800,"description":"Groceries","category":"Food","splitType":"even","participants":[]}
+"snks 150 for a and b" -> {"amount":150,"description":"Snacks","category":"Food","splitType":"even","participants":["A","B"]}
+"600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
+"dinner with A 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["A"]}
+"I had dinner with B 200" -> {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+"B paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}
+"B paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
+"C settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"C"}
+"I bought pizza for 800" -> {"amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
+"Dinner 2000 split all except C" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"1500 for pizza exclude B" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["B"]}
+"Dinner 800 not C" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
+"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
+"Lunch 500 A 200 C 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":200,"C":300}}
+"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":200}}
+"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":700,"B":800}}
+"Rent 10000 split 60-40 with B" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
+"Bill 1200 A 30% B 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":30,"B":70}}
+"Airbnb 1500 A 2 nights B 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"B":3}}
+"Rent 3000 I stayed 2 C 4 nights" -> {"amount":3000,"description":"Rent","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"C":4}}
+
+--- OUTCOME EXAMPLES ---
+Confident (full valid): {"parseConfidence":"confident","amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[]}
+Constrained (amount unknown): {"parseConfidence":"constrained","amount":0,"description":"Tickets","category":"","splitType":"even","participants":[],"payer":"B","constraintFlags":["amountUnresolved"],"needsClarification":true}
+Reject (no question): {"parseConfidence":"reject","amount":0,"description":"","category":"","splitType":"even","participants":[],"needsClarification":true}
+
+Output only the single JSON object. Double-quoted keys and strings. Names from member list only.''';
+}
+
+String? _validateResult(ParsedExpenseResult result) {
+  if (result.amount.isNaN || result.amount.isInfinite) return 'Amount must be a valid number.';
+  if (result.parseConfidence == 'confident' && result.amount <= 0) return 'Amount must be greater than 0.';
+  return null;
+}
+
+String _extractJson(String raw) {
+  raw = raw.trim();
+  final codeBlockMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
+  if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
+  final start = raw.indexOf('{');
+  final end = raw.lastIndexOf('}');
+  if (start != -1 && end != -1 && end > start) raw = raw.substring(start, end + 1);
+  return raw.trim();
+}
+
+String _fixCommonJsonIssues(String raw) {
+  return raw.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
+}
+
+Map<String, dynamic>? _tryDecodeJson(String raw) {
+  try {
+    final value = jsonDecode(raw);
+    if (value is Map<String, dynamic>) return value;
+  } catch (_) {}
+  final normalized = raw
+      .replaceAll('\u201c', '"')
+      .replaceAll('\u201d', '"')
+      .replaceAll('\u2018', "'")
+      .replaceAll('\u2019', "'");
+  try {
+    final value = jsonDecode(normalized);
+    if (value is Map<String, dynamic>) return value;
+  } catch (_) {}
+  try {
+    final value = jsonDecode(normalized.replaceAll("'", '"'));
+    if (value is Map<String, dynamic>) return value;
+  } catch (_) {}
+  try {
+    final fixed = normalized.replaceAllMapped(
+      RegExp(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:'),
+      (m) => '${m[1]}"${m[2]}":',
+    );
+    final value = jsonDecode(fixed);
+    if (value is Map<String, dynamic>) return value;
+  } catch (_) {}
+  return null;
+}
+
+Future<void> _throttleForRateLimit() async {
+  final file = File(_lastRequestStampPath);
+  if (!file.existsSync()) return;
+  final line = file.readAsStringSync().trim();
+  final lastMs = int.tryParse(line);
+  if (lastMs == null) return;
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final elapsed = (now - lastMs) / 1000;
+  if (elapsed < _minIntervalSeconds) {
+    final wait = (_minIntervalSeconds - elapsed).ceil();
+    if (wait > 0) {
+      stdout.writeln('Rate limit $_rateLimitTpm TPM: waiting ${wait}s...');
+      await Future<void>.delayed(Duration(seconds: wait));
+    }
+  }
+}
+
+void _markRequestDone() {
+  try {
+    File(_lastRequestStampPath).writeAsStringSync(DateTime.now().millisecondsSinceEpoch.toString());
+  } catch (_) {}
+}
+
+int _retryAfterSeconds(http.Response response) {
+  final v = response.headers['retry-after']?.trim();
+  if (v == null || v.isEmpty) return 2;
+  final s = int.tryParse(v);
+  if (s == null || s < 1) return 2;
+  if (s > 60) return 60;
+  return s;
+}
+
+Future<http.Response> _post(String apiKey, Map<String, dynamic> body) {
+  return http.post(
+    Uri.parse(_baseUrl),
+    headers: {'Authorization': 'Bearer $apiKey', 'Content-Type': 'application/json'},
+    body: jsonEncode(body),
+  );
+}
+
+class ParsedExpenseResult {
+  final double amount;
+  final String description;
+  final String category;
+  final String splitType;
+  final List<String> participantNames;
+  final String? payerName;
+  final List<String> excludedNames;
+  final Map<String, double> exactAmountsByName;
+  final Map<String, double> percentageByName;
+  final Map<String, double> sharesByName;
+  final bool needsClarification;
+  final String? clarificationQuestion;
+  final String parseConfidence;
+  final List<String> constraintFlags;
+
+  ParsedExpenseResult({
+    required this.amount,
+    required this.description,
+    required this.category,
+    required this.splitType,
+    List<String>? participantNames,
+    this.payerName,
+    List<String>? excludedNames,
+    Map<String, double>? exactAmountsByName,
+    Map<String, double>? percentageByName,
+    Map<String, double>? sharesByName,
+    this.needsClarification = false,
+    this.clarificationQuestion,
+    this.parseConfidence = 'confident',
+    List<String>? constraintFlags,
+  })  : participantNames = participantNames ?? [],
+        constraintFlags = constraintFlags ?? [],
+        excludedNames = excludedNames ?? [],
+        exactAmountsByName = exactAmountsByName ?? {},
+        percentageByName = percentageByName ?? {},
+        sharesByName = sharesByName ?? {};
+
+  static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
+    final amountRaw = json['amount'] ?? json['amt'];
+    final amount = (amountRaw is num)
+        ? (amountRaw).toDouble()
+        : double.tryParse(amountRaw?.toString() ?? '') ?? 0.0;
+    final desc = ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
+    final category = (json['category'] as String?)?.trim() ?? '';
+    final split = (json['splitType'] as String?)?.trim().toLowerCase();
+    final st = split == 'exact'
+        ? 'exact'
+        : split == 'exclude'
+            ? 'exclude'
+            : split == 'percentage'
+                ? 'percentage'
+                : split == 'shares'
+                    ? 'shares'
+                    : 'even';
+    final parts = json['participants'] ?? json['participant'] ?? json['members'];
+    List<String> names = [];
+    if (parts is List) {
+      for (final p in parts) {
+        if (p != null && p.toString().trim().isNotEmpty) names.add(p.toString().trim());
+      }
+    } else if (parts != null && parts.toString().trim().isNotEmpty) {
+      names.add(parts.toString().trim());
+    }
+    final payer = (json['payer'] as String?)?.trim();
+    final excluded = json['excluded'];
+    List<String> excludedList = [];
+    if (excluded is List) {
+      for (final e in excluded) {
+        if (e != null && e.toString().trim().isNotEmpty) excludedList.add(e.toString().trim());
+      }
+    }
+    final exactRaw = json['exactAmounts'];
+    Map<String, double> exactMap = {};
+    if (exactRaw is Map) {
+      for (final entry in exactRaw.entries) {
+        final name = entry.key.toString().trim();
+        if (name.isEmpty) continue;
+        final v = entry.value;
+        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        if (numVal != null) exactMap[name] = numVal;
+      }
+    }
+    final pctRaw = json['percentageAmounts'] ?? json['percentageByPerson'] ?? json['percentages'];
+    Map<String, double> pctMap = {};
+    if (pctRaw is Map) {
+      for (final entry in pctRaw.entries) {
+        final name = entry.key.toString().trim();
+        if (name.isEmpty) continue;
+        final v = entry.value;
+        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        if (numVal != null) pctMap[name] = numVal;
+      }
+    }
+    final sharesRaw = json['sharesAmounts'] ?? json['sharesByPerson'] ?? json['shares'];
+    Map<String, double> sharesMap = {};
+    if (sharesRaw is Map) {
+      for (final entry in sharesRaw.entries) {
+        final name = entry.key.toString().trim();
+        if (name.isEmpty) continue;
+        final v = entry.value;
+        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        if (numVal != null && numVal > 0) sharesMap[name] = numVal;
+      }
+    }
+    final needClar = json['needsClarification'] == true;
+    final q = (json['clarificationQuestion'] as String?)?.trim();
+    final confidence = (json['parseConfidence'] as String?)?.trim().toLowerCase();
+    final pc = confidence == 'reject' ? 'reject' : confidence == 'constrained' ? 'constrained' : 'confident';
+    List<String> flags = [];
+    final flagsRaw = json['constraintFlags'];
+    if (flagsRaw is List) {
+      for (final f in flagsRaw) {
+        if (f != null && f.toString().trim().isNotEmpty) flags.add(f.toString().trim());
+      }
+    }
+    return ParsedExpenseResult(
+      amount: amount,
+      description: desc,
+      category: category,
+      splitType: st,
+      participantNames: names,
+      payerName: payer != null && payer.isNotEmpty ? payer : null,
+      excludedNames: excludedList,
+      exactAmountsByName: exactMap.isNotEmpty ? exactMap : null,
+      percentageByName: pctMap.isNotEmpty ? pctMap : null,
+      sharesByName: sharesMap.isNotEmpty ? sharesMap : null,
+      needsClarification: needClar,
+      clarificationQuestion: (needClar && q != null && q.isNotEmpty) ? q : null,
+      parseConfidence: pc,
+      constraintFlags: flags,
+    );
+  }
+}
