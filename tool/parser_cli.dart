@@ -39,7 +39,9 @@ void main(List<String> args) async {
   if (currentUser != null) stdout.writeln('Current user: $currentUser');
   stdout.writeln('---');
 
-  final systemPrompt = _buildSystemPrompt(memberList, currentUser);
+  final recentExamples = _loadRecentExamplesFromLog(10);
+  if (recentExamples.isNotEmpty) stdout.writeln('Using ${recentExamples.length} recent examples from log.');
+  final systemPrompt = _buildSystemPrompt(memberList, currentUser, recentExamples);
   final body = {
     'model': _model,
     'messages': [
@@ -234,6 +236,35 @@ void _recordRun({
   } catch (_) {}
 }
 
+List<({String input, String json})> _loadRecentExamplesFromLog(int maxCount) {
+  final file = File(_logPath);
+  if (!file.existsSync()) return [];
+  final content = file.readAsStringSync();
+  final blocks = content.split(RegExp(r'\n---\n'));
+  final good = <({String input, String json})>[];
+  for (final block in blocks) {
+    if (block.trim().isEmpty) continue;
+    if (block.contains('ERROR:')) continue;
+    String? input;
+    String? rawJson;
+    for (final line in block.split('\n')) {
+      if (line.startsWith('INPUT: ')) {
+        final rest = line.substring(7).trim();
+        if (rest.length >= 2 && rest.startsWith('"') && rest.endsWith('"')) {
+          input = rest.substring(1, rest.length - 1);
+        }
+      } else if (line.startsWith('RAW_JSON: ')) {
+        rawJson = line.substring(10).trim();
+      }
+    }
+    if (input != null && rawJson != null && rawJson.startsWith('{')) {
+      good.add((input: input, json: rawJson));
+    }
+  }
+  if (good.length <= maxCount) return good;
+  return good.sublist(good.length - maxCount);
+}
+
 Map<String, String> _loadEnv() {
   final file = File('.env');
   if (!file.existsSync()) return {};
@@ -252,7 +283,7 @@ Map<String, String> _loadEnv() {
   return out;
 }
 
-String _buildSystemPrompt(String memberList, [String? currentUserName]) {
+String _buildSystemPrompt(String memberList, [String? currentUserName, List<({String input, String json})> recentExamples = const []]) {
   final currentUserLine = currentUserName != null && currentUserName.isNotEmpty
       ? '\nCurrent user (I/me/my — use this name in exactAmounts and sharesAmounts when the message says "I had X", "my X was N", "I took N shares", or "rest between me and X"): $currentUserName'
       : '';
@@ -303,29 +334,8 @@ Unmatched name → use as written or best guess. Ambiguous amount → use main t
 --- COMMON MISTAKES (wrong → right) ---
 "X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B]. "Split between A, B, C" with current user A → RIGHT: participants:[B,C]. "I had 800, B 200" total 1000 → RIGHT: exactAmounts {"A":800,"B":200}, sum=1000. "I paid" → RIGHT: payer = current user name. Participants unknown (e.g. "dinner 3600, drinks separate", who shares unclear) → RIGHT: splitType "unresolved", constraintFlags ["participantsUnknown"]; never even + participants:[]. "Same as usual people" → RIGHT: constrained, participantsInferredFromHistory; never confident. "Sam paid hotel, I booked cab" → RIGHT: two intents (multiIntent); do not collapse to one expense. "Clear what I owed" → RIGHT: settlement only; constraintFlags ["settlementNotExpense"]; no expense. "I'll take care of mine next time" → RIGHT: reject, rejectReason "futureIntentNotRecordable". Unclear who shares → constrained + participantsUnknown or reject; do not ask a question.
 
---- EXAMPLES (member list: A, B, C; current user: A) ---
-"ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}
-"dinr 450 w b" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
-"bt groceries 800 w everyone" -> {"amount":800,"description":"Groceries","category":"Food","splitType":"even","participants":[]}
-"snks 150 for a and b" -> {"amount":150,"description":"Snacks","category":"Food","splitType":"even","participants":["A","B"]}
-"600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
-"dinner with A 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["A"]}
-"I had dinner with B 200" -> {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
-"B paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}
-"B paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
-"C settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"C"}
-"I bought pizza for 800" -> {"amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
-"Dinner 2000 split all except C" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
-"1500 for pizza exclude B" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["B"]}
-"Dinner 800 not C" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
-"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
-"Lunch 500 A 200 C 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":200,"C":300}}
-"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":200}}
-"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":700,"B":800}}
-"Rent 10000 split 60-40 with B" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
-"Bill 1200 A 30% B 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":30,"B":70}}
-"Airbnb 1500 A 2 nights B 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"B":3}}
-"Rent 3000 I stayed 2 C 4 nights" -> {"amount":3000,"description":"Rent","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"C":4}}
+--- EXAMPLES ---
+${recentExamples.isNotEmpty ? recentExamples.map((e) => '"${e.input.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}" -> ${e.json}').join('\n') : '"Dinner 500" -> {"parseConfidence":"confident","amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[]}\n"B paid 200" -> {"parseConfidence":"confident","amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}\n"600 with B" -> {"parseConfidence":"confident","amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}'}
 
 --- OUTCOME EXAMPLES ---
 Confident (full valid): {"parseConfidence":"confident","amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"Rishi"}
