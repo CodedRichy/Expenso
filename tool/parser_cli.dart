@@ -203,8 +203,10 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
     }
   }
   if (response.statusCode != 200) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
-    return (result: null, rawJson: null, error: 'API ${response.statusCode}');
+    if (response.statusCode != 429) {
+      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
+    }
+    return (result: null, rawJson: null, error: response.statusCode == 429 ? '429 rate limit' : 'API ${response.statusCode}');
   }
   final map = jsonDecode(response.body) as Map<String, dynamic>?;
   if (map == null) {
