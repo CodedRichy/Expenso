@@ -365,11 +365,12 @@ class _GroupDetailState extends State<GroupDetail> {
                   final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
                   final hasDues = myRoutes.isNotEmpty;
 
-                  final payLabel = isPassive
+                  final settlementButtonLabel = isPassive
                       ? 'View settlement'
                       : (hasDues ? 'Pay / Settle' : 'View settlement');
 
                   return Padding(
+                    // Two buttons only: (1) Settlement screen — label "Pay / Settle" or "View settlement"; (2) Close cycle — creator only.
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -391,7 +392,7 @@ class _GroupDetailState extends State<GroupDetail> {
                             elevation: 0,
                             minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: Text(payLabel, style: AppTypography.button),
+                          child: Text(settlementButtonLabel, style: AppTypography.button),
                         ),
                         if (isCreator) ...[
                           const SizedBox(height: 10),
