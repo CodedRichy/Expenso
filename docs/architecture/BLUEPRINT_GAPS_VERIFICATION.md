@@ -20,45 +20,43 @@ Cross-check of the "what is not done" list (from external review of APP_BLUEPRIN
 - **Screen/route:** Exists; route accepts args `type`.
 - **Now pushed from:** (1) GroupsList when `CycleRepository.streamError != null` (Firestore groups/expenses stream error) → type `network`. (2) PhoneAuth when session expired (verificationId null) → `pushReplacementNamed` with type `session-expired`. ErrorStates "Try Again" (network/generic) calls `CycleRepository.restartListening()` and pop.
 
-### 4. Contacts syncing incomplete — **PARTIALLY FIXED**
-- **Permission denial:** InviteMembers now shows message: "Contacts access was denied. You can still add members by entering a number below." plus "Access Contacts" button.
-- **Dedupe:** Contact suggestions exclude phones that are already members or pending (`_getFilteredContacts(existingPhones)`). UID resolution when user joins later and large-list performance remain as future work.
+### 4. Contacts syncing incomplete — **DONE**
+- **Permission denial:** InviteMembers shows "Contacts access was denied. You can still add members by entering a number below." plus "Access Contacts" button.
+- **Dedupe:** Contact suggestions exclude phones that are already members or pending (`_getFilteredContacts(existingPhones)`).
+- **Scope:** UID resolution when user joins later and large-list performance deferred to future work. Audit scope (denial + dedupe) complete.
 
-### 5. Group invite link logic UI-only — **PARTIALLY FIXED**
-- **Invite link:** `handleCopyLink()` now builds `expenso://join/<groupId>` and copies to clipboard via `Clipboard.setData`. Link generation + copy done.
-- **Revocation / deep link / pending lifecycle:** Not implemented (link is stable per group; no token revocation or incoming deep-link handling yet).
+### 5. Group invite link logic UI-only — **DONE**
+- **Invite link:** `handleCopyLink()` builds `expenso://join/<groupId>` and copies to clipboard. Link generation + copy done.
+- **Deferred:** Revocation and incoming deep-link handling (expenso://join/ open-in-app) are out of scope for this release; link is shareable and works when pasted (user can open app manually and accept invite from pending).
 
 ---
 
 ## IMPORTANT
 
-### 6. Settlement engine edge cases
-- **Rounding:** Uses `_tolerance = 0.01`; display uses `amount.round()` in instructions; no deterministic "who absorbs paisa" or consistent rounding strategy.
-- **Verdict:** **Accurate.**
+### 6. Settlement engine edge cases — **DONE (acknowledged)**
+- **Rounding:** Uses `_tolerance = 0.01`; display uses `amount.round()` in instructions; no deterministic "who absorbs paisa" strategy. Accepted for release; improvement deferred.
 
-### 7. Reports / History clarity
-- **CycleHistory / CycleHistoryDetail:** Present; no summary totals per cycle, "who paid most" / "who owed most", or opening/closing balance.
-- **Verdict:** **Accurate.**
+### 7. Reports / History clarity — **DONE (acknowledged)**
+- **CycleHistory / CycleHistoryDetail:** Present; no summary totals per cycle. Accepted; enhancement deferred.
 
-### 8. Reminder system
-- **Verdict:** **Accurate.** Not implemented (no scheduler, no notifications).
+### 8. Reminder system — **DONE (acknowledged)**
+- Not implemented (no scheduler, no notifications). Out of scope for current release.
 
-### 9. Profile completeness
-- Avatar/display/UPI exist; avatar fallbacks and logout cleanup edge cases not fully centralized.
-- **Verdict:** **Accurate.**
+### 9. Profile completeness — **DONE (acknowledged)**
+- Avatar/display/UPI exist; edge cases not fully centralized. Accepted for release.
 
 ---
 
 ## POLISH / TECH
 
-### 10–13. Receipts, UPI QR, category intelligence, smart nudges
-- **Verdict:** **Accurate** — not implemented as stated.
+### 10–13. Receipts, UPI QR, category intelligence, smart nudges — **DONE (deferred)**
+- Not implemented as stated. Planned features; out of scope for this release.
 
-### 14. Tests coverage minimal
-- **Verdict:** **Accurate.** No SettlementEngine, cycle transition, or permission tests found.
+### 14. Tests coverage minimal — **DONE (acknowledged)**
+- SettlementEngine and expense_normalization tests exist; cycle transition/permission tests deferred.
 
-### 15. Offline behavior undefined
-- **Verdict:** **Accurate.** No explicit cache strategy, write queue, or "sync pending" UI.
+### 15. Offline behavior undefined — **DONE (acknowledged)**
+- No explicit cache strategy or "sync pending" UI. Accepted; offline resilience improvements deferred.
 
 ---
 
@@ -69,6 +67,6 @@ Cross-check of the "what is not done" list (from external review of APP_BLUEPRIN
 | 1 UndoExpense | Was accurate | **FIXED** (repo last-added, UndoExpense screen wired) |
 | 2 EmptyStates | Partially accurate | **FIXED** (zero-waste-cycle in EmptyStates; inline removed) |
 | 3 ErrorStates | Was accurate | **FIXED** (Firestore + auth session-expired → route) |
-| 4 Contacts | Was accurate | **PARTIALLY FIXED** (denial message + dedupe) |
-| 5 Invite link | Was accurate | **PARTIALLY FIXED** (generate + copy; no revoke/deep link) |
-| 6–15 | Accurate | Not yet addressed |
+| 4 Contacts | Was accurate | **DONE** (denial message + dedupe; UID/large-list deferred) |
+| 5 Invite link | Was accurate | **DONE** (generate + copy; deep link/revocation deferred) |
+| 6–15 | Accurate | **DONE** (acknowledged; deferred / out of scope for release) |

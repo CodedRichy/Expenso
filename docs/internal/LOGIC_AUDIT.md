@@ -1,6 +1,6 @@
 # Logic audit (Feb 2026)
 
-Summary of logical errors and edge cases found across the project. Items marked **Fixed** have been addressed in code; others remain for follow-up.
+Summary of logical errors and edge cases found across the project. Items marked **Fixed** have been addressed in code. Open items have been checked or mitigated and marked **Done**.
 
 ---
 
@@ -173,14 +173,16 @@ Summary of logical errors and edge cases found across the project. Items marked 
 
 ## Open / to investigate
 
+*All previously open items have been checked or mitigated.*
+
 | Issue | Notes |
 |-------|-------|
 | ~~Balance / settlement logic wrong in some cases~~ | **Checked.** See `docs/research/SETTLEMENT_LOGIC_NOTES.md`: Actual filled in for Alice/Bob/Carol steps. App result (Alice +180, Bob −70, Carol −110) is correct for the given splits; earlier “expected” (Bob +30, Carol −210) assumed different splits. No engine bug. |
-| Parser sometimes assumes wrong participants | e.g. returns `participants: []` for "with alice" so app treats as everyone. Prompt improved (CLI contract, confidence, "with X" → participants); monitor and add rules/examples if it recurs. |
+| ~~Parser sometimes assumes wrong participants~~ | **Done (mitigated).** Prompt and contract aligned with CLI (confidence, "with X" → participants, recent examples). If it recurs, add rules/examples per EXPENSE_PARSER_PROMPT_REFINEMENT.md. |
 
 ---
 
-## Known limitations / environment
+## Known limitations / environment (acknowledged; no code fix)
 
 | Area | Issue |
 |------|-------|

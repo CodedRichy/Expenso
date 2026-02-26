@@ -413,7 +413,7 @@ All comparisons use ε = 0.01 (one paisa). Values within ε of zero are treated 
 **Note:** Payer credit is lost (no one credited). Sum is -100, violating I1.
 
 **Invariants Validated:**
-- A2: Documents behavior when payer invalid (known gap)
+- A2: Documents behavior when payer invalid. **Done (accepted):** Empty or pending payer → expense skipped for balance (no deltas); unknown payer → credit dropped, participant debits applied; sum may not be zero. See ledger_delta.dart and settlement_engine.dart. No code change; documented.
 
 ---
 
