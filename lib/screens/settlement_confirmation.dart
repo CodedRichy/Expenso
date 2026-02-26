@@ -298,32 +298,74 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                     )
                   : ListenableBuilder(
                       listenable: repo,
-                      builder: (context, _) => SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.screenPaddingH,
-                          vertical: AppSpacing.space3xl,
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (pendingConfirmations.isNotEmpty) ...[
-                                _buildPendingConfirmations(repo, pendingConfirmations),
+                      builder: (context, _) {
+                        if (!hasUpiDues && pendingConfirmations.isEmpty) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle_outline,
+                                          size: 64,
+                                          color: AppColors.success,
+                                        ),
+                                        const SizedBox(height: AppSpacing.spaceXl),
+                                        Text(
+                                          'You\'re all settled!',
+                                          style: context.screenTitle,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: AppSpacing.spaceMd),
+                                        Text(
+                                          'You have no payments to make this cycle.',
+                                          style: context.bodySecondary,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SettlementActivityFeed(groupId: group.id, maxItems: 10),
                                 const SizedBox(height: AppSpacing.space4xl),
+                                _buildBackButton(context),
                               ],
-                              _buildUpiSection(
-                                context,
-                                group,
-                                repo,
-                                myPaymentRoutes,
-                                hasUpiDues,
-                                myTotalDue,
-                              ),
-                            ],
+                            ),
+                          );
+                        }
+                        return SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.screenPaddingH,
+                            vertical: AppSpacing.space3xl,
                           ),
-                        ),
-                      ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (pendingConfirmations.isNotEmpty) ...[
+                                  _buildPendingConfirmations(repo, pendingConfirmations),
+                                  const SizedBox(height: AppSpacing.space4xl),
+                                ],
+                                _buildUpiSection(
+                                  context,
+                                  group,
+                                  repo,
+                                  myPaymentRoutes,
+                                  hasUpiDues,
+                                  myTotalDue,
+                                  pendingIncomingCount: pendingConfirmations.length,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -479,29 +521,39 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     CycleRepository repo,
     List<PaymentRoute> myRoutes,
     bool hasUpiDues,
-    int totalMinor,
-  ) {
+    int totalMinor, {
+    int pendingIncomingCount = 0,
+  }) {
     if (!hasUpiDues) {
+      final hasPendingIncoming = pendingIncomingCount > 0;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: 64,
-            color: AppColors.success,
-          ),
-          const SizedBox(height: AppSpacing.spaceXl),
-          Text(
-            'You\'re all settled!',
-            style: context.screenTitle,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.spaceMd),
-          Text(
-            'You have no payments to make this cycle.',
-            style: context.bodySecondary,
-            textAlign: TextAlign.center,
-          ),
+          if (!hasPendingIncoming) ...[
+            const Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: AppColors.success,
+            ),
+            const SizedBox(height: AppSpacing.spaceXl),
+            Text(
+              'You\'re all settled!',
+              style: context.screenTitle,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.spaceMd),
+            Text(
+              'You have no payments to make this cycle.',
+              style: context.bodySecondary,
+              textAlign: TextAlign.center,
+            ),
+          ] else ...[
+            Text(
+              'Confirm the payment(s) above to complete this cycle.',
+              style: context.bodySecondary,
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: AppSpacing.space4xl),
           SettlementActivityFeed(groupId: group.id, maxItems: 10),
           const SizedBox(height: AppSpacing.space4xl),

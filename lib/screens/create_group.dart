@@ -137,7 +137,12 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SETTLEMENT RHYTHM', style: context.sectionLabel),
+                        Text(
+                          'SETTLEMENT RHYTHM',
+                          style: context.sectionLabel.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
@@ -162,7 +167,9 @@ class _CreateGroupState extends State<CreateGroup> {
                         children: [
                           Text(
                             rhythm == 'weekly' ? 'SETTLEMENT DAY' : 'SETTLEMENT DATE',
-                            style: context.sectionLabel,
+                            style: context.sectionLabel.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Container(
@@ -176,7 +183,9 @@ class _CreateGroupState extends State<CreateGroup> {
                               child: DropdownButton<int>(
                                 value: settlementDay,
                                 isExpanded: true,
-                                style: context.input,
+                                style: context.input.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
                                 items: rhythm == 'weekly'
                                     ? _buildWeeklyOptions()
                                     : _buildMonthlyOptions(),
@@ -249,7 +258,12 @@ class _CreateGroupState extends State<CreateGroup> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: context.bodyPrimary),
+            Text(
+              label,
+              style: context.bodyPrimary.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             Container(
               width: 20,
               height: 20,

@@ -58,6 +58,55 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 
 ---
 
+## 5. Add expense: WHO'S INVOLVED overflow (201 px)
+
+**Area:** Add expense screen / layout  
+**Summary:** With keyboard open, the "WHO'S INVOLVED" section (e.g. "Select All" and member list) overflows by **201 pixels** — yellow/black strip "BOTTOM OVERFLOWED BY 201 PIXELS" in debug.  
+**Status:** Open  
+**Notes:** Content is too tall for available space when keyboard is visible. Use scrollable layout (e.g. `SingleChildScrollView`) or resize/inset for keyboard so the section fits.
+
+---
+
+## 6. Create group: Poor contrast on Settlement Rhythm / Settlement Day
+
+**Area:** Create group (or group settings) / accessibility  
+**Summary:** Options for "Settlement Rhythm" (Monthly, Trip-based) and "Settlement Day" (e.g. Sunday) have **very low contrast** on the dark background — light grey labels that are hard to read.  
+**Status:** Open  
+**Notes:** Accessibility issue. Increase contrast (e.g. lighter text or different background) so labels meet readability guidelines.
+
+---
+
+## 7. Settlement: Conflicting state — incoming payment + "You're all settled"
+
+**Area:** Settlement screen / state logic  
+**Summary:** Screen shows **both**:
+- "Incoming payments" — "1 payment awaiting your confirmation" (e.g. Ihsir, ₹335 UPI) with a "Confirm" button, and
+- "You're all settled! You have no payments to make this cycle."
+
+If a payment is awaiting confirmation, the user is not fully settled. The two states are mutually exclusive.  
+**Status:** Open  
+**Notes:** Bug in state management or UI conditions. Incoming-pending and all-settled should not render together; gate "You're all settled" on there being no pending incoming (and no outgoing) payments.
+
+---
+
+## 8. Profile: Payment Settings / UPI ID overflow (60 px)
+
+**Area:** Profile / Payment Settings / layout  
+**Summary:** With keyboard open, the bottom of the screen (UPI ID input and Save button) overflows by **60 pixels** — "BOTTOM OVERFLOWED BY 60 PIXELS" in debug.  
+**Status:** Open  
+**Notes:** Same class of issue as #5: layout doesn't account for keyboard. Make the form scrollable or adjust insets when keyboard is visible.
+
+---
+
+## 9. Settlement success: "You're all settled!" content not centered
+
+**Area:** Settlement success screen / layout  
+**Summary:** On the "You're all settled!" success screen (green checkmark, message, "Back to Group"), the content is **not centered** on the screen.  
+**Status:** Open  
+**Notes:** Center the checkmark, title, subtitle, and CTA vertically/horizontally for a proper success-state layout.
+
+---
+
 ## More (to be added)
 
 *Additional items will be appended below as reported.*

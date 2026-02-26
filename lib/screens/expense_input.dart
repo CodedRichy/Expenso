@@ -575,85 +575,85 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'NEW EXPENSE',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    autofocus: true,
-                    onChanged: (value) {
-                      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-                      setState(() {
-                        input = value;
-                        if (group != null) _syncSelectedMembersFromInput(group);
-                      });
-                    },
-                    onSubmitted: (_) => handleSubmit(),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Dinner 1200 with',
-                      hintStyle: TextStyle(
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'NEW EXPENSE',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.3,
                       ),
-                      filled: true,
-                      fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.colorScheme.primary),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildWhoPaid(context, group),
-                  const SizedBox(height: 24),
-                  _buildWhoIsInvolved(context, group),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _canSubmit ? handleSubmit : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    const SizedBox(height: 12),
+                    TextField(
+                      autofocus: true,
+                      onChanged: (value) {
+                        final group = ModalRoute.of(context)?.settings.arguments as Group?;
+                        setState(() {
+                          input = value;
+                          if (group != null) _syncSelectedMembersFromInput(group);
+                        });
+                      },
+                      onSubmitted: (_) => handleSubmit(),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Dinner 1200 with',
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        filled: true,
+                        fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: theme.dividerColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: theme.dividerColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: theme.colorScheme.primary),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
-                      elevation: 0,
-                      minimumSize: const Size(double.infinity, 0),
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                    child: Text('Submit', style: AppTypography.button),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Text(
-                'Format: Description Amount with Name, Name',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  height: 1.5,
+                    const SizedBox(height: 24),
+                    _buildWhoPaid(context, group),
+                    const SizedBox(height: 24),
+                    _buildWhoIsInvolved(context, group),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _canSubmit ? handleSubmit : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child: Text('Submit', style: AppTypography.button),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Format: Description Amount with Name, Name',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

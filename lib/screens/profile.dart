@@ -158,8 +158,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.zero,
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -290,9 +295,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                        const SizedBox(height: 24),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.zero,
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -399,9 +404,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                const Spacer(),
+                        const SizedBox(height: 24),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
                   child: ElevatedButton(
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
@@ -433,6 +438,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       minimumSize: const Size(double.infinity, 0),
                     ),
                     child: const Text('Log out', style: AppTypography.button),
+                  ),
+                ),
+                      ],
+                    ),
                   ),
                 ),
               ],
