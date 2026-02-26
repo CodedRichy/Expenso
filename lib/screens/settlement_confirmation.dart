@@ -483,6 +483,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   ) {
     if (!hasUpiDues) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Icon(
             Icons.check_circle_outline,
@@ -493,6 +494,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           Text(
             'You\'re all settled!',
             style: context.screenTitle,
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.spaceMd),
           Text(
@@ -500,7 +502,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             style: context.bodySecondary,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.space5xl),
+          const SizedBox(height: AppSpacing.space4xl),
+          SettlementActivityFeed(groupId: group.id, maxItems: 10),
+          const SizedBox(height: AppSpacing.space4xl),
           _buildBackButton(context),
         ],
       );
