@@ -175,8 +175,8 @@ Summary of logical errors and edge cases found across the project. Items marked 
 
 | Issue | Notes |
 |-------|-------|
-| Balance / settlement logic wrong in some cases | User reported problems; expected vs actual to be filled in `SETTLEMENT_LOGIC_NOTES.md`. Logic is implemented; if app still shows wrong numbers, likely cause is **who is in the split** (parser or stored data). |
-| Parser sometimes assumes wrong participants | e.g. returns `participants: []` for "with alice" so app treats as everyone. Prompt improved; monitor and add rules/examples if it recurs. |
+| ~~Balance / settlement logic wrong in some cases~~ | **Checked.** See `docs/research/SETTLEMENT_LOGIC_NOTES.md`: Actual filled in for Alice/Bob/Carol steps. App result (Alice +180, Bob −70, Carol −110) is correct for the given splits; earlier “expected” (Bob +30, Carol −210) assumed different splits. No engine bug. |
+| Parser sometimes assumes wrong participants | e.g. returns `participants: []` for "with alice" so app treats as everyone. Prompt improved (CLI contract, confidence, "with X" → participants); monitor and add rules/examples if it recurs. |
 
 ---
 

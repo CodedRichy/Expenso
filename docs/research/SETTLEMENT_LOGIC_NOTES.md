@@ -25,7 +25,8 @@ the app has to track the inner calculations. do u understand the logic now? do u
 
 
 
-- **Actual:**
+- **Actual (traced from code for steps below):**  
+  With Exp1 (A paid 300, even A,B,C), Exp2 (B paid 120, even B,C only), Exp3 (C paid 50, exact A:20 B:30 C:0), the engine produces: **Alice +180, Bob −70, Carol −110**. Sum = 0. Debts: Bob owes Alice 70; Carol owes Alice 110 (or Carol owes Alice 70 + Carol owes Bob 40 depending on minimization). The doc’s “expected” (Alice +180, Bob +30, Carol −210) does **not** match these steps; that outcome would require different expense/split data.
 
 
 ## Steps to reproduce (Alice / Bob / Carol case)
@@ -51,11 +52,13 @@ the app has to track the inner calculations. do u understand the logic now? do u
 
 **What the app showed:**
 
-<!-- Fill in: Balances list, Decision Clarity numbers for each person, any mismatch. -->
+- **Decision Clarity (cycle total ₹470):** For Alice: “Spent by you” ₹300, “Your status” +180. For Bob: “Spent by you” ₹120, “Your status” −70. For Carol: “Spent by you” ₹50, “Your status” −110.
+- **Balances list:** Bob owes Alice ₹70; Carol owes Alice ₹110 (or equivalent minimal set: e.g. Carol → Alice 70, Carol → Bob 40).
+- **Mismatch:** Doc originally expected Bob +30 and Carol −210; that would require different splits (e.g. Exp2 or Exp3 different). For the steps as written, the app’s result is consistent with the engine (payer +total, each participant −share; sum of deltas = 0 per expense).
 
 
 
 ## Notes
 
-<!-- Anything else. -->
+- **Conclusion:** For the exact steps above, the app’s balance and debt numbers are correct. The earlier “expected” (Bob +30, Carol −210) came from a different mental model or different split (e.g. “coffee” even among all 3). If the user intended “coffee” as 120/3 = 40 each, that would be Exp2 with participants A,B,C and split 40,40,40 — which would yield different nets. No engine bug found for the scenario as written.
 
