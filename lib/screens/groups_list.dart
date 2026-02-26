@@ -574,7 +574,7 @@ class _GroupsListState extends State<GroupsList> {
                                                           ),
                                                         ),
                                                         const SizedBox(width: 8),
-                                                        Text('pending', style: context.bodySecondary),
+                                                        Text('in cycle', style: context.bodySecondary),
                                                       ],
                                                     ),
                                                     const SizedBox(height: 6),
