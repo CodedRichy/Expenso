@@ -2,7 +2,7 @@
 
 Single source of truth for Group Detail settlement actions (Pay / Settle, View settlement, Close cycle).
 
-**Current implementation:** Two buttons — **Pay / Settle** (or **View settlement**) for everyone; **Close cycle** / **Start New Cycle** for creator only. See **Current implementation** at the end of this doc.
+**Current implementation:** Two buttons — **Settlement** (same label for everyone, whether they have dues or not); **Close cycle** / **Start New Cycle** for creator only. See **Current implementation** at the end of this doc.
 
 ---
 
@@ -91,7 +91,7 @@ Use this example to trace the flow. **Group "Trial 10":** two members — **Rish
 | Step | Who | What |
 |------|-----|------|
 | 1 | Both | Two expenses: "Tea with Rishi ₹600", "Juice with Rishi ₹69". Cycle total ₹669. Rishi paid both; split implies Ash owes Rishi ₹335 (half). |
-| 2 | **Ash** | Opens Group Detail. Summary card shows **Cycle total ₹669**, **You paid ₹0**, **You owe ₹335**. Taps "Pay / Settle" → Settlement Confirmation. |
+| 2 | **Ash** | Opens Group Detail. Summary card shows **Cycle total ₹669**, **You paid ₹0**, **You owe ₹335**. Taps "Settlement" → Settlement Confirmation. |
 | 3 | **Ash** | Pays via UPI or taps "Mark as paid". Repo: `markPaymentConfirmedByPayer()` → status `confirmed_by_payer`. |
 | 4 | **Ash / Rishi** | **Summary card does not change yet.** Remaining balance uses only **receiver-confirmed** payments. So Ash still sees **You owe ₹335**; Rishi still sees **You're owed ₹335** until Rishi confirms. |
 | 5 | **Rishi** | Opens Settlement Confirmation, sees "Incoming" / payment from Ash ₹335. Taps **"Confirm received"**. Repo: `markPaymentConfirmedByReceiver()` → status `confirmed_by_receiver`. |

@@ -279,374 +279,371 @@ class _GroupDetailState extends State<GroupDetail> {
               onRetry: () => ConnectivityService.instance.checkNow(),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.chevron_left, size: 24),
-                    color: Theme.of(context).colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      defaultGroup.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/group-members',
-                        arguments: defaultGroup,
-                      );
-                    },
-                    icon: const Icon(Icons.people_outline, size: 24),
-                    color: Theme.of(context).colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: _DecisionClarityCard(
-                repo: repo,
-                groupId: groupId,
-                groupName: defaultGroup.name,
-                expenses: expenses,
-                isSettled: isSettled,
-                isPassive: isPassive,
-              ),
-            ),
-            if (isPassive) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: SettlementProgressIndicator(groupId: groupId),
-              ),
-            ],
-            if (!isSettled) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: SettlementActivityTapToExpand(groupId: groupId),
-              ),
-            ],
-            if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
-              Builder(
-                builder: (context) {
-                  final fullySettled = isPassive && repo.isFullySettled(groupId);
-                  final isCreator = repo.isCurrentUserCreator(groupId);
-                  final cycle = repo.getActiveCycle(groupId);
-                  final members = repo.getMembersForGroup(groupId);
-                  final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-                  final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-                  final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
-                  final hasDues = myRoutes.isNotEmpty;
-
-                  final settlementButtonLabel = hasDues ? 'Pay / Settle' : 'Settlement';
-
-                  return Padding(
-                    // Two buttons only: (1) Settlement — opens settlement screen; (2) Close cycle / Start New Cycle — creator only.
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/settlement-confirmation',
-                              arguments: {'group': defaultGroup, 'method': 'upi'},
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.chevron_left, size: 24),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(32, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            elevation: 0,
-                            minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: Text(settlementButtonLabel, style: AppTypography.button),
-                        ),
-                        if (isCreator) ...[
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (isPassive) {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('Start new cycle?'),
-                                    content: Text(
-                                      fullySettled
-                                          ? 'All payments are complete. Ready to start a fresh cycle.'
-                                          : 'This will archive current expenses and start a fresh cycle.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('Confirm'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed != true || !context.mounted) return;
-                              } else {
-                                _showSettleConfirmDialog(context, repo, groupId);
-                                return;
-                              }
-                              try {
-                                await repo.archiveAndRestart(groupId);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('New cycle started.'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                              minimumSize: const Size(double.infinity, 0),
-                            ),
+                          Expanded(
                             child: Text(
-                              isPassive
-                                  ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
-                                  : 'Close cycle',
-                              style: AppTypography.button,
+                              defaultGroup.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/group-members',
+                                arguments: defaultGroup,
+                              );
+                            },
+                            icon: const Icon(Icons.people_outline, size: 24),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(32, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-            if (hasExpenses)
-              Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      sliver: SliverToBoxAdapter(
-                        child: Text(
-                          'EXPENSE LOG',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
                       ),
                     ),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final expense = expenses[index];
-                          return InkWell(
-                            onTap: isPassive
-                                ? null
-                                : () {
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: _DecisionClarityCard(
+                        repo: repo,
+                        groupId: groupId,
+                        groupName: defaultGroup.name,
+                        expenses: expenses,
+                        isSettled: isSettled,
+                        isPassive: isPassive,
+                      ),
+                    ),
+                  ),
+                  if (isPassive)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: SettlementProgressIndicator(groupId: groupId),
+                      ),
+                    ),
+                  if (!isSettled)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: SettlementActivityTapToExpand(groupId: groupId),
+                      ),
+                    ),
+                  if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive))
+                    SliverToBoxAdapter(
+                      child: Builder(
+                        builder: (context) {
+                          final fullySettled = isPassive && repo.isFullySettled(groupId);
+                          final isCreator = repo.isCurrentUserCreator(groupId);
+
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () {
                                     Navigator.pushNamed(
                                       context,
-                                      '/edit-expense',
-                                      arguments: {
-                                        'expenseId': expense.id,
-                                        'groupId': defaultGroup.id,
-                                      },
+                                      '/settlement-confirmation',
+                                      arguments: {'group': defaultGroup, 'method': 'upi'},
                                     );
                                   },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  top: index > 0
-                                      ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
-                                      : BorderSide.none,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                    minimumSize: const Size(double.infinity, 0),
+                                  ),
+                                  child: const Text('Settlement', style: AppTypography.button),
+                                ),
+                                if (isCreator) ...[
+                                  const SizedBox(height: 10),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      if (isPassive) {
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: const Text('Start new cycle?'),
+                                            content: Text(
+                                              fullySettled
+                                                  ? 'All payments are complete. Ready to start a fresh cycle.'
+                                                  : 'This will archive current expenses and start a fresh cycle.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, false),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, true),
+                                                child: const Text('Confirm'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirmed != true || !context.mounted) return;
+                                      } else {
+                                        _showSettleConfirmDialog(context, repo, groupId);
+                                        return;
+                                      }
+                                      try {
+                                        await repo.archiveAndRestart(groupId);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('New cycle started.'),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                      minimumSize: const Size(double.infinity, 0),
+                                    ),
+                                    child: Text(
+                                      isPassive
+                                          ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
+                                          : 'Close cycle',
+                                      style: AppTypography.button,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ...(hasExpenses
+                      ? <Widget>[
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                            sliver: SliverToBoxAdapter(
+                              child: Text(
+                                'EXPENSE LOG',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
+                            ),
+                          ),
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final expense = expenses[index];
+                                return InkWell(
+                                  onTap: isPassive
+                                      ? null
+                                      : () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/edit-expense',
+                                            arguments: {
+                                              'expenseId': expense.id,
+                                              'groupId': defaultGroup.id,
+                                            },
+                                          );
+                                        },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        top: index > 0
+                                            ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
+                                            : BorderSide.none,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Builder(
-                                          builder: (context) {
-                                            final desc = _buildViewerRelativeDescription(
-                                              expense: expense,
-                                              repo: repo,
-                                            );
-                                            return Text.rich(
-                                              TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: desc.main,
-                                                    style: TextStyle(
-                                                      fontSize: 17,
-                                                      color: Theme.of(context).colorScheme.onSurface,
-                                                    ),
-                                                  ),
-                                                  if (desc.suffix != null) ...[
-                                                    const TextSpan(text: '  '),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Builder(
+                                                builder: (context) {
+                                                  final desc = _buildViewerRelativeDescription(
+                                                    expense: expense,
+                                                    repo: repo,
+                                                  );
+                                                  return Text.rich(
                                                     TextSpan(
-                                                      text: desc.suffix,
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                      ),
+                                                      children: [
+                                                        TextSpan(
+                                                          text: desc.main,
+                                                          style: TextStyle(
+                                                            fontSize: 17,
+                                                            color: Theme.of(context).colorScheme.onSurface,
+                                                          ),
+                                                        ),
+                                                        if (desc.suffix != null) ...[
+                                                          const TextSpan(text: '  '),
+                                                          TextSpan(
+                                                            text: desc.suffix,
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
                                                     ),
-                                                  ],
-                                                ],
+                                                  );
+                                                },
                                               ),
-                                            );
-                                          },
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                expense.displayDate,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(width: 16),
                                         Text(
-                                          expense.displayDate,
+                                          '₹${expense.amount.toStringAsFixed(0).replaceAllMapped(
+                                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                            (Match m) => '${m[1]},',
+                                          )}',
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    '₹${expense.amount.toStringAsFixed(0).replaceAllMapped(
-                                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                      (Match m) => '${m[1]},',
-                                    )}',
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                );
+                              },
+                              childCount: expenses.length,
+                            ),
+                          ),
+                          if (systemMessages.isNotEmpty)
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final msg = systemMessages[index];
+                                  String text;
+                                  switch (msg.type) {
+                                    case 'joined':
+                                      text = '${msg.userName} joined the group';
+                                      break;
+                                    case 'declined':
+                                      text = '${msg.userName} declined the invitation';
+                                      break;
+                                    case 'left':
+                                      text = '${msg.userName} left the group';
+                                      break;
+                                    case 'created':
+                                      text = '${msg.userName} created the group';
+                                      break;
+                                    default:
+                                      text = '${msg.userName} ${msg.type}';
+                                  }
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            text,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          msg.date,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
+                                childCount: systemMessages.length,
                               ),
                             ),
-                          );
-                        },
-                        childCount: expenses.length,
-                      ),
-                    ),
-                    if (systemMessages.isNotEmpty)
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final msg = systemMessages[index];
-                            String text;
-                            switch (msg.type) {
-                              case 'joined':
-                                text = '${msg.userName} joined the group';
-                                break;
-                              case 'declined':
-                                text = '${msg.userName} declined the invitation';
-                                break;
-                              case 'left':
-                                text = '${msg.userName} left the group';
-                                break;
-                              case 'created':
-                                text = '${msg.userName} created the group';
-                                break;
-                              default:
-                                text = '${msg.userName} ${msg.type}';
-                            }
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      text,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    msg.date,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          childCount: systemMessages.length,
-                        ),
-                      ),
-                  ],
-                ),
-              )
-            else
-              Expanded(child: EmptyStates(type: 'no-expenses-new-cycle')),
+                        ]
+                      : [
+                          SliverToBoxAdapter(
+                            child: EmptyStates(type: 'no-expenses-new-cycle'),
+                          ),
+                        ]),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               ),
             ),
