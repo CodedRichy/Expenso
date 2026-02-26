@@ -161,7 +161,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
         ),
       );
 
-      if (attempt.status.isSettled) {
+      if (attempt.status.isFullyConfirmed) {
         settled++;
       }
     }

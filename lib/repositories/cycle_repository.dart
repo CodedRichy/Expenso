@@ -1777,7 +1777,7 @@ class CycleRepository extends ChangeNotifier {
         ),
       );
 
-      if (attempt.status.isSettled) {
+      if (attempt.status.isFullyConfirmed) {
         if (route.fromMemberId == memberId) {
           adjustmentMinor += route.amountMinor;
         } else if (route.toMemberId == memberId) {
@@ -1789,7 +1789,7 @@ class CycleRepository extends ChangeNotifier {
     return (originalMinor + adjustmentMinor) / 100.0;
   }
 
-  /// Check if all payment routes are settled for a group.
+  /// Check if all payment routes are settled for a group (receiver confirmed).
   bool isFullySettled(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
@@ -1815,7 +1815,7 @@ class CycleRepository extends ChangeNotifier {
           createdAt: 0,
         ),
       );
-      if (!attempt.status.isSettled) return false;
+      if (!attempt.status.isFullyConfirmed) return false;
     }
     return true;
   }
@@ -1921,7 +1921,7 @@ class CycleRepository extends ChangeNotifier {
             amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
           ),
         );
-        if (!attempt.status.isSettled) {
+        if (!attempt.status.isFullyConfirmed) {
           allSettled = false;
           break;
         }
@@ -1959,7 +1959,7 @@ class CycleRepository extends ChangeNotifier {
           amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
         ),
       );
-      if (!attempt.status.isSettled) return false;
+      if (!attempt.status.isFullyConfirmed) return false;
     }
 
     return true;
