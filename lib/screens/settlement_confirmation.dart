@@ -44,18 +44,14 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
   List<PaymentRoute> _getMyPaymentRoutes(String groupId) {
     final repo = CycleRepository.instance;
-    final cycle = repo.getActiveCycle(groupId);
-    final members = repo.getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final netBalances = repo.getNetBalancesAfterSettlementsMinor(groupId);
     final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
     return SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
   }
 
   List<PaymentRoute> _getReceivingRoutes(String groupId) {
     final repo = CycleRepository.instance;
-    final cycle = repo.getActiveCycle(groupId);
-    final members = repo.getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final netBalances = repo.getNetBalancesAfterSettlementsMinor(groupId);
     final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
     return allRoutes.where((r) => r.toMemberId == repo.currentUserId).toList();
   }

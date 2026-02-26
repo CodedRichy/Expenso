@@ -1380,10 +1380,34 @@ class CycleRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map<String, double> calculateBalances(String groupId) {
+  /// Net balances from expenses, adjusted by all fully confirmed payment attempts.
+  /// Used so that after B pays A ₹20, adding a new expense does not double-count the settled amount.
+  Map<String, int> getNetBalancesAfterSettlementsMinor(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
-    return SettlementEngine.computeNetBalancesAsDouble(cycle.expenses, members);
+    final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
+    final net = Map<String, int>.from(
+      SettlementEngine.computeNetBalances(cycle.expenses, members, currencyCode: 'INR'),
+    );
+    for (final id in ids) {
+      net.putIfAbsent(id, () => 0);
+    }
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    for (final a in attempts) {
+      if (!a.status.isFullyConfirmed || a.amountMinor <= 0) continue;
+      if (net.containsKey(a.fromMemberId)) {
+        net[a.fromMemberId] = (net[a.fromMemberId] ?? 0) + a.amountMinor;
+      }
+      if (net.containsKey(a.toMemberId)) {
+        net[a.toMemberId] = (net[a.toMemberId] ?? 0) - a.amountMinor;
+      }
+    }
+    return Map.unmodifiable(net);
+  }
+
+  Map<String, double> calculateBalances(String groupId) {
+    final netMinor = getNetBalancesAfterSettlementsMinor(groupId);
+    return netMinor.map((id, minor) => MapEntry(id, minor / 100.0));
   }
 
   List<String> getSettlementInstructions(String groupId) {
@@ -1752,48 +1776,11 @@ class CycleRepository extends ChangeNotifier {
     return attempts.where((a) => !a.status.isFullyConfirmed).length;
   }
 
-  /// Calculate remaining balance for a member after accounting for settled payments.
-  /// Returns the net balance (positive = owed to member, negative = member owes)
-  /// adjusted by any payments marked as settled.
+  /// Remaining balance for a member (positive = owed to them, negative = they owe).
+  /// Uses net from expenses adjusted by all fully confirmed payments.
   double getRemainingBalance(String groupId, String memberId) {
-    final cycle = getActiveCycle(groupId);
-    final members = getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
-
-    int originalMinor = netBalances[memberId] ?? 0;
-    int adjustmentMinor = 0;
-
-    for (final route in routes) {
-      final attempt = attempts.firstWhere(
-        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
-        orElse: () => PaymentAttempt(
-          id: '',
-          groupId: '',
-          cycleId: '',
-          fromMemberId: '',
-          toMemberId: '',
-          amountMinor: 0,
-          currencyCode: 'INR',
-          status: PaymentAttemptStatus.notStarted,
-          createdAt: 0,
-        ),
-      );
-
-      if (attempt.status.isFullyConfirmed) {
-        final settledMinor = attempt.amountMinor <= route.amountMinor
-            ? attempt.amountMinor
-            : route.amountMinor;
-        if (route.fromMemberId == memberId) {
-          adjustmentMinor += settledMinor;
-        } else if (route.toMemberId == memberId) {
-          adjustmentMinor -= settledMinor;
-        }
-      }
-    }
-
-    return (originalMinor + adjustmentMinor) / 100.0;
+    final netMinor = getNetBalancesAfterSettlementsMinor(groupId);
+    return ((netMinor[memberId] ?? 0) / 100.0);
   }
 
   /// Total amount this member has paid in settlement (marked as paid or confirmed).
@@ -1809,35 +1796,11 @@ class CycleRepository extends ChangeNotifier {
     return totalMinor / 100.0;
   }
 
-  /// Check if all payment routes are settled for a group (receiver confirmed).
+  /// True when remaining balances (after confirmed payments) are zero for everyone.
   bool isFullySettled(String groupId) {
-    final cycle = getActiveCycle(groupId);
-    final members = getMembersForGroup(groupId);
-    if (members.isEmpty) return false;
-
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
-    if (routes.isEmpty) return true;
-
-    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
-    for (final route in routes) {
-      final attempt = attempts.firstWhere(
-        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
-        orElse: () => PaymentAttempt(
-          id: '',
-          groupId: '',
-          cycleId: '',
-          fromMemberId: '',
-          toMemberId: '',
-          amountMinor: 0,
-          currencyCode: 'INR',
-          status: PaymentAttemptStatus.notStarted,
-          createdAt: 0,
-        ),
-      );
-      if (!attempt.status.isFullyConfirmed) return false;
-    }
-    return true;
+    final net = getNetBalancesAfterSettlementsMinor(groupId);
+    final routes = SettlementEngine.computePaymentRoutes(net, 'INR');
+    return routes.isEmpty;
   }
 
   final Set<String> _fullySettledEmitted = {};

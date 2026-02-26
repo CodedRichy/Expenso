@@ -38,8 +38,9 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 - B pays → "You Owe" becomes 0 for both ✓
 - B adds "food 400" → expected: +200 for B, -200 for A. **Actual:** showed **-180 for A** (wrong).
 
-**Status:** Open  
-**Notes:** Suggests either (a) settlement/cycle close affecting next balance calc, (b) wrong attribution of "food 400" (e.g. who paid, who is "me"), or (c) rounding/off-by-one in balance aggregation. Need to trace: expense creation, cycle state, and `SettlementEngine` / balance display for this sequence.
+**Status:** Fixed  
+**Root cause:** Balances were computed from **all expenses in the cycle** only. After B paid A ₹20, that payment was "confirmed" but the **tea 40 expense stayed in the cycle**. When B added "food 400", net was recomputed from tea 40 + food 400 → A: 20−200 = −180, B: +180. The confirmed payment (B→A 20) was only applied when it matched a **current** payment route; after adding food 400 the only route was A→B 180, so the B→A 20 adjustment was never applied.  
+**Fix:** `getNetBalancesAfterSettlementsMinor` now computes raw net from expenses then **applies every fully confirmed payment attempt** (from += amount, to −= amount), regardless of current routes. `calculateBalances`, `getRemainingBalance`, `getSettlementInstructions`, `getSettlementTransfersForCurrentUser`, and settlement confirmation routes all use this "net after settlements," so remaining balances and payment instructions stay correct after new expenses are added.
 
 ---
 
