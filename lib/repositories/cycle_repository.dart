@@ -1578,7 +1578,7 @@ class CycleRepository extends ChangeNotifier {
       (a) => a.id == attemptId,
       orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
     );
-    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, amountMinor: attempt.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
     _checkAndEmitFullySettled(groupId);
   }
 

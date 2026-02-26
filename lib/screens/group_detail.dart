@@ -351,8 +351,8 @@ class _GroupDetailState extends State<GroupDetail> {
             ],
             if (!isSettled) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: SettlementActivityFeed(groupId: groupId, maxItems: 5),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: SettlementActivityFeed(groupId: groupId, maxItems: 3),
               ),
             ],
             if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[
@@ -367,12 +367,10 @@ class _GroupDetailState extends State<GroupDetail> {
                   final myRoutes = SettlementEngine.getPaymentsForMember(repo.currentUserId, allRoutes);
                   final hasDues = myRoutes.isNotEmpty;
 
-                  final settlementButtonLabel = isPassive
-                      ? 'View settlement'
-                      : (hasDues ? 'Pay / Settle' : 'View settlement');
+                  final settlementButtonLabel = hasDues ? 'Pay / Settle' : 'Settlement';
 
                   return Padding(
-                    // Two buttons only: (1) Settlement screen — label "Pay / Settle" or "View settlement"; (2) Close cycle — creator only.
+                    // Two buttons only: (1) Settlement — opens settlement screen; (2) Close cycle / Start New Cycle — creator only.
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
