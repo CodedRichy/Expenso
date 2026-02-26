@@ -789,6 +789,7 @@ class _DecisionClarityCard extends StatelessWidget {
     final myId = repo.currentUserId;
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
+    final myRemaining = repo.getRemainingBalance(groupId, myId);
 
     showModalBottomSheet<void>(
       context: context,
@@ -801,6 +802,7 @@ class _DecisionClarityCard extends StatelessWidget {
         debts: debts,
         myId: myId,
         myNet: myNet,
+        myRemaining: myRemaining,
         isPassive: isPassive,
       ),
     );
@@ -945,7 +947,11 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    hasPaymentProgress ? 'Remaining' : 'Your Status',
+                    isBalanceClear
+                        ? 'Your Status'
+                        : isCredit
+                            ? "You're owed"
+                            : 'You owe',
                     style: AppTypography.captionSmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
@@ -987,6 +993,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
   final List<Debt> debts;
   final String myId;
   final double myNet;
+  final double myRemaining;
   final bool isPassive;
 
   const _SettlementDetailsSheet({
@@ -996,14 +1003,15 @@ class _SettlementDetailsSheet extends StatelessWidget {
     required this.debts,
     required this.myId,
     required this.myNet,
+    required this.myRemaining,
     required this.isPassive,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCredit = myNet > 0;
-    final isDebt = myNet < 0;
-    final isBalanceClear = myNet.abs() < 0.01;
+    final isCredit = myRemaining > 0;
+    final isDebt = myRemaining < 0;
+    final isBalanceClear = myRemaining.abs() < 0.01;
 
     final myDebts = debts.where((d) => d.fromId == myId || d.toId == myId).toList();
 
@@ -1098,7 +1106,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
 
     final color = isCredit ? AppColors.success : AppColors.error;
     final label = isCredit ? 'You will receive' : 'You owe';
-    final amount = '₹${_fmtRupee(myNet.abs())}';
+    final amount = '₹${_fmtRupee(myRemaining.abs())}';
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.cardPadding),
