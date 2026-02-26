@@ -178,12 +178,51 @@ class ParsedExpenseResult {
       clarificationQuestion: (needClar && q != null && q.isNotEmpty) ? q : null,
     );
   }
+
+  /// API-style JSON for use as a recent example in the prompt (same shape the model outputs).
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'parseConfidence': parseConfidence,
+      'amount': amount,
+      'description': description,
+      'category': category,
+      'splitType': splitType,
+      'participants': participantNames,
+    };
+    if (payerName != null && payerName!.isNotEmpty) m['payer'] = payerName;
+    if (excludedNames.isNotEmpty) m['excluded'] = excludedNames;
+    if (exactAmountsByName.isNotEmpty) m['exactAmounts'] = exactAmountsByName;
+    if (percentageByName.isNotEmpty) m['percentageAmounts'] = percentageByName;
+    if (sharesByName.isNotEmpty) m['sharesAmounts'] = sharesByName;
+    if (constraintFlags.isNotEmpty) m['constraintFlags'] = constraintFlags;
+    if (notes.isNotEmpty) m['notes'] = notes;
+    if (needsClarification) m['needsClarification'] = true;
+    if (rejectReason != null) m['rejectReason'] = rejectReason;
+    if (clarificationQuestion != null) m['clarificationQuestion'] = clarificationQuestion;
+    return m;
+  }
 }
 
 /// Calls Groq API (Llama 3.3 70B) to parse natural language into structured expense JSON.
 /// GROQ_API_KEY must be set in .env.
 class GroqExpenseParserService {
   GroqExpenseParserService._();
+
+  static const int _maxRecentExamples = 5;
+  static final List<({String input, String json})> _recentExamples = [];
+
+  /// Call after the user confirms a Magic Bar expense so the next parse can use it as a few-shot example (like the CLI's parser_runs.log).
+  static void recordSuccessfulParse(String userInput, ParsedExpenseResult result) {
+    final trimmed = userInput.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      final json = jsonEncode(result.toJson());
+      _recentExamples.add((input: trimmed, json: json));
+      if (_recentExamples.length > _maxRecentExamples) {
+        _recentExamples.removeAt(0);
+      }
+    } catch (_) {}
+  }
 
   /// Returns an error message if [result] is invalid; null if valid.
   /// For confident: amount > 0, splitType not unresolved, and exact/percentage sums match.
@@ -230,8 +269,16 @@ class GroqExpenseParserService {
   }
 
   /// System prompt aligned with PARSER_OUTCOME_CONTRACT.md and CLI parser (tool/parser_cli.dart).
-  static String _buildSystemPrompt(String memberList, [String? currentUserName]) {
+  /// When [recentExamples] is non-empty, appends a RECENT EXAMPLES section (like CLI's parser_runs.log).
+  static String _buildSystemPrompt(
+    String memberList, [
+    String? currentUserName,
+    List<({String input, String json})> recentExamples = const [],
+  ]) {
     final currentUser = currentUserName?.trim().isNotEmpty == true ? currentUserName!.trim() : '(not set)';
+    final recentSection = recentExamples.isNotEmpty
+        ? '\n--- RECENT EXAMPLES (from your confirmed expenses) ---\n${recentExamples.map((e) => '"${e.input.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}" -> ${e.json}').join('\n')}\n\n'
+        : '';
     return '''
 You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly ONE JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
 
@@ -358,7 +405,7 @@ REJECT if:
 "I bought pizza for 800" -> {"parseConfidence":"confident","amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
 "1000 total 400 for me 600 for B" -> {"parseConfidence":"confident","amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
 "Rent 10000 split 60-40 with B" -> {"parseConfidence":"confident","amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
-
+$recentSection--- OUTPUT ---
 Output ONE valid JSON object only. Double-quoted keys/strings. No trailing commas.''';
   }
 
@@ -382,7 +429,8 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     final memberList = groupMemberNames.isEmpty
         ? ' (no members listed)'
         : ' ${groupMemberNames.join(", ")}';
-    final systemPrompt = _buildSystemPrompt(memberList, currentUserDisplayName?.trim());
+    final recent = List<({String input, String json})>.from(_recentExamples);
+    final systemPrompt = _buildSystemPrompt(memberList, currentUserDisplayName?.trim(), recent);
 
     final body = {
       'model': _model,

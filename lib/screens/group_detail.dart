@@ -1563,7 +1563,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       _controller.clear();
       setState(() => _sendAllowed = false);
       HapticFeedback.lightImpact();
-      _showConfirmationDialog(repo, result, contactNameToNormalizedPhones: _contactNameToNormalizedPhones);
+      _showConfirmationDialog(repo, result, magicBarInput: input, contactNameToNormalizedPhones: _contactNameToNormalizedPhones);
     } on GroqRateLimitException catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -1592,6 +1592,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   Future<void> _showConfirmationDialog(
     CycleRepository repo,
     ParsedExpenseResult result, {
+    String? magicBarInput,
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) async {
     final groupId = widget.group.id;
@@ -1750,6 +1751,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         isExclude: isExclude,
         allIds: allIds,
         exactValid: exactValid,
+        magicBarInput: magicBarInput,
       ),
     );
     if (!context.mounted) return;
@@ -1908,6 +1910,7 @@ class _ExpenseConfirmDialog extends StatefulWidget {
   final bool isExclude;
   final List<String> allIds;
   final bool exactValid;
+  final String? magicBarInput;
 
   const _ExpenseConfirmDialog({
     required this.repo,
@@ -1919,6 +1922,7 @@ class _ExpenseConfirmDialog extends StatefulWidget {
     required this.isExclude,
     required this.allIds,
     required this.exactValid,
+    this.magicBarInput,
   });
 
   @override
@@ -2105,6 +2109,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         splitType: persistSplitType,
       );
 
+      if (widget.magicBarInput != null && widget.magicBarInput!.trim().isNotEmpty) {
+        GroqExpenseParserService.recordSuccessfulParse(widget.magicBarInput!.trim(), widget.result);
+      }
       if (!context.mounted) return;
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
     } on NormalizedExpenseError catch (e) {
