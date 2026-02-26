@@ -211,6 +211,30 @@ class GroqExpenseParserService {
   static const int _maxRecentExamples = 5;
   static final List<({String input, String json})> _recentExamples = [];
 
+  /// Min seconds between requests to stay under Groq RPM/TPM (see docs/features/GROQ_RATE_LIMITS.md).
+  static const int _minIntervalSeconds = 2;
+  static int? _lastRequestMs;
+  static bool _inFlight = false;
+
+  static Future<void> _throttleForRateLimit() async {
+    while (_inFlight) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    final last = _lastRequestMs;
+    if (last != null) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final elapsed = (now - last) / 1000;
+      if (elapsed < _minIntervalSeconds) {
+        final wait = (_minIntervalSeconds - elapsed).ceil();
+        if (wait > 0) await Future<void>.delayed(Duration(seconds: wait));
+      }
+    }
+  }
+
+  static void _markRequestDone() {
+    _lastRequestMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
   /// Call after the user confirms a Magic Bar expense so the next parse can use it as a few-shot example (like the CLI's parser_runs.log).
   static void recordSuccessfulParse(String userInput, ParsedExpenseResult result) {
     final trimmed = userInput.trim();
@@ -443,17 +467,24 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     };
 
     try {
-      http.Response response = await _post(apiKey, body);
+      await _throttleForRateLimit();
+      _inFlight = true;
+      try {
+        http.Response response = await _post(apiKey, body);
+        _markRequestDone();
 
-      if (response.statusCode == 429) {
-        final waitSeconds = _retryAfterSeconds(response);
-        await Future<void>.delayed(Duration(seconds: waitSeconds));
-        response = await _post(apiKey, body);
         if (response.statusCode == 429) {
-          debugPrint('Groq API rate limit (429) after retry: ${response.body}');
-          throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
+          final wait1 = _retryAfterSeconds(response);
+          await Future<void>.delayed(Duration(seconds: wait1));
+          response = await _post(apiKey, body);
+          _markRequestDone();
+          if (response.statusCode == 429) {
+            final wait2 = (wait1 * 2).clamp(2, 60);
+            await Future<void>.delayed(Duration(seconds: wait2));
+            debugPrint('Groq API rate limit (429) after backoff: ${response.body}');
+            throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
+          }
         }
-      }
 
       if (response.statusCode != 200) {
         debugPrint('Groq API error: ${response.statusCode} ${response.body}');
@@ -545,7 +576,10 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           clarificationQuestion: result.clarificationQuestion,
         );
       }
-      return result;
+        return result;
+      } finally {
+        _inFlight = false;
+      }
     } on GroqRateLimitException {
       rethrow;
     } catch (e) {
