@@ -11,28 +11,32 @@ class GroqRateLimitException implements Exception {
 }
 
 /// Result of parsing natural language into structured expense data.
-/// splitType: "even" | "exact" | "exclude" | "percentage" | "shares"
+/// splitType: "even" | "exact" | "exclude" | "percentage" | "shares" | "unresolved"
 /// - even: split equally among participants
 /// - exact: each participant has a specific amount (exactAmountsByName)
 /// - exclude: split equally among everyone except excludedNames
 /// - percentage: each pays a % of total (percentageByName); should sum to 100
 /// - shares: split by units e.g. nights (sharesByName); amount = total * (personShares / totalShares)
+/// - unresolved: participants unknown; user must confirm before ledger write
+///
+/// parseConfidence: "confident" | "constrained" | "reject" — see PARSER_OUTCOME_CONTRACT.md.
 class ParsedExpenseResult {
   final double amount;
   final String description;
   final String category;
-  final String splitType; // "even" | "exact" | "exclude" | "percentage" | "shares"
+  final String splitType;
   final List<String> participantNames;
-  /// Who paid (display name). If set, overrides current user as payer.
   final String? payerName;
-  /// For splitType "exclude": names to exclude from the split.
   final List<String> excludedNames;
-  /// For splitType "exact": display name -> amount owed.
   final Map<String, double> exactAmountsByName;
-  /// For splitType "percentage": display name -> percentage (0-100). May include "me". Sum should be 100.
   final Map<String, double> percentageByName;
-  /// For splitType "shares": display name -> number of shares (e.g. nights). Amount = total * (shares / totalShares).
   final Map<String, double> sharesByName;
+  final String parseConfidence;
+  final List<String> constraintFlags;
+  final List<String> notes;
+  final String? rejectReason;
+  final bool needsClarification;
+  final String? clarificationQuestion;
 
   ParsedExpenseResult({
     required this.amount,
@@ -45,11 +49,19 @@ class ParsedExpenseResult {
     Map<String, double>? exactAmountsByName,
     Map<String, double>? percentageByName,
     Map<String, double>? sharesByName,
+    this.parseConfidence = 'confident',
+    List<String>? constraintFlags,
+    List<String>? notes,
+    this.rejectReason,
+    this.needsClarification = false,
+    this.clarificationQuestion,
   })  : participantNames = participantNames ?? [],
         excludedNames = excludedNames ?? [],
         exactAmountsByName = exactAmountsByName ?? {},
         percentageByName = percentageByName ?? {},
-        sharesByName = sharesByName ?? {};
+        sharesByName = sharesByName ?? {},
+        constraintFlags = constraintFlags ?? [],
+        notes = notes ?? [];
 
   static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
     final amountRaw = json['amount'] ?? json['amt'];
@@ -67,7 +79,9 @@ class ParsedExpenseResult {
                 ? 'percentage'
                 : split == 'shares'
                     ? 'shares'
-                    : 'even';
+                    : split == 'unresolved'
+                        ? 'unresolved'
+                        : 'even';
     final parts = json['participants'] ?? json['participant'] ?? json['members'];
     List<String> names = [];
     if (parts is List) {
@@ -122,6 +136,29 @@ class ParsedExpenseResult {
         if (numVal != null && numVal > 0) sharesMap[name] = numVal;
       }
     }
+    final confidence = (json['parseConfidence'] as String?)?.trim().toLowerCase();
+    final pc = confidence == 'reject'
+        ? 'reject'
+        : confidence == 'constrained'
+            ? 'constrained'
+            : 'confident';
+    List<String> flags = [];
+    final flagsRaw = json['constraintFlags'];
+    if (flagsRaw is List) {
+      for (final f in flagsRaw) {
+        if (f != null && f.toString().trim().isNotEmpty) flags.add(f.toString().trim());
+      }
+    }
+    List<String> notesList = [];
+    final notesRaw = json['notes'];
+    if (notesRaw is List) {
+      for (final n in notesRaw) {
+        if (n != null && n.toString().trim().isNotEmpty) notesList.add(n.toString().trim());
+      }
+    }
+    final needClar = json['needsClarification'] == true;
+    final q = (json['clarificationQuestion'] as String?)?.trim();
+    final rejectReasonStr = (json['rejectReason'] as String?)?.trim();
     return ParsedExpenseResult(
       amount: amount,
       description: desc,
@@ -133,6 +170,12 @@ class ParsedExpenseResult {
       exactAmountsByName: exactMap.isNotEmpty ? exactMap : null,
       percentageByName: pctMap.isNotEmpty ? pctMap : null,
       sharesByName: sharesMap.isNotEmpty ? sharesMap : null,
+      parseConfidence: pc,
+      constraintFlags: flags.isNotEmpty ? flags : null,
+      notes: notesList.isNotEmpty ? notesList : null,
+      rejectReason: rejectReasonStr != null && rejectReasonStr.isNotEmpty ? rejectReasonStr : null,
+      needsClarification: needClar,
+      clarificationQuestion: (needClar && q != null && q.isNotEmpty) ? q : null,
     );
   }
 }
@@ -143,16 +186,19 @@ class GroqExpenseParserService {
   GroqExpenseParserService._();
 
   /// Returns an error message if [result] is invalid; null if valid.
-  /// Checks: amount valid, and for exact/percentage splits that amounts sum correctly (no gap).
+  /// For confident: amount > 0, splitType not unresolved, and exact/percentage sums match.
   static String? validateResult(ParsedExpenseResult result) {
     if (result.amount.isNaN || result.amount.isInfinite) {
       return 'Amount must be a valid number.';
     }
-    if (result.amount <= 0) {
-      return 'Amount must be greater than 0.';
+    if (result.parseConfidence == 'confident') {
+      if (result.amount <= 0) return 'Amount must be greater than 0.';
+      if (result.splitType == 'unresolved') {
+        return 'Confident parse cannot have splitType unresolved.';
+      }
+      final gap = _findGap(result);
+      if (gap != null) return gap;
     }
-    final gap = _findGap(result);
-    if (gap != null) return gap;
     return null;
   }
 
