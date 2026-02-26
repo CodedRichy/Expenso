@@ -1782,10 +1782,13 @@ class CycleRepository extends ChangeNotifier {
       );
 
       if (attempt.status.isFullyConfirmed) {
+        final settledMinor = attempt.amountMinor <= route.amountMinor
+            ? attempt.amountMinor
+            : route.amountMinor;
         if (route.fromMemberId == memberId) {
-          adjustmentMinor += route.amountMinor;
+          adjustmentMinor += settledMinor;
         } else if (route.toMemberId == memberId) {
-          adjustmentMinor -= route.amountMinor;
+          adjustmentMinor -= settledMinor;
         }
       }
     }

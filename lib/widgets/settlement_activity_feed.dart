@@ -4,11 +4,13 @@ import '../design/typography.dart';
 import '../models/settlement_event.dart';
 import '../repositories/cycle_repository.dart';
 
-/// Compact bar that opens the full Activity feed in a bottom sheet when tapped.
+/// Activity card in old design; tap opens full list in a bottom sheet.
 class SettlementActivityTapToExpand extends StatelessWidget {
   final String groupId;
 
   const SettlementActivityTapToExpand({super.key, required this.groupId});
+
+  static const int _previewCount = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +21,7 @@ class SettlementActivityTapToExpand extends StatelessWidget {
         if (events.isEmpty) return const SizedBox.shrink();
 
         final pendingCount = CycleRepository.instance.getPendingSettlementCount(groupId);
-        final latest = events.first;
+        final displayEvents = events.take(_previewCount).toList();
 
         return Material(
           color: AppColors.surface,
@@ -92,33 +94,71 @@ class SettlementActivityTapToExpand extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.history, size: 20, color: AppColors.textSecondary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      latest.displayMessage,
-                      style: context.bodyPrimary,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.history,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Activity',
+                          style: context.listItemTitle.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (pendingCount > 0) _PendingBadge(count: pendingCount),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.expand_less,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ],
                     ),
                   ),
-                  if (pendingCount > 0) ...[
-                    const SizedBox(width: 8),
-                    _PendingBadge(count: pendingCount),
-                  ],
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_up,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const Divider(height: 1),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: displayEvents.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+                    itemBuilder: (context, index) => _EventRow(event: displayEvents[index]),
                   ),
+                  if (events.length > _previewCount)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          Text(
+                            'Tap to see all',
+                            style: context.caption.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.expand_less,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
