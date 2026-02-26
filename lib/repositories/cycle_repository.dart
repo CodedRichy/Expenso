@@ -1789,6 +1789,19 @@ class CycleRepository extends ChangeNotifier {
     return (originalMinor + adjustmentMinor) / 100.0;
   }
 
+  /// Total amount this member has paid in settlement (marked as paid or confirmed).
+  /// Used so the summary card can show "Settled ₹X" alongside "You Paid" (expenses).
+  double getSettlementPaidByMember(String groupId, String memberId) {
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    int totalMinor = 0;
+    for (final a in attempts) {
+      if (a.fromMemberId == memberId && a.status.isSettled) {
+        totalMinor += a.amountMinor;
+      }
+    }
+    return totalMinor / 100.0;
+  }
+
   /// Check if all payment routes are settled for a group (receiver confirmed).
   bool isFullySettled(String groupId) {
     final cycle = getActiveCycle(groupId);

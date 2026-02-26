@@ -822,6 +822,7 @@ class _DecisionClarityCard extends StatelessWidget {
         youPaid += e.amount;
       }
     }
+    final settledPaid = repo.getSettlementPaidByMember(groupId, myId);
 
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
@@ -865,6 +866,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   : _buildContent(
                       cycleTotal: cycleTotal,
                       youPaid: youPaid,
+                      settledPaid: settledPaid,
                       myNet: myNet,
                       myRemaining: myRemaining,
                       hasPaymentProgress: hasPaymentProgress,
@@ -883,6 +885,7 @@ class _DecisionClarityCard extends StatelessWidget {
   Widget _buildContent({
     required double cycleTotal,
     required double youPaid,
+    required double settledPaid,
     required double myNet,
     required double myRemaining,
     required bool hasPaymentProgress,
@@ -939,6 +942,23 @@ class _DecisionClarityCard extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.95),
                     ),
                   ),
+                  if (settledPaid > 0.01) ...[
+                    SizedBox(height: AppSpacing.spaceXs),
+                    Text(
+                      'Settled',
+                      style: AppTypography.captionSmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.space2xs),
+                    Text(
+                      '₹${_fmtRupee(settledPaid)}',
+                      style: AppTypography.amountSM.copyWith(
+                        color: Colors.white.withValues(alpha: 0.95),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
