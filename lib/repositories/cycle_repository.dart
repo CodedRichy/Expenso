@@ -326,6 +326,8 @@ class CycleRepository extends ChangeNotifier {
   final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _systemMessageSubs = {};
   final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _revisionSubs = {};
   final Map<String, StreamSubscription<Set<String>>> _deletedIdsSubs = {};
+  final Map<String, StreamSubscription<List<DocView>>> _paymentAttemptSubs = {};
+  final Map<String, String> _paymentAttemptCycleId = {};
 
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
@@ -422,6 +424,11 @@ class CycleRepository extends ChangeNotifier {
       sub.cancel();
     }
     _deletedIdsSubs.clear();
+    for (final sub in _paymentAttemptSubs.values) {
+      sub.cancel();
+    }
+    _paymentAttemptSubs.clear();
+    _paymentAttemptCycleId.clear();
   }
 
   void restartListening() {
@@ -445,6 +452,14 @@ class CycleRepository extends ChangeNotifier {
         _systemMessageSubs[id]?.cancel();
         _systemMessageSubs.remove(id);
         _systemMessagesByGroup.remove(id);
+      }
+    }
+    for (final id in _paymentAttemptSubs.keys.toList()) {
+      if (!newIds.contains(id)) {
+        _paymentAttemptSubs[id]?.cancel();
+        _paymentAttemptSubs.remove(id);
+        _paymentAttemptCycleId.remove(id);
+        _paymentAttemptsByGroup.remove(id);
       }
     }
 
@@ -542,6 +557,19 @@ class CycleRepository extends ChangeNotifier {
             debugPrint('CycleRepository deletedExpenseIdsStream($groupId) error: $e');
           },
         );
+      }
+      final needPaymentAttemptSub = _paymentAttemptCycleId[groupId] != activeCycleId;
+      if (needPaymentAttemptSub) {
+        _paymentAttemptSubs[groupId]?.cancel();
+        _paymentAttemptSubs[groupId] = FirestoreService.instance
+            .paymentAttemptsStream(groupId, activeCycleId)
+            .listen(
+          (attemptDocs) => _onPaymentAttemptsSnapshot(groupId, attemptDocs),
+          onError: (e, st) {
+            debugPrint('CycleRepository paymentAttemptsStream($groupId) error: $e');
+          },
+        );
+        _paymentAttemptCycleId[groupId] = activeCycleId;
       }
     }
 
@@ -665,6 +693,13 @@ class CycleRepository extends ChangeNotifier {
 
   void _onDeletedIdsSnapshot(String groupId, Set<String> ids) {
     _deletedIdsByGroup[groupId] = ids;
+  }
+
+  void _onPaymentAttemptsSnapshot(String groupId, List<DocView> attemptDocs) {
+    _paymentAttemptsByGroup[groupId] = attemptDocs
+        .map((d) => PaymentAttempt.fromFirestore(d.id, d.data()))
+        .toList();
+    notifyListeners();
   }
 
   String _phoneForUid(String uid) {
@@ -1321,6 +1356,9 @@ class CycleRepository extends ChangeNotifier {
     }
     _expenseSubs[groupId]?.cancel();
     _expenseSubs.remove(groupId);
+    _paymentAttemptSubs[groupId]?.cancel();
+    _paymentAttemptSubs.remove(groupId);
+    _paymentAttemptCycleId.remove(groupId);
     await FirestoreService.instance.deleteGroup(groupId);
     _removeGroupLocally(groupId);
   }
@@ -1332,6 +1370,10 @@ class CycleRepository extends ChangeNotifier {
     _groupMeta.remove(groupId);
     _expenseSubs[groupId]?.cancel();
     _expenseSubs.remove(groupId);
+    _paymentAttemptSubs[groupId]?.cancel();
+    _paymentAttemptSubs.remove(groupId);
+    _paymentAttemptCycleId.remove(groupId);
+    _paymentAttemptsByGroup.remove(groupId);
     if (meta != null) {
       _expensesByCycleId.remove(meta.activeCycleId);
     }
