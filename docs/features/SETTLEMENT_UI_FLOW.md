@@ -1,6 +1,6 @@
 # Settlement & Close-Cycle UI Flow
 
-Single source of truth for Group Detail settlement actions (Pay / Settle, View settlement, Close cycle).
+Single source of truth for Group Detail settlement actions (Settlement, Close cycle).
 
 **Current implementation:** Two buttons — **Settlement** (same label for everyone, whether they have dues or not); **Close cycle** / **Start New Cycle** for creator only. See **Current implementation** at the end of this doc.
 
@@ -79,7 +79,7 @@ Two **separate, visible actions** so users don’t have to guess what one button
 
 ## Current implementation (matches recommended UX)
 
-- **First button** (everyone): **“Pay / Settle”** when you have dues, **“View settlement”** when you don’t (or when cycle is settling). Always opens Settlement Confirmation (UPI/cash, status).
+- **First button** (everyone): **“Settlement”** always. Opens Settlement Confirmation (UPI/cash, status); same label whether you have dues or not so the screen looks consistent next to **Close cycle**.
 - **Second button** (creator only): **“Close cycle”** when active → Settle & Restart dialog. **“Start New Cycle”** when settling → Start new cycle dialog. Confirm in either dialog closes the cycle and starts a new one.
 
 ---
