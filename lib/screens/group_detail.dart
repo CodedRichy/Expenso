@@ -1079,7 +1079,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
               child: _buildYourPosition(isCredit, isDebt, isBalanceClear),
             ),
             SizedBox(height: AppSpacing.sectionGap),
-            if (myDebts.isEmpty)
+            if (myDebts.isEmpty || isBalanceClear)
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
                 child: Center(
