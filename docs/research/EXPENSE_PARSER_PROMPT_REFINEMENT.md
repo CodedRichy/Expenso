@@ -1,6 +1,6 @@
 # AI expense parser: prompt refinement
 
-**Note:** The app parser (`groq_expense_parser_service.dart`) is not to be changed until the CLI (`tool/parser_cli.dart`) is iterated to satisfaction. Refine the CLI prompt and behavior first, then port to the app.
+**Note:** The app parser has been aligned with the CLI parser: it now uses the same outcome contract (parseConfidence: confident/constrained/reject), splitType "unresolved", constraintFlags, and settlement-vs-expense rules. For further iteration, refine the CLI first, then port to the app.
 
 When the Magic Bar produces a **wrong parse** (wrong payer, participants, split type, amount, or description), fix it by updating the prompt and recording the change here. The prompt lives in `lib/services/groq_expense_parser_service.dart` (`_buildSystemPrompt`). The prompt text is **model-agnostic** and is designed to work with any LLM (Groq, OpenAI, Anthropic, etc.).
 

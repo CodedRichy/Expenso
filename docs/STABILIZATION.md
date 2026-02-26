@@ -85,8 +85,8 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 ### Adding an Expense (Magic Bar Path)
 
 1. User types in Magic Bar text field, presses send
-2. `GroqExpenseParserService.parseExpense()` called with text + member names
-3. Groq API returns JSON: description, amount, payer, participants, split type, amounts
+2. `GroqExpenseParserService.parse()` called with text + member names
+3. Groq API returns JSON: parseConfidence, description, amount, payer, participants, split type (including "unresolved"), amounts; on reject the service throws and no dialog is shown
 4. Confirmation UI shown with parsed data
 5. User taps Confirm → `CycleRepository.addExpenseFromMagicBar()` called
 6. Validation runs (`validateExpenseAmount`, `validateExpenseDescription`)

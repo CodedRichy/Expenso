@@ -1617,7 +1617,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 ? 'Percentage'
                 : result.splitType == 'shares'
                     ? 'Shares'
-                    : 'Even';
+                    : result.splitType == 'unresolved'
+                        ? 'Unresolved'
+                        : 'Even';
 
     final List<_ParticipantSlot> slots = [];
     final bool isExclude = result.splitType == 'exclude';
@@ -1649,6 +1651,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           displayName = name;
         }
         slots.add(_ParticipantSlot(name: displayName, amount: amount, id: id, isGuessed: false));
+      }
+    } else if (result.splitType == 'unresolved') {
+      for (final m in members) {
+        final displayName = repo.getMemberDisplayNameById(m.id);
+        final perShare = members.isNotEmpty ? result.amount / members.length : result.amount;
+        slots.add(_ParticipantSlot(name: displayName, amount: perShare, id: m.id, isGuessed: false));
       }
     } else if (result.splitType == 'shares' && result.sharesByName.isNotEmpty) {
       final totalShares = result.sharesByName.values.fold<double>(0.0, (a, b) => a + b);
@@ -2064,7 +2072,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
     final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
         ? 'Exact'
-        : widget.splitTypeCap;
+        : widget.splitTypeCap == 'Unresolved'
+            ? 'Even'
+            : widget.splitTypeCap;
 
     try {
       final participantSlots = slots.map((s) => ParticipantSlot(

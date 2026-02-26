@@ -229,72 +229,137 @@ class GroqExpenseParserService {
     return key.trim();
   }
 
-  /// System prompt for expense parsing. Designed to work with any LLM (model-agnostic).
-  /// When a parse error occurs: document it in docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md
-  /// and add a rule, anti-pattern in COMMON MISTAKES, or few-shot example. Preserve splitType order: exact → percentage → shares → exclude → even.
+  /// System prompt aligned with PARSER_OUTCOME_CONTRACT.md and CLI parser (tool/parser_cli.dart).
   static String _buildSystemPrompt(String memberList, [String? currentUserName]) {
-    final currentUserLine = currentUserName != null && currentUserName.isNotEmpty
-        ? '\nCurrent user (I/me/my — use this name in exactAmounts and sharesAmounts when the message says "I had X", "my X was N", "I took N shares", or "rest between me and X"): $currentUserName'
-        : '';
+    final currentUser = currentUserName?.trim().isNotEmpty == true ? currentUserName!.trim() : '(not set)';
     return '''
-You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly one JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
+You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly ONE JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
+
+IMPORTANT: If the message contains multiple expenses or intents, you MUST still output only ONE object and mark it as constrained with constraintFlags ["multiIntent"]. Do NOT collapse multiple expenses into one amount.
 
 --- OUTPUT SCHEMA (required every time) ---
-amount (number), description (string, 1–3 words), category (string or ""), splitType ("even"|"exact"|"exclude"|"percentage"|"shares"), participants (array of strings from member list; [] = everyone or when only payer is named).
-Optional: payer (string), excluded (array), exactAmounts (name→number), percentageAmounts (name→0–100, sum 100), sharesAmounts (name→shares). Include only when splitType or phrasing requires it.
-Example shape: {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+parseConfidence ("confident"|"constrained"|"reject"),
+amount (number; use 0 if unknown),
+description (string),
+category (string or ""),
+splitType ("even"|"exact"|"exclude"|"percentage"|"shares"|"unresolved"),
+participants (array; [] = everyone ONLY when explicitly stated or safely defaultable)
 
---- SCENARIO (infer in this order) ---
-1) WHO PAID? "X paid", "paid by X", "X bought/got/covered" → payer X (only if X is in member list). "I paid", "I had to pay", or payer name not in list (e.g. slang) → omit payer.
-2) WHO SHARES? "with X" / "for me and X" → participants = [X] or [X,Y] — never include current user in participants. "everyone"/"all"/"the group" OR payer named but no "with Y" → participants = [].
-3) SPLIT TYPE? Per-person amounts → exact. Percentages → percentage. Share counts (nights, etc.) → shares. Someone excluded → exclude. Else → even.
-Key: "X paid 200" (no "with Y") = payer:X, participants:[], even. "200 with X" or "dinner with X 200" = participants:[X], even.
+Optional:
+payer (string; ONLY from member list; when "I paid" set to current user name explicitly),
+excluded (array),
+exactAmounts,
+percentageAmounts,
+sharesAmounts,
+constraintFlags (array; REQUIRED when constrained),
+notes (array of strings; non-actionable metadata),
+needsClarification (boolean; true ONLY when reject),
+rejectReason (string; ONLY when reject)
+
+When parseConfidence is "reject":
+- set needsClarification = true
+- do NOT ask a question
+- do NOT create a ledger-impacting expense
+
+Example:
+{"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"$currentUser"}
+
+--- SCENARIO (infer strictly in this order) ---
+
+1) WHO PAID?
+- "X paid", "paid by X", "X bought/got/covered" → payer = X (ONLY if X is in member list)
+- "I paid", "I covered", "I bought" → payer = current user name explicitly
+- If payer not in member list → omit payer
+- NEVER invent a payer
+
+2) WHO SHARES?
+- "with X", "for me and X" → participants = [X] (NEVER include current user)
+- "for A and B" when current user is A → participants = [B]
+- "everyone", "all", "the group" AND explicitly stated → participants = []
+- If participants unclear ("some of us", "you know who", "usual people"):
+  → participants = []
+  → splitType = "unresolved"
+  → constraintFlags MUST include "participantsUnknown" or "participantsInferredFromHistory"
+- NEVER assign even/exact/etc when participants are unknown
+
+3) SPLIT TYPE?
+- If participants unknown → splitType = "unresolved"
+- Per-person amounts → exact
+- Percentages → percentage
+- Shares → shares
+- Explicit exclusions → exclude
+- Else (participants known or explicitly everyone) → even
 
 --- MEMBER LIST (use ONLY these spellings) ---
-$memberList$currentUserLine
-Match typos/nicknames to this list; output exact spelling only. Payer must be from this list or omit.
+$memberList
+Current user name: $currentUser
+Match nicknames/typos to this list. Output exact spelling only.
 
 --- FIELD RULES ---
-• amount: One numeric total. Strip currency and thousand separators (1,200 → 1200). Decimals OK.
-• description: 1–3 words, title-case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
-• category: Food/Transport/Utilities when obvious; "" otherwise.
-• splitType (first match): (a) exact — per-person amounts; exactAmounts must include everyone in the split; sum must equal total. (b) percentage — percentageAmounts sum 100. (c) shares — sharesAmounts must include everyone. (d) exclude — excluded list. (e) even — default.
-• participants: Others only — never include current user. "Split between A, B, C" when current user is A → participants:[B,C]. "with X" → [X]. "everyone" or payer-only → [].
-• exactAmounts: Must include current user when message says "I had X", "my X was N", or "rest between me and X". Use current user name from the prompt so sum = total.
-• sharesAmounts: Must include current user when message says "I took N shares". Use current user name so every person in the split has an entry.
-• payer: Only from member list. Omit for "I paid" or if name not in list.
+• amount: ONE numeric total. Strip currency symbols and separators (1,200 → 1200). Decimals allowed.
+• description: 1–3 words, Title Case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
+• category: Food / Transport / Utilities when obvious; else "".
+• participants: Others only. NEVER include current user.
+• splitType:
+  - exact → exactAmounts MUST include everyone involved; sum MUST equal total
+  - percentage → percentageAmounts MUST sum to 100
+  - shares → sharesAmounts MUST include everyone
+  - exclude → excluded list REQUIRED
+• exactAmounts / sharesAmounts MUST include current user ONLY when explicitly stated ("I had 800", "I took 2 shares")
+• payer MUST be explicit or omitted; NEVER inferred from history
 
---- EDGE CASES ---
-Unmatched name → use as written or best guess from list. Ambiguous amount → use main total. Even vs exact unclear → prefer even unless per-person amounts given. Output valid JSON: double-quoted keys/strings, no trailing commas.
+--- CONFIDENCE RULES (NON-NEGOTIABLE) ---
+
+CONFIDENT only if ALL true:
+- amount > 0
+- exactly ONE expense intent
+- payer known or safely defaulted ("I paid")
+- participants explicit or explicitly everyone
+- NO history-based inference ("same as usual")
+- NO settlement language
+- NO future intent
+
+CONSTRAINED if:
+- amount known BUT participants unknown
+- history-based inference detected
+- distribution deferred ("we'll divide later")
+- settlement mentioned alongside expense
+- multiple intents detected (set constraintFlags ["multiIntent"])
+- advance payment not yet distributed
+
+REJECT if:
+- no amount AND ledger mutation implied
+- settlement-only message ("clear what I owed") with no expense
+- future intent ("I'll take care of mine next time")
+- intent cannot be safely classified
+
+--- SETTLEMENT VS EXPENSE ---
+- Repaying debt = settlement, NOT an expense
+- Settlement-only messages → constrained with constraintFlags ["settlementNotExpense"] OR reject if amount missing
+- Expense + "already paid back" → record expense; settlements handled separately (constraintFlags ["settlementsRecordedSeparately"])
+
+--- NOTES ---
+- Narrative text ("exclude leftovers", "mostly", "even things out") → notes[]
+- Notes NEVER affect money
+
+--- CRITICAL SAFETY RULES ---
+• NEVER invent participants, amounts, splits, or settlements
+• NEVER upgrade confidence based on history
+• participants: [] WITHOUT a constraint flag means explicit "everyone"
+• participants: [] WITH participantsUnknown means UNKNOWN
+• Applied ledger entries must be safe under zero-sum accounting
 
 --- COMMON MISTAKES (wrong → right) ---
-"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B] (not [] or ["me",…]). "Split between A, B, C" with current user A → RIGHT: participants:[B,C] (not [A,B,C]). "I had 800, B 200" total 1000 → RIGHT: exactAmounts include current user: {"A":800,"B":200} so sum=1000. "I took 2 shares, B 1" → RIGHT: sharesAmounts {"A":2,"B":1}. Payer name not in list (e.g. "lowk paid") → RIGHT: omit payer. "amount with A and B" → RIGHT: participants:["A","B"]. "dinner with X 200" → RIGHT: participants:[X].
+"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B]. "Split between A, B, C" with current user A → RIGHT: participants:[B,C]. "I had 800, B 200" total 1000 → RIGHT: exactAmounts include current user so sum=1000. "I took 2 shares, B 1" → RIGHT: sharesAmounts include current user. Payer name not in list → RIGHT: omit payer.
 
 --- EXAMPLES (member list: A, B, C; current user: A) ---
-"ght biriyani 200 with a" -> {"amount":200,"description":"Biriyani","category":"Food","splitType":"even","participants":["A"]}
-"dinr 450 w b" -> {"amount":450,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
-"bt groceries 800 w everyone" -> {"amount":800,"description":"Groceries","category":"Food","splitType":"even","participants":[]}
-"snks 150 for a and b" -> {"amount":150,"description":"Snacks","category":"Food","splitType":"even","participants":["A","B"]}
-"600 with B" -> {"amount":600,"description":"Expense","category":"","splitType":"even","participants":["B"]}
-"dinner with A 300" -> {"amount":300,"description":"Dinner","category":"Food","splitType":"even","participants":["A"]}
-"I had dinner with B 200" -> {"amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
-"B paid 200" -> {"amount":200,"description":"Expense","category":"","splitType":"even","participants":[],"payer":"B"}
-"B paid 500 for dinner" -> {"amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
-"C settled the bill 1500" -> {"amount":1500,"description":"Bill","category":"","splitType":"even","participants":[],"payer":"C"}
-"I bought pizza for 800" -> {"amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
-"Dinner 2000 split all except C" -> {"amount":2000,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
-"1500 for pizza exclude B" -> {"amount":1500,"description":"Pizza","category":"Food","splitType":"exclude","participants":[],"excluded":["B"]}
-"Dinner 800 not C" -> {"amount":800,"description":"Dinner","category":"Food","splitType":"exclude","participants":[],"excluded":["C"]}
-"1000 total 400 for me 600 for B" -> {"amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
-"Lunch 500 A 200 C 300" -> {"amount":500,"description":"Lunch","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":200,"C":300}}
-"600: 400 me 200 B" -> {"amount":600,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":200}}
-"Dinner 1500 B owes 800 I owe 700" -> {"amount":1500,"description":"Dinner","category":"Food","splitType":"exact","participants":[],"exactAmounts":{"A":700,"B":800}}
-"Rent 10000 split 60-40 with B" -> {"amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
-"Bill 1200 A 30% B 70%" -> {"amount":1200,"description":"Bill","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":30,"B":70}}
-"Airbnb 1500 A 2 nights B 3 nights" -> {"amount":1500,"description":"Airbnb","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"B":3}}
-"Rent 3000 I stayed 2 C 4 nights" -> {"amount":3000,"description":"Rent","category":"","splitType":"shares","participants":[],"sharesAmounts":{"A":2,"C":4}}
+"dinner 200 with B" -> {"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
+"B paid 500 for dinner" -> {"parseConfidence":"confident","amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
+"I bought pizza for 800" -> {"parseConfidence":"confident","amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
+"1000 total 400 for me 600 for B" -> {"parseConfidence":"confident","amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
+"Rent 10000 split 60-40 with B" -> {"parseConfidence":"confident","amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
 
-Output only the single JSON object. Double-quoted keys and strings. Names from member list only.''';
+Output ONE valid JSON object only. Double-quoted keys/strings. No trailing commas.''';
   }
 
   /// Returns parsed expense. Allows partial success: if amount is valid, returns a result
@@ -397,6 +462,13 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
         throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
       }
 
+      if (result.parseConfidence == 'reject') {
+        final msg = result.rejectReason?.trim().isNotEmpty == true
+            ? result.rejectReason!
+            : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".';
+        throw Exception(msg);
+      }
+
       final validationError = validateResult(result);
       if (validationError != null) {
         final fallback = _fallbackParse(userInput);
@@ -417,6 +489,12 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
           exactAmountsByName: result.exactAmountsByName,
           percentageByName: result.percentageByName,
           sharesByName: result.sharesByName,
+          parseConfidence: result.parseConfidence,
+          constraintFlags: result.constraintFlags,
+          notes: result.notes,
+          rejectReason: result.rejectReason,
+          needsClarification: result.needsClarification,
+          clarificationQuestion: result.clarificationQuestion,
         );
       }
       return result;
@@ -443,6 +521,8 @@ Output only the single JSON object. Double-quoted keys and strings. Names from m
       category: '',
       splitType: 'even',
       participantNames: [],
+      parseConfidence: 'constrained',
+      constraintFlags: ['fallbackExtraction'],
     );
   }
 

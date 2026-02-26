@@ -407,6 +407,11 @@ NormalizationResult normalizeExpense({
       unresolvedNames.addAll(result.unresolvedNames);
       validationWarning = result.validationWarning;
 
+    case 'unresolved':
+      final evenResult = _buildEvenSlots(parsed, ctx, currentUserId);
+      slots = evenResult.slots;
+      unresolvedNames.addAll(evenResult.unresolvedNames);
+
     default:
       final result = _buildEvenSlots(parsed, ctx, currentUserId);
       slots = result.slots;
@@ -645,6 +650,8 @@ String _capitalizeSplitType(String splitType) {
       return 'Percentage';
     case 'shares':
       return 'Shares';
+    case 'unresolved':
+      return 'Unresolved';
     default:
       return 'Even';
   }
