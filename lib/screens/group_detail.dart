@@ -395,7 +395,7 @@ class _GroupDetailState extends State<GroupDetail> {
                         ),
                         if (isCreator) ...[
                           const SizedBox(height: 10),
-                          OutlinedButton(
+                          ElevatedButton(
                             onPressed: () async {
                               if (isPassive) {
                                 final confirmed = await showDialog<bool>(
@@ -445,11 +445,12 @@ class _GroupDetailState extends State<GroupDetail> {
                                 }
                               }
                             },
-                            style: OutlinedButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
+                              elevation: 0,
                               minimumSize: const Size(double.infinity, 0),
                             ),
                             child: Text(
