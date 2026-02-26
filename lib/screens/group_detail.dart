@@ -352,7 +352,7 @@ class _GroupDetailState extends State<GroupDetail> {
             if (!isSettled) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: SettlementActivityFeed(groupId: groupId, maxItems: 3),
+                child: SettlementActivityTapToExpand(groupId: groupId),
               ),
             ],
             if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive)) ...[

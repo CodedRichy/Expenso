@@ -4,6 +4,131 @@ import '../design/typography.dart';
 import '../models/settlement_event.dart';
 import '../repositories/cycle_repository.dart';
 
+/// Compact bar that opens the full Activity feed in a bottom sheet when tapped.
+class SettlementActivityTapToExpand extends StatelessWidget {
+  final String groupId;
+
+  const SettlementActivityTapToExpand({super.key, required this.groupId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<SettlementEvent>>(
+      stream: CycleRepository.instance.settlementEventsStream(groupId),
+      builder: (context, snapshot) {
+        final events = snapshot.data ?? [];
+        if (events.isEmpty) return const SizedBox.shrink();
+
+        final pendingCount = CycleRepository.instance.getPendingSettlementCount(groupId);
+        final latest = events.first;
+
+        return Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: () {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => DraggableScrollableSheet(
+                  initialChildSize: 0.5,
+                  minChildSize: 0.25,
+                  maxChildSize: 0.9,
+                  builder: (ctx, scrollController) => Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Activity',
+                                style: context.listItemTitle.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (pendingCount > 0) _PendingBadge(count: pendingCount),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: StreamBuilder<List<SettlementEvent>>(
+                            stream: CycleRepository.instance.settlementEventsStream(groupId),
+                            builder: (context, snapshot) {
+                              final list = snapshot.data ?? [];
+                              if (list.isEmpty) {
+                                return const Center(child: Text('No activity yet'));
+                              }
+                              return ListView.separated(
+                                controller: scrollController,
+                                padding: const EdgeInsets.only(bottom: 24),
+                                itemCount: list.length,
+                                separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+                                itemBuilder: (context, index) => _EventRow(event: list[index]),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.history, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      latest.displayMessage,
+                      style: context.bodyPrimary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (pendingCount > 0) ...[
+                    const SizedBox(width: 8),
+                    _PendingBadge(count: pendingCount),
+                  ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_up,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class SettlementActivityFeed extends StatelessWidget {
   final String groupId;
   final int maxItems;
