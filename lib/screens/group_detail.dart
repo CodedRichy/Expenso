@@ -348,6 +348,8 @@ class _GroupDetailState extends State<GroupDetail> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: SettlementProgressIndicator(groupId: groupId),
               ),
+            ],
+            if (!isSettled) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: SettlementActivityFeed(groupId: groupId, maxItems: 5),

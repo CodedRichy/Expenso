@@ -1574,7 +1574,11 @@ class CycleRepository extends ChangeNotifier {
     );
 
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByReceiver, confirmedAt: now);
-    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, paymentAttemptId: attemptId);
+    final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+    );
+    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, amountMinor: attempt.amountMinor, paymentAttemptId: attemptId);
     _checkAndEmitFullySettled(groupId);
   }
 

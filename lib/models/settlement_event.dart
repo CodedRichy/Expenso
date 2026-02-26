@@ -133,6 +133,9 @@ class SettlementEvent {
       case SettlementEventType.paymentConfirmedByPayer:
         return 'Payment confirmed';
       case SettlementEventType.paymentConfirmedByReceiver:
+        if (amountMinor != null) {
+          return '${formatMoney(amountMinor!)} payment received';
+        }
         return 'Payment received';
       case SettlementEventType.paymentFailed:
         return 'Payment failed';
