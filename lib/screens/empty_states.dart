@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
 import '../design/typography.dart';
 import '../widgets/fade_in.dart';
 

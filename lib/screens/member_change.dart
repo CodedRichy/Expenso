@@ -3,7 +3,6 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
-import '../utils/route_args.dart';
 
 class MemberChange extends StatelessWidget {
   final String groupName;
@@ -37,7 +36,7 @@ class MemberChange extends StatelessWidget {
       displayGroupId = '';
       displayGroupName = groupName;
       displayMemberId = '';
-      displayMemberPhone = args is String ? args as String : memberPhone;
+      displayMemberPhone = (args is String) ? args : memberPhone;
       displayAction = action;
     }
 
@@ -119,33 +118,34 @@ class MemberChange extends StatelessWidget {
                               button: true,
                               child: ElevatedButton(
                                 onPressed: () {
-                                if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
-                                  if (ConnectivityService.instance.isOffline) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Cannot remove member while offline'),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
+                                  if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
+                                    if (ConnectivityService.instance.isOffline) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Cannot remove member while offline'),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    repo.removeMemberFromGroup(displayGroupId, displayMemberId);
                                   }
-                                  repo.removeMemberFromGroup(displayGroupId, displayMemberId);
-                                }
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.error,
-                                foregroundColor: theme.colorScheme.onError,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                  minimumSize: const Size(double.infinity, 0),
                                 ),
-                                elevation: 0,
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                'Remove',
-                                style: AppTypography.button,
+                                child: Text(
+                                  'Remove',
+                                  style: AppTypography.button,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),

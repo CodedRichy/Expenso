@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
-import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/money_format.dart';
@@ -239,6 +238,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                 ],
                               ),
                             ),
+                          ),
                           );
                         },
                       ),

@@ -12,6 +12,7 @@ import '../widgets/gradient_scaffold.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/skeleton_placeholders.dart';
+import '../widgets/staggered_list_item.dart';
 import '../widgets/upi_payment_card.dart';
 import '../utils/money_format.dart';
 
@@ -416,12 +417,16 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           ),
         ),
         const SizedBox(height: AppSpacing.spaceXl),
-        ...routes.map((route) {
+        ...routes.asMap().entries.map((e) {
+          final index = e.key;
+          final route = e.value;
           final payerName = repo.getMemberDisplayNameById(route.fromMemberId);
           final status = _getAttemptStatus(route);
           final isCash = status == PaymentAttemptStatus.cashPending;
           final amountStr = formatMoneyWithCurrency(route.amountMinor, route.currencyCode);
-          return Container(
+          return StaggeredListItem(
+            index: index,
+            child: Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             decoration: BoxDecoration(
@@ -459,7 +464,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${amountStr} ${isCash ? 'cash' : 'UPI'} payment',
+                        '$amountStr ${isCash ? 'cash' : 'UPI'} payment',
                         style: context.bodySecondary,
                       ),
                     ],
@@ -485,7 +490,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                 ),
               ],
             ),
-          );
+          ),
+        );
         }),
       ],
     );
@@ -623,7 +629,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           ),
         ),
         const SizedBox(height: AppSpacing.spaceXl),
-        ...myRoutes.map((route) {
+        ...myRoutes.asMap().entries.map((e) {
+          final index = e.key;
+          final route = e.value;
           final payeeName = repo.getMemberDisplayNameById(route.toMemberId);
           final payeeUpiId = repo.getMemberUpiId(route.toMemberId);
           final status = _getAttemptStatus(route);
@@ -632,19 +640,22 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             route.fromMemberId,
             route.toMemberId,
           );
-          return UpiPaymentCard(
-            payeeName: payeeName,
-            payeeUpiId: payeeUpiId,
-            amountMinor: route.amountMinor,
-            groupName: group.name,
-            currencyCode: route.currencyCode,
-            attemptStatus: status,
-            upiTransactionId: attempt?.upiTransactionId,
-            onPaymentInitiated: () => _handlePaymentInitiated(route),
-            onMarkAsPaid: ({String? transactionId, String? responseCode}) =>
-                _handleMarkAsPaid(route, transactionId: transactionId, responseCode: responseCode),
-            onPaidViaCash: () => _handlePaidViaCash(route),
-            isReceiver: false,
+          return StaggeredListItem(
+            index: index,
+            child: UpiPaymentCard(
+              payeeName: payeeName,
+              payeeUpiId: payeeUpiId,
+              amountMinor: route.amountMinor,
+              groupName: group.name,
+              currencyCode: route.currencyCode,
+              attemptStatus: status,
+              upiTransactionId: attempt?.upiTransactionId,
+              onPaymentInitiated: () => _handlePaymentInitiated(route),
+              onMarkAsPaid: ({String? transactionId, String? responseCode}) =>
+                  _handleMarkAsPaid(route, transactionId: transactionId, responseCode: responseCode),
+              onPaidViaCash: () => _handlePaidViaCash(route),
+              isReceiver: false,
+            ),
           );
         }),
         const SizedBox(height: AppSpacing.space3xl),

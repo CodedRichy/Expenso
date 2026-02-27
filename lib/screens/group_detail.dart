@@ -24,7 +24,6 @@ import '../widgets/member_avatar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/settlement_progress_indicator.dart';
-import '../widgets/skeleton_placeholders.dart';
 import '../widgets/staggered_list_item.dart';
 import '../widgets/undo_toast.dart';
 import 'empty_states.dart';
