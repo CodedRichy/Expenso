@@ -149,10 +149,11 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 
 **Area:** Data model / consistency  
 **Summary:** TODOs in code: "Remove once UI is updated to use integer amounts" (settlement_engine.dart, ledger_delta.dart). SettlementEngine and ledger work with minor-unit integers in places, but UI and some paths still use double amounts. Migration is incomplete; double-based paths remain.  
-**Status:** Deferred (documented)  
-**Decision:** Option 2 — document and defer. G3 (split-sum validation) already protects balance correctness. Full migration is valuable for maintainability and future currencies/splits but not urgent.  
-**Revisit when:** Adding currencies with different decimal scales, more complex split logic, or a dedicated cleanup sprint. See "Discuss with me" table below for migration options.  
-**Ref:** `lib/utils/settlement_engine.dart` (lines 317, 334), `lib/utils/ledger_delta.dart` (line 160).
+**Status:** Deferred (documented) — **Revisit triggered**  
+**Decision:** Option 2 — document and defer. G3 (split-sum validation) already protects balance correctness.  
+**Update:** More currencies are now supported (CurrencyRegistry includes scale 0: JPY, KRW; scale 3: KWD, BHD; scale 2: others). With mixed scales, double-based storage is more prone to rounding in splits. Revisiting the migration is recommended.  
+**Next step:** Consider phase 1 — write-path bridge: when saving an expense, also write `amountMinor` and `splitsMinor` to Firestore; read path prefers them when present. Then UI/model can migrate gradually.  
+**Ref:** `lib/utils/settlement_engine.dart` (lines 317, 334), `lib/utils/ledger_delta.dart` (line 160), `lib/models/currency.dart`.
 
 ---
 
