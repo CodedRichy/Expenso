@@ -18,6 +18,7 @@ abstract final class AppSpacing {
   // Semantic spacing
   static const double screenPaddingH = 24;
   static const double screenPaddingTop = 40;
+  static const double screenHeaderPaddingTop = 16;
   static const double inputPadding = 16;
   static const double buttonPaddingV = 14;
   static const double cardPadding = 16;

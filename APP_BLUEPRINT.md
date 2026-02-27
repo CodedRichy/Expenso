@@ -256,7 +256,7 @@ Use `context.colorXxx` for theme-aware color access.
 ### Spacing (AppSpacing)
 
 Scale: `space2xs` (2) → `spaceXl` (16) → `space3xl` (24) → `space9xl` (96).
-Semantic: `screenPaddingH` (24), `inputPadding` (16), `buttonPaddingV` (14).
+Semantic: `screenPaddingH` (24), `screenHeaderPaddingTop` (16), `inputPadding` (16), `buttonPaddingV` (14). All screen headers use the same padding: `fromLTRB(screenPaddingH, screenHeaderPaddingTop, screenPaddingH, space3xl)`.
 
 ### Theme (main.dart)
 

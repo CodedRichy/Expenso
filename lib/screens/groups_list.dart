@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../design/colors.dart';
+import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
@@ -452,7 +453,12 @@ class _GroupsListState extends State<GroupsList> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
+                              padding: EdgeInsets.fromLTRB(
+                                AppSpacing.screenPaddingH,
+                                AppSpacing.spaceXl,
+                                AppSpacing.spaceXl,
+                                AppSpacing.space4xl,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
@@ -56,7 +57,12 @@ class MemberChange extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenHeaderPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

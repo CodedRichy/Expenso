@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../design/spacing.dart';
 import '../models/models.dart';
 import '../models/currency.dart';
 import '../repositories/cycle_repository.dart';
@@ -346,7 +347,12 @@ class _EditExpenseState extends State<EditExpense> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenHeaderPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.chevron_left, size: 24),
@@ -424,7 +430,12 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        AppSpacing.screenHeaderPaddingTop,
+        AppSpacing.screenPaddingH,
+        AppSpacing.space3xl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

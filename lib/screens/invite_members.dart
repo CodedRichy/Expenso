@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
 import '../country_codes.dart';
+import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
@@ -229,7 +230,12 @@ class _InviteMembersState extends State<InviteMembers> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenHeaderPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

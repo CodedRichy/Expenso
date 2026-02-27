@@ -253,7 +253,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH,
-                8,
+                AppSpacing.screenHeaderPaddingTop,
                 AppSpacing.screenPaddingH,
                 AppSpacing.space3xl,
               ),

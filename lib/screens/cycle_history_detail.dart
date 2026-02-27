@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/spacing.dart';
 import '../models/cycle.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
@@ -34,7 +35,12 @@ class CycleHistoryDetail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenHeaderPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

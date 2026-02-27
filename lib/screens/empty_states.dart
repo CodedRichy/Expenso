@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../widgets/fade_in.dart';
 
@@ -24,7 +25,12 @@ class EmptyStates extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.spaceXl,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space4xl,
+              ),
               child: Text('Groups', style: context.heroTitle),
             ),
             Expanded(
