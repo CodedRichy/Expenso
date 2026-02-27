@@ -249,19 +249,17 @@ class GroupMembers extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: repo.isCreator(group.id, currentUserId)
-              ? FloatingActionButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/invite-members',
-                      arguments: currentGroup,
-                    );
-                  },
-                  backgroundColor: theme.colorScheme.primary,
-                  child: Icon(Icons.person_add, color: theme.colorScheme.onPrimary),
-                )
-              : null,
+          floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/invite-members',
+                  arguments: currentGroup,
+                );
+              },
+              backgroundColor: theme.colorScheme.primary,
+              child: Icon(Icons.person_add, color: theme.colorScheme.onPrimary),
+            ),
         );
       },
     );

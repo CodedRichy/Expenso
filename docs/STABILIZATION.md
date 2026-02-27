@@ -221,25 +221,27 @@ Parsed intents move through the following states. This is the backbone for produ
 
 2. **No partial settlement tracking.** The app does not record who has paid whom mid-cycle. Settlement is all-or-nothing at cycle close.
 
-3. **No conflict resolution for concurrent edits.** If two users edit the same expense simultaneously, last-write-wins applies.
+3. **Leave / remove member.** Any member can leave a group at any time (even with an outstanding balance). The change applies from the next cycle; current cycle balances remain until settled. There is no requirement to owe zero before leaving.
 
-4. **Phone number as identity.** Users who change phone numbers lose access to their history unless manually migrated.
+4. **No conflict resolution for concurrent edits.** If two users edit the same expense simultaneously, last-write-wins applies.
 
-5. **Expense audit trail via compensation model.** Edits and deletes use compensation events (negate original + append replacement), preserving full audit history. Lifecycle guards prevent edit-after-delete and delete-after-delete. See `docs/features/EXPENSE_REVISIONS.md`.
+5. **Phone number as identity.** Users who change phone numbers lose access to their history unless manually migrated.
+
+6. **Expense audit trail via compensation model.** Edits and deletes use compensation events (negate original + append replacement), preserving full audit history. Lifecycle guards prevent edit-after-delete and delete-after-delete. See `docs/features/EXPENSE_REVISIONS.md`.
 
 ### Scale Limitations
 
-5. **In-memory member cache.** `_membersById` and `_userCache` grow unbounded across sessions. Large groups or many groups may consume significant memory.
+7. **In-memory member cache.** `_membersById` and `_userCache` grow unbounded across sessions. Large groups or many groups may consume significant memory.
 
-6. **No pagination.** Group list, expense list, and history are loaded fully. Works for small datasets; will degrade with hundreds of expenses per cycle.
+8. **No pagination.** Group list, expense list, and history are loaded fully. Works for small datasets; will degrade with hundreds of expenses per cycle.
 
-7. **Single-region encryption keys.** `DataEncryptionService` hardcodes `asia-south1`. Users in other regions may experience latency.
+9. **Single-region encryption keys.** `DataEncryptionService` hardcodes `asia-south1`. Users in other regions may experience latency.
 
 ### Design Shortcuts
 
-8. **Date stored as string.** Expense `date` field is `"Today"`, `"Yesterday"`, or `"Mon DD"`. This makes date math fragile and timezone-dependent.
+10. **Date stored as string.** Expense `date` field is `"Today"`, `"Yesterday"`, or `"Mon DD"`. This makes date math fragile and timezone-dependent.
 
-9. **Category is free-form.** No category normalization or predefined list. Inconsistent categorization is expected.
+11. **Category is free-form.** No category normalization or predefined list. Inconsistent categorization is expected.
 
 ---
 

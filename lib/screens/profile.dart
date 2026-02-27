@@ -621,9 +621,7 @@ class _PrivacyPolicyTile extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } on Exception catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

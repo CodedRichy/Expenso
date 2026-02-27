@@ -899,11 +899,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isBalanceClear
-                        ? 'Your Status'
-                        : isCredit
-                            ? "You're owed"
-                            : 'You owe',
+                    'Your Status',
                     style: AppTypography.captionSmall.copyWith(
                       color: onDark.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,

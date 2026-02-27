@@ -348,6 +348,10 @@ class _InviteMembersState extends State<InviteMembers> {
                     decoration: InputDecoration(
                       hintText: 'Name (optional)',
                       hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                      helperText: (_contactsPermissionGranted && name.trim().isNotEmpty)
+                          ? 'Suggestions from contacts appear below'
+                          : null,
+                      helperMaxLines: 1,
                       filled: true,
                       fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
                       border: OutlineInputBorder(
@@ -503,7 +507,7 @@ class _InviteMembersState extends State<InviteMembers> {
                   if (_contactsPermissionGranted && !_contactSuggestionsDismissed) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'FROM YOUR CONTACTS',
+                      name.trim().isNotEmpty ? 'SUGGESTIONS FROM CONTACTS' : 'FROM YOUR CONTACTS',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

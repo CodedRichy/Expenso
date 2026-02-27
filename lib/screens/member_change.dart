@@ -99,7 +99,7 @@ class MemberChange extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           displayAction == 'leave'
-                              ? 'You will be removed from this group'
+                              ? 'You will be removed from this group. You can leave anytime; any balance carries to the next cycle until settled.'
                               : '$memberDisplayName will be removed from this group',
                           textAlign: TextAlign.center,
                           style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
