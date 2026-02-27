@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 /// Centralized phone auth using [FirebaseAuth.instance.verifyPhoneNumber].
 /// Handles [codeSent] (OTP screen), [verificationCompleted] (instant sign-in),
@@ -58,18 +59,25 @@ class PhoneAuthService {
     required void Function(String message) onError,
     int? resendToken,
   }) {
+    final e164 = phoneNumber.length == 10 ? toE164(phoneNumber) : phoneNumber;
+    debugPrint('PhoneAuth: verifyPhoneNumber called with E.164=$e164');
     _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber.length == 10 ? toE164(phoneNumber) : phoneNumber,
+      phoneNumber: e164,
       verificationCompleted: (PhoneAuthCredential credential) {
+        debugPrint('PhoneAuth: verificationCompleted (auto sign-in)');
         onVerificationCompleted(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
+        debugPrint('PhoneAuth: verificationFailed code=${e.code} message=${e.message}');
         onError(messageForError(e));
       },
       codeSent: (String verificationId, int? token) {
+        debugPrint('PhoneAuth: codeSent verificationId=${verificationId.substring(0, 20)}...');
         onCodeSent(verificationId, token);
       },
-      codeAutoRetrievalTimeout: (String verificationId) {},
+      codeAutoRetrievalTimeout: (String verificationId) {
+        debugPrint('PhoneAuth: codeAutoRetrievalTimeout');
+      },
       timeout: const Duration(seconds: 120),
       forceResendingToken: resendToken,
     );

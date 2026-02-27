@@ -15,12 +15,15 @@ Firebase uses these to validate your app. Without them, phone verification often
 1. In Firebase Console: **Project settings** (gear) → **Your apps**.
 2. Select your **Android** app (package name e.g. `com.example.expenso`).
 3. Under **SHA certificate fingerprints**, add:
-   - **Debug:** run in project root:
-     ```bash
-     cd android && ./gradlew signingReport
-     ```
-     Copy the **SHA-1** and **SHA-256** from the `debug` variant and add them in the Firebase Console.
-   - **Release:** use the keystore you use for release builds and run the same `signingReport` (or use the key you configured), then add that SHA-1 and SHA-256.
+   - **Debug:** either:
+     - **Gradle:** run `./gradlew signingReport` from the `android` folder (on Windows PowerShell use `.\gradlew.bat signingReport`). Copy the **SHA-1** and **SHA-256** from the `debug` variant.
+     - **If Gradle fails** with "IllegalArgumentException: 25" (Java 25 not supported by Kotlin DSL), either use **Java 17** (set `JAVA_HOME` to JDK 17 and re-run), or use **keytool** (no Gradle, works with any Java):
+       - **Windows (PowerShell):**  
+         `keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android`
+       - **macOS/Linux:**  
+         `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`  
+       In the output, copy the **SHA1** and **SHA256** values into Firebase Console.
+   - **Release:** use the keystore you use for release builds: run `signingReport` (with Java 17 if needed) or the same `keytool -list -v -keystore <path> -alias <alias>` with your release keystore, then add those SHA-1 and SHA-256.
 4. Download the updated **google-services.json** and replace `android/app/google-services.json`, then rebuild.
 
 ## 3. Confirm Firebase is initialized in the app

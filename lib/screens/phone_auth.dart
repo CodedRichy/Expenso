@@ -52,6 +52,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
     final e164 = _e164(_selectedCountryCode, digits);
     if (e164.isEmpty) return;
     if (!firebaseAuthAvailable) {
+      debugPrint('PhoneAuth: Firebase not available, using mock OTP step');
       setState(() => step = 'otp');
       return;
     }
@@ -187,8 +188,17 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 border: Border.all(color: Theme.of(context).dividerColor),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: PopupMenuButton<String>(
-                                onSelected: (code) => setState(() => _selectedCountryCode = code),
+                                child: PopupMenuButton<String>(
+                                onSelected: (code) {
+                                  setState(() {
+                                    _selectedCountryCode = code;
+                                    final maxLen = maxPhoneDigitsForDialCode(code);
+                                    final digits = phone.replaceAll(RegExp(r'\D'), '');
+                                    if (digits.length > maxLen) {
+                                      phone = digits.substring(0, maxLen);
+                                    }
+                                  });
+                                },
                                 offset: const Offset(0, 48),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
@@ -221,7 +231,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 keyboardType: TextInputType.phone,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(15),
+                                  LengthLimitingTextInputFormatter(maxPhoneDigitsForDialCode(_selectedCountryCode)),
                                 ],
                                 onChanged: (value) {
                                   setState(() => phone = value);
@@ -242,7 +252,11 @@ class _PhoneAuthState extends State<PhoneAuth> {
                         ],
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: (phone.replaceAll(RegExp(r'\D'), '').length >= 10 && !_loading) ? handlePhoneSubmit : null,
+                          onPressed: (() {
+                                  final digits = phone.replaceAll(RegExp(r'\D'), '');
+                                  final maxLen = maxPhoneDigitsForDialCode(_selectedCountryCode);
+                                  return digits.length == maxLen && !_loading;
+                                })() ? handlePhoneSubmit : null,
                           child: _loading
                               ? SizedBox(
                                   height: 20,
