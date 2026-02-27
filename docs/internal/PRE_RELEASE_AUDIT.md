@@ -152,14 +152,31 @@ allow delete: if request.auth != null
 | **Contrast** | Addressed | Settlement Rhythm / Day on Create group use onSurface (V4). |
 | **Semantics** | Addressed | Decision Clarity card, settlement success, expense Submit, Back to Group; more screens in follow-up. |
 | **Locale** | Addressed | formatMoneyWithCurrency uses device locale (intl); number words (lakh/crore) in parser (V4). |
-| **Dead/orphan UI** | Issue | DeleteGroup screen and route unused and misleading (see §1.2). |
+| **Dead/orphan UI** | Addressed | DeleteGroup route removed from main; screen file kept for reference only. |
 
 ---
 
 ## 5. Summary
 
-- **Must fix before publish:** Firestore group-delete rule (creator-only), and either remove or correctly implement the `/delete-group` route and `DeleteGroup` screen.
-- **Should fix:** Broader a11y, consistent route-args pattern, MemberChange invalid-args handling.
-- **Document / plan:** Date string (G7), pagination (G8), integer migration (G4); design-token consistency and loading/error UX as ongoing polish.
+- **Critical (§1):** Fixed in code. Deploy Firestore rules (`firebase deploy --only firestore`) so creator-only group delete takes effect. DeleteGroup route removed.
+- **High (§2):** Addressed (a11y, route args, MemberChange, InviteMembers null-group).
+- **Remaining (non-blocking):** See §6 below. Plan or accept as documented.
 
-After addressing §1, the app is in good shape for a controlled release, with §2 and §3 as clear follow-ups for the next iteration.
+After addressing §1 and deploying rules, the app is in good shape for a controlled release. §6 items are follow-ups for the next iteration.
+
+---
+
+## 6. Other gaps (documented elsewhere; not blocking)
+
+These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code change required for publish unless you decide to prioritize.
+
+| Gap | Where | Notes |
+|-----|--------|--------|
+| **G7 Date as string / timezone** | V4_TESTING_ISSUES G7, STABILIZATION §5 | Expense `date` is human string; timezone-fragile. Needs schema + migration to fix. |
+| **G8 No pagination** | V4_TESTING_ISSUES G8, STABILIZATION §5 | Groups, expenses, history load in full. Add when scale demands. |
+| **G4 Integer-amounts migration** | V4_TESTING_ISSUES G4, PRE_RELEASE §3.3 | Phase 1 done; double paths remain. Backfill + Phase 2 when touching amounts broadly. |
+| **G9 Settlement test coverage** | V4_TESTING_ISSUES G9 | Payer/participant not in member list, large-number overflow not covered by tests. Add when touching settlement logic. |
+| **Design token consistency** | PRE_RELEASE §3.4 | Some screens use hardcoded fontSize/colors. Gradual pass to use design tokens. |
+| **Loading/error UX** | PRE_RELEASE §3.5 | Ensure every async flow has clear message + retry/back. Mostly in place. |
+| **Assumed invariants** | STABILIZATION §4.3 | #6 members vs pendingMembers; #12 encryption keys — assumed, not enforced. Accept or add checks later. |
+| **ExpenseInput route args** | Code | Still uses raw `ModalRoute... as Group?` in two places; works. Optional: use `RouteArgs.getGroup(context)` for consistency. |
