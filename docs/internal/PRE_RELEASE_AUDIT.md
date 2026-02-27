@@ -3,7 +3,7 @@
 **Role:** Team lead / senior dev + UI designer review before publish.  
 **Scope:** Gaps that could block or undermine a production release.
 
-Use this alongside [V4_TESTING_ISSUES.md](V4_TESTING_ISSUES.md), [LOGIC_AUDIT.md](LOGIC_AUDIT.md), and [STABILIZATION.md](../STABILIZATION.md).
+Use this alongside [V4_TESTING_ISSUES.md](V4_TESTING_ISSUES.md), [LOGIC_AUDIT.md](LOGIC_AUDIT.md), [STABILIZATION.md](../STABILIZATION.md), and [PATH_TO_100_PLUS.md](PATH_TO_100_PLUS.md) (100+ scorecard path and “best expense tracker” roadmap).
 
 ---
 
@@ -218,7 +218,7 @@ Based on common success criteria: **Core App Quality** (Android/Play), **App Sto
 
 ### How to reach the high 90s (and path to 100)
 
-See **REACH_90S_GUIDE.md** in this folder. **Current scores: App 96, UI 97.**
+See **REACH_90S_GUIDE.md** in this folder. For the full path to 100/100 and “110%” (best expense tracker) roadmap — differentiators, competitor comparison, and prioritized recommendations — see **PATH_TO_100_PLUS.md**. **Current scores: App 96, UI 97.**
 
 **Implemented:** Privacy in-app; full a11y on key screens; design tokens; offline guards on all writes; G9 unit tests; **STORE_CHECKLIST.md**; README known limitations; **Number-format (locale) picker** in Profile; Semantics on CreateGroup back, InviteMembers Copy/Add; **widget tests** (EmptyStates, ExpensoLoader); **parser outcome tests**; **balance-after-settlements contract** tests; **integration test** (app launch).
 
