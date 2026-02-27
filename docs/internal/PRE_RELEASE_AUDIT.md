@@ -31,6 +31,8 @@ allow delete: if request.auth != null
 
 **Status:** Fixed. `firestore.rules` now use `request.auth.uid == resource.data.creatorId` for group delete.
 
+**You must deploy the rules for the change to take effect:** from the project root run `firebase deploy --only firestore` (or deploy from Firebase Console). Until then, the previous rules remain in effect.
+
 ---
 
 ### 1.2 Dead route and misleading screen: `/delete-group` and `DeleteGroup`
