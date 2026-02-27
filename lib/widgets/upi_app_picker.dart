@@ -147,26 +147,9 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             ),
           ),
           const SizedBox(height: AppSpacing.spaceXl),
-          if (widget.onManualConfirm != null)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: widget.onManualConfirm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.colorSuccess,
-                  foregroundColor: context.colorSurface,
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.buttonPaddingV),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('I\'ve paid'),
-              ),
-            ),
-          if (widget.onManualConfirm != null) const SizedBox(height: AppSpacing.spaceMd),
           TextButton(
             onPressed: widget.onCancel,
-            child: const Text('Cancel'),
+            child: const Text('Back'),
           ),
         ],
       ),
