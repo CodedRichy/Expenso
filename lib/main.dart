@@ -201,7 +201,7 @@ class MyApp extends StatelessWidget {
             FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
           ],
           initialRoute: '/splash',
-      routes: {
+          routes: {
         '/splash': (context) => const SplashScreen(),
         '/': (context) => StreamBuilder<User?>(
           stream: PhoneAuthService.instance.authStateChanges,
@@ -264,8 +264,9 @@ class MyApp extends StatelessWidget {
           return ErrorStates(type: args?['type'] as String? ?? 'generic');
         },
         '/profile': (context) => const ProfileScreen(),
-        };
-      },
-    );
+        },
+      );
+    },
+  );
   }
 }
