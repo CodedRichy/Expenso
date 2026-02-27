@@ -218,5 +218,4 @@ Based on common success criteria: **Core App Quality** (Android/Play), **App Sto
 
 ### How to reach the high 90s
 
-- **App:** Add an in-app **Privacy policy** entry (e.g. in Profile or About) linking to a live URL; document permissions in store listing. Add offline-capable flows or clear “no connection” handling. Expand tests (E2E or critical-path). Consider pagination when data grows.
-- **UI:** Run a full **accessibility** pass (Semantics/labels on all interactive elements, contrast, focus order). Replace remaining hardcoded styles with **design tokens**. Optionally add a **language/locale** setting and full locale coverage.
+See **REACH_90S_GUIDE.md** in this folder for a step-by-step guide (what to do, where in the codebase, and score impact). Summary: (1) Privacy policy in-app → App +5; (2) Full a11y pass → UI +5; (3) Design tokens everywhere → UI +4; (4) Offline guards on writes → App +3; (5) More tests → App +3. Doing 1+2+3 gets you to about App 83, UI 90. “no connection” handling. Expand tests (E2E or critical-path). Consider pagination when data grows.
