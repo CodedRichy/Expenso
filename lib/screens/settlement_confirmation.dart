@@ -118,13 +118,16 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         upiTransactionId: transactionId,
         upiResponseCode: responseCode,
       );
+      final hasUpiSuccess = transactionId != null && transactionId.isNotEmpty;
+      if (hasUpiSuccess) {
+        await repo.markPaymentConfirmedByReceiver(_group!.id, attempt.id);
+      }
       if (mounted) {
-        final hasProof = transactionId != null && transactionId.isNotEmpty;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(hasProof
-                ? 'Payment confirmed with transaction ID'
-                : 'Payment marked as complete'),
+            content: Text(hasUpiSuccess
+                ? 'Payment confirmed'
+                : 'Payment marked as complete. Receiver can confirm.'),
             behavior: SnackBarBehavior.floating,
           ),
         );

@@ -22,12 +22,14 @@ class UpiAppPicker extends StatefulWidget {
   final UpiPaymentData paymentData;
   final Function(UpiAppInfo app, UpiTransactionResult result) onPaymentComplete;
   final VoidCallback? onCancel;
+  final VoidCallback? onManualConfirm;
 
   const UpiAppPicker({
     super.key,
     required this.paymentData,
     required this.onPaymentComplete,
     this.onCancel,
+    this.onManualConfirm,
   });
 
   static Future<UpiAppPickerResult?> show({
@@ -127,11 +129,28 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
           ),
           const SizedBox(height: AppSpacing.spaceMd),
           Text(
-            'Install a UPI app like Google Pay, PhonePe, or Paytm to make payments.',
+            'Install a UPI app like Google Pay, PhonePe, or Paytm to pay.',
             style: context.caption.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.spaceXl),
+          if (widget.onManualConfirm != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: widget.onManualConfirm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('I\'ve paid'),
+              ),
+            ),
+          if (widget.onManualConfirm != null) const SizedBox(height: AppSpacing.spaceMd),
           TextButton(
             onPressed: widget.onCancel,
             child: const Text('Cancel'),
@@ -341,6 +360,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
               paymentData: widget.paymentData,
               onPaymentComplete: _onAppSelected,
               onCancel: _onCancel,
+              onManualConfirm: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
             ),
             const SizedBox(height: AppSpacing.spaceLg),
           ],

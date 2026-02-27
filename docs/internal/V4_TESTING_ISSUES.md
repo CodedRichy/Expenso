@@ -21,11 +21,10 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 **Area:** Settlement / payment flow (UPI in supported regions)  
 **Summary:**
 - When paying (in UPI flow), the **list of UPI apps did not display**; only the QR showed.
-- QR-only is poor UX: user has to screenshot QR → open payment app → scan, which is a hassle.
-- **Desired behavior:** Work with status messages from the payment app (intent/response). On failure, retry. In India, flow similar to Zomato/Swiggy (UPI intent → app opens → success/failure callback → retry if failed).
+- **Desired behavior:** Zomato/Swiggy-style: show app list → pick app → intent opens app → complete payment → return with success/failure → retry if failed. No QR in flow.
 
-**Status:** Open  
-**Notes:** App is global; UPI is one payment option where supported. Likely need UPI intent with `startActivityForResult`/equivalent and handle success/failure; fallback to QR when no app supports intent. Document current UPI implementation and then adjust.
+**Status:** Fixed  
+**Changes:** (1) **Always open payment sheet** — removed pre-fetch and early return when no UPI apps; tapping "Pay via UPI" always opens the bottom sheet so the app list is shown when available. (2) **Removed QR from UPI flow** — no "Show QR" button or QR code on the card; primary path is app list → intent → status (success/failure) → retry. (3) **No-apps state** — when no UPI apps are found, sheet shows message to install an app plus "I've paid" and "Cancel". (4) Status messages and retry already handled by waiting overlay (success/failure/pending + "Try Again" / "Retry Payment").
 
 ---
 
