@@ -56,6 +56,42 @@ No server round-trip: everything is local (preference + OS biometric/passcode). 
 
 ---
 
+## How we ask preference
+
+**Where:** Profile screen. Add a **Security** section — same visual pattern as the existing "Payment Settings" card (section title + list of items). Place it between Payment Settings and Privacy policy. Alternatively, use a dedicated **Security** screen (Profile → Security) with multiple settings; both patterns are used by banking and finance apps (e.g. RBS/HSBC: Profile → Security; Monzo: Privacy & Security with App Lock).
+
+**Industry pattern:** Use **list tiles** (one tile per setting), not a single crowded row. Each setting is its own tappable or toggleable item with clear label and optional subtitle.
+
+**What to show:**
+
+1. **Section title:** "Security" with a lock or shield icon.
+
+2. **App lock** — One **list tile**:  
+   - Leading: lock or fingerprint icon  
+   - Title: "App lock"  
+   - Subtitle (optional): "Unlock with fingerprint or Face ID"  
+   - Trailing: **Switch**  
+   Tapping the tile or the switch toggles the preference. When turning ON, validate biometrics first (see below).
+
+3. **Lock after** (only when App lock is ON) — A **second list tile**:  
+   - Title: "Lock after"  
+   - Trailing: current value ("Immediately", "30 seconds", "1 minute", "2 minutes") + chevron  
+   Tapping opens a bottom sheet, dialog, or navigates to a small picker screen to choose when the app locks (e.g. when app goes to background vs after 30 s / 1 min / 2 min). Persist the chosen value (0, 30, 60, 120 seconds).
+
+**When user turns App lock ON:**
+- Call `getAvailableBiometrics()`. If the list is empty, **don’t** turn the switch on; show a dialog: *"No fingerprint or face enrolled. Add one in your device Settings to use app lock."* with a single "OK" button.
+- If biometrics are available, optionally run `authenticate(localizedReason: 'Confirm fingerprint or face to enable app lock')` once. If the user cancels or it fails, leave the switch off. If it succeeds, persist the preference and set the switch on.
+
+**When user turns App lock OFF:** No auth needed. Persist `enabled = false` and update the switch.
+
+**Persistence:** Same pattern as `ThemeService`: a small **AppLockService** (singleton, `ChangeNotifier`) that reads/writes `SharedPreferences` (`app_lock_enabled`, `app_lock_after_seconds`). Expose `enabled`, `lockAfterSeconds`, `setEnabled(bool)`, `setLockAfterSeconds(int)`. Load in `main()` or on first access so the lock screen and Profile share the same state.
+
+**Capability on load:** When building the Security section, call `getAvailableBiometrics()`. If empty, show the App lock tile disabled with subtitle *"Not available — add fingerprint or face in device Settings."* or hide the tile.
+
+**Summary:** Security section with **list tiles** (one for App lock + Switch, one for Lock after when enabled). Validate biometrics before enabling; persist via SharedPreferences; optional second tile for "Lock after" with a picker.
+
+---
+
 ## Summary
 
 | Question | Answer |
