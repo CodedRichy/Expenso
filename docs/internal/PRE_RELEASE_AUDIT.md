@@ -179,3 +179,44 @@ These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code
 | **Design token consistency** | PRE_RELEASE §3.4 | Some screens use hardcoded fontSize/colors. Gradual pass to use design tokens. |
 | **Loading/error UX** | PRE_RELEASE §3.5 | Ensure every async flow has clear message + retry/back. Mostly in place. |
 | **Assumed invariants** | STABILIZATION §4.3 | #6 members vs pendingMembers; #12 encryption keys — assumed, not enforced. Accept or add checks later. |
+
+---
+
+## 7. Scorecard (out of 100)
+
+Based on common success criteria: **Core App Quality** (Android/Play), **App Store readiness**, and **UX/Accessibility** (WCAG-minded, design consistency).
+
+### App score: **78 / 100**
+
+| Criterion | Weight | Score | Notes |
+|-----------|--------|-------|--------|
+| **Functionality & completeness** | 25 | 21 | Core flows work, no placeholders; date string and no pagination are known limits. |
+| **Security & data** | 20 | 18 | Auth, Firestore rules (creator-only delete deployed), optional encryption; key failure paths assumed. |
+| **Performance & stability** | 15 | 11 | Bounded loading, coalesced updates; no offline support, no pagination. |
+| **Testing** | 15 | 12 | Unit tests for settlement engine, validation, normalization, encryption, revisions; no E2E or store-level tests. |
+| **Store readiness** | 15 | 9 | App stable and complete. **Gap:** No in-app privacy policy link or screen; store listing/metadata separate. |
+| **Robustness** | 10 | 7 | Route args safe, error states with retry; offline handling is “banner + message” only. |
+
+**Main drags:** No privacy policy surface in-app (required by stores for sensitive data), no offline support, no pagination, partial test coverage.
+
+---
+
+### UI score: **82 / 100**
+
+| Criterion | Weight | Score | Notes |
+|-----------|--------|-------|--------|
+| **Visual design & consistency** | 25 | 20 | Design tokens, theme, dark mode, gradient scaffold; some screens still use hardcoded fontSize/colors. |
+| **Accessibility** | 20 | 14 | Semantics on Decision Clarity, settlement success, key buttons; no full WCAG-level pass (contrast, focus order, labels). |
+| **Empty & error states** | 15 | 14 | Dedicated screens, calm copy, Try Again; good coverage. |
+| **Forms & inputs** | 15 | 14 | Validation, haptics, live total/assigned, keyboard overflow fixed; Justice Guard on destructive actions. |
+| **Navigation & hierarchy** | 15 | 14 | Clear back, no dead routes, Decision Clarity card; structure is clear. |
+| **Locale & inclusivity** | 10 | 6 | intl for currency, number words (lakh/crore); no in-app language picker or full locale coverage. |
+
+**Main drags:** Partial semantics (not every control/label), design-token consistency incomplete, no systematic contrast/label audit.
+
+---
+
+### How to reach the high 90s
+
+- **App:** Add an in-app **Privacy policy** entry (e.g. in Profile or About) linking to a live URL; document permissions in store listing. Add offline-capable flows or clear “no connection” handling. Expand tests (E2E or critical-path). Consider pagination when data grows.
+- **UI:** Run a full **accessibility** pass (Semantics/labels on all interactive elements, contrast, focus order). Replace remaining hardcoded styles with **design tokens**. Optionally add a **language/locale** setting and full locale coverage.
