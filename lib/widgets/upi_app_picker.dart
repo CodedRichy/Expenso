@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
@@ -133,6 +135,15 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             style: context.caption.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: AppSpacing.spaceLg),
+          TextButton.icon(
+            onPressed: _openPlayStoreForUpiApp,
+            icon: const Icon(Icons.get_app, size: 18),
+            label: const Text('Install UPI app'),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.spaceXl),
           if (widget.onManualConfirm != null)
             SizedBox(
@@ -158,6 +169,17 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
         ],
       ),
     );
+  }
+
+  Future<void> _openPlayStoreForUpiApp() async {
+    final uri = Uri.parse(
+      Platform.isIOS
+          ? 'https://apps.apple.com/in/app/google-pay-india/id1193357045'
+          : 'https://play.google.com/store/apps/details?id=com.google.android.apps.nbu.paisa.user',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildAppGrid() {
