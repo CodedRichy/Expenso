@@ -280,7 +280,10 @@ class _InviteMembersState extends State<InviteMembers> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  InkWell(
+                  Semantics(
+                    label: linkCopied ? 'Link copied' : 'Copy invite link',
+                    button: true,
+                    child: InkWell(
                     onTap: handleCopyLink,
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -317,6 +320,7 @@ class _InviteMembersState extends State<InviteMembers> {
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ],
               ),
@@ -473,7 +477,10 @@ class _InviteMembersState extends State<InviteMembers> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton(
+                      Semantics(
+                        label: 'Add member by phone',
+                        button: true,
+                        child: ElevatedButton(
                         onPressed: phone.length == 10 ? handleAddMember : null,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -489,6 +496,7 @@ class _InviteMembersState extends State<InviteMembers> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                      ),
                       ),
                     ],
                   ),

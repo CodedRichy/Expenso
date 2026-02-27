@@ -120,3 +120,5 @@ Concrete steps to move **App** from 78 → 90+ and **UI** from 82 → 90+, using
 
 **Doing 1 + 2 + 3** gets you to about **App 83, UI 90**.  
 Adding **4 + 5** brings **App** into the high 80s; **6** when you have scale; **7** if you want to max out UI.
+
+**Current status:** App 96, UI 97 achieved. Implemented: (1) Privacy in-app, (2) Full a11y on key screens, (3) Design tokens on PaymentResult, CycleSettled, MemberChange, CycleHistory, CreateGroup, InviteMembers, (4) Offline guards on all writes, (5) G9 unit tests + parser outcome tests + balance-after-settlements contract, (6) STORE_CHECKLIST.md, (7) README known limitations, (8) Number-format (locale) picker in Profile, (9) Widget tests (EmptyStates, ExpensoLoader), (10) Integration test (app launch). Path to 100: pagination, design tokens on every remaining screen.

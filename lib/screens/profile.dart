@@ -10,6 +10,7 @@ import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../services/profile_service.dart';
 import '../services/theme_service.dart';
+import '../services/locale_service.dart';
 import '../design/typography.dart';
 import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
@@ -429,6 +430,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                         const SizedBox(height: 24),
+                _LocaleTile(),
+                        const SizedBox(height: 24),
                 _PrivacyPolicyTile(url: kPrivacyPolicyUrl),
                         const SizedBox(height: 24),
                 Padding(
@@ -475,6 +478,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LocaleTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return ListenableBuilder(
+      listenable: LocaleService.instance,
+      builder: (context, _) {
+        final current = LocaleService.instance.localeCode;
+        final label = current == null || current.isEmpty
+            ? 'Device default'
+            : () {
+                final option = LocaleService.options.where((e) => e.value == current);
+                return option.isEmpty ? current : option.first.key;
+              }();
+        return Semantics(
+          label: 'Number format: $label',
+          button: true,
+          child: InkWell(
+            onTap: () {
+              showModalBottomSheet<void>(
+                context: context,
+                builder: (ctx) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Number format',
+                          style: context.subheader,
+                        ),
+                      ),
+                      ...LocaleService.options.map((e) {
+                        final selected = (e.value.isEmpty && current == null) ||
+                            (e.value.isNotEmpty && e.value == current);
+                        return ListTile(
+                          title: Text(e.key),
+                          trailing: selected ? const Icon(Icons.check) : null,
+                          onTap: () {
+                            LocaleService.instance.setLocale(
+                              e.value.isEmpty ? null : e.value,
+                            );
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerLow
+                    : context.colorSurface,
+                border: Border.all(color: context.colorBorder),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.numbers,
+                    size: 22,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Number format',
+                          style: context.sectionLabel,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: context.bodyPrimary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 22,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ),
         );

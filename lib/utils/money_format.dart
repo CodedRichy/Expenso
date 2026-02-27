@@ -10,9 +10,10 @@ String formatMoney(int amountMinor) {
 }
 
 /// Formats [amount] (major units, e.g. 100.50) using the symbol for [currencyCode].
-String formatMoneyFromMajor(double amount, String currencyCode) {
+/// [locale] overrides device locale for number format (e.g. en_IN, en_US).
+String formatMoneyFromMajor(double amount, String currencyCode, [String? locale]) {
   final minor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
-  return formatMoneyWithCurrency(minor, currencyCode);
+  return formatMoneyWithCurrency(minor, currencyCode, locale);
 }
 
 /// Formats [amountMinor] using the symbol for [currencyCode].

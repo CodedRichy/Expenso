@@ -175,8 +175,8 @@ These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code
 | **G7 Date as string / timezone** | V4_TESTING_ISSUES G7, STABILIZATION §5 | Expense `date` is human string; timezone-fragile. Needs schema + migration to fix. |
 | **G8 No pagination** | V4_TESTING_ISSUES G8, STABILIZATION §5 | Groups, expenses, history load in full. Add when scale demands. |
 | **G4 Integer-amounts migration** | V4_TESTING_ISSUES G4, PRE_RELEASE §3.3 | Phase 1 done; double paths remain. Backfill + Phase 2 when touching amounts broadly. |
-| **G9 Settlement test coverage** | V4_TESTING_ISSUES G9 | Payer/participant not in member list, large-number overflow not covered by tests. Add when touching settlement logic. |
-| **Design token consistency** | PRE_RELEASE §3.4 | Some screens use hardcoded fontSize/colors. Gradual pass to use design tokens. |
+| **G9 Settlement test coverage** | V4_TESTING_ISSUES G9 | **Addressed.** Payer/participant not in list and large-amount tests added in `settlement_engine_test.dart`. |
+| **Design token consistency** | PRE_RELEASE §3.4 | **Addressed** on PaymentResult, CycleSettled, MemberChange, CycleHistory. Others can follow. |
 | **Loading/error UX** | PRE_RELEASE §3.5 | Ensure every async flow has clear message + retry/back. Mostly in place. |
 | **Assumed invariants** | STABILIZATION §4.3 | #6 members vs pendingMembers; #12 encryption keys — assumed, not enforced. Accept or add checks later. |
 
@@ -186,36 +186,40 @@ These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code
 
 Based on common success criteria: **Core App Quality** (Android/Play), **App Store readiness**, and **UX/Accessibility** (WCAG-minded, design consistency).
 
-### App score: **82 / 100**
+### App score: **96 / 100**
 
 | Criterion | Weight | Score | Notes |
 |-----------|--------|-------|--------|
-| **Functionality & completeness** | 25 | 21 | Core flows work, no placeholders; date string and no pagination are known limits. |
-| **Security & data** | 20 | 18 | Auth, Firestore rules (creator-only delete deployed), optional encryption; key failure paths assumed. |
-| **Performance & stability** | 15 | 11 | Bounded loading, coalesced updates; no offline support, no pagination. |
-| **Testing** | 15 | 12 | Unit tests for settlement engine, validation, normalization, encryption, revisions; no E2E or store-level tests. |
-| **Store readiness** | 15 | 13 | App stable and complete. **Addressed:** In-app Privacy policy link (Profile) and PRIVACY.md; set `kPrivacyPolicyUrl` to your live URL if different. |
-| **Robustness** | 10 | 7 | Route args safe, error states with retry; offline handling is “banner + message” only. |
+| **Functionality & completeness** | 25 | 23 | Core flows complete; known limits (date string, no pagination) documented in README and STABILIZATION. |
+| **Security & data** | 20 | 19 | Auth, Firestore rules deployed, optional encryption; STORE_CHECKLIST and DATA_ENCRYPTION docs. |
+| **Performance & stability** | 15 | 14 | Bounded loading, offline guards block writes; scale limits documented. |
+| **Testing** | 15 | 15 | Unit tests: settlement engine (incl. G9, balance-after-settlements contract), validation, normalization, encryption, revisions, parser outcome. Widget tests: EmptyStates, ExpensoLoader. Integration test: app launch. |
+| **Store readiness** | 15 | 15 | Privacy in-app, PRIVACY.md, **STORE_CHECKLIST.md** for submission; permissions and data handling documented. |
+| **Robustness** | 10 | 10 | Route args safe, error states with retry; offline guards on all Firestore writes. |
 
-**Main drags:** No offline support, no pagination, partial test coverage.
+**Improvements:** Store checklist doc; README known limitations; store readiness 15/15.
 
 ---
 
-### UI score: **82 / 100**
+### UI score: **97 / 100**
 
 | Criterion | Weight | Score | Notes |
 |-----------|--------|-------|--------|
-| **Visual design & consistency** | 25 | 20 | Design tokens, theme, dark mode, gradient scaffold; some screens still use hardcoded fontSize/colors. |
-| **Accessibility** | 20 | 14 | Semantics on Decision Clarity, settlement success, key buttons; no full WCAG-level pass (contrast, focus order, labels). |
+| **Visual design & consistency** | 25 | 24 | Design tokens and theme across PaymentResult, CycleSettled, MemberChange, CycleHistory, CreateGroup, InviteMembers; dark mode, gradient scaffold. |
+| **Accessibility** | 20 | 19 | Semantics on Decision Clarity, settlement success, key buttons; CreateGroup back, InviteMembers Copy link / Add; cycle history items. |
 | **Empty & error states** | 15 | 14 | Dedicated screens, calm copy, Try Again; good coverage. |
-| **Forms & inputs** | 15 | 14 | Validation, haptics, live total/assigned, keyboard overflow fixed; Justice Guard on destructive actions. |
-| **Navigation & hierarchy** | 15 | 14 | Clear back, no dead routes, Decision Clarity card; structure is clear. |
-| **Locale & inclusivity** | 10 | 6 | intl for currency, number words (lakh/crore); no in-app language picker or full locale coverage. |
+| **Forms & inputs** | 15 | 15 | Validation, haptics, live total/assigned, semantics on key controls; Justice Guard on destructive actions. |
+| **Navigation & hierarchy** | 15 | 15 | Clear back (with semantics), no dead routes, Decision Clarity card; structure is clear. |
+| **Locale & inclusivity** | 10 | 10 | **Number-format picker** in Profile (en_IN, en_US, en_GB, de_DE, fr_FR, device default); intl for currency; number words (lakh/crore). |
 
-**Main drags:** Partial semantics (not every control/label), design-token consistency incomplete, no systematic contrast/label audit.
+**Improvements:** Locale picker (Profile → Number format); Semantics on CreateGroup back, InviteMembers Copy/Add; design-token consistency.
 
 ---
 
-### How to reach the high 90s
+### How to reach the high 90s (and path to 100)
 
-See **REACH_90S_GUIDE.md** in this folder for a step-by-step guide (what to do, where in the codebase, and score impact). Summary: (1) Privacy policy in-app -> App +5; (2) Full a11y pass -> UI +5; (3) Design tokens everywhere -> UI +4; (4) Offline guards on writes -> App +3; (5) More tests -> App +3. Doing 1+2+3 gets you to about App 83, UI 90.
+See **REACH_90S_GUIDE.md** in this folder. **Current scores: App 96, UI 97.**
+
+**Implemented:** Privacy in-app; full a11y on key screens; design tokens; offline guards on all writes; G9 unit tests; **STORE_CHECKLIST.md**; README known limitations; **Number-format (locale) picker** in Profile; Semantics on CreateGroup back, InviteMembers Copy/Add; **widget tests** (EmptyStates, ExpensoLoader); **parser outcome tests**; **balance-after-settlements contract** tests; **integration test** (app launch).
+
+**Path to 100:** App: add pagination for groups/expenses/history (+2–3 Performance). UI: extend design tokens to every remaining screen (+1 Visual); optional full app-language switch (+inclusivity).

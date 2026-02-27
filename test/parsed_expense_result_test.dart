@@ -160,4 +160,82 @@ void main() {
       }
     });
   });
+
+  group('Parser outcome (parseConfidence, rejectReason, constraintFlags)', () {
+    test('parseConfidence: confident when set', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 500,
+        'description': 'Lunch',
+        'splitType': 'even',
+        'participants': ['A', 'B'],
+        'parseConfidence': 'confident',
+      });
+      expect(result.parseConfidence, 'confident');
+      expect(result.needsClarification, false);
+    });
+
+    test('parseConfidence: constrained when set', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 500,
+        'description': 'Lunch',
+        'splitType': 'even',
+        'participants': ['A', 'B'],
+        'parseConfidence': 'constrained',
+        'constraintFlags': ['participantsInferredFromHistory'],
+      });
+      expect(result.parseConfidence, 'constrained');
+      expect(result.constraintFlags, ['participantsInferredFromHistory']);
+    });
+
+    test('parseConfidence: reject when set', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 0,
+        'description': 'I\'ll pay next time',
+        'splitType': 'even',
+        'participants': [],
+        'parseConfidence': 'reject',
+        'rejectReason': 'futureIntentNotRecordable',
+        'needsClarification': true,
+      });
+      expect(result.parseConfidence, 'reject');
+      expect(result.rejectReason, 'futureIntentNotRecordable');
+      expect(result.needsClarification, true);
+    });
+
+    test('parseConfidence: unknown string defaults to confident', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 100,
+        'description': 'Test',
+        'splitType': 'even',
+        'participants': [],
+        'parseConfidence': 'unknown',
+      });
+      expect(result.parseConfidence, 'confident');
+    });
+
+    test('constraintFlags: parses list', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 4000,
+        'description': 'Stay',
+        'splitType': 'unresolved',
+        'participants': [],
+        'parseConfidence': 'constrained',
+        'constraintFlags': ['advanceNotDistributed', 'distributionDeferred'],
+      });
+      expect(result.constraintFlags, contains('advanceNotDistributed'));
+      expect(result.constraintFlags, contains('distributionDeferred'));
+    });
+
+    test('rejectReason: stored when present', () {
+      final result = ParsedExpenseResult.fromJson({
+        'amount': 0,
+        'description': 'Adjust it here',
+        'splitType': 'even',
+        'participants': [],
+        'parseConfidence': 'reject',
+        'rejectReason': 'No amount = illegal ledger mutation',
+      });
+      expect(result.rejectReason, 'No amount = illegal ledger mutation');
+    });
+  });
 }

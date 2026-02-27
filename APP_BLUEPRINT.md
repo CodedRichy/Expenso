@@ -42,7 +42,7 @@
 
 **Initial route:** `/splash` → then `/`.
 
-**Cold start optimization:** In `main()`, before `runApp`, `UserProfileCache.load()` is awaited and `CycleRepository.loadFromLocalCache()` is called. This hydrates the user's identity (name, photoURL, upiId) from `SharedPreferences` **before Firebase resolves**, enabling instant avatar rendering on cold start.
+**Cold start optimization:** In `main()`, before `runApp`, `UserProfileCache.load()`, `ThemeService.load()`, and `LocaleService.load()` are awaited and `CycleRepository.loadFromLocalCache()` is called. This hydrates the user's identity (name, photoURL, upiId) and theme/locale from `SharedPreferences` **before Firebase resolves**, enabling instant avatar and settings on cold start.
 
 On launch, **SplashScreen** shows the app logo (light background) for ~1.5s, then navigates to `/`.
 
@@ -414,10 +414,22 @@ lib/
     error_states.dart
 test/
   expense_validation_test.dart   # Unit tests for validateExpenseAmount, validateExpenseDescription
-  parsed_expense_result_test.dart # Unit tests for ParsedExpenseResult.fromJson (AI expense parser)
+  parsed_expense_result_test.dart # Unit tests for ParsedExpenseResult.fromJson and parser outcome (parseConfidence, constraintFlags, rejectReason)
   expense_normalization_test.dart # Unit tests for NormalizedExpense, normalizeExpense, toLedgerDeltas
-  settlement_engine_test.dart     # Unit tests for SettlementEngine (net balances, debts, delta-based)
+  settlement_engine_test.dart     # Unit tests for SettlementEngine (net balances, debts, payment routes, G9, balance-after-settlements contract)
+  expense_revision_test.dart      # Unit tests for negateDeltas and revision lifecycle
+  data_encryption_test.dart       # Unit tests for encrypt/decrypt and key handling
+  widgets/
+    empty_states_test.dart        # Widget tests for EmptyStates (no-groups, no-expenses, zero-waste-cycle, etc.)
+    expenso_loader_test.dart      # Widget tests for ExpensoLoader
+integration_test/
+  app_test.dart                   # Integration test: app launches and shows MaterialApp
+tool/
+  parser_cli.dart                 # CLI for testing the expense parser (Groq API). Use for parser tests: run with input to get outcome/JSON; same contract as app. Batch: --stress [file].
+  parser_runs.log                 # Log of CLI runs (input + raw JSON) for debugging and golden data
 ```
+
+**Parser tests:** For parser/outcome tests, the **CLI parser** (`tool/parser_cli.dart`) can be used: run e.g. `dart tool/parser_cli.dart "Dinner 500"` (or `--stress` for batch) to get real API outcomes; unit tests can assert on `ParsedExpenseResult.fromJson` with CLI-produced or contract JSON. Same outcome contract as the app (see PARSER_OUTCOME_CONTRACT.md).
 
 ---
 

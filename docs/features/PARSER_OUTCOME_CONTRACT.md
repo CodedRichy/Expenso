@@ -2,6 +2,8 @@
 
 Anything else corrupts balances. The parser must output exactly one of three outcomes. Parsed intents flow through a ledger-safe state machine; see `docs/STABILIZATION.md` (§4.1–4.2).
 
+**Tests:** For parser tests you can use the **CLI parser** (`tool/parser_cli.dart`): run with an input string to get real outcomes (e.g. `dart tool/parser_cli.dart "Dinner 500"` or batch `--stress`). Unit tests can assert on `ParsedExpenseResult.fromJson` with JSON produced by the CLI or with hand-crafted contract JSON.
+
 ## Three outcomes (strict)
 
 ### CONFIDENT — ledger-write-safe

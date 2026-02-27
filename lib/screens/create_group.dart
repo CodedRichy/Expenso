@@ -101,7 +101,10 @@ class _CreateGroupState extends State<CreateGroup> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
+                  Semantics(
+                    label: 'Back',
+                    button: true,
+                    child: IconButton(
                     onPressed: () {
                       Navigator.pop(context);
                     },
@@ -114,6 +117,7 @@ class _CreateGroupState extends State<CreateGroup> {
                       minimumSize: const Size(32, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
+                  ),
                   ),
                   const SizedBox(height: 20),
                   Text('Create Group', style: context.screenTitle),

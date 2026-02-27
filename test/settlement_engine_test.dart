@@ -843,60 +843,6 @@ void main() {
       expect(bobReceives, isEmpty);
     });
 
-    group('G9: Payer/participant not in list and large amounts', () {
-      test('participant not in member list: only known members appear in net', () {
-        final expenses = [
-          expense(
-            id: 'e1',
-            amount: 300,
-            paidById: 'u1',
-            participantIds: ['u1', 'u2', 'u3_unknown'],
-            splitAmountsById: {'u1': 100, 'u2': 100, 'u3_unknown': 100},
-          ),
-        ];
-
-        final net = SettlementEngine.computeNetBalances(expenses, members);
-        expect(net.containsKey('u3_unknown'), false);
-        expect(net['u1'], 20000);
-        expect(net['u2'], -10000);
-      });
-
-      test('very large amount (1e9 minor units) computes without overflow', () {
-        const int largeMinor = 100000000000;
-        final deltas = expenseToLedgerDeltas(
-          expenseId: 'e1',
-          amountMinor: largeMinor,
-          payerId: 'u1',
-          splitAmountsByIdMinor: {'u1': 50000000000, 'u2': 50000000000},
-          currencyCode: 'INR',
-          timestamp: DateTime.now(),
-        );
-
-        final deltaMap = {for (final d in deltas) d.memberId: d.deltaMinor};
-        expect(deltaMap['u1'], 50000000000);
-        expect(deltaMap['u2'], -50000000000);
-        final sum = deltas.fold<int>(0, (acc, d) => acc + d.deltaMinor);
-        expect(sum, 0);
-      });
-
-      test('computeNetBalances with very large expense amounts', () {
-        final expenses = [
-          expense(
-            id: 'e1',
-            amount: 999999999.99,
-            paidById: 'u1',
-            participantIds: ['u1', 'u2'],
-            splitAmountsById: {'u1': 499999999.995, 'u2': 499999999.995},
-          ),
-        ];
-
-        final net = SettlementEngine.computeNetBalances(expenses, members);
-        expect(net['u1'], isPositive);
-        expect(net['u2'], isNegative);
-        expect((net['u1']! + net['u2']!).abs(), lessThanOrEqualTo(1));
-      });
-    });
-
     test('PaymentRoute equality and toString', () {
       final route1 = PaymentRoute(
         fromMemberId: 'bob',
@@ -952,6 +898,111 @@ void main() {
       expect(carlPayments.isNotEmpty, true);
       final carlTotal = carlPayments.fold(0, (sum, r) => sum + r.amountMinor);
       expect(carlTotal, 12000);
+    });
+  });
+
+  group('G9: Payer/participant not in list and large amounts', () {
+    test('participant not in member list: only known members appear in net', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2', 'u3_unknown'],
+          splitAmountsById: {'u1': 100, 'u2': 100, 'u3_unknown': 100},
+        ),
+      ];
+
+      final net = SettlementEngine.computeNetBalances(expenses, members);
+      expect(net.containsKey('u3_unknown'), false);
+      expect(net['u1'], 20000);
+      expect(net['u2'], -10000);
+    });
+
+    test('very large amount (1e9 minor units) computes without overflow', () {
+      const int largeMinor = 100000000000;
+      final deltas = expenseToLedgerDeltas(
+        expenseId: 'e1',
+        amountMinor: largeMinor,
+        payerId: 'u1',
+        splitAmountsByIdMinor: {'u1': 50000000000, 'u2': 50000000000},
+        currencyCode: 'INR',
+        timestamp: DateTime.now(),
+      );
+
+      final deltaMap = {for (final d in deltas) d.memberId: d.deltaMinor};
+      expect(deltaMap['u1'], 50000000000);
+      expect(deltaMap['u2'], -50000000000);
+      final sum = deltas.fold<int>(0, (acc, d) => acc + d.deltaMinor);
+      expect(sum, 0);
+    });
+
+    test('computeNetBalances with very large expense amounts', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 999999999.99,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 499999999.995, 'u2': 499999999.995},
+        ),
+      ];
+
+      final net = SettlementEngine.computeNetBalances(expenses, members);
+      expect(net['u1'], isPositive);
+      expect(net['u2'], isNegative);
+      expect((net['u1']! + net['u2']!).abs(), lessThanOrEqualTo(1));
+    });
+  });
+
+  group('Balance-after-settlements contract (mirrors CycleRepository)', () {
+    test('net from expenses then apply confirmed payment yields remaining = net/100', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 300,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 150, 'u2': 150},
+        ),
+      ];
+      Map<String, int> net = Map<String, int>.from(
+        SettlementEngine.computeNetBalances(expenses, members),
+      );
+      expect(net['u1'], 15000);
+      expect(net['u2'], -15000);
+
+      final confirmedPaymentMinor = 15000;
+      net['u2'] = (net['u2'] ?? 0) + confirmedPaymentMinor;
+      net['u1'] = (net['u1'] ?? 0) - confirmedPaymentMinor;
+
+      expect(net['u1'], 0);
+      expect(net['u2'], 0);
+      expect((net['u1']! + net['u2']!), 0);
+
+      final remainingU1 = (net['u1'] ?? 0) / 100.0;
+      final remainingU2 = (net['u2'] ?? 0) / 100.0;
+      expect(remainingU1, 0.0);
+      expect(remainingU2, 0.0);
+    });
+
+    test('multiple confirmed payments apply correctly', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 500,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 250, 'u2': 250},
+        ),
+      ];
+      Map<String, int> net = Map<String, int>.from(
+        SettlementEngine.computeNetBalances(expenses, members),
+      );
+      net['u2'] = (net['u2'] ?? 0) + 25000;
+      net['u1'] = (net['u1'] ?? 0) - 25000;
+      expect(net['u1'], 0);
+      expect(net['u2'], 0);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
@@ -77,12 +78,7 @@ class MemberChange extends StatelessWidget {
                   const SizedBox(height: 20),
                   Text(
                     displayGroupName,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
+                    style: context.screenTitle,
                   ),
                 ],
               ),
@@ -99,12 +95,7 @@ class MemberChange extends StatelessWidget {
                         Text(
                           displayAction == 'leave' ? 'Leave group' : 'Remove member',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                            letterSpacing: -0.4,
-                          ),
+                          style: context.subheader,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -112,26 +103,22 @@ class MemberChange extends StatelessWidget {
                               ? 'You will be removed from this group'
                               : '$memberDisplayName will be removed from this group',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Changes apply from the next cycle. Current cycle balances remain unchanged.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.5,
-                          ),
+                          style: context.bodySecondary,
                         ),
                         const SizedBox(height: 48),
                         Column(
                           children: [
-                            ElevatedButton(
-                              onPressed: () {
+                            Semantics(
+                              label: 'Remove member from group',
+                              button: true,
+                              child: ElevatedButton(
+                                onPressed: () {
                                 if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
                                   if (ConnectivityService.instance.isOffline) {
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -158,32 +145,30 @@ class MemberChange extends StatelessWidget {
                               ),
                               child: Text(
                                 'Remove',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: AppTypography.button,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
-                                foregroundColor: theme.colorScheme.onSurface,
-                                side: BorderSide(color: theme.dividerColor),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                            Semantics(
+                              label: 'Cancel',
+                              button: true,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
+                                  foregroundColor: theme.colorScheme.onSurface,
+                                  side: BorderSide(color: theme.dividerColor),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  minimumSize: const Size(double.infinity, 0),
                                 ),
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
+                                child: Text(
+                                  'Cancel',
+                                  style: AppTypography.button,
                                 ),
                               ),
                             ),

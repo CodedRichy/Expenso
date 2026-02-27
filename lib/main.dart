@@ -33,6 +33,7 @@ import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
 import 'services/fcm_token_service.dart';
 import 'services/theme_service.dart';
+import 'services/locale_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,7 @@ void main() async {
   await Future.wait([
     UserProfileCache.instance.load(),
     ThemeService.instance.load(),
+    LocaleService.instance.load(),
   ]);
   CycleRepository.instance.loadFromLocalCache();
   

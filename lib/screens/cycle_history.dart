@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
+import '../services/locale_service.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class CycleHistory extends StatefulWidget {
@@ -83,20 +85,12 @@ class _CycleHistoryState extends State<CycleHistory> {
                   const SizedBox(height: 20),
                   Text(
                     groupName,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
+                    style: context.screenTitle,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Settlement history',
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -138,21 +132,13 @@ class _CycleHistoryState extends State<CycleHistory> {
                               Text(
                                 'No settlement history',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                  color: theme.colorScheme.onSurface,
-                                ),
+                                style: context.listItemTitle,
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Settled cycles will appear here.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
+                                style: context.bodySecondary,
                               ),
                             ],
                           ),
@@ -169,12 +155,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
                         child: Text(
                           'PAST CYCLES',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            letterSpacing: 0.3,
-                          ),
+                          style: context.sectionLabel,
                         ),
                       ),
                       Expanded(
@@ -190,19 +171,23 @@ class _CycleHistoryState extends State<CycleHistory> {
                             (sum, e) => sum + e.amount,
                           );
                           final expenseCount = cycle.expenses.length;
-                          return InkWell(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/cycle-history-detail',
-                                arguments: {
-                                  'cycle': cycle,
-                                  'groupName': groupName,
-                                  'currencyCode': currencyCode,
-                                },
-                              );
-                            },
-                            child: Container(
+                          final cycleLabel = 'Cycle $startDate to $endDate, ${formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode)} settled, $expenseCount expense${expenseCount != 1 ? 's' : ''}';
+                          return Semantics(
+                            label: cycleLabel,
+                            button: true,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/cycle-history-detail',
+                                  arguments: {
+                                    'cycle': cycle,
+                                    'groupName': groupName,
+                                    'currencyCode': currencyCode,
+                                  },
+                                );
+                              },
+                              child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 16,
@@ -226,30 +211,19 @@ class _CycleHistoryState extends State<CycleHistory> {
                                       children: [
                                         Text(
                                           '$startDate – $endDate',
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w500,
-                                            color: theme.colorScheme.onSurface,
-                                          ),
+                                          style: context.listItemTitle,
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
                                             Text(
-                                              formatMoneyFromMajor(settledAmount, currencyCode),
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w600,
-                                                color: theme.colorScheme.onSurface,
-                                              ),
+                                              formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode),
+                                              style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w600),
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
                                               'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                color: theme.colorScheme.onSurfaceVariant,
-                                              ),
+                                              style: context.bodySecondary,
                                             ),
                                           ],
                                         ),
@@ -388,14 +362,18 @@ class _ErrorWithRetry extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: onRetry,
+            Semantics(
+              label: 'Try again',
+              button: true,
+              child: OutlinedButton(
+                onPressed: onRetry,
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.onSurface,
                 side: BorderSide(color: theme.dividerColor),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: const Text('Try again'),
+            ),
             ),
           ],
         ),

@@ -12,6 +12,7 @@ import '../models/normalized_expense.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../services/groq_expense_parser_service.dart';
+import '../services/locale_service.dart';
 import '../utils/expense_normalization.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
@@ -589,7 +590,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                         ),
                                         const SizedBox(width: 16),
                                         Text(
-                                          formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode),
+                                          formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode, LocaleService.instance.localeCode),
                                           style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w600,
@@ -790,8 +791,8 @@ class _GroupDetailState extends State<GroupDetail> {
 }
 
 String _formatAmount(double value, String currencyCode) {
-  if (value.isNaN || value.isInfinite) return formatMoneyFromMajor(0, currencyCode);
-  return formatMoneyFromMajor(value, currencyCode);
+  if (value.isNaN || value.isInfinite) return formatMoneyFromMajor(0, currencyCode, LocaleService.instance.localeCode);
+  return formatMoneyFromMajor(value, currencyCode, LocaleService.instance.localeCode);
 }
 
 class _DecisionClarityCard extends StatelessWidget {

@@ -202,11 +202,11 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 ### G9. Settlement test coverage (remaining edge cases)
 
 **Area:** Balances / settlement engine tests  
-**Summary:** Per `docs/features/MONEY_BALANCE_LOGIC.md`, the following are not yet covered by tests (lower priority):  
-- **Payer not in member list:** Credit is dropped; net balances no longer sum to zero for that expense. No test.  
-- **Participant not in member list:** Debit is dropped; same risk. No test.  
-- **Large numbers / overflow:** No test for very large amounts or integer overflow in minor units.  
-**Status:** Acknowledged — add tests when touching settlement logic or if production issues appear.  
+**Summary:** Per `docs/features/MONEY_BALANCE_LOGIC.md`, the following were not yet covered by tests (lower priority):  
+- **Payer not in member list:** Credit is dropped; net balances no longer sum to zero for that expense.  
+- **Participant not in member list:** Debit is dropped; same risk.  
+- **Large numbers / overflow:** Very large amounts or integer overflow in minor units.  
+**Status:** Addressed. Tests added in `settlement_engine_test.dart`: participant not in member list (G9 group), very large amount in minor units, computeNetBalances with very large expense amounts. Additional group "Balance-after-settlements contract" documents net + confirmed payments → remaining = net/100.  
 **Ref:** `test/settlement_engine_test.dart`, `docs/features/MONEY_BALANCE_LOGIC.md` §5.
 
 ---

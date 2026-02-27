@@ -6,6 +6,7 @@ import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
+import '../services/locale_service.dart';
 import '../services/pinned_groups_service.dart';
 import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
@@ -571,7 +572,7 @@ class _GroupsListState extends State<GroupsList> {
                                                     Row(
                                                       children: [
                                                         Text(
-                                                          formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode),
+                                                          formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode, LocaleService.instance.localeCode),
                                                           style: context.amountSM.copyWith(
                                                             color: Theme.of(context).colorScheme.onSurface,
                                                           ),

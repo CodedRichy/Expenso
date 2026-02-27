@@ -291,7 +291,9 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status
 
-Expenso is at **V4** (in progress). Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, tested where critical, and documented. V4 adds cross-group identity, global balance view, and debt minimization. See [docs/releases/V4_RELEASE.md](docs/releases/V4_RELEASE.md) for the current release scope.
+Expenso is at **V4** (in progress). Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, with **187+ tests** covering: settlement engine (net balances, debts, payment routes, G9 edge cases, balance-after-settlements contract), expense validation, normalization, encryption, parser result/outcome, revisions; **widget tests** (EmptyStates, ExpensoLoader); and an **integration test** (app launch). See [docs/internal/STORE_CHECKLIST.md](docs/internal/STORE_CHECKLIST.md) for pre-submit steps. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
+
+**Known limitations (documented in [STABILIZATION.md](docs/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
 
 **Past releases:** V3 added logout, international phone number support (15 countries), settlement activity feed, offline resilience, and Dynamic UPI QR. See [docs/releases/V3_RELEASE.md](docs/releases/V3_RELEASE.md).
 
@@ -301,7 +303,7 @@ Expenso is at **V4** (in progress). Core logic (expense recording, split calcula
 
 ## Contributing
 
-This repository is shared for reference. If you have permission to contribute: prefer small, focused PRs; follow the logic and conventions in APP_BLUEPRINT.md and the existing code style; run `flutter test` before submitting. For behavioral or product changes, align with the release contracts in `docs/releases/`.
+This repository is shared for reference. If you have permission to contribute: prefer small, focused PRs; follow the logic and conventions in APP_BLUEPRINT.md and the existing code style; run `flutter test` before submitting (187+ unit and widget tests must pass). Optional: run `flutter test integration_test/app_test.dart -d <deviceId>` for the app-launch integration test. For behavioral or product changes, align with the release contracts in `docs/releases/`.
 
 ---
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
+import '../design/typography.dart';
 import '../utils/route_args.dart';
 import '../utils/money_format.dart';
 
@@ -22,6 +24,11 @@ class PaymentResult extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
+    final statusLabel = status == 'success'
+        ? 'Payment successful'
+        : status == 'failed'
+            ? 'Payment failed'
+            : 'Payment cancelled';
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -32,48 +39,42 @@ class PaymentResult extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: status == 'success' ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      status == 'success'
-                          ? Icons.check
-                          : status == 'failed'
-                              ? Icons.error_outline
-                              : Icons.close,
-                      color: status == 'success' ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                      size: 32,
+                  Semantics(
+                    label: statusLabel,
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: status == 'success' ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        status == 'success'
+                            ? Icons.check
+                            : status == 'failed'
+                                ? Icons.error_outline
+                                : Icons.close,
+                        color: status == 'success' ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                        size: 32,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
                   Column(
                     children: [
                       Text(
-                        status == 'success'
-                            ? 'Payment successful'
-                            : status == 'failed'
-                                ? 'Payment failed'
-                                : 'Payment cancelled',
+                        statusLabel,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: -0.5,
-                        ),
+                        style: context.screenTitle,
                       ),
                       const SizedBox(height: 12),
                       if (status == 'success' && amount != null) ...[
-                        Text(
-                          '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.onSurfaceVariant,
+                        Semantics(
+                          label: '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
+                          child: Text(
+                            '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
+                            textAlign: TextAlign.center,
+                            style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ),
                         if (transactionId != null) ...[
@@ -81,10 +82,7 @@ class PaymentResult extends StatelessWidget {
                           Text(
                             'Transaction ID: $transactionId',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: context.caption.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ],
@@ -92,24 +90,21 @@ class PaymentResult extends StatelessWidget {
                         Text(
                           'The transaction could not be completed',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                       if (status == 'cancelled')
                         Text(
                           'No amount was transferred',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                     ],
                   ),
                   const SizedBox(height: 48),
-                    ElevatedButton(
+                  Semantics(
+                    label: status == 'success' ? 'Done' : 'Close',
+                    button: true,
+                    child: ElevatedButton(
                       onPressed: () {
                         Navigator.pushReplacementNamed(
                           context,
@@ -117,19 +112,17 @@ class PaymentResult extends StatelessWidget {
                           arguments: group,
                         );
                       },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
                       ),
-                      elevation: 0,
-                      minimumSize: const Size(double.infinity, 0),
-                    ),
-                    child: Text(
-                      status == 'success' ? 'Done' : 'Close',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
+                      child: Text(
+                        status == 'success' ? 'Done' : 'Close',
+                        style: AppTypography.button,
                       ),
                     ),
                   ),
