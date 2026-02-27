@@ -56,10 +56,10 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: allSettled ? AppColors.successBackground : AppColors.surface,
+            color: allSettled ? context.colorSuccessBackground : context.colorSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: allSettled ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
+              color: allSettled ? context.colorSuccess.withValues(alpha: 0.3) : context.colorBorder,
             ),
           ),
           child: Column(
@@ -70,7 +70,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                   Icon(
                     allSettled ? Icons.check_circle : Icons.group,
                     size: 18,
-                    color: allSettled ? AppColors.success : AppColors.textSecondary,
+                    color: allSettled ? context.colorSuccess : context.colorTextSecondary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -79,7 +79,7 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                           ? 'All members settled'
                           : '$membersSettled of $membersTotal members settled',
                       style: context.bodyPrimary.copyWith(
-                        color: allSettled ? AppColors.success : Theme.of(context).colorScheme.onSurface,
+                        color: allSettled ? context.colorSuccess : Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -88,13 +88,13 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.warningBackground,
+                        color: context.colorWarningBackground,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '$pendingMembers pending',
                         style: context.caption.copyWith(
-                          color: AppColors.warning,
+                          color: context.colorWarning,
                           fontWeight: FontWeight.w500,
                           fontSize: 11,
                         ),
@@ -108,9 +108,9 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                 child: LinearProgressIndicator(
                   value: fraction,
                   minHeight: 6,
-                  backgroundColor: AppColors.border,
+                  backgroundColor: context.colorBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    allSettled ? AppColors.success : AppColors.accent,
+                    allSettled ? context.colorSuccess : context.colorAccent,
                   ),
                 ),
               ),

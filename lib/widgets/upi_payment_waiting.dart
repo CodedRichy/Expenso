@@ -485,7 +485,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           child: Text(
             'Cancel',
             style: AppTypography.bodySecondary.copyWith(
-              color: Colors.white54,
+              color: context.colorTextSecondary,
             ),
           ),
         ),
@@ -499,8 +499,8 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
       child: ElevatedButton(
         onPressed: widget.onManualConfirm,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.success,
-          foregroundColor: Colors.white,
+          backgroundColor: context.colorSuccess,
+          foregroundColor: context.colorSurface,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -520,8 +520,8 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           child: ElevatedButton(
             onPressed: widget.onRetry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: context.colorPrimary,
+              foregroundColor: context.colorSurface,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -553,8 +553,8 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           child: ElevatedButton(
             onPressed: widget.onManualConfirm,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-              foregroundColor: Colors.white,
+              backgroundColor: context.colorSuccess,
+              foregroundColor: context.colorSurface,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -570,8 +570,8 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           child: OutlinedButton(
             onPressed: widget.onRetry,
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              foregroundColor: context.colorTextPrimary,
+              side: BorderSide(color: context.colorBorder),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -586,7 +586,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           child: Text(
             'Cancel',
             style: AppTypography.bodySecondary.copyWith(
-              color: Colors.white54,
+              color: context.colorTextSecondary,
             ),
           ),
         ),

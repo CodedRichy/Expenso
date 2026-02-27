@@ -112,7 +112,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                     ),
                   ],
                 ),
-                backgroundColor: AppColors.success,
+                backgroundColor: context.colorSuccess,
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -489,8 +489,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               icon: const Icon(Icons.check, size: 18),
               label: const Text('Mark as paid'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
+                backgroundColor: context.colorSuccess,
+                foregroundColor: context.colorSurface,
                 padding: const EdgeInsets.symmetric(
                   vertical: AppSpacing.spaceLg,
                 ),

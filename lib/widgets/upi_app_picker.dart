@@ -153,8 +153,8 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
               child: ElevatedButton(
                 onPressed: widget.onManualConfirm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.colorSuccess,
+                  foregroundColor: context.colorSurface,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.buttonPaddingV),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

@@ -244,11 +244,18 @@ class _CreateGroupState extends State<CreateGroup> {
                 label: 'Create group',
                 button: true,
                 child: ElevatedButton(
-                onPressed: name.trim().isNotEmpty ? handleCreate : null,
-                child: Text('Create Group', style: Theme.of(context).textTheme.labelLarge),
+                  onPressed: name.trim().isNotEmpty ? handleCreate : null,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 0),
+                  ),
+                  child: const Text('Create Group', style: AppTypography.button),
+                ),
               ),
-            ),
-            ),
           ],
         ),
       ),

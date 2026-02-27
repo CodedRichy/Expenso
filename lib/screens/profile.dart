@@ -456,37 +456,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Log out',
                     button: true,
                     child: ElevatedButton(
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Log out?'),
-                          content: const Text('You will need to sign in again with your phone number.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Log out'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true && context.mounted) {
-                        await FirebaseAuth.instance.signOut();
-                        CycleRepository.instance.clearAuth();
-                        if (context.mounted) {
-                          Navigator.of(context).popUntil((route) => route.isFirst);
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Log out?'),
+                            content: const Text('You will need to sign in again with your phone number.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Log out'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true && context.mounted) {
+                          await FirebaseAuth.instance.signOut();
+                          CycleRepository.instance.clearAuth();
+                          if (context.mounted) {
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          }
                         }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 0),
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child: const Text('Log out', style: AppTypography.button),
                     ),
-                    child: Text('Log out', style: Theme.of(context).textTheme.labelLarge),
-                  ),
                 ),
               ),
                       ],
