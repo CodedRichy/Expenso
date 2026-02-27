@@ -73,7 +73,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
     final payerId = _paidById ?? CycleRepository.instance.currentUserId;
     if (payerId.isEmpty) return;
     if (parsedData != null) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      final group = RouteArgs.getGroup(context);
       if (group != null) {
         try {
           final repo = CycleRepository.instance;
@@ -590,7 +590,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     TextField(
                       autofocus: true,
                       onChanged: (value) {
-                        final group = ModalRoute.of(context)?.settings.arguments as Group?;
+                        final group = RouteArgs.getGroup(context);
                         setState(() {
                           input = value;
                           if (group != null) _syncSelectedMembersFromInput(group);

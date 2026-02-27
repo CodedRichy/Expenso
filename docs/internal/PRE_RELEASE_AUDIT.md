@@ -31,7 +31,7 @@ allow delete: if request.auth != null
 
 **Status:** Fixed. `firestore.rules` now use `request.auth.uid == resource.data.creatorId` for group delete.
 
-**You must deploy the rules for the change to take effect:** from the project root run `firebase deploy --only firestore` (or deploy from Firebase Console). Until then, the previous rules remain in effect.
+**Deploy:** Run `firebase deploy --only firestore` (or deploy from Firebase Console) for the change to take effect. *(Deployed.)*
 
 ---
 
@@ -179,4 +179,3 @@ These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code
 | **Design token consistency** | PRE_RELEASE §3.4 | Some screens use hardcoded fontSize/colors. Gradual pass to use design tokens. |
 | **Loading/error UX** | PRE_RELEASE §3.5 | Ensure every async flow has clear message + retry/back. Mostly in place. |
 | **Assumed invariants** | STABILIZATION §4.3 | #6 members vs pendingMembers; #12 encryption keys — assumed, not enforced. Accept or add checks later. |
-| **ExpenseInput route args** | Code | Still uses raw `ModalRoute... as Group?` in two places; works. Optional: use `RouteArgs.getGroup(context)` for consistency. |
