@@ -70,6 +70,7 @@ class FirestoreService {
     String? phoneNumber,
     String? photoURL,
     String? upiId,
+    String? currencyCode,
   }) async {
     final ref = _firestore.collection(FirestorePaths.users).doc(uid);
     final data = <String, dynamic>{};
@@ -77,6 +78,7 @@ class FirestoreService {
     if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
     if (photoURL != null) data['photoURL'] = photoURL;
     if (upiId != null) data['upiId'] = upiId;
+    if (currencyCode != null) data['currencyCode'] = currencyCode;
     if (data.isEmpty) return;
     if (_encryption != null) {
       await _encryption!.ensureUserKey();

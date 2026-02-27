@@ -416,7 +416,10 @@ class _GroupsListState extends State<GroupsList> {
         }
         return GradientScaffold(
           floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
-              ? FloatingActionButton(
+              ? Semantics(
+                  label: 'Create new group',
+                  button: true,
+                  child: FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
                   backgroundColor: context.colorPrimary,
                   foregroundColor: context.colorSurface,
@@ -426,6 +429,7 @@ class _GroupsListState extends State<GroupsList> {
                   elevation: 0,
                   child: const Icon(Icons.add),
                 )
+              )
               : null,
           body: Column(
             children: [

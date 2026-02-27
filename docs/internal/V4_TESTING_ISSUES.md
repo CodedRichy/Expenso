@@ -117,8 +117,9 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 
 **Area:** All screens / UX  
 **Summary:** No `Semantics` or `semanticsLabel` (or equivalent) are used in the codebase. Screen readers and TalkBack will not get explicit labels for buttons, amounts, or sections. Touch targets and contrast have been improved in places but there is no systematic a11y pass.  
-**Status:** Open  
-**Ref:** None in codebase.
+**Status:** Addressed  
+**Notes:** Added `Semantics` with `label` and `button: true` to key actions: Groups list FAB (Create new group), Create Group screen button, Profile Log out, Settlement Back to Group. More screens can be covered in a follow-up pass.  
+**Ref:** groups_list.dart, create_group.dart, profile.dart, settlement_confirmation.dart.
 
 ---
 
@@ -128,8 +129,9 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 **Summary:** V4 scope states the app is global and should be "locale-aware where relevant (e.g. number formats)". Currently:
 - `money_format.dart` uses comma as thousands separator and dot for decimals (US/IN style). No locale-based formatting (e.g. `intl`); EU-style (space/dot for thousands, comma for decimals) is not supported.
 - Many screens format amounts with inline `replaceAllMapped(RegExp(...))` for "₹X,XXX" instead of a single locale-aware formatter.
-**Status:** Open  
-**Ref:** `lib/utils/money_format.dart`, currency display across screens.
+**Status:** Addressed  
+**Notes:** Added `intl` package. `formatMoneyWithCurrency()` now uses `NumberFormat.currency` with device locale (`PlatformDispatcher.instance.locale`) so thousands/decimal separators follow the user's region. Optional third parameter `locale` allows override (e.g. from BuildContext). Fallback to previous formatting if intl fails. Call sites that still use inline `replaceAllMapped` for amounts could later be migrated to this formatter for consistency.  
+**Ref:** `lib/utils/money_format.dart`, `pubspec.yaml` (intl).
 
 ---
 
@@ -137,8 +139,9 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 
 **Area:** Balances / data integrity  
 **Summary:** STABILIZATION §4.3: "Split amounts must sum to expense amount — ⚠️ Assumed but not enforced. The code computes splits at write time but does not validate sum equality on read. Historical data may have rounding errors." If stored splits ever diverge from the expense total, balance math can be wrong and there is no read-side check or correction.  
-**Status:** Open  
-**Ref:** `docs/STABILIZATION.md` §4.3 invariant #3.
+**Status:** Addressed  
+**Notes:** In `SettlementEngine.expenseToDeltas()`, when an expense has `splitAmountsById`, we now check that the sum of splits is within 0.01 of the expense amount. If not (or if sum is NaN/Infinite), we skip that expense from balance computation and log in debug. Invalid or legacy data no longer corrupts balances.  
+**Ref:** `lib/utils/settlement_engine.dart`, `docs/STABILIZATION.md` §4.3 invariant #3.
 
 ---
 
@@ -146,7 +149,7 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 
 **Area:** Data model / consistency  
 **Summary:** TODOs in code: "Remove once UI is updated to use integer amounts" (settlement_engine.dart, ledger_delta.dart). SettlementEngine and ledger work with minor-unit integers in places, but UI and some paths still use double amounts. Migration is incomplete; double-based paths remain.  
-**Status:** Open  
+**Status:** Open — **Discuss**  
 **Ref:** `lib/utils/settlement_engine.dart` (lines 301, 318), `lib/utils/ledger_delta.dart` (line 160).
 
 ---
@@ -159,8 +162,9 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 - `data_encryption_service.dart`: empty `catch (_) {}` in key paths.
 - `pinned_groups_service.dart`: `catch (_) {}` then `notifyListeners()` — load failure is silent.
 If these paths fail, the user may see generic or incorrect behavior with no indication why.  
-**Status:** Open  
-**Ref:** Grep for `catch (_)` / empty catch in lib.
+**Status:** Addressed  
+**Notes:** Replaced silent catches with `if (kDebugMode) debugPrint(...)` so failures are visible in debug builds. Parser: cache example failure, strict/relaxed JSON decode failures. DataEncryptionService: participantIds/splits restore failures. PinnedGroupsService: load failure and save failure. No user-facing messages added (services don't have context); consider SnackBar in UI layer for pin save failure if desired.  
+**Ref:** groq_expense_parser_service.dart, data_encryption_service.dart, pinned_groups_service.dart.
 
 ---
 
@@ -168,8 +172,9 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 
 **Area:** Security / invariants  
 **Summary:** STABILIZATION §4.3: "Closed cycles are read-only — ⚠️ Assumed but not enforced. Firestore rules may not prevent writes to settled_cycles." Current `firestore.rules` allow create, update, delete on `groups/{groupId}/settled_cycles/{cycleId}` and its expenses for any group member. There is no rule that makes archived cycles immutable.  
-**Status:** Open  
-**Ref:** `docs/STABILIZATION.md` §4.3 invariant #8, `firestore.rules`.
+**Status:** Addressed  
+**Notes:** Updated `firestore.rules`: `settled_cycles` and `settled_cycles/{cycleId}/expenses` now allow **read** and **create** only; **update** and **delete** are denied (`allow update, delete: if false`). Archive flow still works (create); no one can modify or delete archived cycle data after creation.  
+**Ref:** `firestore.rules`, `docs/STABILIZATION.md` §4.3 invariant #8.
 
 ---
 
@@ -177,7 +182,7 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 
 **Area:** Data model / global use  
 **Summary:** STABILIZATION §5: "Date stored as string... Expense `date` field is 'Today', 'Yesterday', or 'Mon DD'. This makes date math fragile and timezone-dependent." For a global app, this can cause ordering or "today" boundaries to differ by locale/timezone.  
-**Status:** Open  
+**Status:** Open — **Discuss**  
 **Ref:** `docs/STABILIZATION.md` §5 design shortcut #8.
 
 ---
@@ -186,8 +191,20 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 
 **Area:** Performance / scale  
 **Summary:** Group list, expense list, and cycle history load in full. Acceptable for small datasets; will degrade with hundreds of expenses per cycle or many groups. STABILIZATION §5 lists this as a known limitation.  
-**Status:** Acknowledged  
+**Status:** Acknowledged — **Discuss** if/when to prioritize.  
 **Ref:** `docs/STABILIZATION.md` §5 limitation #6.
+
+---
+
+## Discuss with me (not fixed by code alone)
+
+These need product or design decisions, or are larger efforts:
+
+| Gap | Why not fixed in code |
+|-----|------------------------|
+| **G4** Integer-amounts migration | Project-level change: many UI and repo paths still use `double`. Full migration would touch storage, all amount displays, and parser outputs. Prefer a planned migration and tests before switching. |
+| **G7** Date as string / timezone | Schema and data migration: would require storing ISO date or timestamp, then deriving "Today"/"Yesterday" in UI from device timezone. Existing data would need backfill or dual read. |
+| **G8** No pagination | Feature work: cursor-based or page-based loading for groups, expenses, and history. Deciding when to prioritize (e.g. when groups or cycle size grows). |
 
 ---
 

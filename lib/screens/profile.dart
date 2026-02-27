@@ -407,7 +407,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
-                  child: ElevatedButton(
+                  child: Semantics(
+                    label: 'Log out',
+                    button: true,
+                    child: ElevatedButton(
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
@@ -439,7 +442,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Text('Log out', style: Theme.of(context).textTheme.labelLarge),
                   ),
+                  ),
                 ),
+                  ),
                       ],
                     ),
                   ),

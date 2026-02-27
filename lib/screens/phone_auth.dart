@@ -92,10 +92,12 @@ class _PhoneAuthState extends State<PhoneAuth> {
       final user = PhoneAuthService.instance.currentUser;
       if (!mounted || user == null) return;
       final formattedPhone = _formatPhone(_selectedCountryCode, phone);
+      final currencyCode = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
       CycleRepository.instance.setGlobalProfile(
         formattedPhone,
         user.displayName ?? '',
         authUserId: user.uid,
+        currencyCode: currencyCode,
       );
     } catch (e) {
       if (!mounted) return;
@@ -111,7 +113,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
     _clearError();
     final formattedPhone = _formatPhone(_selectedCountryCode, phone);
     if (!firebaseAuthAvailable) {
-      CycleRepository.instance.setGlobalProfile(formattedPhone, '');
+      final currencyCode = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
+      CycleRepository.instance.setGlobalProfile(formattedPhone, '', currencyCode: currencyCode);
       return;
     }
     final verificationId = _verificationId;

@@ -23,7 +23,8 @@ class PinnedGroupsService extends ChangeNotifier {
       _ids = prefs.getStringList(_key) ?? [];
       if (_ids.length > _maxPinned) _ids = _ids.take(_maxPinned).toList();
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) debugPrint('PinnedGroupsService: load failed: $e');
       _ids = [];
     }
   }
@@ -39,7 +40,9 @@ class PinnedGroupsService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_key, _ids);
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('PinnedGroupsService: save pinned ids failed: $e');
+    }
     notifyListeners();
   }
 

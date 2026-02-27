@@ -83,13 +83,21 @@ class CycleRepository extends ChangeNotifier {
   /// Current user UPI ID for payments.
   String? get currentUserUpiId => _userCache[_currentUserId]?['upiId'] as String?;
 
-  /// Updates the global profile (phone, name, and optionally auth user id). Notifies listeners.
+  /// Preferred currency from user profile (set at auth from country selection). Defaults to INR.
+  String get currentUserCurrencyCode =>
+      _userCache[_currentUserId]?['currencyCode'] as String? ?? 'INR';
+
+  /// Updates the global profile (phone, name, and optionally auth user id and currency). Notifies listeners.
   /// Persists to Firestore and local cache when [_currentUserId] is set.
-  void setGlobalProfile(String phone, String name, {String? authUserId}) {
+  void setGlobalProfile(String phone, String name, {String? authUserId, String? currencyCode}) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
     if (authUserId != null && authUserId.isNotEmpty) _currentUserId = authUserId;
     if (_currentUserId.isNotEmpty) {
+      if (currencyCode != null && currencyCode.isNotEmpty) {
+        _userCache[_currentUserId] ??= <String, dynamic>{};
+        _userCache[_currentUserId]!['currencyCode'] = currencyCode;
+      }
       _writeCurrentUserProfile().catchError((e, st) {
         debugPrint('CycleRepository.setGlobalProfile write failed: $e');
         if (kDebugMode) debugPrint(st.toString());
@@ -101,6 +109,7 @@ class CycleRepository extends ChangeNotifier {
         photoURL: currentUserPhotoURL,
         upiId: currentUserUpiId,
         phone: _currentUserPhone,
+        currencyCode: currentUserCurrencyCode,
       );
     }
     notifyListeners();
@@ -119,6 +128,7 @@ class CycleRepository extends ChangeNotifier {
       'phoneNumber': cached.phone,
       if (cached.photoURL != null) 'photoURL': cached.photoURL,
       if (cached.upiId != null) 'upiId': cached.upiId,
+      if (cached.currencyCode != null) 'currencyCode': cached.currencyCode,
     };
   }
 
@@ -133,7 +143,7 @@ class CycleRepository extends ChangeNotifier {
       'phoneNumber': _currentUserPhone,
     };
     
-    // Merge with local cache if available (preserves photoURL from cache)
+    // Merge with local cache if available (preserves photoURL, currencyCode from cache)
     final cached = UserProfileCache.instance.getCachedProfile();
     if (cached != null && cached.userId == uid) {
       final cur = _userCache[uid]!;
@@ -142,6 +152,9 @@ class CycleRepository extends ChangeNotifier {
       }
       if (cached.upiId != null && cur['upiId'] == null) {
         cur['upiId'] = cached.upiId;
+      }
+      if (cached.currencyCode != null && cur['currencyCode'] == null) {
+        cur['currencyCode'] = cached.currencyCode;
       }
     }
   }
@@ -179,6 +192,7 @@ class CycleRepository extends ChangeNotifier {
         final cur = Map<String, dynamic>.from(_userCache[_currentUserId]!);
         if (u['photoURL'] != null) cur['photoURL'] = u['photoURL'];
         if (u['upiId'] != null) cur['upiId'] = u['upiId'];
+        if (u['currencyCode'] != null) cur['currencyCode'] = u['currencyCode'];
         _userCache[_currentUserId] = cur;
         
         // Persist to local cache for instant load on next cold start
@@ -188,6 +202,7 @@ class CycleRepository extends ChangeNotifier {
           photoURL: u['photoURL'] as String?,
           upiId: u['upiId'] as String?,
           phone: _currentUserPhone,
+          currencyCode: cur['currencyCode'] as String?,
         );
         
         notifyListeners();
@@ -206,6 +221,7 @@ class CycleRepository extends ChangeNotifier {
       phoneNumber: _currentUserPhone,
       photoURL: cache?['photoURL'] as String?,
       upiId: cache?['upiId'] as String?,
+      currencyCode: cache?['currencyCode'] as String?,
     );
   }
 

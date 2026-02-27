@@ -678,7 +678,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   }
 
   Widget _buildBackButton(BuildContext context) {
-    return ElevatedButton(
+    return Semantics(
+      label: 'Back to group',
+      button: true,
+      child: ElevatedButton(
       onPressed: () => Navigator.pop(context),
       style: ElevatedButton.styleFrom(
         backgroundColor: context.colorSurface,
@@ -689,6 +692,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         elevation: 0,
       ),
       child: Text('Back to Group', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.colorTextPrimary)),
+    ),
     );
   }
 }

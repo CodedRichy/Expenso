@@ -1,5 +1,6 @@
 import '../models/models.dart';
 import '../models/money_minor.dart';
+import 'package:flutter/foundation.dart';
 import 'ledger_delta.dart';
 
 /// A single debt: [fromId] owes [toId] [amount] in minor units.
@@ -110,9 +111,10 @@ class SettlementEngine {
   }
 
   /// Converts an Expense to LedgerDeltas for the canonical computation path.
-  /// 
+  ///
   /// Uses the legacy adapter to handle double-based storage.
   /// Assumes INR currency if not specified.
+  /// Skips the expense if splitAmountsById sum does not match amount (within 0.01 tolerance).
   static List<LedgerDelta> expenseToDeltas(Expense expense, {String currencyCode = 'INR'}) {
     if (expense.amount <= 0 || expense.amount.isNaN || expense.amount.isInfinite) {
       return [];
@@ -121,6 +123,20 @@ class SettlementEngine {
     final payerId = expense.paidById;
     if (payerId.isEmpty || payerId.startsWith('p_')) {
       return [];
+    }
+
+    final splits = expense.splitAmountsById;
+    if (splits != null && splits.isNotEmpty) {
+      final sum = splits.values.fold<double>(0, (a, b) => a + b);
+      if (sum.isNaN || sum.isInfinite) {
+        if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping');
+        return [];
+      }
+      final diff = (sum - expense.amount).abs();
+      if (diff > 0.01) {
+        if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping');
+        return [];
+      }
     }
 
     return expenseToLedgerDeltasLegacy(

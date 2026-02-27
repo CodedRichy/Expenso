@@ -53,6 +53,7 @@ class _CreateGroupState extends State<CreateGroup> {
       amount: 0,
       statusLine: 'Cycle open',
       creatorId: repo.currentUserId,
+      currencyCode: repo.currentUserCurrencyCode,
     );
     try {
       await repo.addGroup(
@@ -222,10 +223,14 @@ class _CreateGroupState extends State<CreateGroup> {
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
               ),
-              child: ElevatedButton(
+              child: Semantics(
+                label: 'Create group',
+                button: true,
+                child: ElevatedButton(
                 onPressed: name.trim().isNotEmpty ? handleCreate : null,
                 child: Text('Create Group', style: Theme.of(context).textTheme.labelLarge),
               ),
+            ),
             ),
           ],
         ),

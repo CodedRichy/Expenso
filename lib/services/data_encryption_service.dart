@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 
 const _prefix = 'e:';
 
@@ -140,14 +141,18 @@ class DataEncryptionService {
       try {
         final list = jsonDecode(v) as List?;
         return list?.map((e) => e?.toString()).whereType<String>().toList() ?? [];
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) debugPrint('DataEncryptionService: participantIds restore failed: $e');
+      }
     }
     if (k == 'splits') {
       try {
         final map = jsonDecode(v) as Map?;
         if (map == null) return null;
         return map.map((a, b) => MapEntry(a.toString(), (b is num) ? b.toDouble() : double.tryParse(b?.toString() ?? '') ?? 0.0));
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) debugPrint('DataEncryptionService: splits restore failed: $e');
+      }
     }
     return v;
   }

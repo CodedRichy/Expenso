@@ -245,7 +245,9 @@ class GroqExpenseParserService {
       if (_recentExamples.length > _maxRecentExamples) {
         _recentExamples.removeAt(0);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('GroqExpenseParserService: failed to cache recent example: $e');
+    }
   }
 
   /// Returns an error message if [result] is invalid; null if valid.
@@ -674,7 +676,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     try {
       final value = jsonDecode(normalized);
       if (value is Map<String, dynamic>) return value;
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('GroqExpenseParserService: strict JSON decode failed: $e');
+    }
     try {
       final value = jsonDecode(normalized.replaceAll("'", '"'));
       if (value is Map<String, dynamic>) return value;
@@ -686,7 +690,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       );
       final value = jsonDecode(fixed);
       if (value is Map<String, dynamic>) return value;
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('GroqExpenseParserService: relaxed JSON decode failed: $e');
+    }
     return null;
   }
 

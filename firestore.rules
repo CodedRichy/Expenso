@@ -32,13 +32,13 @@ service cloud.firestore {
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId} {
-      allow read, delete: if isGroupMember(groupId);
-      allow create, update: if isGroupMember(groupId);
+      allow read, create: if isGroupMember(groupId);
+      allow update, delete: if false;
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId}/expenses/{expenseId} {
-      allow read, delete: if isGroupMember(groupId);
-      allow create, update: if isGroupMember(groupId);
+      allow read, create: if isGroupMember(groupId);
+      allow update, delete: if false;
     }
 
     match /groups/{groupId}/system_messages/{messageId} {
