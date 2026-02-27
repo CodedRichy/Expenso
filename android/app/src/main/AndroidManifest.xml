@@ -33,7 +33,7 @@
             android:value="2" />
     </application>
     <!-- Required to query activities that can process text (see PROCESS_TEXT link below).
-         Also required so we can discover UPI apps (upi://) for the payment app picker on Android 11+. -->
+         Also required so we can discover UPI apps (upi://pay) for the payment app picker on Android 11+. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
@@ -41,7 +41,14 @@
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
-            <data android:scheme="upi"/>
+            <data android:scheme="upi" android:host="pay"/>
         </intent>
+        <!-- Explicit package visibility for common UPI apps (Android 11+); intent above may still return empty on some devices -->
+        <package android:name="com.google.android.apps.nbu.paisa.user"/>
+        <package android:name="com.phonepe.app"/>
+        <package android:name="net.one97.paytm"/>
+        <package android:name="in.org.npci.upiapp"/>
+        <package android:name="com.amazon.mShop.android.shopping"/>
+        <package android:name="com.whatsapp"/>
     </queries>
 </manifest>

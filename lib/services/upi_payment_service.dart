@@ -101,7 +101,9 @@ class UpiPaymentService {
     if (_cachedApps != null) return _cachedApps!;
 
     try {
-      final apps = await _upiPay.getInstalledUpiApplications();
+      final apps = await _upiPay.getInstalledUpiApplications(
+        statusType: upi.UpiApplicationDiscoveryAppStatusType.all,
+      );
 
       _cachedApps = apps.map((appMeta) => UpiAppInfo(
         name: appMeta.upiApplication.getAppName(),
@@ -110,7 +112,7 @@ class UpiPaymentService {
       )).toList();
 
       _cachedApps!.sort((a, b) => _getAppPriority(a.name).compareTo(_getAppPriority(b.name)));
-
+      debugPrint('UpiPaymentService: Found ${_cachedApps!.length} UPI app(s)');
       return _cachedApps!;
     } catch (e) {
       debugPrint('UpiPaymentService: Error getting UPI apps: $e');
