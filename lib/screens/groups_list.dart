@@ -446,42 +446,45 @@ class _GroupsListState extends State<GroupsList> {
               Expanded(
                 child: loading
                     ? _BoundedGroupsLoading(showSlowHint: _showSlowLoadingHint)
-                    : groups.isEmpty && repo.pendingInvitations.isEmpty
-                        ? EmptyStates(
-                            type: 'no-groups',
-                            wrapInScaffold: false,
-                            onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
-                          )
-                        : SafeArea(
-                            bottom: false,
-                            child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text('Groups', style: context.heroTitle),
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.pushNamed(context, '/profile'),
-                                  child: MemberAvatar(
-                                    displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
-                                    photoURL: repo.currentUserPhotoURL,
-                                    size: 40,
+                    : SafeArea(
+                        bottom: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text('Groups', style: context.heroTitle),
                                   ),
-                                ),
-                              ],
+                                  GestureDetector(
+                                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                                    child: MemberAvatar(
+                                      displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
+                                      photoURL: repo.currentUserPhotoURL,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          if (repo.pendingInvitations.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            _buildInvitationsSection(context, repo),
-                            const SizedBox(height: 16),
-                          ],
-                          Expanded(
-                            child: ListView.builder(
+                            if (groups.isEmpty && repo.pendingInvitations.isEmpty)
+                              Expanded(
+                                child: EmptyStates(
+                                  type: 'no-groups',
+                                  wrapInScaffold: false,
+                                  onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
+                                ),
+                              )
+                            else ...[
+                              if (repo.pendingInvitations.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                _buildInvitationsSection(context, repo),
+                                const SizedBox(height: 16),
+                              ],
+                              Expanded(
+                                child: ListView.builder(
                               padding: const EdgeInsets.only(bottom: 88),
                               itemCount: groups.length,
                               itemBuilder: (context, index) {
@@ -622,6 +625,8 @@ class _GroupsListState extends State<GroupsList> {
                               );
                               },
                             ),
+                          ),
+                            ],
                           ),
                         ],
                       ),
