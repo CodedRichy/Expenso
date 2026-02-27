@@ -59,8 +59,9 @@ After adding SHA fingerprints and updating `google-services.json`, do a **full r
 If you still see *"This app is not authorized to use Firebase Authentication... [Invalid app info in play_integrity_token]"* after adding SHA-1/SHA-256 and replacing `google-services.json`:
 
 1. **Enable Play Integrity API** (same Google Cloud project as Firebase):
-   - Open [Google Cloud Console](https://console.cloud.google.com/) and select the project linked to Firebase (e.g. **expenso-e138a** — check Firebase Project settings → General → Your project).
+   - Open [Google Cloud Console](https://console.cloud.google.com/) and select the project linked to Firebase (e.g. **expenso-e138a** — check Firebase Project settings → General → Your project). The project number in `google-services.json` must match (e.g. **211875033656**).
    - Go to **APIs & Services** → **Library**, search for **Play Integrity API**, open it and click **Enable**.
-2. **Clean install:** Uninstall the app from the device/emulator, then run `flutter clean` and `flutter run` so the build that runs is signed with the keystore whose SHAs you added.
-3. **Real device:** If you are testing on an **emulator**, try a **physical device** with a SIM; Play Integrity can be stricter on emulators.
-4. **Test number:** Use Firebase's test phone numbers (Authentication → Sign-in method → Phone → Phone numbers for testing) to avoid SMS and confirm whether the error is about app verification or the SMS path.
+2. **Play Console / project mismatch:** If the log shows `cloudProjectNumber=551503664846` (or any number different from your Firebase project number **211875033656**), the integrity token is for a different project. In [Google Play Console](https://play.google.com/console/) → your app → **Release** → **App integrity** → **Play Integrity API**, ensure the linked Cloud project is the same as Firebase (expenso-e138a). If the app is not on Play Console yet, this can still happen on emulators; use a **real device** (see below).
+3. **Clean install:** Uninstall the app from the device/emulator, then run `flutter clean` and `flutter run` so the build that runs is signed with the keystore whose SHAs you added.
+4. **Real device:** If you are testing on an **emulator**, try a **physical device** with a SIM; Play Integrity can be stricter on emulators and often causes "Invalid app info in play_integrity_token" there.
+5. **Test number:** Use Firebase's test phone numbers (Authentication → Sign-in method → Phone → Phone numbers for testing) to avoid SMS and confirm whether the error is about app verification or the SMS path.
