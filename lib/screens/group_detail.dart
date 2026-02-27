@@ -910,24 +910,10 @@ class _DecisionClarityCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: AppSpacing.space2xs),
-                  if (hasPaymentProgress && !isBalanceClear) ...[
-                    Text(
-                      statusText,
-                      style: AppTypography.amountSM.copyWith(color: statusColor),
-                    ),
-                    SizedBox(height: AppSpacing.space2xs),
-                    Text(
-                      'was ${myNet < 0 ? '-' : '+'}${_formatAmount(myNet.abs(), currencyCode)}',
-                      style: AppTypography.captionSmall.copyWith(
-                        color: onDark.withValues(alpha: 0.5),
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                  ] else
-                    Text(
-                      statusText,
-                      style: AppTypography.amountSM.copyWith(color: statusColor),
-                    ),
+                  Text(
+                    statusText,
+                    style: AppTypography.amountSM.copyWith(color: statusColor),
+                  ),
                 ],
               ),
             ),

@@ -223,9 +223,10 @@ class _InviteMembersState extends State<InviteMembers> {
         return GradientScaffold(
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Column(
@@ -718,6 +719,7 @@ class _InviteMembersState extends State<InviteMembers> {
           ],
         ),
       ),
+    ),
     );
       },
     );
