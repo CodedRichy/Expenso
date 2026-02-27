@@ -368,6 +368,7 @@ Match nicknames/typos to this list. Output exact spelling only.
 
 --- FIELD RULES ---
 • amount: ONE numeric total. Strip currency symbols and separators (1,200 → 1200). Decimals allowed.
+• **Number words (locale-aware):** Expand before output. Indian: lakh = 100000, crore = 10000000 (e.g. "4 lakh" → 400000, "2.5 crore" → 25000000). International: million = 1000000, billion = 1000000000. Always output the final numeric amount (e.g. 400000 not 4).
 • description: 1–3 words, Title Case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
 • category: Food / Transport / Utilities when obvious; else "".
 • participants: Others only. NEVER include current user.
@@ -378,6 +379,11 @@ Match nicknames/typos to this list. Output exact spelling only.
   - exclude → excluded list REQUIRED
 • exactAmounts / sharesAmounts MUST include current user ONLY when explicitly stated ("I had 800", "I took 2 shares")
 • payer MUST be explicit or omitted; NEVER inferred from history
+
+--- "OWES ME" / "I OWE" (debt direction) ---
+• "X owes me <amount>" or "user B owes me 4 lakh": X/B is the debtor, current user is the creditor. Output: amount = <amount in digits (e.g. 400000)>, payer = current user (creditor), participants = [X or B], splitType = "exact", exactAmounts = { currentUser: 0, X: amount } so the debtor's share is the full amount.
+• "I owe X <amount>" or "I owe user B 500": current user is the debtor, X/B is the creditor. Output: amount = <amount>, payer = X (creditor), participants = [current user], splitType = "exact", exactAmounts = { X: 0, currentUser: amount }.
+• Match "user b" / "user B" to member list (e.g. B); use exact spelling from MEMBER LIST.
 
 --- CONFIDENCE RULES (NON-NEGOTIABLE) ---
 
@@ -429,6 +435,8 @@ REJECT if:
 "I bought pizza for 800" -> {"parseConfidence":"confident","amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
 "1000 total 400 for me 600 for B" -> {"parseConfidence":"confident","amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
 "Rent 10000 split 60-40 with B" -> {"parseConfidence":"confident","amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
+"user B owes me 4 lakh" -> {"parseConfidence":"confident","amount":400000,"description":"Debt","category":"","splitType":"exact","participants":["B"],"payer":"A","exactAmounts":{"A":0,"B":400000}}
+"I owe B 500" -> {"parseConfidence":"confident","amount":500,"description":"Debt","category":"","splitType":"exact","participants":["A"],"payer":"B","exactAmounts":{"B":0,"A":500}}
 $recentSection--- OUTPUT ---
 Output ONE valid JSON object only. Double-quoted keys/strings. No trailing commas.''';
   }
@@ -455,12 +463,13 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         : ' ${groupMemberNames.join(", ")}';
     final recent = List<({String input, String json})>.from(_recentExamples);
     final systemPrompt = _buildSystemPrompt(memberList, currentUserDisplayName?.trim(), recent);
+    final normalizedInput = expandNumberWordsInText(userInput.trim());
 
     final body = {
       'model': _model,
       'messages': [
         {'role': 'system', 'content': systemPrompt},
-        {'role': 'user', 'content': userInput.trim()},
+        {'role': 'user', 'content': normalizedInput},
       ],
       'temperature': 0,
       'max_tokens': 256,
@@ -609,11 +618,43 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
   }
 
   /// Extracts the first numeric amount from text (handles "500", "1,200", "99.50", "₹500", gibberish with digits).
+  /// Expands number words (lakh, crore, million, billion) so "4 lakh" is found as 400000.
   static double? _extractAmountFromText(String text) {
-    final match = RegExp(r'[\d,]+\.?\d*').firstMatch(text);
+    final expanded = expandNumberWordsInText(text);
+    final match = RegExp(r'[\d,]+\.?\d*').firstMatch(expanded);
     if (match == null) return null;
     final cleaned = match.group(0)!.replaceAll(',', '');
     return double.tryParse(cleaned);
+  }
+
+  /// Expands locale-aware number words in text so amount extraction and the model see numeric values.
+  /// Indian: lakh = 100000, crore = 10000000. International: million = 1000000, billion = 1000000000.
+  /// Example: "4 lakh" → "400000", "2.5 crore" → "25000000".
+  static String expandNumberWordsInText(String text) {
+    const multipliers = {
+      'lakh': 100000.0,
+      'lacs': 100000.0,
+      'lac': 100000.0,
+      'crore': 10000000.0,
+      'crores': 10000000.0,
+      'million': 1000000.0,
+      'millions': 1000000.0,
+      'billion': 1000000000.0,
+      'billions': 1000000000.0,
+    };
+    String result = text;
+    for (final entry in multipliers.entries) {
+      final pattern = RegExp(
+        r'(\d+(?:\.\d+)?)\s*' + entry.key,
+        caseSensitive: false,
+      );
+      result = result.replaceAllMapped(pattern, (m) {
+        final n = double.tryParse(m.group(1) ?? '') ?? 0;
+        final value = (n * entry.value).round();
+        return value.toString();
+      });
+    }
+    return result;
   }
 
   /// Tries to decode a JSON object from LLM output. Tries strict parse first,

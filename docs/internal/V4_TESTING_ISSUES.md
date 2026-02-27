@@ -53,8 +53,8 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
   1. Amount interpreted as **4** instead of **400000** (number word "lakh" not expanded).
   2. **Users/direction wrong** — who owes whom was incorrect.
 
-**Status:** Open  
-**Notes:** App is global. Parser should support locale-aware number words where useful (e.g. lakh/crore, million/billion) and correctly resolve "user B owes me" (B is debtor, A is creditor). Add to parser prompt/constraints and stress tests; avoid hardcoding a single region.
+**Status:** Fixed  
+**Notes:** (1) **Number words:** Parser prompt instructs the model to expand lakh (100000), crore (10000000), million (1000000), billion (1000000000) and output the numeric amount. Code: `expandNumberWordsInText()` normalizes user input before the API call and in fallback amount extraction, so "4 lakh" → 400000 even when the API fails or is unavailable. (2) **Debt direction:** Prompt section "OWES ME / I OWE" and examples: "user B owes me 4 lakh" → amount 400000, payer = current user, participants = [B], splitType exact, exactAmounts { currentUser: 0, B: 400000 }; "I owe B 500" → payer B, participants = [current user], exactAmounts { B: 0, currentUser: 500 }. App remains global; number words are locale-aware (Indian + international).
 
 ---
 
@@ -62,8 +62,8 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 
 **Area:** Add expense screen / layout  
 **Summary:** With keyboard open, the "WHO'S INVOLVED" section (e.g. "Select All" and member list) overflows by **201 pixels** — yellow/black strip "BOTTOM OVERFLOWED BY 201 PIXELS" in debug.  
-**Status:** Open  
-**Notes:** Content is too tall for available space when keyboard is visible. Use scrollable layout (e.g. `SingleChildScrollView`) or resize/inset for keyboard so the section fits.
+**Status:** Fixed  
+**Notes:** Main form wrapped in `Expanded` + `SingleChildScrollView` so WHO'S INVOLVED fits when the keyboard is open; overflow eliminated.
 
 ---
 
@@ -71,8 +71,8 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 
 **Area:** Create group (or group settings) / accessibility  
 **Summary:** Options for "Settlement Rhythm" (Monthly, Trip-based) and "Settlement Day" (e.g. Sunday) have **very low contrast** on the dark background — light grey labels that are hard to read.  
-**Status:** Open  
-**Notes:** Accessibility issue. Increase contrast (e.g. lighter text or different background) so labels meet readability guidelines.
+**Status:** Fixed  
+**Notes:** Settlement Rhythm / Day labels and dropdown use `Theme.of(context).colorScheme.onSurface` for readable contrast on dark background.
 
 ---
 
@@ -84,8 +84,8 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 - "You're all settled! You have no payments to make this cycle."
 
 If a payment is awaiting confirmation, the user is not fully settled. The two states are mutually exclusive.  
-**Status:** Open  
-**Notes:** Bug in state management or UI conditions. Incoming-pending and all-settled should not render together; gate "You're all settled" on there being no pending incoming (and no outgoing) payments.
+**Status:** Fixed  
+**Notes:** "You're all settled!" only when there are no UPI dues and no pending confirmations. When there are pending incoming payments, the screen shows "Confirm the payment(s) above" and the UPI section uses pending count; the two states are mutually exclusive.
 
 ---
 
@@ -93,8 +93,8 @@ If a payment is awaiting confirmation, the user is not fully settled. The two st
 
 **Area:** Profile / Payment Settings / layout  
 **Summary:** With keyboard open, the bottom of the screen (UPI ID input and Save button) overflows by **60 pixels** — "BOTTOM OVERFLOWED BY 60 PIXELS" in debug.  
-**Status:** Open  
-**Notes:** Same class of issue as #5: layout doesn't account for keyboard. Make the form scrollable or adjust insets when keyboard is visible.
+**Status:** Fixed  
+**Notes:** Profile body (avatar, Payment Settings, Log out) wrapped in `Expanded` + `SingleChildScrollView` so content doesn't overflow when the keyboard is open.
 
 ---
 
@@ -102,8 +102,8 @@ If a payment is awaiting confirmation, the user is not fully settled. The two st
 
 **Area:** Settlement success screen / layout  
 **Summary:** On the "You're all settled!" success screen (green checkmark, message, "Back to Group"), the content is **not centered** on the screen.  
-**Status:** Open  
-**Notes:** Center the checkmark, title, subtitle, and CTA vertically/horizontally for a proper success-state layout.
+**Status:** Fixed  
+**Notes:** When no dues and no pending confirmations, success content ("You're all settled!" etc.) is shown in an `Expanded` + `Center` layout so it is centered on screen.
 
 ---
 
