@@ -19,6 +19,7 @@ import '../widgets/member_avatar.dart';
 /// Display name is the same value used for Groq fuzzy matching in the Magic Bar.
 ///
 /// Set [kPrivacyPolicyUrl] to your live privacy policy URL for store compliance.
+/// Opens in the user's external browser (not in-app), per privacy best practice.
 const String kPrivacyPolicyUrl = 'https://github.com/CodedRichy/Expenso/blob/main/PRIVACY.md';
 
 class ProfileScreen extends StatefulWidget {
@@ -621,7 +622,11 @@ class _PrivacyPolicyTile extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+        webOnlyWindowName: '_blank',
+      );
     } on Exception catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
