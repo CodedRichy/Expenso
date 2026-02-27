@@ -82,7 +82,17 @@ class CurrencyRegistry {
     aed, sgd, aud, cny, brl, mxn, rub, zar,
   ];
 
+  static const Map<String, String> _symbols = {
+    'INR': '₹', 'USD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'KRW': '₩',
+    'KWD': 'KD', 'BHD': 'BD', 'AED': 'د.إ', 'SGD': 'S\$', 'AUD': 'A\$',
+    'CNY': '¥', 'BRL': 'R\$', 'MXN': '\$', 'RUB': '₽', 'ZAR': 'R',
+  };
+
   static const Currency defaultCurrency = inr;
+
+  /// Returns the display symbol for a currency code (e.g. INR → ₹). Falls back to code if unknown.
+  static String symbol(String code) =>
+      _symbols[code.toUpperCase()] ?? code;
 
   /// Returns the Currency for the given code, or null if not found.
   static Currency? lookup(String code) {
