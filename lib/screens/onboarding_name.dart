@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
@@ -23,6 +24,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
   void handleGetStarted() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
+    HapticFeedback.lightImpact();
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
     FirebaseAuth.instance.currentUser?.updateDisplayName(name);

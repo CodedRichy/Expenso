@@ -25,6 +25,8 @@ import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/settlement_progress_indicator.dart';
 import '../widgets/skeleton_placeholders.dart';
+import '../widgets/staggered_list_item.dart';
+import '../widgets/undo_toast.dart';
 import 'empty_states.dart';
 
 class _StyledDescription {
@@ -87,7 +89,7 @@ void _showUndoExpenseOverlay(
     context: context,
     barrierColor: Colors.transparent,
     barrierDismissible: false,
-    builder: (ctx) => _UndoExpenseOverlayContent(
+    builder: (ctx) => UndoToast(
       description: description,
       amount: amount,
       currencyCode: code,
@@ -112,127 +114,6 @@ void _showUndoExpenseOverlay(
       },
     ),
   );
-}
-
-class _UndoExpenseOverlayContent extends StatefulWidget {
-  final String description;
-  final double amount;
-  final String currencyCode;
-  final VoidCallback onUndo;
-  final VoidCallback onDismiss;
-
-  const _UndoExpenseOverlayContent({
-    required this.description,
-    required this.amount,
-    required this.currencyCode,
-    required this.onUndo,
-    required this.onDismiss,
-  });
-
-  @override
-  State<_UndoExpenseOverlayContent> createState() => _UndoExpenseOverlayContentState();
-}
-
-class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> {
-  static const int _countdownSeconds = 5;
-  int _timeLeft = _countdownSeconds;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) {
-        _timer?.cancel();
-        return;
-      }
-      if (_timeLeft <= 1) {
-        _timer?.cancel();
-        if (mounted) widget.onDismiss();
-      } else {
-        setState(() => _timeLeft--);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final toastBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : context.colorPrimary;
-    final toastTextColor = isDark ? theme.colorScheme.onSurface : context.colorSurface;
-    final toastSecondaryColor = isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.7);
-
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned(
-            bottom: 32,
-            left: 24,
-            right: 24,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 430),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: toastBgColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Expense added',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: toastTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${widget.description} · ${formatMoneyFromMajor(widget.amount, widget.currencyCode)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: toastSecondaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  TextButton.icon(
-                    onPressed: () {
-                      _timer?.cancel();
-                      widget.onUndo();
-                    },
-                    icon: Icon(Icons.refresh, size: 16, color: toastTextColor),
-                    label: Text(
-                      'Undo',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: toastTextColor),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class GroupDetail extends StatefulWidget {
@@ -515,7 +396,9 @@ class _GroupDetailState extends State<GroupDetail> {
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
                                 final expense = expenses[index];
-                                return InkWell(
+                                return StaggeredListItem(
+                                  index: index,
+                                  child: InkWell(
                                   onTap: isPassive
                                       ? null
                                       : () {
@@ -600,12 +483,12 @@ class _GroupDetailState extends State<GroupDetail> {
                                       ],
                                     ),
                                   ),
-                                );
+                                ),
+                              );
                               },
                               childCount: expenses.length,
                             ),
                           ),
-                          if (systemMessages.isNotEmpty)
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {
@@ -1882,6 +1765,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           children: [
             IconButton(
               onPressed: () async {
+                HapticFeedback.lightImpact();
                 final result = await Navigator.pushNamed(
                   context,
                   '/expense-input',

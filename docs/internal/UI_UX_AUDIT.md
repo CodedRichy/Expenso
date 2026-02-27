@@ -154,4 +154,4 @@ Professional pass over every screen: what’s missing, what feels static, and wh
 
 ---
 
-*Audit date: Feb 2025. Revisit after implementing high-priority items.*
+*Audit date: Feb 2025. Implemented: undo toast animation + countdown, PaymentResult scale, staggered list entry (GroupDetail, GroupsList), haptics on primary actions, pageTransitionsTheme, PhoneAuth/ExpenseInput AnimatedSwitcher, CycleSettled/EmptyStates/ErrorStates FadeIn, TapScale on GroupsList FAB. Revisit for SettlementConfirmation stagger and further polish.*

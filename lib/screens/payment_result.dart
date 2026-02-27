@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
+import 'package:flutter/services.dart';
 import '../design/typography.dart';
 import '../utils/route_args.dart';
 import '../utils/money_format.dart';
 
-class PaymentResult extends StatelessWidget {
-  final String status; // 'success', 'failed', 'cancelled'
+class PaymentResult extends StatefulWidget {
+  final String status;
   final double? amount;
   final String? transactionId;
 
@@ -17,6 +17,33 @@ class PaymentResult extends StatelessWidget {
   });
 
   @override
+  State<PaymentResult> createState() => _PaymentResultState();
+}
+
+class _PaymentResultState extends State<PaymentResult> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final group = RouteArgs.getGroup(context);
@@ -24,11 +51,13 @@ class PaymentResult extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
-    final statusLabel = status == 'success'
+    final statusLabel = widget.status == 'success'
         ? 'Payment successful'
-        : status == 'failed'
+        : widget.status == 'failed'
             ? 'Payment failed'
             : 'Payment cancelled';
+    final isSuccess = widget.status == 'success';
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -41,21 +70,24 @@ class PaymentResult extends StatelessWidget {
                 children: [
                   Semantics(
                     label: statusLabel,
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: status == 'success' ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        status == 'success'
-                            ? Icons.check
-                            : status == 'failed'
-                                ? Icons.error_outline
-                                : Icons.close,
-                        color: status == 'success' ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                        size: 32,
+                    child: ScaleTransition(
+                      scale: isSuccess ? _scaleAnimation : const AlwaysStoppedAnimation(1.0),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: isSuccess ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isSuccess
+                              ? Icons.check
+                              : widget.status == 'failed'
+                                  ? Icons.error_outline
+                                  : Icons.close,
+                          color: isSuccess ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                          size: 32,
+                        ),
                       ),
                     ),
                   ),
@@ -68,31 +100,31 @@ class PaymentResult extends StatelessWidget {
                         style: context.screenTitle,
                       ),
                       const SizedBox(height: 12),
-                      if (status == 'success' && amount != null) ...[
+                      if (isSuccess && widget.amount != null) ...[
                         Semantics(
-                          label: '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
+                          label: '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
                           child: Text(
-                            '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
+                            '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
                             textAlign: TextAlign.center,
                             style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ),
-                        if (transactionId != null) ...[
+                        if (widget.transactionId != null) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'Transaction ID: $transactionId',
+                            'Transaction ID: ${widget.transactionId}',
                             textAlign: TextAlign.center,
                             style: context.caption.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ],
-                      if (status == 'failed')
+                      if (widget.status == 'failed')
                         Text(
                           'The transaction could not be completed',
                           textAlign: TextAlign.center,
                           style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
-                      if (status == 'cancelled')
+                      if (widget.status == 'cancelled')
                         Text(
                           'No amount was transferred',
                           textAlign: TextAlign.center,
@@ -102,10 +134,11 @@ class PaymentResult extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
                   Semantics(
-                    label: status == 'success' ? 'Done' : 'Close',
+                    label: isSuccess ? 'Done' : 'Close',
                     button: true,
                     child: ElevatedButton(
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         Navigator.pushReplacementNamed(
                           context,
                           '/cycle-settled',
@@ -121,7 +154,7 @@ class PaymentResult extends StatelessWidget {
                         minimumSize: const Size(double.infinity, 0),
                       ),
                       child: Text(
-                        status == 'success' ? 'Done' : 'Close',
+                        isSuccess ? 'Done' : 'Close',
                         style: AppTypography.button,
                       ),
                     ),

@@ -13,6 +13,8 @@ import '../widgets/member_avatar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/skeleton_placeholders.dart';
+import '../widgets/staggered_list_item.dart';
+import '../widgets/tap_scale.dart';
 import '../utils/money_format.dart';
 import 'empty_states.dart';
 
@@ -420,7 +422,8 @@ class _GroupsListState extends State<GroupsList> {
               ? Semantics(
                   label: 'Create new group',
                   button: true,
-                  child: FloatingActionButton(
+                  child: TapScale(
+                    child: FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
                   backgroundColor: context.colorPrimary,
                   foregroundColor: context.colorSurface,
@@ -429,7 +432,8 @@ class _GroupsListState extends State<GroupsList> {
                   ),
                   elevation: 0,
                   child: const Icon(Icons.add),
-                )
+                ),
+                  ),
               )
               : null,
           body: Column(
@@ -488,7 +492,9 @@ class _GroupsListState extends State<GroupsList> {
                                 final isPinned = pinService.isPinned(group.id);
                                 final isCreator = repo.isCurrentUserCreator(group.id);
 
-                                return Slidable(
+                                return StaggeredListItem(
+                                  index: index,
+                                  child: Slidable(
                                   key: ValueKey(group.id),
                                   startActionPane: ActionPane(
                                     motion: const DrawerMotion(),
@@ -611,9 +617,10 @@ class _GroupsListState extends State<GroupsList> {
                                           ],
                                         ),
                                       ),
-                                    ),
                                   ),
-                                );
+                                ),
+                                ),
+                              );
                               },
                             ),
                           ),

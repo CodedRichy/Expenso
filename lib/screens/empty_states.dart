@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
+import '../widgets/fade_in.dart';
 
 class EmptyStates extends StatelessWidget {
   final String type; // 'no-groups', 'no-expenses', 'new-cycle', 'no-expenses-new-cycle', 'zero-waste-cycle'
@@ -29,10 +30,11 @@ class EmptyStates extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
-                  child: SizedBox(
-                    width: 280,
+                child: FadeIn(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                    child: SizedBox(
+                      width: 280,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -59,6 +61,7 @@ class EmptyStates extends StatelessWidget {
                     ),
                   ),
                 ),
+                ),
               ),
             ),
           ],
@@ -72,7 +75,8 @@ class EmptyStates extends StatelessWidget {
 
     if (type == 'no-expenses') {
       return Center(
-          child: Padding(
+          child: FadeIn(
+            child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -93,13 +97,15 @@ class EmptyStates extends StatelessWidget {
                 ],
               ),
             ),
+            ),
           ),
         );
     }
 
     if (type == 'new-cycle') {
       return Center(
-          child: Padding(
+          child: FadeIn(
+            child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -120,13 +126,15 @@ class EmptyStates extends StatelessWidget {
                 ],
               ),
             ),
+            ),
           ),
         );
     }
 
     if (type == 'no-expenses-new-cycle') {
       return Center(
-          child: Padding(
+          child: FadeIn(
+            child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -146,6 +154,7 @@ class EmptyStates extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         );

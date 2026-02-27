@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/fade_in.dart';
 
 class ErrorStates extends StatelessWidget {
   final String type; // 'network', 'session-expired', 'payment-unavailable', 'generic'
@@ -31,11 +32,12 @@ class ErrorStates extends StatelessWidget {
                 ),
               ),
               Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: 320,
-                    child: Column(
+                child: FadeIn(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
+                      width: 320,
+                      child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
@@ -74,6 +76,7 @@ class ErrorStates extends StatelessWidget {
                     ),
                   ),
                 ),
+                ),
               ),
             ],
           ),
@@ -85,7 +88,8 @@ class ErrorStates extends StatelessWidget {
       return Scaffold(
         body: SafeArea(
           child: Center(
-            child: Padding(
+            child: FadeIn(
+              child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(
                 width: 320,
@@ -129,6 +133,7 @@ class ErrorStates extends StatelessWidget {
                 ),
               ),
             ),
+            ),
           ),
         ),
       );
@@ -149,13 +154,14 @@ class ErrorStates extends StatelessWidget {
                 ),
               ),
               Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: 320,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                child: FadeIn(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
+                      width: 320,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                         Container(
                           width: 64,
                           height: 64,
@@ -193,6 +199,7 @@ class ErrorStates extends StatelessWidget {
                     ),
                   ),
                 ),
+                ),
               ),
             ],
           ),
@@ -214,48 +221,50 @@ class ErrorStates extends StatelessWidget {
               ),
             ),
             Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: SizedBox(
-                  width: 320,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: colorBorder,
-                          shape: BoxShape.circle,
+              child: FadeIn(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SizedBox(
+                    width: 320,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: colorBorder,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.refresh, color: colorTextSecondary, size: 32),
                         ),
-                        child: Icon(Icons.refresh, color: colorTextSecondary, size: 32),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Something went wrong',
-                        textAlign: TextAlign.center,
-                        style: context.subheader,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'We had trouble loading data. Your existing data is safe.',
-                        textAlign: TextAlign.center,
-                        style: context.bodySecondary.copyWith(
-                          height: 1.5,
+                        const SizedBox(height: 32),
+                        Text(
+                          'Something went wrong',
+                          textAlign: TextAlign.center,
+                          style: context.subheader,
                         ),
-                      ),
-                      const SizedBox(height: 48),
-                      ElevatedButton(
-                        onPressed: () {
-                          CycleRepository.instance.restartListening();
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 0),
+                        const SizedBox(height: 12),
+                        Text(
+                          'We had trouble loading data. Your existing data is safe.',
+                          textAlign: TextAlign.center,
+                          style: context.bodySecondary.copyWith(
+                            height: 1.5,
+                          ),
                         ),
-                        child: Text('Try Again', style: Theme.of(context).textTheme.labelLarge),
-                      ),
-                    ],
+                        const SizedBox(height: 48),
+                        ElevatedButton(
+                          onPressed: () {
+                            CycleRepository.instance.restartListening();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 0),
+                          ),
+                          child: Text('Try Again', style: Theme.of(context).textTheme.labelLarge),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

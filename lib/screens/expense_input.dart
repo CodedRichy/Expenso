@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
@@ -73,6 +74,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
   Future<void> handleConfirm() async {
     final payerId = _paidById ?? CycleRepository.instance.currentUserId;
     if (payerId.isEmpty) return;
+    HapticFeedback.lightImpact();
     if (ConnectivityService.instance.isOffline) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -356,10 +358,27 @@ class _ExpenseInputState extends State<ExpenseInput> {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    if (showConfirmation && parsedData != null) {
-      final theme = Theme.of(context);
-      final isDark = theme.brightness == Brightness.dark;
-      return GradientScaffold(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: showConfirmation && parsedData != null
+          ? KeyedSubtree(
+              key: const ValueKey('confirm'),
+              child: _buildConfirmScaffold(theme, isDark, group),
+            )
+          : KeyedSubtree(
+              key: const ValueKey('input'),
+              child: _buildInputScaffold(theme, isDark, group),
+            ),
+    );
+  }
+
+  Widget _buildConfirmScaffold(ThemeData theme, bool isDark, Group group) {
+    return GradientScaffold(
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -507,10 +526,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
           ),
         ),
       );
-    }
+  }
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  Widget _buildInputScaffold(ThemeData theme, bool isDark, Group group) {
     return GradientScaffold(
       body: SafeArea(
         child: Column(

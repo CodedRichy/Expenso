@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
+import '../widgets/fade_in.dart';
 
 class CycleSettled extends StatelessWidget {
   const CycleSettled({super.key});
@@ -50,7 +51,8 @@ class CycleSettled extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Padding(
+                child: FadeIn(
+                  child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
                   child: SizedBox(
                     width: 320,
@@ -135,6 +137,7 @@ class CycleSettled extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
                 ),
               ),
             ),

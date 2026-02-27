@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
@@ -46,6 +47,7 @@ class _CreateGroupState extends State<CreateGroup> {
 
   Future<void> handleCreate() async {
     if (name.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
     if (ConnectivityService.instance.isOffline) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
