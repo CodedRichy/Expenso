@@ -188,18 +188,6 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
           itemCount: _apps!.length,
           itemBuilder: (context, index) => _buildAppTile(_apps![index]),
         ),
-        if (widget.onManualConfirm != null) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 0, AppSpacing.screenPaddingH, AppSpacing.spaceLg),
-            child: SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: widget.onManualConfirm,
-                child: const Text('I\'ve paid'),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -284,6 +272,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
   _FlowState _state = _FlowState.appSelection;
   UpiAppInfo? _selectedApp;
   Completer<UpiTransactionResult>? _transactionCompleter;
+  double _dragOffset = 0;
 
   void _onAppSelected(UpiAppInfo app, UpiTransactionResult _) {
     setState(() {
@@ -353,52 +342,79 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: theme.bottomSheetTheme.backgroundColor ?? theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: AppSpacing.spaceMd),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.spaceXl),
-            _buildPaymentHeader(),
-            const SizedBox(height: AppSpacing.space3xl),
-            _buildPayUsingDivider(),
-            const SizedBox(height: AppSpacing.spaceLg),
-            Flexible(
-              child: SingleChildScrollView(
-                child: UpiAppPicker(
-                  paymentData: widget.paymentData,
-                  onPaymentComplete: _onAppSelected,
-                  onCancel: _onCancel,
-                  onManualConfirm: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+      child: Transform.translate(
+        offset: Offset(0, _dragOffset),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: theme.bottomSheetTheme.backgroundColor ?? theme.colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onVerticalDragUpdate: (details) {
+                  setState(() {
+                    _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, 400.0);
+                  });
+                },
+                onVerticalDragEnd: (details) {
+                  const threshold = 80.0;
+                  final shouldDismiss = _dragOffset > threshold ||
+                      (details.primaryVelocity != null && details.primaryVelocity! > 300);
+                  if (shouldDismiss) {
+                    Navigator.of(context).pop();
+                  } else {
+                    setState(() => _dragOffset = 0);
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.spaceMd,
+                    bottom: AppSpacing.spaceXl,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.dividerColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, AppSpacing.spaceMd, AppSpacing.screenPaddingH, 16 + bottomPadding),
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
-                  child: const Text('I\'ve paid'),
+              _buildPaymentHeader(),
+              const SizedBox(height: AppSpacing.space3xl),
+              _buildPayUsingDivider(),
+              const SizedBox(height: AppSpacing.spaceLg),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: UpiAppPicker(
+                    paymentData: widget.paymentData,
+                    onPaymentComplete: _onAppSelected,
+                    onCancel: _onCancel,
+                    onManualConfirm: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+                  ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, AppSpacing.spaceMd, AppSpacing.screenPaddingH, 16 + bottomPadding),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+                    child: const Text('I\'ve paid'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
