@@ -168,6 +168,7 @@ class _GroupDetailState extends State<GroupDetail> {
         final isPassive = activeCycle.status == CycleStatus.settling;
         final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
+        final theme = Theme.of(context);
 
         return GradientScaffold(
       body: SafeArea(
@@ -180,61 +181,68 @@ class _GroupDetailState extends State<GroupDetail> {
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.chevron_left, size: 24),
-                            color: Theme.of(context).colorScheme.onSurface,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(32, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              defaultGroup.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
-                                letterSpacing: -0.3,
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyHeaderDelegate(
+                      height: 52,
+                      backgroundColor: theme.brightness == Brightness.dark
+                          ? AppColorsDark.backgroundGradientStart
+                          : AppColors.background,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.chevron_left, size: 24),
+                              color: theme.colorScheme.onSurface,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              style: IconButton.styleFrom(
+                                minimumSize: const Size(32, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/group-members',
-                                arguments: defaultGroup,
-                              );
-                            },
-                            icon: const Icon(Icons.people_outline, size: 24),
-                            color: Theme.of(context).colorScheme.onSurface,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(32, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            Expanded(
+                              child: Text(
+                                defaultGroup.name,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/group-members',
+                                  arguments: defaultGroup,
+                                );
+                              },
+                              icon: const Icon(Icons.people_outline, size: 24),
+                              color: theme.colorScheme.onSurface,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              style: IconButton.styleFrom(
+                                minimumSize: const Size(32, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       child: _DecisionClarityCard(
                         repo: repo,
                         groupId: groupId,
@@ -670,6 +678,37 @@ class _GroupDetailState extends State<GroupDetail> {
       ),
     );
   }
+}
+
+class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double height;
+  final Widget child;
+  final Color backgroundColor;
+
+  _StickyHeaderDelegate({
+    required this.height,
+    required this.child,
+    required this.backgroundColor,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      height: height,
+      color: backgroundColor,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) =>
+      oldDelegate.height != height || oldDelegate.backgroundColor != backgroundColor;
 }
 
 String _formatAmount(double value, String currencyCode) {
