@@ -565,7 +565,7 @@ class _LocaleTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark
                     ? theme.colorScheme.surfaceContainerLow
-                    : context.colorSurface,
+                    : context.colorSurfaceVariant,
                 border: Border.all(color: context.colorBorder),
                 borderRadius: BorderRadius.circular(12),
               ),

@@ -185,9 +185,7 @@ class _GroupDetailState extends State<GroupDetail> {
                     pinned: true,
                     delegate: _StickyHeaderDelegate(
                       height: 52,
-                      backgroundColor: theme.brightness == Brightness.dark
-                          ? AppColorsDark.backgroundGradientStart
-                          : AppColors.background,
+                      backgroundColor: context.colorSurface,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
                         child: Row(
@@ -1776,6 +1774,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         decoration: BoxDecoration(
           color: surfaceColor,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
               color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.3 : 0.06),
