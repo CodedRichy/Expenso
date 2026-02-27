@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../country_codes.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 
@@ -128,10 +129,19 @@ class _InviteMembersState extends State<InviteMembers> {
       normalized = _normalizePhone(contact.phones.first.number);
     }
     if (normalized.length != 10) return;
-    
-    final formattedPhone = '$_selectedCountryCode$normalized';
+
     final group = RouteArgs.getGroup(context);
     if (group != null) {
+      if (ConnectivityService.instance.isOffline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot add member while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      final formattedPhone = '$_selectedCountryCode$normalized';
       final member = Member(
         id: 'm_${DateTime.now().millisecondsSinceEpoch}',
         name: displayName,
@@ -159,9 +169,18 @@ class _InviteMembersState extends State<InviteMembers> {
 
   void handleAddMember() {
     if (phone.length != 10) return;
-    final formattedPhone = '$_selectedCountryCode$phone';
     final group = RouteArgs.getGroup(context);
     if (group != null) {
+      if (ConnectivityService.instance.isOffline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot add member while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      final formattedPhone = '$_selectedCountryCode$phone';
       final member = Member(
         id: 'm_${DateTime.now().millisecondsSinceEpoch}',
         name: name.trim(),

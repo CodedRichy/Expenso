@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../models/currency.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../utils/money_format.dart';
 import '../widgets/gradient_scaffold.dart';
 
@@ -214,6 +215,16 @@ class _EditExpenseState extends State<EditExpense> {
       return;
     }
 
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot save changes while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     Map<String, double>? updatedSplits = existing.splitAmountsById;
     if (existing.splitAmountsById != null &&
         existing.splitAmountsById!.isNotEmpty &&
@@ -249,9 +260,17 @@ class _EditExpenseState extends State<EditExpense> {
   void handleDelete() {
     final groupId = _groupId;
     final expenseId = _expenseId;
-    if (groupId != null && expenseId != null) {
-      CycleRepository.instance.deleteExpense(groupId, expenseId);
+    if (groupId == null || expenseId == null) return;
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete expense while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
     }
+    CycleRepository.instance.deleteExpense(groupId, expenseId);
     Navigator.pop(context);
   }
 

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../services/profile_service.dart';
 import '../services/theme_service.dart';
 import '../design/typography.dart';
@@ -93,6 +94,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _saveName() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot save name while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
     FirebaseAuth.instance.currentUser?.updateDisplayName(name);
@@ -106,6 +116,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveUpi() async {
     final upiId = _upiController.text.trim();
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot save UPI ID while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     final repo = CycleRepository.instance;
     await repo.updateCurrentUserUpiId(upiId.isEmpty ? null : upiId);
     setState(() => _upiDirty = false);
@@ -206,13 +225,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: theme.colorScheme.scrim.withValues(alpha: 0.5),
                                       borderRadius: BorderRadius.circular(44),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: SizedBox(
                                         width: 28,
                                         height: 28,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: context.colorSurface,
+                                          color: theme.colorScheme.surface,
                                         ),
                                       ),
                                     ),
@@ -449,9 +468,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Text('Log out', style: Theme.of(context).textTheme.labelLarge),
                   ),
-                  ),
                 ),
-                  ),
+              ),
                       ],
                     ),
                   ),

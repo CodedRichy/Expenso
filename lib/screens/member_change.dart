@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
 
 class MemberChange extends StatelessWidget {
@@ -132,6 +133,15 @@ class MemberChange extends StatelessWidget {
                             ElevatedButton(
                               onPressed: () {
                                 if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
+                                  if (ConnectivityService.instance.isOffline) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Cannot remove member while offline'),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   repo.removeMemberFromGroup(displayGroupId, displayMemberId);
                                 }
                                 Navigator.pop(context);

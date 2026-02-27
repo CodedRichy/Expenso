@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
@@ -72,6 +73,16 @@ class _ExpenseInputState extends State<ExpenseInput> {
   Future<void> handleConfirm() async {
     final payerId = _paidById ?? CycleRepository.instance.currentUserId;
     if (payerId.isEmpty) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot save expense while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     if (parsedData != null) {
       final group = RouteArgs.getGroup(context);
       if (group != null) {

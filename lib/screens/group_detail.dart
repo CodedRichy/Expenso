@@ -89,7 +89,18 @@ void _showUndoExpenseOverlay(
     builder: (ctx) => _UndoExpenseOverlayContent(
       description: description,
       amount: amount,
+      currencyCode: code,
       onUndo: () {
+        if (ConnectivityService.instance.isOffline) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot undo while offline'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(ctx);
+          return;
+        }
         repo.deleteExpense(groupId, expenseId);
         repo.clearLastAdded();
         Navigator.pop(ctx);
@@ -105,12 +116,14 @@ void _showUndoExpenseOverlay(
 class _UndoExpenseOverlayContent extends StatefulWidget {
   final String description;
   final double amount;
+  final String currencyCode;
   final VoidCallback onUndo;
   final VoidCallback onDismiss;
 
   const _UndoExpenseOverlayContent({
     required this.description,
     required this.amount,
+    required this.currencyCode,
     required this.onUndo,
     required this.onDismiss,
   });
@@ -187,7 +200,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${widget.description} · ${formatMoneyFromMajor(amount, code)}',
+                          '${widget.description} · ${formatMoneyFromMajor(widget.amount, widget.currencyCode)}',
                           style: TextStyle(
                             fontSize: 14,
                             color: toastSecondaryColor,
@@ -425,6 +438,17 @@ class _GroupDetailState extends State<GroupDetail> {
                                         if (confirmed != true || !context.mounted) return;
                                       } else {
                                         _showSettleConfirmDialog(context, repo, groupId);
+                                        return;
+                                      }
+                                      if (ConnectivityService.instance.isOffline) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Cannot start new cycle while offline'),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
                                         return;
                                       }
                                       try {
@@ -718,6 +742,17 @@ class _GroupDetailState extends State<GroupDetail> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              if (ConnectivityService.instance.isOffline) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cannot settle while offline'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                return;
+              }
               try {
                 await repo.archiveAndRestart(groupId);
                 if (context.mounted) {
@@ -796,6 +831,7 @@ class _DecisionClarityCard extends StatelessWidget {
         repo: repo,
         groupId: groupId,
         groupName: groupName,
+        currencyCode: currencyCode,
         debts: debts,
         myId: myId,
         myNet: myNet,
@@ -871,6 +907,7 @@ class _DecisionClarityCard extends StatelessWidget {
               child: isEmpty
                   ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
                   : _buildContent(
+                      context,
                       currencyCode: currencyCode,
                       cycleTotal: cycleTotal,
                       youPaid: youPaid,
@@ -891,7 +928,8 @@ class _DecisionClarityCard extends StatelessWidget {
   );
   }
 
-  Widget _buildContent({
+  Widget _buildContent(
+    BuildContext context, {
     required String currencyCode,
     required double cycleTotal,
     required double youPaid,
@@ -1021,6 +1059,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
   final CycleRepository repo;
   final String groupId;
   final String groupName;
+  final String currencyCode;
   final List<Debt> debts;
   final String myId;
   final double myNet;
@@ -1031,6 +1070,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
     required this.repo,
     required this.groupId,
     required this.groupName,
+    required this.currencyCode,
     required this.debts,
     required this.myId,
     required this.myNet,
@@ -1088,7 +1128,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
             SizedBox(height: AppSpacing.sectionGap),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-              child: _buildYourPosition(context, isCredit, isDebt, isBalanceClear),
+              child: _buildYourPosition(context, isCredit, isDebt, isBalanceClear, currencyCode),
             ),
             SizedBox(height: AppSpacing.sectionGap),
             if (myDebts.isEmpty || isBalanceClear)
@@ -1105,7 +1145,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 ),
               )
             else
-              _buildDebtsList(context, myDebts),
+              _buildDebtsList(context, myDebts, currencyCode),
             SizedBox(height: AppSpacing.space3xl),
           ],
         ),
@@ -1113,7 +1153,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildYourPosition(BuildContext context, bool isCredit, bool isDebt, bool isBalanceClear) {
+  Widget _buildYourPosition(BuildContext context, bool isCredit, bool isDebt, bool isBalanceClear, String currencyCode) {
     if (isBalanceClear) {
       return Container(
         padding: EdgeInsets.all(AppSpacing.cardPadding),
@@ -1163,7 +1203,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDebtsList(BuildContext context, List<Debt> myDebts) {
+  Widget _buildDebtsList(BuildContext context, List<Debt> myDebts, String currencyCode) {
     final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2111,6 +2151,17 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       return;
     }
     HapticFeedback.lightImpact();
+    if (ConnectivityService.instance.isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot save expense while offline'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     final repo = widget.repo;
     final groupId = widget.groupId;
     final amount = _editedAmount ?? widget.result.amount;

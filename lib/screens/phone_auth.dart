@@ -238,7 +238,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 ElevatedButton(
                   onPressed: (phone.replaceAll(RegExp(r'\D'), '').length >= 10 && !_loading) ? handlePhoneSubmit : null,
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(

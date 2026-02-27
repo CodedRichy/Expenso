@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../services/connectivity_service.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class CreateGroup extends StatefulWidget {
@@ -45,6 +46,16 @@ class _CreateGroupState extends State<CreateGroup> {
 
   Future<void> handleCreate() async {
     if (name.trim().isEmpty) return;
+    if (ConnectivityService.instance.isOffline) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot create group while offline'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     final repo = CycleRepository.instance;
     final newGroup = Group(
       id: 'g_${DateTime.now().millisecondsSinceEpoch}',
