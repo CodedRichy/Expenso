@@ -256,6 +256,7 @@ class _CreateGroupState extends State<CreateGroup> {
                   child: const Text('Create Group', style: AppTypography.button),
                 ),
               ),
+            ),
           ],
         ),
       ),
