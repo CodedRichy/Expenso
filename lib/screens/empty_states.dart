@@ -24,15 +24,17 @@ class EmptyStates extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenPaddingH,
-                AppSpacing.spaceXl,
-                AppSpacing.screenPaddingH,
-                AppSpacing.space4xl,
+            if (wrapInScaffold) ...[
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screenPaddingH,
+                  AppSpacing.spaceXl,
+                  AppSpacing.screenPaddingH,
+                  AppSpacing.space4xl,
+                ),
+                child: Text('Groups', style: context.heroTitle),
               ),
-              child: Text('Groups', style: context.heroTitle),
-            ),
+            ],
             Expanded(
               child: Center(
                 child: FadeIn(

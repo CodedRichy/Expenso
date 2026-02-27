@@ -185,7 +185,9 @@ class _GroupDetailState extends State<GroupDetail> {
                     pinned: true,
                     delegate: _StickyHeaderDelegate(
                       height: 52,
-                      backgroundColor: context.colorSurface,
+                      backgroundColor: theme.brightness == Brightness.dark
+                          ? AppColorsDark.backgroundGradientStart
+                          : AppColors.background,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
                         child: Row(
