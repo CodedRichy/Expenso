@@ -91,6 +91,7 @@
 | Document | Purpose |
 |----------|---------|
 | [LOGIC_AUDIT.md](internal/LOGIC_AUDIT.md) | Known issues, fixes, limitations |
+| [UI_UX_AUDIT.md](internal/UI_UX_AUDIT.md) | Animations, aliveness, intuitiveness audit (all screens) |
 | [MONETIZATION_EXECUTION.md](internal/MONETIZATION_EXECUTION.md) | Pricing, paywalls, rollout plan |
 
 ---
