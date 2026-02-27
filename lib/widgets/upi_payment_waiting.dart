@@ -475,7 +475,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: const Text('I\'ve already paid'),
@@ -505,7 +505,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
         ),
@@ -526,7 +526,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
             ),
@@ -559,7 +559,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
             ),
@@ -576,7 +576,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: const Text('Retry Payment'),

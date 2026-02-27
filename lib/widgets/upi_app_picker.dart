@@ -113,15 +113,16 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
   }
 
   Widget _buildError() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.space3xl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.account_balance_wallet_outlined,
             size: 48,
-            color: AppColors.textTertiary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: AppSpacing.spaceXl),
           Text(
@@ -132,7 +133,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
           const SizedBox(height: AppSpacing.spaceMd),
           Text(
             'Install a UPI app like Google Pay, PhonePe, or Paytm to pay.',
-            style: context.caption.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: context.caption,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.spaceLg),
@@ -141,7 +142,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             icon: const Icon(Icons.get_app, size: 18),
             label: const Text('Install UPI app'),
             style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: AppSpacing.spaceXl),
@@ -153,7 +154,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.buttonPaddingV),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -208,6 +209,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
   }
 
   Widget _buildAppTile(UpiAppInfo appInfo) {
+    final theme = Theme.of(context);
     final isProcessing = _processingApp == appInfo;
     final isDisabled = _processingApp != null && !isProcessing;
 
@@ -223,25 +225,25 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: theme.dividerColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.06),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(12),
                 child: isProcessing
-                    ? const Center(
+                    ? Center(
                         child: SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
                         ),
                       )
                     : appInfo.iconBuilder(44),
@@ -250,9 +252,8 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
             const SizedBox(height: AppSpacing.spaceSm),
             Text(
               _formatAppName(appInfo.name),
-              style: context.caption.copyWith(
-                fontSize: 11,
-                color: AppColors.textSecondary,
+              style: context.captionSmall.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -351,14 +352,15 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
   }
 
   Widget _buildAppSelectionSheet() {
+    final theme = Theme.of(context);
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: theme.bottomSheetTheme.backgroundColor ?? theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Column(
@@ -369,7 +371,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: theme.dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -392,6 +394,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
   }
 
   Widget _buildPaymentHeader() {
+    final theme = Theme.of(context);
     final amount = (widget.paymentData.amountMinor / 100).toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
@@ -403,11 +406,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
         children: [
           Text(
             'Pay ₹$amount',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+            style: context.amountMD.copyWith(color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: AppSpacing.spaceXs),
           Text(
@@ -421,14 +420,14 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
               vertical: AppSpacing.spaceXs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               widget.paymentData.payeeUpiId,
               style: context.caption.copyWith(
                 fontFamily: 'monospace',
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -438,24 +437,20 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
   }
 
   Widget _buildPayUsingDivider() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: AppColors.border)),
+          Expanded(child: Divider(color: theme.dividerColor)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceLg),
             child: Text(
               'PAY USING',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textTertiary,
-                letterSpacing: 0.5,
-              ),
+              style: context.sectionLabel,
             ),
           ),
-          const Expanded(child: Divider(color: AppColors.border)),
+          Expanded(child: Divider(color: theme.dividerColor)),
         ],
       ),
     );

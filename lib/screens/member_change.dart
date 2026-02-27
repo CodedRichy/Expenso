@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
 
 class MemberChange extends StatelessWidget {
@@ -153,7 +154,7 @@ class MemberChange extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
                                 foregroundColor: theme.colorScheme.onSurface,
                                 side: BorderSide(color: theme.dividerColor),
                                 padding: const EdgeInsets.symmetric(vertical: 16),

@@ -65,11 +65,13 @@ class _GroupsListState extends State<GroupsList> {
   Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
     final colors = [
       context.colorGradientStart,
-      AppColors.primaryVariant,
+      context.colorPrimaryVariant,
       context.colorGradientMid,
       context.colorGradientEnd,
     ];
     final bgColor = colors[index % colors.length];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onDarkGradient = isDark ? context.colorPrimary : context.colorSurface;
     
     final alreadyAnimated = _animatedInvitations.contains(invitation.groupId);
     if (!alreadyAnimated) {
@@ -99,7 +101,7 @@ class _GroupsListState extends State<GroupsList> {
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: onDarkGradient.withValues(alpha: 0.1),
                 ),
               ),
             ),
@@ -111,10 +113,10 @@ class _GroupsListState extends State<GroupsList> {
                 children: [
                   Text(
                     invitation.groupName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: onDarkGradient,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -125,14 +127,14 @@ class _GroupsListState extends State<GroupsList> {
                       Icon(
                         Icons.group_add_outlined,
                         size: 14,
-                        color: Colors.white.withOpacity(0.7),
+                        color: onDarkGradient.withValues(alpha: 0.7),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Tap to view',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withOpacity(0.7),
+                          color: onDarkGradient.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -170,8 +172,8 @@ class _GroupsListState extends State<GroupsList> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: ctx.colorSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.only(
@@ -187,7 +189,7 @@ class _GroupsListState extends State<GroupsList> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: ctx.colorBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -208,8 +210,8 @@ class _GroupsListState extends State<GroupsList> {
                   child: Center(
                     child: Text(
                       invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(ctx).brightness == Brightness.dark ? ctx.colorPrimary : ctx.colorSurface,
                         fontSize: 32,
                         fontWeight: FontWeight.w600,
                       ),
@@ -228,13 +230,13 @@ class _GroupsListState extends State<GroupsList> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: ctx.colorBackground,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.mail_outline_rounded, size: 16, color: AppColors.textSecondary),
+                  Icon(Icons.mail_outline_rounded, size: 16, color: ctx.colorTextSecondary),
                   const SizedBox(width: 6),
                   Text(
                     'Group invitation',
@@ -266,13 +268,13 @@ class _GroupsListState extends State<GroupsList> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: ctx.colorBorder),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: Text(
                           'Decline',
-                          style: AppTypography.button.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),
@@ -307,13 +309,13 @@ class _GroupsListState extends State<GroupsList> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: ctx.colorPrimary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: Text(
                           'Join Group',
-                          style: AppTypography.button.copyWith(color: Theme.of(context).colorScheme.surface),
+                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: Theme.of(ctx).colorScheme.surface),
                         ),
                       ),
                     ),
@@ -365,7 +367,7 @@ class _GroupsListState extends State<GroupsList> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -411,13 +413,12 @@ class _GroupsListState extends State<GroupsList> {
             CycleRepository.instance.clearStreamError();
           });
         }
-        final isDark = Theme.of(context).brightness == Brightness.dark;
         return GradientScaffold(
           floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
               ? FloatingActionButton(
                   onPressed: () => Navigator.pushNamed(context, '/create-group'),
-                  backgroundColor: isDark ? AppColorsDark.primary : AppColors.primary,
-                  foregroundColor: isDark ? AppColorsDark.background : AppColors.surface,
+                  backgroundColor: context.colorPrimary,
+                  foregroundColor: context.colorSurface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -503,8 +504,8 @@ class _GroupsListState extends State<GroupsList> {
                                           }
                                           await pinService.togglePin(group.id);
                                         },
-                                        backgroundColor: AppColors.warning,
-                                        foregroundColor: AppColors.surface,
+                                        backgroundColor: context.colorWarning,
+                                        foregroundColor: context.colorSurface,
                                         icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                                         label: isPinned ? 'Unpin' : 'Pin',
                                       ),
@@ -520,8 +521,8 @@ class _GroupsListState extends State<GroupsList> {
                                                 HapticFeedback.lightImpact();
                                                 _confirmDeleteGroup(context, group);
                                               },
-                                              backgroundColor: AppColors.error,
-                                              foregroundColor: AppColors.surface,
+                                              backgroundColor: context.colorError,
+                                              foregroundColor: context.colorSurface,
                                               icon: Icons.delete_outline,
                                               label: 'Delete',
                                             ),
@@ -543,9 +544,9 @@ class _GroupsListState extends State<GroupsList> {
                                           horizontal: 24,
                                           vertical: isSettled ? 18 : 22,
                                         ),
-                                        decoration: const BoxDecoration(
+                                        decoration: BoxDecoration(
                                           border: Border(
-                                            top: BorderSide(color: AppColors.border, width: 1),
+                                            top: BorderSide(color: context.colorBorder, width: 1),
                                           ),
                                         ),
                                         child: Row(
@@ -594,15 +595,15 @@ class _GroupsListState extends State<GroupsList> {
                                               ),
                                             ),
                                             if (isPinned)
-                                              const Padding(
-                                                padding: EdgeInsets.only(right: 8),
-                                                child: Icon(Icons.push_pin, size: 18, color: AppColors.warning),
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 8),
+                                                child: Icon(Icons.push_pin, size: 18, color: context.colorWarning),
                                               ),
                                             const SizedBox(width: 16),
-                                            const Icon(
+                                            Icon(
                                               Icons.chevron_right,
                                               size: 20,
-                                              color: AppColors.textDisabled,
+                                              color: context.colorTextDisabled,
                                             ),
                                           ],
                                         ),

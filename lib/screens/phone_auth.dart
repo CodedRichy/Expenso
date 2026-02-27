@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../country_codes.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
 import '../firebase_app.dart';
@@ -22,18 +23,22 @@ class _PhoneAuthState extends State<PhoneAuth> {
   int? _resendToken;
   bool _loading = false;
   String? _errorMessage;
+  String _selectedCountryCode = '+91';
 
-  /// E.164 for Firebase: +91 and 10 digits, no spaces.
-  static String _e164(String digits) {
-    if (digits.length == 10) return '+91$digits';
-    return digits.isEmpty ? '' : '+91$digits';
+  /// E.164 for Firebase: selected code + digits, no spaces.
+  static String _e164(String code, String digits) {
+    final normalized = digits.replaceAll(RegExp(r'\D'), '');
+    if (normalized.isEmpty) return '';
+    return '$code$normalized';
   }
 
-  static String _formatPhone(String digits) {
-    if (digits.length == 10) {
-      return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
+  static String _formatPhone(String code, String digits) {
+    final normalized = digits.replaceAll(RegExp(r'\D'), '');
+    if (normalized.isEmpty) return '';
+    if (normalized.length >= 10) {
+      return '$code ${normalized.substring(0, normalized.length.clamp(0, 5))} ${normalized.substring(5)}';
     }
-    return digits.isEmpty ? '' : '+91 $digits';
+    return '$code $normalized';
   }
 
   void _clearError() {
@@ -41,8 +46,11 @@ class _PhoneAuthState extends State<PhoneAuth> {
   }
 
   void handlePhoneSubmit() {
-    if (phone.length != 10) return;
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) return;
     _clearError();
+    final e164 = _e164(_selectedCountryCode, digits);
+    if (e164.isEmpty) return;
     if (!firebaseAuthAvailable) {
       setState(() => step = 'otp');
       return;
@@ -52,7 +60,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
       _errorMessage = null;
     });
     PhoneAuthService.instance.verifyPhoneNumber(
-      phoneNumber: _e164(phone),
+      phoneNumber: e164,
       onVerificationCompleted: (PhoneAuthCredential credential) {
         if (!mounted) return;
         _signInWithCredential(credential);
@@ -83,7 +91,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
       await PhoneAuthService.instance.signInWithCredential(credential);
       final user = PhoneAuthService.instance.currentUser;
       if (!mounted || user == null) return;
-      final formattedPhone = _formatPhone(phone);
+      final formattedPhone = _formatPhone(_selectedCountryCode, phone);
       CycleRepository.instance.setGlobalProfile(
         formattedPhone,
         user.displayName ?? '',
@@ -101,7 +109,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
   void handleOtpSubmit() async {
     if (otp.length != 6) return;
     _clearError();
-    final formattedPhone = _formatPhone(phone);
+    final formattedPhone = _formatPhone(_selectedCountryCode, phone);
     if (!firebaseAuthAvailable) {
       CycleRepository.instance.setGlobalProfile(formattedPhone, '');
       return;
@@ -165,15 +173,36 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border.all(color: AppColors.border),
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border.all(color: Theme.of(context).dividerColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        '+91',
-                        style: context.bodySecondary,
+                      child: PopupMenuButton<String>(
+                        onSelected: (code) => setState(() => _selectedCountryCode = code),
+                        offset: const Offset(0, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
+                          value: c.dialCode,
+                          child: Text(
+                            '${c.dialCode} ${c.countryCode}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        )).toList(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _selectedCountryCode,
+                                style: context.bodySecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -183,12 +212,10 @@ class _PhoneAuthState extends State<PhoneAuth> {
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(10),
+                          LengthLimitingTextInputFormatter(15),
                         ],
                         onChanged: (value) {
-                          setState(() {
-                            phone = value;
-                          });
+                          setState(() => phone = value);
                         },
                         onSubmitted: (_) => handlePhoneSubmit(),
                         decoration: const InputDecoration(hintText: 'Phone number'),
@@ -201,19 +228,19 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   const SizedBox(height: 12),
                   Text(
                     _errorMessage!,
-                    style: context.bodySecondary.copyWith(color: AppColors.error),
+                    style: context.bodySecondary.copyWith(color: context.colorError),
                   ),
                 ],
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: (phone.length == 10 && !_loading) ? handlePhoneSubmit : null,
+                  onPressed: (phone.replaceAll(RegExp(r'\D'), '').length >= 10 && !_loading) ? handlePhoneSubmit : null,
                   child: _loading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.surface,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         )
                       : const Text('Continue', style: AppTypography.button),
@@ -244,7 +271,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Sent to +91 $phone',
+                    'Sent to $_selectedCountryCode $phone',
                     style: context.bodySecondary,
                   ),
                   if (PhoneAuthService.isTestNumber(phone)) ...[
@@ -281,19 +308,19 @@ class _PhoneAuthState extends State<PhoneAuth> {
                 const SizedBox(height: 12),
                 Text(
                   _errorMessage!,
-                  style: context.bodySecondary.copyWith(color: AppColors.error),
+                  style: context.bodySecondary.copyWith(color: context.colorError),
                 ),
               ],
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: (otp.length == 6 && !_loading) ? handleOtpSubmit : null,
                 child: _loading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.surface,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       )
                     : const Text('Verify', style: AppTypography.button),

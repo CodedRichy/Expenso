@@ -69,7 +69,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColorsDark.background : AppColors.background;
-    final logoPath = isDark ? 'assets/app_icon_dark.png' : 'assets/app_icon_light.png';
     
     return Scaffold(
       backgroundColor: bgColor,
@@ -89,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   );
                 },
                 child: Image.asset(
-                  logoPath,
+                  'assets/app_icon_transparent.png',
                   width: 150,
                   height: 150,
                 ),

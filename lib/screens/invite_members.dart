@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
+import '../country_codes.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../widgets/gradient_scaffold.dart';
@@ -24,24 +25,6 @@ class _InviteMembersState extends State<InviteMembers> {
   String name = '';
   bool linkCopied = false;
   String _selectedCountryCode = '+91';
-
-  static const List<Map<String, String>> _countryCodes = [
-    {'code': '+91', 'country': 'IN', 'name': 'India'},
-    {'code': '+1', 'country': 'US', 'name': 'United States'},
-    {'code': '+44', 'country': 'GB', 'name': 'United Kingdom'},
-    {'code': '+971', 'country': 'AE', 'name': 'UAE'},
-    {'code': '+65', 'country': 'SG', 'name': 'Singapore'},
-    {'code': '+61', 'country': 'AU', 'name': 'Australia'},
-    {'code': '+49', 'country': 'DE', 'name': 'Germany'},
-    {'code': '+33', 'country': 'FR', 'name': 'France'},
-    {'code': '+81', 'country': 'JP', 'name': 'Japan'},
-    {'code': '+86', 'country': 'CN', 'name': 'China'},
-    {'code': '+82', 'country': 'KR', 'name': 'South Korea'},
-    {'code': '+55', 'country': 'BR', 'name': 'Brazil'},
-    {'code': '+52', 'country': 'MX', 'name': 'Mexico'},
-    {'code': '+7', 'country': 'RU', 'name': 'Russia'},
-    {'code': '+27', 'country': 'ZA', 'name': 'South Africa'},
-  ];
 
   final FocusNode _phoneFocusNode = FocusNode();
   bool _contactsPermissionGranted = false;
@@ -404,10 +387,10 @@ class _InviteMembersState extends State<InviteMembers> {
                           onSelected: (code) => setState(() => _selectedCountryCode = code),
                           offset: const Offset(0, 48),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          itemBuilder: (context) => _countryCodes.map((c) => PopupMenuItem<String>(
-                            value: c['code'],
+                          itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
+                            value: c.dialCode,
                             child: Text(
-                              '${c['code']} ${c['country']}',
+                              '${c.dialCode} ${c.countryCode}',
                               style: const TextStyle(fontSize: 16),
                             ),
                           )).toList(),

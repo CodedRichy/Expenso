@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
@@ -428,7 +429,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5),
+                                color: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorBorder,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -607,7 +608,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         filled: true,
-                        fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                                fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: theme.dividerColor),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
 
 class UndoExpense extends StatefulWidget {
@@ -69,9 +70,9 @@ class _UndoExpenseState extends State<UndoExpense> {
     final amount = widget.amount ?? repo.lastAddedAmount ?? 0.0;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final toastBg = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
-    final toastText = isDark ? theme.colorScheme.onSurface : Colors.white;
-    final toastSecondary = isDark ? theme.colorScheme.onSurfaceVariant : Colors.white70;
+    final toastBg = isDark ? theme.colorScheme.surfaceContainerHighest : context.colorPrimary;
+    final toastText = isDark ? theme.colorScheme.onSurface : context.colorSurface;
+    final toastSecondary = isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.7);
 
     return Scaffold(
       backgroundColor: Colors.transparent,

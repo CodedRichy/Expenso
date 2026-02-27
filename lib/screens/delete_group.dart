@@ -31,7 +31,7 @@ class DeleteGroup extends StatelessWidget {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: AppColors.textPrimary,
+                    color: context.colorTextPrimary,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -93,7 +93,7 @@ class DeleteGroup extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: const Text('Delete Group', style: AppTypography.button),
+                              child: Text('Delete Group', style: Theme.of(context).textTheme.labelLarge),
                             ),
                             const SizedBox(height: 12),
                             OutlinedButton(
@@ -103,7 +103,7 @@ class DeleteGroup extends StatelessWidget {
                               style: OutlinedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: const Text('Cancel', style: AppTypography.button),
+                              child: Text('Cancel', style: Theme.of(context).textTheme.labelLarge),
                             ),
                           ],
                         ),

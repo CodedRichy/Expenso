@@ -13,6 +13,9 @@ class ErrorStates extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTextPrimary = context.colorTextPrimary;
+    final colorBorder = context.colorBorder;
+    final colorTextSecondary = context.colorTextSecondary;
     if (type == 'network') {
       return Scaffold(
         body: SafeArea(
@@ -24,7 +27,7 @@ class ErrorStates extends StatelessWidget {
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.chevron_left, size: 24),
-                  color: AppColors.textPrimary,
+                  color: colorTextPrimary,
                 ),
               ),
               Center(
@@ -38,11 +41,11 @@ class ErrorStates extends StatelessWidget {
                         Container(
                           width: 64,
                           height: 64,
-                          decoration: const BoxDecoration(
-                            color: AppColors.border,
+                          decoration: BoxDecoration(
+                            color: colorBorder,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.wifi_off, color: AppColors.textSecondary, size: 32),
+                          child: Icon(Icons.wifi_off, color: colorTextSecondary, size: 32),
                         ),
                         const SizedBox(height: 32),
                         Text(
@@ -65,7 +68,7 @@ class ErrorStates extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: const Text('Try Again', style: AppTypography.button),
+                          child: Text('Try Again', style: Theme.of(context).textTheme.labelLarge),
                         ),
                       ],
                     ),
@@ -92,11 +95,11 @@ class ErrorStates extends StatelessWidget {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: const BoxDecoration(
-                        color: AppColors.border,
+                      decoration: BoxDecoration(
+                        color: colorBorder,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.access_time, color: AppColors.textSecondary, size: 32),
+                      child: Icon(Icons.access_time, color: colorTextSecondary, size: 32),
                     ),
                     const SizedBox(height: 32),
                     Text(
@@ -120,7 +123,7 @@ class ErrorStates extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 0),
                       ),
-                      child: const Text('Verify', style: AppTypography.button),
+                      child: Text('Verify', style: Theme.of(context).textTheme.labelLarge),
                     ),
                   ],
                 ),
@@ -142,7 +145,7 @@ class ErrorStates extends StatelessWidget {
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.chevron_left, size: 24),
-                  color: AppColors.textPrimary,
+                  color: colorTextPrimary,
                 ),
               ),
               Center(
@@ -156,11 +159,11 @@ class ErrorStates extends StatelessWidget {
                         Container(
                           width: 64,
                           height: 64,
-                          decoration: const BoxDecoration(
-                            color: AppColors.border,
+                          decoration: BoxDecoration(
+                            color: colorBorder,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.payment, color: AppColors.textSecondary, size: 32),
+                          child: Icon(Icons.payment, color: colorTextSecondary, size: 32),
                         ),
                         const SizedBox(height: 32),
                         Text(
@@ -184,7 +187,7 @@ class ErrorStates extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 0),
                           ),
-                          child: const Text('Go Back', style: AppTypography.button),
+                          child: Text('Go Back', style: Theme.of(context).textTheme.labelLarge),
                         ),
                       ],
                     ),
@@ -207,7 +210,7 @@ class ErrorStates extends StatelessWidget {
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.chevron_left, size: 24),
-                color: AppColors.textPrimary,
+                color: colorTextPrimary,
               ),
             ),
             Center(
@@ -221,11 +224,11 @@ class ErrorStates extends StatelessWidget {
                       Container(
                         width: 64,
                         height: 64,
-                        decoration: const BoxDecoration(
-                          color: AppColors.border,
+                        decoration: BoxDecoration(
+                          color: colorBorder,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.refresh, color: AppColors.textSecondary, size: 32),
+                        child: Icon(Icons.refresh, color: colorTextSecondary, size: 32),
                       ),
                       const SizedBox(height: 32),
                       Text(
@@ -250,7 +253,7 @@ class ErrorStates extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 0),
                         ),
-                        child: const Text('Try Again', style: AppTypography.button),
+                        child: Text('Try Again', style: Theme.of(context).textTheme.labelLarge),
                       ),
                     ],
                   ),

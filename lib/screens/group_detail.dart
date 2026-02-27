@@ -146,9 +146,9 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final toastBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
-    final toastTextColor = isDark ? theme.colorScheme.onSurface : Colors.white;
-    final toastSecondaryColor = isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFFB0B0B0);
+    final toastBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : context.colorPrimary;
+    final toastTextColor = isDark ? theme.colorScheme.onSurface : context.colorSurface;
+    final toastSecondaryColor = isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.7);
 
     return Material(
       color: Colors.transparent,
@@ -843,7 +843,7 @@ class _DecisionClarityCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: context.colorPrimary.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
@@ -891,11 +891,12 @@ class _DecisionClarityCard extends StatelessWidget {
     required bool isBalanceClear,
     required bool isMuted,
   }) {
+    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
     final statusColor = isBalanceClear
-        ? Colors.white70
+        ? onDark.withValues(alpha: 0.7)
         : isCredit
-            ? AppColors.successLight
-            : AppColors.debtRed;
+            ? context.colorSuccessLight
+            : context.colorDebtRed;
 
     final statusText = isMuted
         ? 'Cycle settled — pending restart'
@@ -910,13 +911,13 @@ class _DecisionClarityCard extends StatelessWidget {
         Text(
           'Cycle Total',
           style: AppTypography.sectionLabel.copyWith(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: onDark.withValues(alpha: 0.7),
           ),
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
           '₹${_fmtRupee(cycleTotal)}',
-          style: AppTypography.amountLG.copyWith(color: Colors.white),
+          style: AppTypography.amountLG.copyWith(color: onDark),
         ),
         SizedBox(height: AppSpacing.spaceXl),
         Row(
@@ -928,7 +929,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   Text(
                     'You Paid',
                     style: AppTypography.captionSmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: onDark.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -936,7 +937,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   Text(
                     '₹${_fmtRupee(youPaid)}',
                     style: AppTypography.amountSM.copyWith(
-                      color: Colors.white.withValues(alpha: 0.95),
+                      color: onDark.withValues(alpha: 0.95),
                     ),
                   ),
                   if (settledPaid > 0.01) ...[
@@ -944,7 +945,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     Text(
                       'Settled',
                       style: AppTypography.captionSmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: onDark.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -952,7 +953,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     Text(
                       '₹${_fmtRupee(settledPaid)}',
                       style: AppTypography.amountSM.copyWith(
-                        color: Colors.white.withValues(alpha: 0.95),
+                        color: onDark.withValues(alpha: 0.95),
                       ),
                     ),
                   ],
@@ -970,7 +971,7 @@ class _DecisionClarityCard extends StatelessWidget {
                             ? "You're owed"
                             : 'You owe',
                     style: AppTypography.captionSmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: onDark.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -984,7 +985,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     Text(
                       'was ${myNet < 0 ? '-' : '+'}₹${_fmtRupee(myNet.abs())}',
                       style: AppTypography.captionSmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: onDark.withValues(alpha: 0.5),
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
@@ -1029,6 +1030,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
     final isCredit = myRemaining > 0;
     final isDebt = myRemaining < 0;
     final isBalanceClear = myRemaining.abs() < 0.01;
+    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
 
     final myDebts = debts.where((d) => d.fromId == myId || d.toId == myId).toList();
 
@@ -1053,7 +1055,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: onDark.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1064,16 +1066,16 @@ class _SettlementDetailsSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Settlement details', style: context.screenTitle.copyWith(color: Colors.white)),
+                  Text('Settlement details', style: context.screenTitle.copyWith(color: onDark)),
                   SizedBox(height: AppSpacing.spaceXs),
-                  Text(groupName, style: context.bodySecondary.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+                  Text(groupName, style: context.bodySecondary.copyWith(color: onDark.withValues(alpha: 0.7))),
                 ],
               ),
             ),
             SizedBox(height: AppSpacing.sectionGap),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-              child: _buildYourPosition(isCredit, isDebt, isBalanceClear),
+              child: _buildYourPosition(context, isCredit, isDebt, isBalanceClear),
             ),
             SizedBox(height: AppSpacing.sectionGap),
             if (myDebts.isEmpty || isBalanceClear)
@@ -1084,13 +1086,13 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.space4xl),
                     child: Text(
                       'All settled 🎉',
-                      style: context.subheader.copyWith(color: Colors.white),
+                      style: context.subheader.copyWith(color: onDark),
                     ),
                   ),
                 ),
               )
             else
-              _buildDebtsList(myDebts),
+              _buildDebtsList(context, myDebts),
             SizedBox(height: AppSpacing.space3xl),
           ],
         ),
@@ -1098,17 +1100,17 @@ class _SettlementDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildYourPosition(bool isCredit, bool isDebt, bool isBalanceClear) {
+  Widget _buildYourPosition(BuildContext context, bool isCredit, bool isDebt, bool isBalanceClear) {
     if (isBalanceClear) {
       return Container(
         padding: EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: context.colorSurfaceVariant,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle_outline, color: AppColors.success, size: 28),
+            Icon(Icons.check_circle_outline, color: context.colorSuccess, size: 28),
             SizedBox(width: AppSpacing.spaceLg),
             Expanded(
               child: Text(
@@ -1121,14 +1123,14 @@ class _SettlementDetailsSheet extends StatelessWidget {
       );
     }
 
-    final color = isCredit ? AppColors.success : AppColors.error;
+    final color = isCredit ? context.colorSuccess : context.colorError;
     final label = isCredit ? 'You will receive' : 'You owe';
     final amount = '₹${_fmtRupee(myRemaining.abs())}';
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: isCredit ? const Color(0xFFE8F5E9) : AppColors.errorBackground,
+        color: isCredit ? context.colorSuccessBackground : context.colorErrorBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1148,13 +1150,14 @@ class _SettlementDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDebtsList(List<Debt> myDebts) {
+  Widget _buildDebtsList(BuildContext context, List<Debt> myDebts) {
+    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Text('BREAKDOWN', style: AppTypography.sectionLabel.copyWith(color: Colors.white.withValues(alpha: 0.7))),
+          child: Text('BREAKDOWN', style: AppTypography.sectionLabel.copyWith(color: onDark.withValues(alpha: 0.7))),
         ),
         SizedBox(height: AppSpacing.spaceLg),
         ...myDebts.map((debt) {
@@ -1163,7 +1166,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
           final otherName = repo.getMemberDisplayNameById(otherId);
           final photoUrl = repo.getMemberPhotoURL(otherId);
           final direction = iOwe ? 'Pay' : 'Receive';
-          final directionColor = iOwe ? AppColors.error : AppColors.success;
+          final directionColor = iOwe ? context.colorError : context.colorSuccess;
           final amountDisplay = MoneyConversion.toDisplay(debt.amount);
 
           final showPendingBadge = isPassive && 
@@ -1177,7 +1180,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1),
+                bottom: BorderSide(color: onDark.withValues(alpha: 0.15), width: 1),
               ),
             ),
             child: Row(
@@ -1190,19 +1193,19 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(otherName, style: AppTypography.listItemTitle.copyWith(color: Colors.white)),
+                          Text(otherName, style: AppTypography.listItemTitle.copyWith(color: onDark)),
                           if (showPendingBadge) ...[
                             SizedBox(width: AppSpacing.spaceSm),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.warningBackground,
+                                color: context.colorWarningBackground,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 'Pending',
                                 style: AppTypography.captionSmall.copyWith(
-                                  color: AppColors.warning,
+                                  color: context.colorWarning,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 10,
                                 ),
@@ -1793,12 +1796,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5E5);
+    final surfaceColor = context.colorSurface;
+    final borderColor = context.colorBorder;
     final iconColor = theme.colorScheme.onSurfaceVariant;
     final textColor = theme.colorScheme.onSurface;
     final hintColor = theme.colorScheme.onSurfaceVariant;
-    final buttonBgColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFF0F0F0);
+    final buttonBgColor = context.colorSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -1814,7 +1817,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : const Color(0xFF1A1A1A)).withValues(alpha: isDark ? 0.3 : 0.06),
+              color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.3 : 0.06),
               blurRadius: 12,
               offset: const Offset(0, 2),
             ),
@@ -2180,19 +2183,19 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
-    final dialogBgColor = isDark ? theme.colorScheme.surface : const Color(0xFFF7F7F8);
-    final inputBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white;
-    final borderColor = isDark ? theme.colorScheme.outline : const Color(0xFFE5E5E5);
-    final inputBorderColor = isDark ? theme.colorScheme.outline : const Color(0xFFD0D0D0);
+    final dialogBgColor = context.colorSurface;
+    final inputBgColor = context.colorSurface;
+    final borderColor = context.colorBorder;
+    final inputBorderColor = context.colorBorderInput;
     final labelColor = theme.colorScheme.onSurfaceVariant;
     final textColor = theme.colorScheme.onSurface;
     final secondaryTextColor = theme.colorScheme.onSurfaceVariant;
     final primaryColor = theme.colorScheme.primary;
-    final chipBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5);
-    final placeholderChipBgColor = isDark ? theme.colorScheme.surfaceContainerHigh : const Color(0xFFE8E8E8);
-    final gradientStart = isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFF1A1A1A);
-    final gradientEnd = isDark ? theme.colorScheme.surfaceContainerHigh : const Color(0xFF6B6B6B);
-    final gradientTextColor = isDark ? theme.colorScheme.onSurface : Colors.white;
+    final chipBgColor = context.colorSurfaceVariant;
+    final placeholderChipBgColor = context.colorDisabledBackground;
+    final gradientStart = context.colorGradientStart;
+    final gradientEnd = context.colorGradientEnd;
+    final gradientTextColor = Theme.of(context).brightness == Brightness.dark ? theme.colorScheme.onSurface : context.colorSurface;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -2205,7 +2208,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : const Color(0xFF1A1A1A)).withValues(alpha: 0.15),
+              color: theme.colorScheme.shadow.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -2397,12 +2400,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.errorBackground,
+                          color: context.colorErrorBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
-                          style: TextStyle(fontSize: 13, color: AppColors.error),
+                          style: TextStyle(fontSize: 13, color: context.colorError),
                         ),
                       ),
                     ],
@@ -2473,7 +2476,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                         hintText: '₹',
                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: AppColors.error)),
+                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colorError)),
                                       ),
                                       style: const TextStyle(fontSize: 14),
                                     ),

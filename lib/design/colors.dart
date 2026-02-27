@@ -103,6 +103,7 @@ extension AppColorsX on BuildContext {
   bool get _isDark => Theme.of(this).brightness == Brightness.dark;
 
   Color get colorPrimary => _isDark ? AppColorsDark.primary : AppColors.primary;
+  Color get colorPrimaryVariant => _isDark ? AppColorsDark.primaryVariant : AppColors.primaryVariant;
   Color get colorTextPrimary => _isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
   Color get colorTextSecondary => _isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
   Color get colorTextTertiary => _isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;

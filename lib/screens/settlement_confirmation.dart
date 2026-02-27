@@ -309,10 +309,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.check_circle_outline,
                                           size: 64,
-                                          color: AppColors.success,
+                                          color: context.colorSuccess,
                                         ),
                                         const SizedBox(height: AppSpacing.spaceXl),
                                         Text(
@@ -380,13 +380,13 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         Container(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
           decoration: BoxDecoration(
-            color: AppColors.accentBackground,
+            color: context.colorAccentBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+            border: Border.all(color: context.colorAccent.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
-              Icon(Icons.account_balance_wallet, color: AppColors.accent, size: 24),
+              Icon(Icons.account_balance_wallet, color: context.colorAccent, size: 24),
               const SizedBox(width: AppSpacing.spaceMd),
               Expanded(
                 child: Column(
@@ -424,9 +424,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Row(
               children: [
@@ -435,14 +435,14 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isCash 
-                        ? AppColors.warningBackground 
-                        : AppColors.accentBackground,
+                        ? context.colorWarningBackground 
+                        : context.colorAccentBackground,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isCash ? Icons.payments : Icons.phone_android,
                     size: 20,
-                    color: isCash ? AppColors.warning : AppColors.accent,
+                    color: isCash ? context.colorWarning : context.colorAccent,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.spaceMd),
@@ -469,8 +469,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       ? _handleConfirmCashReceived(route) 
                       : _handleConfirmUpiReceived(route),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.colorSuccess,
+                    foregroundColor: context.colorSurface,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.spaceLg,
                       vertical: AppSpacing.spaceMd,
@@ -529,10 +529,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!hasPendingIncoming) ...[
-            const Icon(
+            Icon(
               Icons.check_circle_outline,
               size: 64,
-              color: AppColors.success,
+              color: context.colorSuccess,
             ),
             const SizedBox(height: AppSpacing.spaceXl),
             Text(
@@ -580,16 +580,16 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           child: Column(
             children: [
               if (allConfirmed) ...[
-                const Icon(
+                Icon(
                   Icons.check_circle,
                   size: 48,
-                  color: AppColors.success,
+                  color: context.colorSuccess,
                 ),
                 const SizedBox(height: AppSpacing.spaceLg),
                 Text(
                   'All payments marked!',
                   style: context.screenTitle.copyWith(
-                    color: AppColors.success,
+                    color: context.colorSuccess,
                   ),
                 ),
               ] else ...[
@@ -654,19 +654,19 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             decoration: BoxDecoration(
-              color: AppColors.warningBackground,
+              color: context.colorWarningBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+              border: Border.all(color: context.colorWarning.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                Icon(Icons.info_outline, color: context.colorWarning, size: 20),
                 const SizedBox(width: AppSpacing.spaceLg),
                 Expanded(
                   child: Text(
                     'After paying via UPI, tap "Mark as paid" to record your payment.',
                     style: context.caption.copyWith(
-                      color: AppColors.warning,
+                      color: context.colorWarning,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -683,21 +683,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   }
 
   Widget _buildBackButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final buttonBg = isDark ? Colors.white : Colors.white;
-    final buttonFg = isDark ? Colors.black : const Color(0xFF1A1A1A);
     return ElevatedButton(
       onPressed: () => Navigator.pop(context),
       style: ElevatedButton.styleFrom(
-        backgroundColor: buttonBg,
-        foregroundColor: buttonFg,
+        backgroundColor: context.colorSurface,
+        foregroundColor: context.colorTextPrimary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         minimumSize: const Size(double.infinity, 0),
         elevation: 0,
       ),
-      child: Text('Back to Group', style: AppTypography.button.copyWith(color: buttonFg)),
+      child: Text('Back to Group', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.colorTextPrimary)),
     );
   }
 }

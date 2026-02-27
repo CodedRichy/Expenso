@@ -68,8 +68,19 @@ class CurrencyRegistry {
   static const Currency krw = Currency(code: 'KRW', minorUnitScale: 0);
   static const Currency kwd = Currency(code: 'KWD', minorUnitScale: 3);
   static const Currency bhd = Currency(code: 'BHD', minorUnitScale: 3);
+  static const Currency aed = Currency(code: 'AED', minorUnitScale: 2);
+  static const Currency sgd = Currency(code: 'SGD', minorUnitScale: 2);
+  static const Currency aud = Currency(code: 'AUD', minorUnitScale: 2);
+  static const Currency cny = Currency(code: 'CNY', minorUnitScale: 2);
+  static const Currency brl = Currency(code: 'BRL', minorUnitScale: 2);
+  static const Currency mxn = Currency(code: 'MXN', minorUnitScale: 2);
+  static const Currency rub = Currency(code: 'RUB', minorUnitScale: 2);
+  static const Currency zar = Currency(code: 'ZAR', minorUnitScale: 2);
 
-  static const List<Currency> _all = [inr, usd, eur, gbp, jpy, krw, kwd, bhd];
+  static const List<Currency> _all = [
+    inr, usd, eur, gbp, jpy, krw, kwd, bhd,
+    aed, sgd, aud, cny, brl, mxn, rub, zar,
+  ];
 
   static const Currency defaultCurrency = inr;
 

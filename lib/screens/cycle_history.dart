@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
@@ -368,7 +369,7 @@ class _ErrorWithRetry extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFE5E5E5),
+                color: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorBorder,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.wifi_off, size: 28, color: theme.colorScheme.onSurfaceVariant),

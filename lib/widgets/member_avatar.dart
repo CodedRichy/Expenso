@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 
 class MemberAvatar extends StatelessWidget {
   final String displayName;
@@ -17,9 +18,8 @@ class MemberAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final letter = _initial(displayName);
     final hasPhoto = photoURL != null && photoURL!.trim().isNotEmpty;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final letterBg = isDark ? const Color(0xFF3A3A3A) : const Color(0xFF1A1A1A);
-    const letterFg = Color(0xFFE8EAED);
+    final letterBg = context.colorPrimary;
+    final letterFg = Theme.of(context).colorScheme.onPrimary;
 
     return CircleAvatar(
       radius: size / 2,

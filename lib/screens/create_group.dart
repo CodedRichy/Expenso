@@ -94,7 +94,7 @@ class _CreateGroupState extends State<CreateGroup> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
-                    color: AppColors.textPrimary,
+                    color: context.colorTextPrimary,
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                     constraints: const BoxConstraints(),
@@ -146,9 +146,9 @@ class _CreateGroupState extends State<CreateGroup> {
                         const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: context.colorSurface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.colorBorder),
                           ),
                           child: Column(
                             children: [
@@ -175,8 +175,8 @@ class _CreateGroupState extends State<CreateGroup> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              border: Border.all(color: AppColors.borderInput),
+                              color: context.colorSurface,
+                              border: Border.all(color: context.colorBorderInput),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -206,8 +206,8 @@ class _CreateGroupState extends State<CreateGroup> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border.all(color: AppColors.border),
+                        color: context.colorSurface,
+                        border: Border.all(color: context.colorBorder),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(getPreviewText(), style: context.bodySecondary),
@@ -219,12 +219,12 @@ class _CreateGroupState extends State<CreateGroup> {
             ),
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
               ),
               child: ElevatedButton(
                 onPressed: name.trim().isNotEmpty ? handleCreate : null,
-                child: const Text('Create Group', style: AppTypography.button),
+                child: Text('Create Group', style: Theme.of(context).textTheme.labelLarge),
               ),
             ),
           ],
@@ -246,50 +246,50 @@ class _CreateGroupState extends State<CreateGroup> {
           }
         });
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            top: isFirst
-                ? BorderSide.none
-                : const BorderSide(color: AppColors.border, width: 1),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: context.bodyPrimary.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(
+              top: isFirst
+                  ? BorderSide.none
+                  : BorderSide(color: context.colorBorder, width: 1),
             ),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.borderInput,
-                  width: 2,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: context.bodyPrimary.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? context.colorPrimary : context.colorBorderInput,
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? Center(
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: context.colorPrimary,
+                          ),
                         ),
-                      ),
-                    )
-                  : null,
-            ),
-          ],
+                      )
+                    : null,
+              ),
+            ],
+          ),
         ),
-      ),
     );
   }
 

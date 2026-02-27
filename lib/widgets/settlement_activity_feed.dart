@@ -24,7 +24,7 @@ class SettlementActivityTapToExpand extends StatelessWidget {
         final displayEvents = events.take(_previewCount).toList();
 
         return Material(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             onTap: () {
@@ -96,7 +96,7 @@ class SettlementActivityTapToExpand extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,10 +106,10 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.history,
                           size: 18,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -195,9 +195,9 @@ class SettlementActivityFeed extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,10 +206,10 @@ class SettlementActivityFeed extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.history,
                       size: 18,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -282,18 +282,18 @@ class _EventIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (IconData icon, Color color) = switch (type) {
-      SettlementEventType.cycleSettlementStarted => (Icons.flag_outlined, AppColors.accent),
-      SettlementEventType.paymentInitiated => (Icons.send_outlined, AppColors.warning),
-      SettlementEventType.paymentPending => (Icons.hourglass_empty, AppColors.warning),
-      SettlementEventType.paymentConfirmedByPayer => (Icons.check_circle_outline, AppColors.accent),
-      SettlementEventType.paymentConfirmedByReceiver => (Icons.verified_outlined, AppColors.success),
-      SettlementEventType.paymentFailed => (Icons.cancel_outlined, AppColors.error),
-      SettlementEventType.paymentDisputed => (Icons.error_outline, AppColors.error),
-      SettlementEventType.cashConfirmationRequested => (Icons.payments_outlined, AppColors.warning),
-      SettlementEventType.cashConfirmed => (Icons.payments, AppColors.success),
-      SettlementEventType.cycleFullySettled => (Icons.celebration_outlined, AppColors.success),
-      SettlementEventType.cycleArchived => (Icons.inventory_2_outlined, AppColors.textSecondary),
-      SettlementEventType.pendingReminder => (Icons.schedule, AppColors.warning),
+      SettlementEventType.cycleSettlementStarted => (Icons.flag_outlined, context.colorAccent),
+      SettlementEventType.paymentInitiated => (Icons.send_outlined, context.colorWarning),
+      SettlementEventType.paymentPending => (Icons.hourglass_empty, context.colorWarning),
+      SettlementEventType.paymentConfirmedByPayer => (Icons.check_circle_outline, context.colorAccent),
+      SettlementEventType.paymentConfirmedByReceiver => (Icons.verified_outlined, context.colorSuccess),
+      SettlementEventType.paymentFailed => (Icons.cancel_outlined, context.colorError),
+      SettlementEventType.paymentDisputed => (Icons.error_outline, context.colorError),
+      SettlementEventType.cashConfirmationRequested => (Icons.payments_outlined, context.colorWarning),
+      SettlementEventType.cashConfirmed => (Icons.payments, context.colorSuccess),
+      SettlementEventType.cycleFullySettled => (Icons.celebration_outlined, context.colorSuccess),
+      SettlementEventType.cycleArchived => (Icons.inventory_2_outlined, context.colorTextSecondary),
+      SettlementEventType.pendingReminder => (Icons.schedule, context.colorWarning),
     };
 
     return Container(
@@ -318,13 +318,13 @@ class _PendingBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.warningBackground,
+        color: context.colorWarningBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         '$count pending',
         style: context.caption.copyWith(
-          color: AppColors.warning,
+          color: context.colorWarning,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -351,7 +351,7 @@ class SettlementActivitySummary extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: context.colorSurfaceVariant,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
