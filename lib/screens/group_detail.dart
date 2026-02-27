@@ -2466,7 +2466,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       const SizedBox(height: 12),
                       Text(
                         _notReadyReason!,
-                        style: TextStyle(fontSize: 13, color: AppColors.error),
+                        style: TextStyle(fontSize: 13, color: context.colorError),
                       ),
                     ],
                   ],

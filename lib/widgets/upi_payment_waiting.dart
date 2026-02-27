@@ -220,14 +220,14 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
         Container(
           width: 100,
           height: 100,
-          decoration: const BoxDecoration(
-            color: AppColors.success,
+          decoration: BoxDecoration(
+            color: context.colorSuccess,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.check,
             size: 56,
-            color: Colors.white,
+            color: context.colorSurface,
           ),
         ),
         const SizedBox(height: AppSpacing.space3xl),
@@ -278,13 +278,13 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: AppColors.error.withValues(alpha: 0.2),
+            color: context.colorError.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.close,
             size: 56,
-            color: AppColors.error,
+            color: context.colorError,
           ),
         ),
         const SizedBox(height: AppSpacing.space3xl),
