@@ -25,7 +25,7 @@ const List<CountryEntry> countryCodesWithCurrency = [
   CountryEntry(dialCode: '+91', countryCode: 'IN', name: 'India', currencyCode: 'INR'),
   CountryEntry(dialCode: '+1', countryCode: 'US', name: 'United States', currencyCode: 'USD'),
   CountryEntry(dialCode: '+44', countryCode: 'GB', name: 'United Kingdom', currencyCode: 'GBP'),
-  CountryEntry(dialCode: '+971', countryCode: 'AE', name: 'UAE', currencyCode: 'AED'),
+  CountryEntry(dialCode: '+971', countryCode: 'AE', name: 'United Arab Emirates', currencyCode: 'AED'),
   CountryEntry(dialCode: '+65', countryCode: 'SG', name: 'Singapore', currencyCode: 'SGD'),
   CountryEntry(dialCode: '+61', countryCode: 'AU', name: 'Australia', currencyCode: 'AUD'),
   CountryEntry(dialCode: '+49', countryCode: 'DE', name: 'Germany', currencyCode: 'EUR'),
