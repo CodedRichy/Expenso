@@ -619,10 +619,10 @@ class _GroupsListState extends State<GroupsList> {
                                           ],
                                         ),
                                       ),
+                                    ),
                                   ),
                                 ),
-                                ),
-                              );
+                                );
                               },
                             ),
                           ),
@@ -631,10 +631,9 @@ class _GroupsListState extends State<GroupsList> {
                         ),
                       ),
                     ),
-              ),
-            ],
-          ),
-        );
+                  ],
+                ),
+              );
       },
     );
   }
