@@ -53,3 +53,14 @@ To test without sending real SMS:
 | Firebase init in app | Debug log on launch: "Firebase initialized." |
 
 After adding SHA fingerprints and updating `google-services.json`, do a **full rebuild** (e.g. `flutter clean && flutter run`).
+
+## Troubleshooting: "Invalid app info in play_integrity_token"
+
+If you still see *"This app is not authorized to use Firebase Authentication... [Invalid app info in play_integrity_token]"* after adding SHA-1/SHA-256 and replacing `google-services.json`:
+
+1. **Enable Play Integrity API** (same Google Cloud project as Firebase):
+   - Open [Google Cloud Console](https://console.cloud.google.com/) and select the project linked to Firebase (e.g. **expenso-e138a** — check Firebase Project settings → General → Your project).
+   - Go to **APIs & Services** → **Library**, search for **Play Integrity API**, open it and click **Enable**.
+2. **Clean install:** Uninstall the app from the device/emulator, then run `flutter clean` and `flutter run` so the build that runs is signed with the keystore whose SHAs you added.
+3. **Real device:** If you are testing on an **emulator**, try a **physical device** with a SIM; Play Integrity can be stricter on emulators.
+4. **Test number:** Use Firebase's test phone numbers (Authentication → Sign-in method → Phone → Phone numbers for testing) to avoid SMS and confirm whether the error is about app verification or the SMS path.
