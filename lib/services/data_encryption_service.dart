@@ -83,7 +83,7 @@ class DataEncryptionService {
   static const _userFields = ['displayName', 'phoneNumber', 'photoURL', 'upiId'];
   static const _groupFields = ['groupName'];
   static const _expenseFields = [
-    'description', 'amount', 'date', 'dateSortKey', 'payerId',
+    'description', 'amount', 'amountMinor', 'splitsMinor', 'date', 'dateSortKey', 'payerId',
     'participantIds', 'splits', 'splitType', 'category',
   ];
   static const _settledMetaFields = ['startDate', 'endDate'];
@@ -136,6 +136,7 @@ class DataEncryptionService {
 
   static dynamic _expenseTypeRestore(String k, String v) {
     if (k == 'amount') return num.tryParse(v) ?? 0.0;
+    if (k == 'amountMinor') return int.tryParse(v);
     if (k == 'dateSortKey') return int.tryParse(v);
     if (k == 'participantIds') {
       try {
@@ -152,6 +153,15 @@ class DataEncryptionService {
         return map.map((a, b) => MapEntry(a.toString(), (b is num) ? b.toDouble() : double.tryParse(b?.toString() ?? '') ?? 0.0));
       } catch (e) {
         if (kDebugMode) debugPrint('DataEncryptionService: splits restore failed: $e');
+      }
+    }
+    if (k == 'splitsMinor') {
+      try {
+        final map = jsonDecode(v) as Map?;
+        if (map == null) return null;
+        return map.map((a, b) => MapEntry(a.toString(), (b is num) ? b.toInt() : int.tryParse(b?.toString() ?? '0') ?? 0));
+      } catch (e) {
+        if (kDebugMode) debugPrint('DataEncryptionService: splitsMinor restore failed: $e');
       }
     }
     return v;

@@ -516,6 +516,96 @@ void main() {
     });
   });
 
+  group('Phase 2: Invalid/missing splits and edge inputs', () {
+    test('null splitAmountsById produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 100,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: null,
+      );
+      expect(SettlementEngine.expenseToDeltas(exp), isEmpty);
+    });
+
+    test('empty splitAmountsById produces empty deltas', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 100,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {},
+      );
+      expect(SettlementEngine.expenseToDeltas(exp), isEmpty);
+    });
+
+    test('splits not summing to total skips expense', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 100,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': 40, 'u2': 50},
+      );
+      expect(SettlementEngine.expenseToDeltas(exp), isEmpty);
+    });
+
+    test('splits within 0.01 of total are accepted', () {
+      final exp = expense(
+        id: 'e1',
+        amount: 100,
+        paidById: 'u1',
+        participantIds: ['u1', 'u2'],
+        splitAmountsById: {'u1': 50, 'u2': 49.99},
+      );
+      final deltas = SettlementEngine.expenseToDeltas(exp);
+      expect(deltas, isNotEmpty);
+      final sum = deltas.fold<int>(0, (s, d) => s + d.deltaMinor);
+      expect(sum.abs(), lessThanOrEqualTo(1), reason: 'Rounding to minor units may yield ±1');
+    });
+
+    test('invalid expense skipped: other expenses still contribute to net', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 100,
+          paidById: 'u1',
+          splitAmountsById: null,
+        ),
+        expense(
+          id: 'e2',
+          amount: 200,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 100, 'u2': 100},
+        ),
+      ];
+      final net = SettlementEngine.computeNetBalances(expenses, members);
+      expect(net['u1'], 10000);
+      expect(net['u2'], -10000);
+    });
+
+    test('empty expense list yields zero balance for all members', () {
+      final net = SettlementEngine.computeNetBalances([], members);
+      expect(net['u1'], 0);
+      expect(net['u2'], 0);
+    });
+
+    test('empty member list yields empty net map', () {
+      final expenses = [
+        expense(
+          id: 'e1',
+          amount: 100,
+          paidById: 'u1',
+          participantIds: ['u1', 'u2'],
+          splitAmountsById: {'u1': 50, 'u2': 50},
+        ),
+      ];
+      final net = SettlementEngine.computeNetBalances(expenses, []);
+      expect(net, isEmpty);
+    });
+  });
+
   group('Phase 2: Replay determinism and balance invariants', () {
     test('replay of historical expenses is deterministic', () {
       final historicalExpenses = [

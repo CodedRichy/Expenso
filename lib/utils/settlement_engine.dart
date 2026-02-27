@@ -112,9 +112,9 @@ class SettlementEngine {
 
   /// Converts an Expense to LedgerDeltas for the canonical computation path.
   ///
-  /// Uses the legacy adapter to handle double-based storage.
-  /// Assumes INR currency if not specified.
-  /// Skips the expense if splitAmountsById sum does not match amount (within 0.01 tolerance).
+  /// When the expense has [amountMinor] and [splitAmountsByIdMinor] (from Firestore
+  /// write-path bridge), uses the integer path. Otherwise uses the legacy double adapter.
+  /// Skips the expense if splitAmountsById is missing/empty or sum does not match amount (within 0.01).
   static List<LedgerDelta> expenseToDeltas(Expense expense, {String currencyCode = 'INR'}) {
     if (expense.amount <= 0 || expense.amount.isNaN || expense.amount.isInfinite) {
       return [];
@@ -126,27 +126,50 @@ class SettlementEngine {
     }
 
     final splits = expense.splitAmountsById;
-    if (splits != null && splits.isNotEmpty) {
-      final sum = splits.values.fold<double>(0, (a, b) => a + b);
-      if (sum.isNaN || sum.isInfinite) {
-        if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping');
-        return [];
-      }
-      final diff = (sum - expense.amount).abs();
-      if (diff > 0.01) {
-        if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping');
-        return [];
-      }
+    if (splits == null || splits.isEmpty) {
+      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has no splitAmountsById, skipping');
+      return [];
+    }
+    final sum = splits.values.fold<double>(0, (a, b) => a + b);
+    if (sum.isNaN || sum.isInfinite) {
+      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping');
+      return [];
+    }
+    final diff = (sum - expense.amount).abs();
+    if (diff > 0.01) {
+      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping');
+      return [];
+    }
+
+    final timestamp = _timestampFromExpenseDate(expense.date);
+
+    if (expense.amountMinor != null &&
+        expense.splitAmountsByIdMinor != null &&
+        expense.splitAmountsByIdMinor!.isNotEmpty) {
+      return expenseToLedgerDeltas(
+        expenseId: expense.id,
+        amountMinor: expense.amountMinor!,
+        payerId: payerId,
+        splitAmountsByIdMinor: expense.splitAmountsByIdMinor!,
+        currencyCode: currencyCode,
+        timestamp: timestamp,
+      );
     }
 
     return expenseToLedgerDeltasLegacy(
       expenseId: expense.id,
       amount: expense.amount,
       payerId: payerId,
-      splitAmountsById: expense.splitAmountsById ?? {},
+      splitAmountsById: expense.splitAmountsById!,
       currencyCode: currencyCode,
-      timestamp: DateTime.now(),
+      timestamp: timestamp,
     );
+  }
+
+  static DateTime _timestampFromExpenseDate(String date) {
+    final ms = int.tryParse(date);
+    if (ms != null) return DateTime.fromMillisecondsSinceEpoch(ms);
+    return DateTime.now();
   }
 
   /// Converts a list of Expenses to LedgerDeltas.

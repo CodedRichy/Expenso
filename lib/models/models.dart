@@ -46,6 +46,9 @@ class Expense {
   final Map<String, double>? splitAmountsById;
   final String category;
   final String splitType;
+  /// When set (from Firestore amountMinor/splitsMinor), settlement uses integer path.
+  final int? amountMinor;
+  final Map<String, int>? splitAmountsByIdMinor;
 
   Expense({
     required this.id,
@@ -57,6 +60,8 @@ class Expense {
     this.splitAmountsById,
     this.category = '',
     this.splitType = 'Even',
+    this.amountMinor,
+    this.splitAmountsByIdMinor,
   }) : participantIds = participantIds ?? [];
 
   String get displayDate {

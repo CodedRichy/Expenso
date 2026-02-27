@@ -152,7 +152,7 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 **Status:** Deferred (documented) — **Revisit triggered**  
 **Decision:** Option 2 — document and defer. G3 (split-sum validation) already protects balance correctness.  
 **Update:** More currencies are now supported (CurrencyRegistry includes scale 0: JPY, KRW; scale 3: KWD, BHD; scale 2: others). With mixed scales, double-based storage is more prone to rounding in splits. Revisiting the migration is recommended.  
-**Next step:** Consider phase 1 — write-path bridge: when saving an expense, also write `amountMinor` and `splitsMinor` to Firestore; read path prefers them when present. Then UI/model can migrate gradually.  
+**Next step:** Phase 1 (write-path bridge) implemented: when saving an expense we write `amountMinor` and `splitsMinor` to Firestore; read path prefers them when present and populates `Expense.amountMinor` / `splitAmountsByIdMinor`; settlement uses the integer path for such expenses. Encryption supports the new fields. Old expenses without minor fields continue to use the legacy double path.  
 **Ref:** `lib/utils/settlement_engine.dart` (lines 317, 334), `lib/utils/ledger_delta.dart` (line 160), `lib/models/currency.dart`.
 
 ---

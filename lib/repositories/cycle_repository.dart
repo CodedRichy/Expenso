@@ -686,7 +686,8 @@ class CycleRepository extends ChangeNotifier {
     final meta = _groupMeta[groupId];
     if (meta == null) return;
     final cycleId = meta.activeCycleId;
-    final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+    final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode)).toList();
     _expensesByCycleId[cycleId] = list;
     _refreshGroupAmounts(groupId);
     _requestNotify();
@@ -743,32 +744,68 @@ class CycleRepository extends ChangeNotifier {
     return _membersById[uid]?.phone ?? _userCache[uid]?['phoneNumber'] as String? ?? '';
   }
 
-  Expense _expenseFromFirestore(Map<String, dynamic> data, String id) {
-    final amount = (data['amount'] is num) ? (data['amount'] as num).toDouble() : 0.0;
+  Expense _expenseFromFirestore(Map<String, dynamic> data, String id, {String currencyCode = 'INR'}) {
     final payerId = data['payerId'] as String? ?? '';
-    final splits = data['splits'] as Map<String, dynamic>?;
     final participantIdsRaw = data['participantIds'] as List<dynamic>?;
-    final participantIds = participantIdsRaw
-            ?.map((e) => e?.toString())
-            .where((s) => s != null && s.isNotEmpty)
-            .cast<String>()
-            .toList() ??
-        splits?.keys.toList() ??
-        [];
+    final splits = data['splits'] as Map<String, dynamic>?;
+    final splitsMinorRaw = data['splitsMinor'] as Map<String, dynamic>?;
+    final amountMinorStored = data['amountMinor'];
+    final hasMinor = amountMinorStored != null &&
+        (amountMinorStored is int || (amountMinorStored is num && amountMinorStored == amountMinorStored.roundToDouble())) &&
+        splitsMinorRaw != null &&
+        splitsMinorRaw.isNotEmpty;
+
+    double amount;
     final splitAmountsById = <String, double>{};
-    for (final uid in participantIds) {
-      final amt = splits != null && splits.containsKey(uid)
-          ? ((splits[uid] is num) ? (splits[uid] as num).toDouble() : double.tryParse(splits[uid]?.toString() ?? '') ?? 0.0)
-          : 0.0;
-      splitAmountsById[uid] = amt;
-    }
-    if (splitAmountsById.isEmpty && splits != null) {
-      for (final entry in splits.entries) {
-        splitAmountsById[entry.key] = (entry.value is num)
-            ? (entry.value as num).toDouble()
-            : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
+    int? amountMinor;
+    Map<String, int>? splitAmountsByIdMinor;
+
+    if (hasMinor) {
+      final am = amountMinorStored is int ? amountMinorStored : (amountMinorStored as num).round();
+      amountMinor = am;
+      amount = MoneyConversion.minorToDisplay(am, currencyCode);
+      splitAmountsByIdMinor = {};
+      for (final entry in splitsMinorRaw.entries) {
+        final key = entry.key.toString();
+        if (key.startsWith('p_')) continue;
+        final v = entry.value;
+        final minor = v is int ? v : (v is num ? v.round() : int.tryParse(v?.toString() ?? '0') ?? 0);
+        splitAmountsByIdMinor[key] = minor;
+        splitAmountsById[key] = MoneyConversion.minorToDisplay(minor, currencyCode);
+      }
+    } else {
+      amount = (data['amount'] is num) ? (data['amount'] as num).toDouble() : 0.0;
+      final participantIds = participantIdsRaw
+              ?.map((e) => e?.toString())
+              .where((s) => s != null && s.isNotEmpty)
+              .cast<String>()
+              .toList() ??
+          splits?.keys.toList() ??
+          [];
+      for (final uid in participantIds) {
+        final amt = splits != null && splits.containsKey(uid)
+            ? ((splits[uid] is num) ? (splits[uid] as num).toDouble() : double.tryParse(splits[uid]?.toString() ?? '') ?? 0.0)
+            : 0.0;
+        splitAmountsById[uid] = amt;
+      }
+      if (splitAmountsById.isEmpty && splits != null) {
+        for (final entry in splits.entries) {
+          splitAmountsById[entry.key] = (entry.value is num)
+              ? (entry.value as num).toDouble()
+              : double.tryParse(entry.value?.toString() ?? '') ?? 0.0;
+        }
       }
     }
+
+    final participantIds = splitAmountsById.isNotEmpty
+        ? splitAmountsById.keys.toList()
+        : (participantIdsRaw
+                ?.map((e) => e?.toString())
+                .where((s) => s != null && s.isNotEmpty)
+                .cast<String>()
+                .toList() ??
+            splits?.keys.toList() ??
+            []);
     final splitType = (data['splitType'] as String?)?.trim().isNotEmpty == true
         ? (data['splitType'] as String).trim()
         : 'Even';
@@ -782,6 +819,8 @@ class CycleRepository extends ChangeNotifier {
       splitAmountsById: splitAmountsById.isEmpty ? null : splitAmountsById,
       category: data['category'] as String? ?? '',
       splitType: splitType,
+      amountMinor: amountMinor,
+      splitAmountsByIdMinor: splitAmountsByIdMinor,
     );
   }
 
@@ -1108,10 +1147,15 @@ class CycleRepository extends ChangeNotifier {
     }
     if (splits.isEmpty) splits[payerId] = expense.amount;
     final uids = splits.keys.toList();
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+    final amountMinor = MoneyConversion.parseToMinor(expense.amount, currencyCode).amountMinor;
+    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
     final data = {
       'id': expense.id,
       'groupId': groupId,
       'amount': expense.amount,
+      'amountMinor': amountMinor,
+      'splitsMinor': splitsMinor,
       'payerId': payerId,
       'splitType': expense.splitType.isNotEmpty ? expense.splitType : 'Even',
       'participantIds': uids,
@@ -1186,11 +1230,16 @@ class CycleRepository extends ChangeNotifier {
     }
     if (splits.isEmpty) splits[effectivePayerId] = amount;
 
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+    final amountMinor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
+    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
     final writtenParticipantIds = splits.keys.toList();
     final data = {
       'id': id,
       'groupId': groupId,
       'amount': amount,
+      'amountMinor': amountMinor,
+      'splitsMinor': splitsMinor,
       'payerId': effectivePayerId,
       'splitType': splitType,
       'participantIds': writtenParticipantIds,
@@ -1231,10 +1280,15 @@ class CycleRepository extends ChangeNotifier {
 
     final displayAmount = MoneyConversion.toDisplay(normalized.total);
 
+    final splitsMinor = normalized.participantSharesByMemberId.map(
+      (memberId, money) => MapEntry(memberId, money.amountMinor),
+    );
     final data = {
       'id': id,
       'groupId': groupId,
       'amount': displayAmount,
+      'amountMinor': normalized.total.amountMinor,
+      'splitsMinor': splitsMinor,
       'payerId': payerId,
       'splitType': splitType,
       'participantIds': participantIds,
@@ -1351,8 +1405,13 @@ class CycleRepository extends ChangeNotifier {
       participantIds = ids;
     }
 
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+    final amountMinor = MoneyConversion.parseToMinor(updatedExpense.amount, currencyCode).amountMinor;
+    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
     FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
       'amount': updatedExpense.amount,
+      'amountMinor': amountMinor,
+      'splitsMinor': splitsMinor,
       'description': updatedExpense.description,
       'date': updatedExpense.date,
       'dateSortKey': _dateStringToSortKey(updatedExpense.date),
@@ -1785,7 +1844,8 @@ class CycleRepository extends ChangeNotifier {
         final startDate = data['startDate'] as String? ?? '';
         final endDate = data['endDate'] as String? ?? '';
         final expenseDocs = await FirestoreService.instance.getSettledCycleExpenses(groupId, cycleId);
-        final expenses = expenseDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
+        final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+        final expenses = expenseDocs.map((d) => _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode)).toList();
         closed.add(Cycle(
           id: cycleId,
           groupId: groupId,
