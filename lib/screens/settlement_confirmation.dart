@@ -696,17 +696,15 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       label: 'Back to group',
       button: true,
       child: ElevatedButton(
-      onPressed: () => Navigator.pop(context),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: context.colorSurface,
-        foregroundColor: context.colorTextPrimary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        minimumSize: const Size(double.infinity, 0),
-        elevation: 0,
+        onPressed: () => Navigator.pop(context),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(double.infinity, 0),
+          elevation: 0,
+        ),
+        child: const Text('Back to Group', style: AppTypography.button),
       ),
-      child: Text('Back to Group', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.colorTextPrimary)),
-    ),
     );
   }
 }
