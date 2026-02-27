@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
@@ -257,8 +258,9 @@ class GroupMembers extends StatelessWidget {
                   arguments: currentGroup,
                 );
               },
-              backgroundColor: theme.colorScheme.primary,
-              child: Icon(Icons.person_add, color: theme.colorScheme.onPrimary),
+              backgroundColor: context.colorPrimary,
+              foregroundColor: context.colorSurface,
+              child: const Icon(Icons.person_add),
             ),
         );
       },
