@@ -26,6 +26,7 @@ Before making significant changes or answering questions about the project, cons
 | Parser outcome contract (confident / constrained / reject) | `docs/features/PARSER_OUTCOME_CONTRACT.md` |
 | Split types | `docs/features/EXPENSE_SPLIT_USE_CASES.md` |
 | Expense edit/delete | `docs/features/EXPENSE_REVISIONS.md` |
+| Receipt scanning / Firebase ML | `docs/features/RECEIPT_SCANNING_AND_ML.md` |
 | Encryption | `docs/features/DATA_ENCRYPTION.md`, `docs/features/DATA_ENCRYPTION_SETUP.md` |
 | Release contracts | `docs/releases/V1_RELEASE.md`, `docs/releases/V2_RELEASE.md` |
 | Architecture / history | `docs/architecture/ARCHITECTURE.md`, `docs/architecture/DEVELOPMENT.md` |

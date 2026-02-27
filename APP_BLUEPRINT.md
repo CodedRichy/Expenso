@@ -463,7 +463,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 | Feature | Verdict | When to add | Status |
 |--------|---------|-------------|--------|
-| **Receipt attachments** | ✅ Must-have polish | After settlement math, before Firebase. | Not implemented |
+| **Receipt attachments** | ✅ Must-have polish | After settlement math, before Firebase. | Not implemented. Plus feature (3 free then paywall). See docs/features/RECEIPT_SCANNING_AND_ML.md for stack: Firebase ML Document Scanner + Text Recognition → text → Groq when adding scan-to-prefill. |
 | **Dynamic UPI QR generator** | 🔥 Differentiator (India hit) | Early; no backend needed. Amount from your logic. | ✅ Implemented in V3 — `UpiPaymentCard` shows "Show QR" toggle; generates scannable QR with pre-filled amount via `qr_flutter`. |
 | **Category intelligence** | ✅ Add later, keep dumb | After receipts/QR. Simple keyword → category map; don’t overdo NLP. | Not implemented |
 | **Smart “nudge” templates** | ✅ Good — tone matters | Opt-in only. Don’t automate sending or nag. e.g. “₹2,480 pending. Settlement: Sunday.” | Not implemented |
@@ -471,7 +471,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 
 **Implementation notes (Polished Local):**
 
-- **Receipt attachments** — Ends arguments, reduces friction. Zero backend at first (local/file-based). High value.
+- **Receipt attachments** — Ends arguments, reduces friction. Zero backend at first (local/file-based). High value. **Scan-to-prefill** (camera → OCR → Groq): use Firebase ML Kit (Document Scanner + Text Recognition); see docs/features/RECEIPT_SCANNING_AND_ML.md. Receipt attachments are Expenso Plus (MONETIZATION_EXECUTION).
 - **Dynamic UPI QR** — Killer in India. Faster than links; amount from your engine. Makes “Pay now” feel real. Do before Firebase.
 - **Category intelligence** — Icons (🍔 🚗 🏠) from keywords. Cosmetic but improves scan speed and perceived quality. Keep logic simple.
 - **Nudge templates** — Funny/ruthless options only if optional. System reminder tone is safer. Aligned with “calm” philosophy.
@@ -513,7 +513,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 **Implementation notes (AI & Hit-Maker):**
 
 - **Natural language expense parsing** — **Implemented.** GroupDetail “Magic Bar” uses the AI expense parser (model-agnostic prompt; implementation uses Groq) to parse free text → JSON; confirmation dialog then `CycleRepository.addExpense`. See §4 GroqExpenseParserService, §6 Smart Bar, docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md.
-- **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last.
+- **Bill splitting via OCR** — One photo, AI items, drag onto people. Very high risk: accuracy, edge cases, support. Do last. When implemented: same receipt stack (Firebase ML OCR → text or structured extraction); consider Gemini for image→expense or dedicated receipt API; see docs/features/RECEIPT_SCANNING_AND_ML.md.
 - **Voice entry** — “Hey Expenso, I paid 400 for movies with the boys.” Low real value; skip or postpone indefinitely.
 - **Debt minimization** — Real intelligence. Builds on members, balances, cross-group identity. Can be your signature feature. Extremely high value.
 - **Spending insights** — “Hey, 20% more on travel this month. Time to settle up!” Medium value; tone matters.

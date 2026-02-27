@@ -194,6 +194,8 @@
 
 **What**: Attach photos of receipts/bills to expenses.
 
+**Scope (Plus)**: Storing/attaching the receipt image to an expense is gated (3 free, then Plus). **Product decision TBD:** Whether **scan-to-prefill** (camera → OCR → prefill Magic Bar) is part of the same Plus surface or free as an input method with only attachment gated. See docs/features/RECEIPT_SCANNING_AND_ML.md.
+
 **Why it converts**:
 - Ends disputes ("show me the bill")
 - Power users want unlimited attachments
