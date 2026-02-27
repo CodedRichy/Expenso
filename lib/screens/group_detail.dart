@@ -699,9 +699,13 @@ class _DecisionClarityCard extends StatelessWidget {
   void _showSettlementDetails(BuildContext context) {
     final members = repo.getMembersForGroup(groupId);
     final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
-    final debts = SettlementEngine.computeDebts(expenses, members);
-    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
+    final netMinor = repo.getNetBalancesAfterSettlementsMinor(groupId);
+    final routes = SettlementEngine.computePaymentRoutes(netMinor, currencyCode);
+    final debts = routes
+        .map((r) => Debt(fromId: r.fromMemberId, toId: r.toMemberId, amount: r.amount))
+        .toList();
     final myId = repo.currentUserId;
+    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final myRemaining = repo.getRemainingBalance(groupId, myId);
