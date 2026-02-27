@@ -224,6 +224,7 @@ class _InviteMembersState extends State<InviteMembers> {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
