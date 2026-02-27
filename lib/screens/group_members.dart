@@ -3,7 +3,6 @@ import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
-import '../utils/settlement_engine.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 
@@ -38,11 +37,6 @@ class GroupMembers extends StatelessWidget {
           );
         }
         final listMembers = repo.getMembersForGroup(group.id);
-        final activeCycle = repo.getActiveCycle(group.id);
-        final netBalances = SettlementEngine.computeNetBalances(
-          activeCycle.expenses,
-          listMembers,
-        );
         final currentUserId = repo.currentUserId;
         
         return Scaffold(
@@ -125,7 +119,7 @@ class GroupMembers extends StatelessWidget {
                               ...listMembers.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final member = entry.value;
-                                final memberBalance = netBalances[member.id] ?? 0.0;
+                                final remainingBalance = repo.getRemainingBalance(group.id, member.id);
                                 final isCreator = member.id == currentGroup.creatorId;
                                 final isPending = member.id.startsWith('p_');
                                 final canRemove = repo.isCreator(group.id, currentUserId) && 
@@ -134,7 +128,7 @@ class GroupMembers extends StatelessWidget {
                                 
                                 return InkWell(
                                   onTap: canRemove ? () {
-                                    if (memberBalance.abs() >= 0.01) {
+                                    if (remainingBalance.abs() >= 0.01) {
                                       showDialog(
                                         context: context,
                                         builder: (ctx) => AlertDialog(
