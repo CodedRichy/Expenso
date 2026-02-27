@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/profile_service.dart';
@@ -14,6 +15,10 @@ import '../widgets/member_avatar.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
 /// Display name is the same value used for Groq fuzzy matching in the Magic Bar.
+///
+/// Set [kPrivacyPolicyUrl] to your live privacy policy URL for store compliance.
+const String kPrivacyPolicyUrl = 'https://github.com/CodedRichy/Expenso/blob/main/PRIVACY.md';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -405,6 +410,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                         const SizedBox(height: 24),
+                _PrivacyPolicyTile(url: kPrivacyPolicyUrl),
+                        const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
                   child: Semantics(
@@ -454,6 +461,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _PrivacyPolicyTile extends StatelessWidget {
+  final String url;
+
+  const _PrivacyPolicyTile({required this.url});
+
+  Future<void> _openUrl(BuildContext context) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } on Exception catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Semantics(
+      label: 'Privacy policy',
+      button: true,
+      child: InkWell(
+        onTap: () => _openUrl(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.2 : 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [context.colorGradientStart, context.colorGradientEnd],
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.privacy_tip_outlined,
+                size: 20,
+                color: isDark
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.9)
+                    : context.colorSurface.withValues(alpha: 0.9),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Privacy policy',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? theme.colorScheme.onSurface
+                        : context.colorSurface.withValues(alpha: 0.95),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.open_in_new,
+                size: 18,
+                color: isDark
+                    ? theme.colorScheme.onSurfaceVariant
+                    : context.colorSurface.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -13,8 +13,8 @@
 |----------|-------|
 | **When to monetize** | After 5K MAU with 40%+ 30-day retention |
 | **Pricing** | ₹29/month · ₹249/year · ₹499 lifetime (first 500 only) |
-| **Plus features** | Smart Reminders, Settlement Export, Receipt Attachments, Spending Insights, Expense Templates, Custom Categories, Biometric Lock |
-| **Never monetize** | Core tracking, groups, invites, settlements, UPI, Magic Bar AI, God Mode math, QR |
+| **Plus features** | Smart Reminders, Settlement Export, Receipt Attachments, Spending Insights, Expense Templates, Custom Categories |
+| **Never monetize** | Core tracking, groups, invites, settlements, UPI, Magic Bar AI, God Mode math, QR, **Biometric lock** |
 | **Revenue expectation** | ₹50K–1.2L/year at 50K–100K MAU |
 | **Play Store cut** | 15-30% (factored into projections) |
 
@@ -54,7 +54,6 @@
 │  ✓ Spending insights & trends       │
 │  ✓ Expense templates                │
 │  ✓ Custom categories                │
-│  ✓ Biometric lock                   │
 │                                     │
 │      ₹249/year ← BEST VALUE         │
 │      (save 28%)                     │
@@ -88,6 +87,7 @@
 | Expense editing/deletion | Data hygiene |
 | Basic categories | Expected |
 | Offline entry | Expected baseline |
+| Biometric lock | Privacy/security baseline — never paywall |
 
 ### Competitive Context
 
@@ -284,18 +284,6 @@
 
 ---
 
-### Feature 7: Biometric Lock
-
-**What**: Fingerprint/Face unlock for app access.
-
-**Why it converts**: Security = premium/trust feel. Privacy-conscious users.
-
-**Dev effort**: Low
-
-**Paywall trigger**: Always Plus.
-
----
-
 ## 5. Paywall Rules
 
 ### Principles
@@ -316,7 +304,6 @@
 | View insights | Yes | Always |
 | Save template | Yes | Always |
 | Create custom category | Yes | After 5 free |
-| Enable biometric | Yes | Always |
 | Open app | No | Never |
 | Create group | No | Never |
 | Invite member | No | Never |
@@ -531,6 +518,7 @@
 | Offline entry | Expected baseline |
 | Dark mode | Commoditized |
 | Expense editing/deletion | Data hygiene |
+| Biometric lock | Privacy/security baseline |
 
 ### Expenso Plus (₹29/mo · ₹249/yr · ₹499 lifetime)
 
@@ -542,7 +530,6 @@
 | Spending Insights | Always Plus | None |
 | Expense Templates | On "Save as template" | None |
 | Custom Categories | After 5 custom | 5 custom categories |
-| Biometric Lock | Always Plus | None |
 
 ### The Rule
 
