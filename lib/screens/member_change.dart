@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/route_args.dart';
 
 class MemberChange extends StatelessWidget {
   final String groupName;
@@ -34,8 +35,13 @@ class MemberChange extends StatelessWidget {
       displayGroupId = '';
       displayGroupName = groupName;
       displayMemberId = '';
-      displayMemberPhone = args is String ? args : memberPhone;
+      displayMemberPhone = args is String ? args as String : memberPhone;
       displayAction = action;
+    }
+
+    if (displayGroupId.isEmpty || displayMemberId.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
     }
     
     final repo = CycleRepository.instance;

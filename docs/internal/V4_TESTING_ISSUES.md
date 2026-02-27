@@ -138,10 +138,10 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 ### G3. Split amounts sum not validated on read
 
 **Area:** Balances / data integrity  
-**Summary:** STABILIZATION §4.3: "Split amounts must sum to expense amount — ⚠️ Assumed but not enforced. The code computes splits at write time but does not validate sum equality on read. Historical data may have rounding errors." If stored splits ever diverge from the expense total, balance math can be wrong and there is no read-side check or correction.  
+**Summary:** STABILIZATION §4.3: "Split amounts must sum to expense amount — ⚠️ Assumed but not enforced." If stored splits ever diverge from the expense total, balance math can be wrong.  
 **Status:** Addressed  
-**Notes:** In `SettlementEngine.expenseToDeltas()`, when an expense has `splitAmountsById`, we now check that the sum of splits is within 0.01 of the expense amount. If not (or if sum is NaN/Infinite), we skip that expense from balance computation and log in debug. Invalid or legacy data no longer corrupts balances.  
-**Ref:** `lib/utils/settlement_engine.dart`, `docs/STABILIZATION.md` §4.3 invariant #3.
+**Notes:** In `SettlementEngine.expenseToDeltas()`: (1) If `splitAmountsById` is null or empty, the expense is skipped (no deltas). (2) If present, the sum must be within 0.01 of the expense amount; otherwise the expense is skipped. Debug log emitted in both cases. Invalid or legacy data no longer corrupts balances.  
+**Ref:** `lib/utils/settlement_engine.dart`, `docs/STABILIZATION.md` §4.3 invariant #3, `docs/features/MONEY_BALANCE_LOGIC.md`.
 
 ---
 
@@ -196,6 +196,18 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 **Summary:** Group list, expense list, and cycle history load in full. Acceptable for small datasets; will degrade with hundreds of expenses per cycle or many groups. STABILIZATION §5 lists this as a known limitation.  
 **Status:** Acknowledged — **Discuss** if/when to prioritize.  
 **Ref:** `docs/STABILIZATION.md` §5 limitation #6.
+
+---
+
+### G9. Settlement test coverage (remaining edge cases)
+
+**Area:** Balances / settlement engine tests  
+**Summary:** Per `docs/features/MONEY_BALANCE_LOGIC.md`, the following are not yet covered by tests (lower priority):  
+- **Payer not in member list:** Credit is dropped; net balances no longer sum to zero for that expense. No test.  
+- **Participant not in member list:** Debit is dropped; same risk. No test.  
+- **Large numbers / overflow:** No test for very large amounts or integer overflow in minor units.  
+**Status:** Acknowledged — add tests when touching settlement logic or if production issues appear.  
+**Ref:** `test/settlement_engine_test.dart`, `docs/features/MONEY_BALANCE_LOGIC.md` §5.
 
 ---
 

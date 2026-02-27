@@ -628,7 +628,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     const SizedBox(height: 24),
                     _buildWhoIsInvolved(context, group),
                     const SizedBox(height: 12),
-                    ElevatedButton(
+                    Semantics(
+                      label: 'Submit expense',
+                      button: true,
+                      child: ElevatedButton(
                       onPressed: _canSubmit ? handleSubmit : null,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -639,6 +642,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         minimumSize: const Size(double.infinity, 0),
                       ),
                       child: Text('Submit', style: AppTypography.button),
+                    ),
                     ),
                     const SizedBox(height: 16),
                     Text(

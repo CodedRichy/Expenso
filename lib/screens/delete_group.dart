@@ -3,6 +3,8 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../utils/money_format.dart';
 
+/// Not used in navigation. Group delete is done via the confirmation dialog
+/// in [GroupsList]. This screen is kept for reference or future full-page flow.
 class DeleteGroup extends StatelessWidget {
   final String groupName;
   final bool hasPendingBalance;

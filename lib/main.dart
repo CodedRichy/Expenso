@@ -22,7 +22,6 @@ import 'screens/undo_expense.dart';
 import 'screens/edit_expense.dart';
 import 'screens/group_members.dart';
 import 'screens/member_change.dart';
-import 'screens/delete_group.dart';
 import 'screens/settlement_confirmation.dart';
 import 'screens/payment_result.dart';
 import 'screens/cycle_settled.dart';
@@ -254,7 +253,6 @@ class MyApp extends StatelessWidget {
         '/edit-expense': (context) => const EditExpense(),
         '/group-members': (context) => const GroupMembers(),
         '/member-change': (context) => const MemberChange(),
-        '/delete-group': (context) => const DeleteGroup(),
         '/settlement-confirmation': (context) => const SettlementConfirmation(),
         '/payment-result': (context) => const PaymentResult(),
         '/cycle-settled': (context) => const CycleSettled(),
@@ -266,8 +264,7 @@ class MyApp extends StatelessWidget {
           return ErrorStates(type: args?['type'] as String? ?? 'generic');
         },
         '/profile': (context) => const ProfileScreen(),
-        },
-        );
+        };
       },
     );
   }

@@ -14,6 +14,7 @@ import '../services/connectivity_service.dart';
 import '../services/groq_expense_parser_service.dart';
 import '../utils/expense_normalization.dart';
 import '../utils/money_format.dart';
+import '../utils/route_args.dart';
 import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
@@ -238,7 +239,7 @@ class _GroupDetailState extends State<GroupDetail> {
   @override
   Widget build(BuildContext context) {
     final repo = CycleRepository.instance;
-    final routeGroup = ModalRoute.of(context)?.settings.arguments as Group?;
+    final routeGroup = RouteArgs.getGroup(context);
     final resolvedGroup = routeGroup ?? widget.group;
     if (resolvedGroup == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
@@ -833,7 +834,16 @@ class _DecisionClarityCard extends StatelessWidget {
 
     final isMuted = isPassive;
 
-    return GestureDetector(
+    final semanticsLabel = isEmpty
+        ? 'Balance summary. Zero-waste cycle. Add expenses to see totals.'
+        : 'Balance summary. Cycle total ${_formatAmount(cycleTotal, currencyCode)}. '
+            'You paid ${_formatAmount(youPaid, currencyCode)}. '
+            '${isBalanceClear ? "All clear." : isCredit ? "You are owed ${_formatAmount(myRemaining.abs(), currencyCode)}." : "You owe ${_formatAmount(myRemaining.abs(), currencyCode)}."}';
+
+    return Semantics(
+      label: semanticsLabel,
+      button: !isEmpty,
+      child: GestureDetector(
       onTap: isEmpty ? null : () => _showSettlementDetails(context),
       child: Opacity(
         opacity: isMuted ? 0.6 : 1.0,
@@ -877,7 +887,8 @@ class _DecisionClarityCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildContent({

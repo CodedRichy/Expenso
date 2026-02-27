@@ -271,9 +271,9 @@ List<Debt>
 
 ### Assumed but Not Enforced
 
-| # | Invariant | Risk if Violated |
-|---|-----------|------------------|
-| **A1** | `splitAmountsById` sums to `expense.amount` | Balances won't sum to zero for that expense |
+| # | Invariant | Status / Risk |
+|---|-----------|----------------|
+| **A1** | `splitAmountsById` sums to `expense.amount` | ✅ **Validated at read:** expense skipped if splits missing, empty, or sum not within 0.01 of amount. See G3 in docs/internal/V4_TESTING_ISSUES.md. |
 | **A2** | `paidById` is a valid member | Payment credit is lost (skipped) |
 | **A3** | All `participantIds` are valid members | Some debits are lost (filtered out) |
 
@@ -301,16 +301,18 @@ static const double _tolerance = 0.01;
 | Multiple expenses net correctly | ✅ |
 | Single debtor owes single creditor | ✅ |
 | Balanced expenses yield no debts | ✅ |
+| Null/empty splitAmountsById → expense skipped | ✅ |
+| Splits not summing to total → expense skipped | ✅ |
+| Splits within 0.01 tolerance accepted | ✅ |
+| Invalid expense skipped, other expenses still count | ✅ |
+| Empty expense list → zero balances | ✅ |
+| Empty member list → empty net | ✅ |
 
-**Not Covered:**
+**Not Covered (lower priority):**
 
-- Split amounts that don't sum to total
-- Payer not in member list
-- Participant not in member list
-- NaN/Infinite amounts
-- Empty expense list
-- Empty member list
-- Three or more members with complex debt graph
+- Payer not in member list (credit dropped; nets sum ≠ 0)
+- Participant not in member list (debit dropped)
+- Three or more members with complex debt graph (some coverage in computePaymentRoutes)
 - Large numbers (overflow potential)
 
 ---
@@ -348,7 +350,7 @@ No code changes are proposed. This is a specification for future test expansion.
 
 The balance computation in Expenso is implemented as pure functions in `SettlementEngine`. The core logic is sound and tested for basic cases. Remaining considerations:
 
-1. **Assumed invariant A1** — split amounts summing to total is not validated at read time (enforced at write via `NormalizedExpense`)
-2. **Test gaps** — some edge cases and multi-party scenarios could benefit from additional coverage
+1. **Assumed invariant A1** — Split amounts summing to total are now validated at read: expenses with missing/empty splits or sum not within 0.01 of amount are skipped (see G3 in docs/internal/V4_TESTING_ISSUES.md).
+2. **Test gaps** — Remaining lower-priority gaps: payer/participant not in member list, large cycles, overflow. See §5 Not Covered.
 
 This specification isolates the money-critical path for inspection.

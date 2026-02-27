@@ -316,10 +316,13 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                           color: context.colorSuccess,
                                         ),
                                         const SizedBox(height: AppSpacing.spaceXl),
-                                        Text(
-                                          'You\'re all settled!',
-                                          style: context.screenTitle,
-                                          textAlign: TextAlign.center,
+                                        Semantics(
+                                          label: "You're all settled. You have no payments to make this cycle.",
+                                          child: Text(
+                                            'You\'re all settled!',
+                                            style: context.screenTitle,
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ),
                                         const SizedBox(height: AppSpacing.spaceMd),
                                         Text(

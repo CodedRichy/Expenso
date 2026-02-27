@@ -198,7 +198,7 @@ Parsed intents move through the following states. This is the backbone for produ
 |---|-----------|--------|
 | 1 | **Expense amounts must be positive and finite** | ✅ Enforced by code (`validateExpenseAmount`, `SettlementEngine` skips invalid) |
 | 2 | **Every expense must have a non-empty description** | ✅ Enforced by code (`validateExpenseDescription`) |
-| 3 | **Split amounts must sum to expense amount** | ⚠️ Assumed but not enforced. The code computes splits at write time but does not validate sum equality on read. Historical data may have rounding errors. |
+| 3 | **Split amounts must sum to expense amount** | ✅ Enforced at read. SettlementEngine skips expenses with missing/empty splits or sum not within 0.01 of amount. See G3 in docs/internal/V4_TESTING_ISSUES.md. |
 | 4 | **Only the group creator can settle/archive a cycle** | ✅ Enforced by code (`isCreator` check in `settleAndRestartCycle`, `archiveAndRestart`) |
 | 5 | **Only the group creator can delete a group** | ✅ Enforced by code (`canDeleteGroup` check) |
 | 6 | **A user can only be in `members[]` OR `pendingMembers[]`, not both** | ⚠️ Assumed. Transactions handle promotion, but no explicit check on read. |

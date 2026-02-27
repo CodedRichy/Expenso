@@ -89,7 +89,7 @@ To enable real phone auth: run `dart run flutterfire configure`, enable **Phone*
 | `/undo-expense` | UndoExpense | Shown after add (expense input or Magic Bar). Args: `groupId`, `expenseId`, `description`, `amount`. 5s timer then auto-dismiss; Undo deletes from Firestore and pops. |
 | `/group-members` | GroupMembers | List / edit members; **👑** next to creator name. **Removal Guard:** Creator can only remove members with zero balance; otherwise blocked with alert ("Settle their outstanding debt before removing them"). Pending members show gray name with **Invited** badge; creator sees FAB to add more members. |
 | `/member-change` | MemberChange | Confirm member removal. Args: `groupId`, `groupName`, `memberId`, `memberPhone`, `action`. On confirm, calls `repo.removeMemberFromGroup`. |
-| `/delete-group` | DeleteGroup | Confirm delete. |
+| ~~`/delete-group`~~ | — | **Not in routes.** Group delete is confirmed via dialog in GroupsList; no full-page DeleteGroup screen in navigation. DeleteGroup widget exists for reference only. |
 
 ### Settlement and history
 

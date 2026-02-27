@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/money_format.dart';
+import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class CycleHistory extends StatefulWidget {
@@ -21,7 +22,7 @@ class _CycleHistoryState extends State<CycleHistory> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final group = RouteArgs.getGroup(context);
     if (group != null && _groupId != group.id) {
       _groupId = group.id;
       _loadHistory();
@@ -47,7 +48,7 @@ class _CycleHistoryState extends State<CycleHistory> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final group = RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
       return const Scaffold(body: SizedBox.shrink());

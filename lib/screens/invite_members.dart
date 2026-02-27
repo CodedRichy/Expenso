@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../country_codes.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class InviteMembers extends StatefulWidget {
@@ -129,7 +130,7 @@ class _InviteMembersState extends State<InviteMembers> {
     if (normalized.length != 10) return;
     
     final formattedPhone = '$_selectedCountryCode$normalized';
-    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final group = RouteArgs.getGroup(context);
     if (group != null) {
       final member = Member(
         id: 'm_${DateTime.now().millisecondsSinceEpoch}',
@@ -145,7 +146,7 @@ class _InviteMembersState extends State<InviteMembers> {
   }
 
   Future<void> handleCopyLink() async {
-    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final group = RouteArgs.getGroup(context);
     if (group == null) return;
     final link = 'expenso://join/${group.id}';
     await Clipboard.setData(ClipboardData(text: link));
@@ -159,7 +160,7 @@ class _InviteMembersState extends State<InviteMembers> {
   void handleAddMember() {
     if (phone.length != 10) return;
     final formattedPhone = '$_selectedCountryCode$phone';
-    final group = ModalRoute.of(context)?.settings.arguments as Group?;
+    final group = RouteArgs.getGroup(context);
     if (group != null) {
       final member = Member(
         id: 'm_${DateTime.now().millisecondsSinceEpoch}',
@@ -176,9 +177,12 @@ class _InviteMembersState extends State<InviteMembers> {
 
   @override
   Widget build(BuildContext context) {
-    final routeArgs = ModalRoute.of(context)?.settings.arguments;
-    final Group? groupArg = routeArgs is Group ? routeArgs : null;
-    final String displayGroupName = groupArg?.name ?? (routeArgs is String ? routeArgs : widget.groupName);
+    final groupArg = RouteArgs.getGroup(context);
+    if (groupArg == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final displayGroupName = groupArg.name;
     final repo = CycleRepository.instance;
 
     final theme = Theme.of(context);
@@ -187,15 +191,13 @@ class _InviteMembersState extends State<InviteMembers> {
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
-        final listMembers = groupArg != null ? repo.getMembersForGroup(groupArg.id) : <Member>[];
+        final listMembers = repo.getMembersForGroup(groupArg.id);
         final existingPhones = <String>{};
         for (final m in listMembers) {
           existingPhones.add(_normalizePhone(m.phone));
         }
-        if (groupArg != null) {
-          for (final id in groupArg.memberIds) {
-            if (id.startsWith('p_')) existingPhones.add(_normalizePhone(id.substring(2)));
-          }
+        for (final id in groupArg.memberIds) {
+          if (id.startsWith('p_')) existingPhones.add(_normalizePhone(id.substring(2)));
         }
         final filteredContacts = _getFilteredContacts(existingPhones);
         return GradientScaffold(
@@ -659,17 +661,13 @@ class _InviteMembersState extends State<InviteMembers> {
               ),
               child: ElevatedButton(
                 onPressed: () {
-                  if (groupArg != null) {
-                    final updatedGroup = repo.getGroup(groupArg.id);
-                    if (updatedGroup != null) {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        '/group-detail',
-                        arguments: updatedGroup,
-                      );
-                    } else {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
+                  final updatedGroup = repo.getGroup(groupArg.id);
+                  if (updatedGroup != null) {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/group-detail',
+                      arguments: updatedGroup,
+                    );
                   } else {
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   }
