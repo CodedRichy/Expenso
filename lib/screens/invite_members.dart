@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
 import '../country_codes.dart';
+import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
@@ -485,22 +486,17 @@ class _InviteMembersState extends State<InviteMembers> {
                         label: 'Add member by phone',
                         button: true,
                         child: ElevatedButton(
-                        onPressed: phone.length == 10 ? handleAddMember : null,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          onPressed: phone.length == 10 ? handleAddMember : null,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                            minimumSize: const Size(0, 44),
                           ),
-                          elevation: 0,
+                          child: const Text('Add', style: AppTypography.button),
                         ),
-                        child: Text(
-                          'Add',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                       ),
                     ],
                   ),
