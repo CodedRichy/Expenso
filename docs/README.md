@@ -92,6 +92,7 @@
 |----------|---------|
 | [LOGIC_AUDIT.md](internal/LOGIC_AUDIT.md) | Known issues, fixes, limitations |
 | [UI_UX_AUDIT.md](internal/UI_UX_AUDIT.md) | Animations, aliveness, intuitiveness audit (all screens) |
+| [MOTION_AND_UI_POLISH.md](internal/MOTION_AND_UI_POLISH.md) | Motion/haptics implementation reference: what was added, where, how to tune |
 | [MONETIZATION_EXECUTION.md](internal/MONETIZATION_EXECUTION.md) | Pricing, paywalls, rollout plan |
 
 ---
