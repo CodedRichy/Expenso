@@ -312,9 +312,7 @@ class SettlementEngine {
   // ============================================================
 
   /// Legacy: Returns net balances as doubles (for UI compatibility).
-  /// 
-  /// Converts integer balances to display amounts.
-  /// TODO: Remove once UI is updated to use integer amounts.
+  /// Deferred migration to integer amounts: see docs/internal/V4_TESTING_ISSUES.md G4.
   static Map<String, double> computeNetBalancesAsDouble(
     List<Expense> expenses,
     List<Member> members,
@@ -330,8 +328,7 @@ class SettlementEngine {
   }
 
   /// Legacy: Returns debts with double amounts (for UI compatibility).
-  /// 
-  /// TODO: Remove once UI is updated to use integer amounts.
+  /// Deferred migration to integer amounts: see docs/internal/V4_TESTING_ISSUES.md G4.
   static List<({String fromId, String toId, double amount})> computeDebtsAsDouble(
     List<Expense> expenses,
     List<Member> members,

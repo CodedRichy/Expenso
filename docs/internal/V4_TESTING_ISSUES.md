@@ -149,8 +149,10 @@ Issues that are not V4 tester-reported bugs but are gaps worth tracking for tria
 
 **Area:** Data model / consistency  
 **Summary:** TODOs in code: "Remove once UI is updated to use integer amounts" (settlement_engine.dart, ledger_delta.dart). SettlementEngine and ledger work with minor-unit integers in places, but UI and some paths still use double amounts. Migration is incomplete; double-based paths remain.  
-**Status:** Open — **Discuss**  
-**Ref:** `lib/utils/settlement_engine.dart` (lines 301, 318), `lib/utils/ledger_delta.dart` (line 160).
+**Status:** Deferred (documented)  
+**Decision:** Option 2 — document and defer. G3 (split-sum validation) already protects balance correctness. Full migration is valuable for maintainability and future currencies/splits but not urgent.  
+**Revisit when:** Adding currencies with different decimal scales, more complex split logic, or a dedicated cleanup sprint. See "Discuss with me" table below for migration options.  
+**Ref:** `lib/utils/settlement_engine.dart` (lines 317, 334), `lib/utils/ledger_delta.dart` (line 160).
 
 ---
 
@@ -202,9 +204,10 @@ These need product or design decisions, or are larger efforts:
 
 | Gap | Why not fixed in code |
 |-----|------------------------|
-| **G4** Integer-amounts migration | Project-level change: many UI and repo paths still use `double`. Full migration would touch storage, all amount displays, and parser outputs. Prefer a planned migration and tests before switching. |
 | **G7** Date as string / timezone | Schema and data migration: would require storing ISO date or timestamp, then deriving "Today"/"Yesterday" in UI from device timezone. Existing data would need backfill or dual read. |
 | **G8** No pagination | Feature work: cursor-based or page-based loading for groups, expenses, and history. Deciding when to prioritize (e.g. when groups or cycle size grows). |
+
+**G4** (integer amounts) is deferred by decision; see G4 section above.
 
 ---
 

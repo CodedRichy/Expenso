@@ -153,11 +153,7 @@ List<LedgerDelta> expenseToLedgerDeltas({
 }
 
 /// Legacy adapter: Converts double-based expense data to LedgerDeltas.
-/// 
-/// This is used during migration from float-based storage to integer-based.
-/// Converts doubles to minor units using the currency's scale.
-/// 
-/// TODO: Remove once all stored expenses use integer amounts.
+/// Deferred migration to integer amounts: see docs/internal/V4_TESTING_ISSUES.md G4.
 List<LedgerDelta> expenseToLedgerDeltasLegacy({
   required String expenseId,
   required double amount,
