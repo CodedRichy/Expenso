@@ -156,6 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
@@ -168,13 +169,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       Expanded(
-                        child: Text(
-                          'Profile',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Profile',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ),
@@ -267,6 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 6),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: TextField(
@@ -286,13 +290,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: _nameDirty && _nameController.text.trim().isNotEmpty ? _saveName : null,
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                minimumSize: const Size(0, 44),
+                                alignment: Alignment.center,
+                              ),
                               child: Text(
                                 'Save',
                                 style: TextStyle(
@@ -344,6 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.payment,
@@ -378,6 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 6),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: TextField(
@@ -405,13 +416,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: _upiDirty ? _saveUpi : null,
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                minimumSize: const Size(0, 44),
+                                alignment: Alignment.center,
+                              ),
                               child: Text(
                                 'Save',
                                 style: TextStyle(
@@ -548,6 +564,7 @@ class _LocaleTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.numbers,
@@ -558,15 +575,19 @@ class _LocaleTile extends StatelessWidget {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Number format',
                           style: context.sectionLabel,
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          label,
-                          style: context.bodyPrimary,
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            label,
+                            style: context.bodyPrimary,
+                          ),
                         ),
                       ],
                     ),
@@ -638,6 +659,7 @@ class _PrivacyPolicyTile extends StatelessWidget {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
                 Icons.privacy_tip_outlined,
