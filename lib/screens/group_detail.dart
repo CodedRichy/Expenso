@@ -774,13 +774,6 @@ class _DecisionClarityCard extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: _minHeight),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: context.colorPrimary.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
