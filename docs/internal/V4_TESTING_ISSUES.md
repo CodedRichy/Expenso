@@ -11,8 +11,8 @@ Issues and feedback gathered during V4 testing. Use this for triage and fixes.
 **Reported by:** Another tester (not primary)  
 **Area:** Performance / UX  
 **Summary:** App feels "a teensy laggy" during use.  
-**Status:** Open  
-**Notes:** Needs profiling to identify hot paths (list scrolling, balance calc, Firestore listeners, etc.).
+**Status:** Addressed  
+**Notes:** Two optimizations applied: (1) **Scoped group refresh**: `_refreshGroupAmounts([String? groupId])` — when an expense stream updates for one group, only that group’s amount/status is recomputed instead of iterating all groups. (2) **Coalesced UI updates**: Firestore stream callbacks (`_onExpensesSnapshot`, `_onSystemMessagesSnapshot`, `_onPaymentAttemptsSnapshot`, `_onGroupsSnapshot`, `_loadUsersForMembers`) call `_requestNotify()` instead of `notifyListeners()`. Pending notifications are flushed once per event-loop turn via a microtask, so multiple rapid stream events (e.g. expense + system message + payment attempt) cause one rebuild instead of several. User-initiated actions still call `notifyListeners()` directly for immediate feedback. If lag persists, next steps: profile with Flutter DevTools (CPU frame times, rebuild counts), consider `RepaintBoundary` on heavy cards, or per-group `ValueNotifier` to reduce rebuild scope.
 
 ---
 

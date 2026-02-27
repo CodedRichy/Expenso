@@ -328,6 +328,23 @@ class CycleRepository extends ChangeNotifier {
   final Map<String, StreamSubscription<Set<String>>> _deletedIdsSubs = {};
   final Map<String, StreamSubscription<List<DocView>>> _paymentAttemptSubs = {};
   final Map<String, String> _paymentAttemptCycleId = {};
+  bool _notifyDirty = false;
+  bool _notifyScheduled = false;
+
+  void _requestNotify() {
+    _notifyDirty = true;
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    Future.microtask(_flushNotify);
+  }
+
+  void _flushNotify() {
+    _notifyScheduled = false;
+    if (_notifyDirty) {
+      _notifyDirty = false;
+      notifyListeners();
+    }
+  }
 
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
@@ -574,7 +591,7 @@ class CycleRepository extends ChangeNotifier {
     }
 
     _loadUsersForMembers(docs);
-    notifyListeners();
+    _requestNotify();
   }
 
   Future<void> _loadUsersForMembers(List<DocView> docs) async {
@@ -604,7 +621,7 @@ class CycleRepository extends ChangeNotifier {
       }
     }
     _rebuildGlobalIdentities();
-    notifyListeners();
+    _requestNotify();
   }
 
   void _rebuildGlobalIdentities() {
@@ -652,8 +669,8 @@ class CycleRepository extends ChangeNotifier {
     final cycleId = meta.activeCycleId;
     final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id)).toList();
     _expensesByCycleId[cycleId] = list;
-    _refreshGroupAmounts();
-    notifyListeners();
+    _refreshGroupAmounts(groupId);
+    _requestNotify();
   }
 
   void _onSystemMessagesSnapshot(String groupId, List<Map<String, dynamic>> msgs) {
@@ -681,7 +698,7 @@ class CycleRepository extends ChangeNotifier {
         timestamp: ts,
       );
     }).toList();
-    notifyListeners();
+    _requestNotify();
   }
 
   void _onRevisionsSnapshot(String groupId, List<Map<String, dynamic>> revs) {
@@ -699,7 +716,7 @@ class CycleRepository extends ChangeNotifier {
     _paymentAttemptsByGroup[groupId] = attemptDocs
         .map((d) => PaymentAttempt.fromFirestore(d.id, d.data()))
         .toList();
-    notifyListeners();
+    _requestNotify();
   }
 
   String _phoneForUid(String uid) {
@@ -749,9 +766,13 @@ class CycleRepository extends ChangeNotifier {
     );
   }
 
-  void _refreshGroupAmounts() {
+  void _refreshGroupAmounts([String? groupId]) {
+    final idsToRefresh = groupId != null
+        ? _groups.where((g) => g.id == groupId).map((g) => g.id).toList()
+        : _groups.map((g) => g.id).toList();
     for (var i = 0; i < _groups.length; i++) {
       final g = _groups[i];
+      if (!idsToRefresh.contains(g.id)) continue;
       final meta = _groupMeta[g.id];
       if (meta == null) continue;
       final expenses = _expensesByCycleId[meta.activeCycleId] ?? [];
