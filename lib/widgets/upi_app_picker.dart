@@ -205,6 +205,18 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
           itemCount: _apps!.length,
           itemBuilder: (context, index) => _buildAppTile(_apps![index]),
         ),
+        if (widget.onManualConfirm != null) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 0, AppSpacing.screenPaddingH, AppSpacing.spaceLg),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: widget.onManualConfirm,
+                child: const Text('I\'ve paid'),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -359,11 +371,13 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         decoration: BoxDecoration(
           color: theme.bottomSheetTheme.backgroundColor ?? theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: EdgeInsets.only(bottom: bottomPadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -381,13 +395,26 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
             const SizedBox(height: AppSpacing.space3xl),
             _buildPayUsingDivider(),
             const SizedBox(height: AppSpacing.spaceLg),
-            UpiAppPicker(
-              paymentData: widget.paymentData,
-              onPaymentComplete: _onAppSelected,
-              onCancel: _onCancel,
-              onManualConfirm: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+            Flexible(
+              child: SingleChildScrollView(
+                child: UpiAppPicker(
+                  paymentData: widget.paymentData,
+                  onPaymentComplete: _onAppSelected,
+                  onCancel: _onCancel,
+                  onManualConfirm: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+                ),
+              ),
             ),
-            const SizedBox(height: AppSpacing.spaceLg),
+            Padding(
+              padding: EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, AppSpacing.spaceMd, AppSpacing.screenPaddingH, 16 + bottomPadding),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(const UpiAppPickerResult(manuallyConfirmed: true)),
+                  child: const Text('I\'ve paid'),
+                ),
+              ),
+            ),
           ],
         ),
       ),
