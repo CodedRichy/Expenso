@@ -186,7 +186,7 @@ These are tracked in V4_TESTING_ISSUES, STABILIZATION, or APP_BLUEPRINT. No code
 
 Based on common success criteria: **Core App Quality** (Android/Play), **App Store readiness**, and **UX/Accessibility** (WCAG-minded, design consistency).
 
-### App score: **78 / 100**
+### App score: **82 / 100**
 
 | Criterion | Weight | Score | Notes |
 |-----------|--------|-------|--------|
@@ -194,10 +194,10 @@ Based on common success criteria: **Core App Quality** (Android/Play), **App Sto
 | **Security & data** | 20 | 18 | Auth, Firestore rules (creator-only delete deployed), optional encryption; key failure paths assumed. |
 | **Performance & stability** | 15 | 11 | Bounded loading, coalesced updates; no offline support, no pagination. |
 | **Testing** | 15 | 12 | Unit tests for settlement engine, validation, normalization, encryption, revisions; no E2E or store-level tests. |
-| **Store readiness** | 15 | 9 | App stable and complete. **Gap:** No in-app privacy policy link or screen; store listing/metadata separate. |
+| **Store readiness** | 15 | 13 | App stable and complete. **Addressed:** In-app Privacy policy link (Profile) and PRIVACY.md; set `kPrivacyPolicyUrl` to your live URL if different. |
 | **Robustness** | 10 | 7 | Route args safe, error states with retry; offline handling is “banner + message” only. |
 
-**Main drags:** No privacy policy surface in-app (required by stores for sensitive data), no offline support, no pagination, partial test coverage.
+**Main drags:** No offline support, no pagination, partial test coverage.
 
 ---
 
