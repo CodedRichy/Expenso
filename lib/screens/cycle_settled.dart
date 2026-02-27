@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 
 class CycleSettled extends StatelessWidget {
@@ -73,10 +74,7 @@ class CycleSettled extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                            (Match m) => '${m[1]},',
-                          )} settled',
+                          '${formatMoneyFromMajor(group.amount, group.currencyCode)} settled',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,

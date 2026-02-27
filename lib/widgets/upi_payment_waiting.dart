@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
+import '../utils/money_format.dart';
 import '../services/upi_payment_service.dart';
 
 enum PaymentWaitingState {
@@ -16,6 +17,7 @@ enum PaymentWaitingState {
 class UpiPaymentWaitingOverlay extends StatefulWidget {
   final String payeeName;
   final int amountMinor;
+  final String currencyCode;
   final String appName;
   final Future<UpiTransactionResult> transactionFuture;
   final VoidCallback onRetry;
@@ -26,6 +28,7 @@ class UpiPaymentWaitingOverlay extends StatefulWidget {
     super.key,
     required this.payeeName,
     required this.amountMinor,
+    this.currencyCode = 'INR',
     required this.appName,
     required this.transactionFuture,
     required this.onRetry,
@@ -46,13 +49,8 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  String get _formattedAmount {
-    final display = widget.amountMinor / 100;
-    return display.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
+  String get _formattedAmount =>
+      formatMoneyWithCurrency(widget.amountMinor, widget.currencyCode);
 
   @override
   void initState() {
@@ -242,7 +240,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
         ),
         const SizedBox(height: AppSpacing.spaceLg),
         Text(
-          '₹$_formattedAmount paid to ${widget.payeeName}',
+          '$_formattedAmount paid to ${widget.payeeName}',
           style: AppTypography.bodySecondary.copyWith(
             color: Colors.white70,
           ),
@@ -401,7 +399,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
       child: Column(
         children: [
           Text(
-            '₹$_formattedAmount',
+            _formattedAmount,
             style: const TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w600,

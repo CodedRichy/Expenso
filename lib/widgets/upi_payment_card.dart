@@ -4,6 +4,7 @@ import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/money_minor.dart';
 import '../models/payment_attempt.dart';
+import '../utils/money_format.dart';
 import '../services/upi_payment_service.dart';
 import 'upi_app_picker.dart';
 
@@ -47,13 +48,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool _loading = false;
   UpiAppPickerResult? _lastResult;
 
-  String get _formattedAmount {
-    final display = MoneyConversion.minorToDisplay(widget.amountMinor, widget.currencyCode);
-    return display.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
+  String get _formattedAmount =>
+      formatMoneyWithCurrency(widget.amountMinor, widget.currencyCode);
 
   bool get _hasUpiId => widget.payeeUpiId != null && widget.payeeUpiId!.isNotEmpty;
 
@@ -172,7 +168,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                     ),
                     const SizedBox(height: AppSpacing.spaceXs),
                     Text(
-                      '₹$_formattedAmount',
+                      _formattedAmount,
                       style: context.amountMD.copyWith(
                         color: _isConfirmed ? context.colorSuccess : theme.colorScheme.onSurface,
                         decoration: _isConfirmed ? TextDecoration.lineThrough : null,

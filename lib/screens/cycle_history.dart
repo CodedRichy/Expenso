@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/money_format.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class CycleHistory extends StatefulWidget {
@@ -52,6 +53,7 @@ class _CycleHistoryState extends State<CycleHistory> {
       return const Scaffold(body: SizedBox.shrink());
     }
     final groupName = group.name;
+    final currencyCode = group.currencyCode;
 
     return GradientScaffold(
       body: SafeArea(
@@ -195,6 +197,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                 arguments: {
                                   'cycle': cycle,
                                   'groupName': groupName,
+                                  'currencyCode': currencyCode,
                                 },
                               );
                             },
@@ -232,10 +235,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                                         Row(
                                           children: [
                                             Text(
-                                              '₹${settledAmount.toStringAsFixed(0).replaceAllMapped(
-                                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                                (Match m) => '${m[1]},',
-                                              )}',
+                                              formatMoneyFromMajor(settledAmount, currencyCode),
                                               style: TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.w600,

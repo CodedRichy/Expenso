@@ -5,6 +5,12 @@ String formatMoney(int amountMinor) {
   return formatMoneyWithCurrency(amountMinor, 'INR');
 }
 
+/// Formats [amount] (major units, e.g. 100.50) using the symbol for [currencyCode].
+String formatMoneyFromMajor(double amount, String currencyCode) {
+  final minor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
+  return formatMoneyWithCurrency(minor, currencyCode);
+}
+
 /// Formats [amountMinor] using the symbol for [currencyCode]. Uses correct decimal places.
 String formatMoneyWithCurrency(int amountMinor, String currencyCode) {
   final display = MoneyConversion.minorToDisplay(amountMinor, currencyCode);

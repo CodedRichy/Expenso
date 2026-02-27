@@ -13,6 +13,7 @@ import '../widgets/offline_banner.dart';
 import '../widgets/settlement_activity_feed.dart';
 import '../widgets/skeleton_placeholders.dart';
 import '../widgets/upi_payment_card.dart';
+import '../utils/money_format.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   const SettlementConfirmation({super.key});
@@ -416,10 +417,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           final payerName = repo.getMemberDisplayNameById(route.fromMemberId);
           final status = _getAttemptStatus(route);
           final isCash = status == PaymentAttemptStatus.cashPending;
-          final amount = (route.amountMinor / 100).toStringAsFixed(0).replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (Match m) => '${m[1]},',
-          );
+          final amountStr = formatMoneyWithCurrency(route.amountMinor, route.currencyCode);
           return Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -458,7 +456,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '₹$amount ${isCash ? 'cash' : 'UPI'} payment',
+                        '${amountStr} ${isCash ? 'cash' : 'UPI'} payment',
                         style: context.bodySecondary,
                       ),
                     ],
@@ -568,10 +566,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         .where((r) => !_getAttemptStatus(r).isSettled)
         .fold<int>(0, (s, r) => s + r.amountMinor);
 
-    final totalDisplay = (pendingTotal / 100).toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+    final totalDisplay = formatMoneyWithCurrency(pendingTotal, _group?.currencyCode ?? 'INR');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,7 +589,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                 ),
               ] else ...[
                 Text(
-                  '₹$totalDisplay',
+                  totalDisplay,
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w600,

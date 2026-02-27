@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
+import '../utils/money_format.dart';
 
 class DeleteGroup extends StatelessWidget {
   final String groupName;
   final bool hasPendingBalance;
   final double? pendingAmount;
+  final String currencyCode;
 
   const DeleteGroup({
     super.key,
     this.groupName = '',
     this.hasPendingBalance = false,
     this.pendingAmount,
+    this.currencyCode = 'INR',
   });
 
   @override
@@ -62,10 +65,7 @@ class DeleteGroup extends StatelessWidget {
                         const SizedBox(height: 16),
                         if (hasPendingBalance) ...[
                           Text(
-                            'This group has ₹${(pendingAmount ?? 0).toStringAsFixed(0).replaceAllMapped(
-                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                              (Match m) => '${m[1]},',
-                            )} pending',
+                            'This group has ${formatMoneyFromMajor(pendingAmount ?? 0, currencyCode)} pending',
                             textAlign: TextAlign.center,
                             style: context.bodySecondary,
                           ),

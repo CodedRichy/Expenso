@@ -6,6 +6,7 @@ import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../services/upi_payment_service.dart';
+import '../utils/money_format.dart';
 import 'upi_payment_waiting.dart';
 
 class UpiAppPickerResult {
@@ -395,17 +396,14 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
 
   Widget _buildPaymentHeader() {
     final theme = Theme.of(context);
-    final amount = (widget.paymentData.amountMinor / 100).toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+    final amountStr = formatMoneyWithCurrency(widget.paymentData.amountMinor, widget.paymentData.currencyCode);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
       child: Column(
         children: [
           Text(
-            'Pay ₹$amount',
+            'Pay $amountStr',
             style: context.amountMD.copyWith(color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: AppSpacing.spaceXs),
@@ -460,6 +458,7 @@ class _UpiPaymentFlowState extends State<_UpiPaymentFlow> {
     return UpiPaymentWaitingOverlay(
       payeeName: widget.paymentData.payeeName,
       amountMinor: widget.paymentData.amountMinor,
+      currencyCode: widget.paymentData.currencyCode,
       appName: _selectedApp?.name ?? 'UPI',
       transactionFuture: _transactionCompleter!.future,
       onRetry: _onRetry,

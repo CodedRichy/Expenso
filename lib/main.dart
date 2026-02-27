@@ -13,7 +13,6 @@ import 'services/user_profile_cache.dart';
 import 'screens/phone_auth.dart';
 import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
-import 'screens/group_list_skeleton.dart';
 import 'widgets/expenso_loader.dart';
 import 'screens/create_group.dart';
 import 'screens/invite_members.dart';

@@ -9,6 +9,7 @@ import '../models/settlement_event.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../services/identity_service.dart';
+import '../utils/money_format.dart';
 import '../services/sync_status_service.dart';
 import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
@@ -489,6 +490,7 @@ class CycleRepository extends ChangeNotifier {
       final groupName = data['groupName'] as String? ?? '';
       final members = List<String>.from(data['members'] as List? ?? []);
       final creatorId = data['creatorId'] as String? ?? '';
+      final currencyCode = data['currencyCode'] as String? ?? 'INR';
       final activeCycleId = data['activeCycleId'] as String? ?? _nextCycleId();
       final cycleStatus = data['cycleStatus'] as String? ?? 'active';
       final pendingList = _extractPendingMembersList(data['pendingMembers']);
@@ -511,6 +513,7 @@ class CycleRepository extends ChangeNotifier {
         statusLine: statusLine,
         creatorId: creatorId,
         memberIds: memberIds,
+        currencyCode: currencyCode,
       ));
 
       for (final g in _groups) {
@@ -787,6 +790,7 @@ class CycleRepository extends ChangeNotifier {
         statusLine: statusLine,
         creatorId: g.creatorId,
         memberIds: g.memberIds,
+        currencyCode: g.currencyCode,
       );
     }
   }
@@ -807,6 +811,7 @@ class CycleRepository extends ChangeNotifier {
         creatorId: _currentUserId,
         settlementRhythm: settlementRhythm,
         settlementDay: settlementDay,
+        currencyCode: group.currencyCode,
       );
     } catch (e, st) {
       debugPrint('CycleRepository.addGroup createGroup failed: $e');
@@ -953,6 +958,7 @@ class CycleRepository extends ChangeNotifier {
       statusLine: g.statusLine,
       creatorId: g.creatorId,
       memberIds: [...g.memberIds, pid],
+      currencyCode: g.currencyCode,
     );
     notifyListeners();
   }
@@ -998,6 +1004,7 @@ class CycleRepository extends ChangeNotifier {
           statusLine: g.statusLine,
           creatorId: g.creatorId,
           memberIds: g.memberIds.where((id) => id != memberId).toList(),
+          currencyCode: g.currencyCode,
         );
       }
       notifyListeners();
@@ -1433,6 +1440,7 @@ class CycleRepository extends ChangeNotifier {
 
   List<String> getSettlementInstructions(String groupId) {
     final balances = calculateBalances(groupId);
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final debtors = balances.entries
         .where((e) => e.value < -0.01)
         .map((e) => _BalanceEntry(e.key, -e.value))
@@ -1451,7 +1459,7 @@ class CycleRepository extends ChangeNotifier {
       final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
       if (amount < 0.01) break;
       result.add(
-        '${getMemberDisplayNameById(debtor.id)} owes ${getMemberDisplayNameById(creditor.id)} ₹${amount.round()}',
+        '${getMemberDisplayNameById(debtor.id)} owes ${getMemberDisplayNameById(creditor.id)} ${formatMoneyFromMajor(amount, currencyCode)}',
       );
       debtor.amount -= amount;
       creditor.amount -= amount;

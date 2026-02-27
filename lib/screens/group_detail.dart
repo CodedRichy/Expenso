@@ -7,11 +7,13 @@ import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
+import '../models/currency.dart';
 import '../models/normalized_expense.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/connectivity_service.dart';
 import '../services/groq_expense_parser_service.dart';
 import '../utils/expense_normalization.dart';
+import '../utils/money_format.dart';
 import '../utils/settlement_engine.dart';
 import '../models/money_minor.dart';
 import '../widgets/expenso_loader.dart';
@@ -75,8 +77,10 @@ void _showUndoExpenseOverlay(
   required String expenseId,
   required String description,
   required double amount,
+  String? currencyCode,
 }) {
   final repo = CycleRepository.instance;
+  final code = currencyCode ?? repo.getGroup(groupId)?.currencyCode ?? 'INR';
   showDialog(
     context: context,
     barrierColor: Colors.transparent,
@@ -182,7 +186,7 @@ class _UndoExpenseOverlayContentState extends State<_UndoExpenseOverlayContent> 
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${widget.description} · ₹${widget.amount.toStringAsFixed(0)}',
+                          '${widget.description} · ${formatMoneyFromMajor(amount, code)}',
                           style: TextStyle(
                             fontSize: 14,
                             color: toastSecondaryColor,
@@ -560,10 +564,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                         ),
                                         const SizedBox(width: 16),
                                         Text(
-                                          '₹${expense.amount.toStringAsFixed(0).replaceAllMapped(
-                                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                            (Match m) => '${m[1]},',
-                                          )}',
+                                          formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode),
                                           style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w600,
@@ -752,12 +753,9 @@ class _GroupDetailState extends State<GroupDetail> {
   }
 }
 
-String _fmtRupee(double value) {
-  if (value.isNaN || value.isInfinite) return '0';
-  return value.toStringAsFixed(0).replaceAllMapped(
-    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-    (Match m) => '${m[1]},',
-  );
+String _formatAmount(double value, String currencyCode) {
+  if (value.isNaN || value.isInfinite) return formatMoneyFromMajor(0, currencyCode);
+  return formatMoneyFromMajor(value, currencyCode);
 }
 
 class _DecisionClarityCard extends StatelessWidget {
@@ -781,6 +779,7 @@ class _DecisionClarityCard extends StatelessWidget {
 
   void _showSettlementDetails(BuildContext context) {
     final members = repo.getMembersForGroup(groupId);
+    final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final debts = SettlementEngine.computeDebts(expenses, members);
     final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
     final myId = repo.currentUserId;
@@ -808,6 +807,7 @@ class _DecisionClarityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEmpty = expenses.isEmpty;
+    final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
     final members = repo.getMembersForGroup(groupId);
     final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
@@ -861,6 +861,7 @@ class _DecisionClarityCard extends StatelessWidget {
               child: isEmpty
                   ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
                   : _buildContent(
+                      currencyCode: currencyCode,
                       cycleTotal: cycleTotal,
                       youPaid: youPaid,
                       settledPaid: settledPaid,
@@ -880,6 +881,7 @@ class _DecisionClarityCard extends StatelessWidget {
   }
 
   Widget _buildContent({
+    required String currencyCode,
     required double cycleTotal,
     required double youPaid,
     required double settledPaid,
@@ -902,7 +904,7 @@ class _DecisionClarityCard extends StatelessWidget {
         ? 'Cycle settled — pending restart'
         : isBalanceClear
             ? 'All clear'
-            : '${isCredit ? '+' : '-'}₹${_fmtRupee(myRemaining.abs())}';
+            : '${isCredit ? '+' : '-'}${_formatAmount(myRemaining.abs(), currencyCode)}';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -916,7 +918,7 @@ class _DecisionClarityCard extends StatelessWidget {
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
-          '₹${_fmtRupee(cycleTotal)}',
+          _formatAmount(cycleTotal, currencyCode),
           style: AppTypography.amountLG.copyWith(color: onDark),
         ),
         SizedBox(height: AppSpacing.spaceXl),
@@ -935,7 +937,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   ),
                   SizedBox(height: AppSpacing.space2xs),
                   Text(
-                    '₹${_fmtRupee(youPaid)}',
+                    _formatAmount(youPaid, currencyCode),
                     style: AppTypography.amountSM.copyWith(
                       color: onDark.withValues(alpha: 0.95),
                     ),
@@ -951,7 +953,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
-                      '₹${_fmtRupee(settledPaid)}',
+                      _formatAmount(settledPaid, currencyCode),
                       style: AppTypography.amountSM.copyWith(
                         color: onDark.withValues(alpha: 0.95),
                       ),
@@ -983,7 +985,7 @@ class _DecisionClarityCard extends StatelessWidget {
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
-                      'was ${myNet < 0 ? '-' : '+'}₹${_fmtRupee(myNet.abs())}',
+                      'was ${myNet < 0 ? '-' : '+'}${_formatAmount(myNet.abs(), currencyCode)}',
                       style: AppTypography.captionSmall.copyWith(
                         color: onDark.withValues(alpha: 0.5),
                         decoration: TextDecoration.lineThrough,
@@ -1125,7 +1127,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
 
     final color = isCredit ? context.colorSuccess : context.colorError;
     final label = isCredit ? 'You will receive' : 'You owe';
-    final amount = '₹${_fmtRupee(myRemaining.abs())}';
+    final amount = _formatAmount(myRemaining.abs(), currencyCode);
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.cardPadding),
@@ -1226,7 +1228,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '₹${_fmtRupee(amountDisplay)}',
+                  _formatAmount(amountDisplay, currencyCode),
                       style: AppTypography.amountSM.copyWith(color: directionColor),
                 ),
               ],
@@ -1788,7 +1790,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
       final gid = undoResult['groupId'] as String;
       final eid = undoResult['expenseId'] as String;
-      _showUndoExpenseOverlay(context, groupId: gid, expenseId: eid, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0);
+      _showUndoExpenseOverlay(context, groupId: gid, expenseId: eid, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(gid)?.currencyCode);
     }
   }
 
@@ -1840,7 +1842,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   final groupId = map['groupId'] as String;
                   final expenseId = map['expenseId'] as String;
                   if (!context.mounted) return;
-                  _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0);
+                  _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(groupId)?.currencyCode);
                 }
               },
               icon: Icon(
@@ -2180,6 +2182,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
+    final currencyCode = repo.getGroup(widget.groupId)?.currencyCode ?? 'INR';
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
@@ -2241,10 +2244,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '₹${(_editedAmount ?? widget.result.amount).toStringAsFixed(0).replaceAllMapped(
-                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                      (Match m) => '${m[1]},',
-                    )}',
+                    formatMoneyFromMajor(_editedAmount ?? widget.result.amount, currencyCode),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -2289,7 +2289,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                             border: Border.all(color: borderColor),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: secondaryTextColor)),
+                          child: Text(CurrencyRegistry.symbol(currencyCode), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: secondaryTextColor)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -2391,7 +2391,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Total: ₹${(_editedAmount ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} | Assigned: ₹${_totalSplit.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                        'Total: ${formatMoneyFromMajor(_editedAmount ?? 0, currencyCode)} | Assigned: ${formatMoneyFromMajor(_totalSplit, currencyCode)}',
                         style: TextStyle(fontSize: 13, color: secondaryTextColor),
                       ),
                     ],
@@ -2404,7 +2404,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Assigned total (₹${_totalSplit.toStringAsFixed(0)}) must match amount (₹${_editedAmount!.toStringAsFixed(0)}).',
+                          'Assigned total (${formatMoneyFromMajor(_totalSplit, currencyCode)}) must match amount (${formatMoneyFromMajor(_editedAmount!, currencyCode)}).',
                           style: TextStyle(fontSize: 13, color: context.colorError),
                         ),
                       ),
@@ -2424,8 +2424,8 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 final isGuessed = slot.isGuessed && !isPlaceholder;
                 final isExactEditable = widget.splitTypeCap == 'Exact' && _amountControllers != null && i < _amountControllers!.length;
                 final label = slot.id != null && slot.id!.isNotEmpty
-                    ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}  ₹${slot.amount.toStringAsFixed(0)}'
-                    : 'Select Member  ₹${slot.amount.toStringAsFixed(0)}';
+                    ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}  ${formatMoneyFromMajor(slot.amount, currencyCode)}'
+                    : 'Select Member  ${formatMoneyFromMajor(slot.amount, currencyCode)}';
                         return GestureDetector(
                           onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
                           child: Container(
@@ -2474,7 +2474,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                       decoration: InputDecoration(
                                         isDense: true,
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                        hintText: '₹',
+                                        hintText: CurrencyRegistry.symbol(currencyCode),
                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                                         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colorError)),
                                       ),

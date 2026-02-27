@@ -107,6 +107,90 @@ If a payment is awaiting confirmation, the user is not fully settled. The two st
 
 ---
 
+## Gaps (pre-existing / follow-up)
+
+Issues that are not V4 tester-reported bugs but are gaps worth tracking for triage. Some are documented in STABILIZATION.md or LOGIC_AUDIT.md; this list surfaces them in one place.
+
+---
+
+### G1. Accessibility (a11y)
+
+**Area:** All screens / UX  
+**Summary:** No `Semantics` or `semanticsLabel` (or equivalent) are used in the codebase. Screen readers and TalkBack will not get explicit labels for buttons, amounts, or sections. Touch targets and contrast have been improved in places but there is no systematic a11y pass.  
+**Status:** Open  
+**Ref:** None in codebase.
+
+---
+
+### G2. Locale-aware number/currency formatting
+
+**Area:** Global app / V4 scope  
+**Summary:** V4 scope states the app is global and should be "locale-aware where relevant (e.g. number formats)". Currently:
+- `money_format.dart` uses comma as thousands separator and dot for decimals (US/IN style). No locale-based formatting (e.g. `intl`); EU-style (space/dot for thousands, comma for decimals) is not supported.
+- Many screens format amounts with inline `replaceAllMapped(RegExp(...))` for "₹X,XXX" instead of a single locale-aware formatter.
+**Status:** Open  
+**Ref:** `lib/utils/money_format.dart`, currency display across screens.
+
+---
+
+### G3. Split amounts sum not validated on read
+
+**Area:** Balances / data integrity  
+**Summary:** STABILIZATION §4.3: "Split amounts must sum to expense amount — ⚠️ Assumed but not enforced. The code computes splits at write time but does not validate sum equality on read. Historical data may have rounding errors." If stored splits ever diverge from the expense total, balance math can be wrong and there is no read-side check or correction.  
+**Status:** Open  
+**Ref:** `docs/STABILIZATION.md` §4.3 invariant #3.
+
+---
+
+### G4. Integer-amounts migration incomplete (TODOs)
+
+**Area:** Data model / consistency  
+**Summary:** TODOs in code: "Remove once UI is updated to use integer amounts" (settlement_engine.dart, ledger_delta.dart). SettlementEngine and ledger work with minor-unit integers in places, but UI and some paths still use double amounts. Migration is incomplete; double-based paths remain.  
+**Status:** Open  
+**Ref:** `lib/utils/settlement_engine.dart` (lines 301, 318), `lib/utils/ledger_delta.dart` (line 160).
+
+---
+
+### G5. Silent or empty catch blocks
+
+**Area:** Error handling / observability  
+**Summary:** Some failures are swallowed with no user feedback or logging:
+- `groq_expense_parser_service.dart`: `catch (_) {}` in fallback/decode paths.
+- `data_encryption_service.dart`: empty `catch (_) {}` in key paths.
+- `pinned_groups_service.dart`: `catch (_) {}` then `notifyListeners()` — load failure is silent.
+If these paths fail, the user may see generic or incorrect behavior with no indication why.  
+**Status:** Open  
+**Ref:** Grep for `catch (_)` / empty catch in lib.
+
+---
+
+### G6. Closed cycles not read-only in Firestore
+
+**Area:** Security / invariants  
+**Summary:** STABILIZATION §4.3: "Closed cycles are read-only — ⚠️ Assumed but not enforced. Firestore rules may not prevent writes to settled_cycles." Current `firestore.rules` allow create, update, delete on `groups/{groupId}/settled_cycles/{cycleId}` and its expenses for any group member. There is no rule that makes archived cycles immutable.  
+**Status:** Open  
+**Ref:** `docs/STABILIZATION.md` §4.3 invariant #8, `firestore.rules`.
+
+---
+
+### G7. Date stored as string; timezone-fragile
+
+**Area:** Data model / global use  
+**Summary:** STABILIZATION §5: "Date stored as string... Expense `date` field is 'Today', 'Yesterday', or 'Mon DD'. This makes date math fragile and timezone-dependent." For a global app, this can cause ordering or "today" boundaries to differ by locale/timezone.  
+**Status:** Open  
+**Ref:** `docs/STABILIZATION.md` §5 design shortcut #8.
+
+---
+
+### G8. No pagination (scale)
+
+**Area:** Performance / scale  
+**Summary:** Group list, expense list, and cycle history load in full. Acceptable for small datasets; will degrade with hundreds of expenses per cycle or many groups. STABILIZATION §5 lists this as a known limitation.  
+**Status:** Acknowledged  
+**Ref:** `docs/STABILIZATION.md` §5 limitation #6.
+
+---
+
 ## More (to be added)
 
 *Additional items will be appended below as reported.*

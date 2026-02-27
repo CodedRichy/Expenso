@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 
@@ -389,10 +390,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '₹${parsedData!.amount.toStringAsFixed(0).replaceAllMapped(
-                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                          (Match m) => '${m[1]},',
-                        )}',
+                        formatMoneyFromMajor(parsedData!.amount, group.currencyCode),
                         style: TextStyle(
                           fontSize: 52,
                           fontWeight: FontWeight.w600,
@@ -553,10 +551,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₹${group.amount.toStringAsFixed(0).replaceAllMapped(
-                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                      (Match m) => '${m[1]},',
-                    )}',
+                    formatMoneyFromMajor(group.amount, group.currencyCode),
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,

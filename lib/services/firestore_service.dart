@@ -118,6 +118,7 @@ class FirestoreService {
     List<Map<String, String>>? pendingMembers,
     String? settlementRhythm,
     int? settlementDay,
+    String? currencyCode,
   }) async {
     final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
     await ref.set({
@@ -126,6 +127,7 @@ class FirestoreService {
       'creatorId': creatorId,
       'activeCycleId': activeCycleId ?? _nextCycleId(),
       'cycleStatus': 'active',
+      'currencyCode': currencyCode ?? 'INR',
       if (pendingMembers != null && pendingMembers.isNotEmpty) 'pendingMembers': pendingMembers,
       if (settlementRhythm != null) 'settlementRhythm': settlementRhythm,
       if (settlementDay != null) 'settlementDay': settlementDay,

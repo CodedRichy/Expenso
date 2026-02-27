@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
+import '../models/currency.dart';
 import '../repositories/cycle_repository.dart';
+import '../utils/money_format.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class EditExpense extends StatefulWidget {
@@ -482,6 +484,9 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildAmountField({required bool readOnly}) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final currencyCode = _groupId != null
+        ? (CycleRepository.instance.getGroup(_groupId!)?.currencyCode ?? 'INR')
+        : 'INR';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -505,7 +510,7 @@ class _EditExpenseState extends State<EditExpense> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '₹',
+                CurrencyRegistry.symbol(currencyCode),
                 style: TextStyle(
                   fontSize: 17,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -681,6 +686,9 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildSplitAndPeopleSection() {
     final expense = _expense!;
     final repo = CycleRepository.instance;
+    final currencyCode = _groupId != null
+        ? (repo.getGroup(_groupId!)?.currencyCode ?? 'INR')
+        : 'INR';
     final theme = Theme.of(context);
     final isExact = expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty;
     final splitLabel = expense.splitType.isNotEmpty ? expense.splitType : (isExact ? 'Exact' : 'Even');
@@ -729,7 +737,7 @@ class _EditExpenseState extends State<EditExpense> {
                   style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
                 ),
                 Text(
-                  '₹${amt.toStringAsFixed(0)}',
+                  formatMoneyFromMajor(amt, currencyCode),
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
                 ),
               ],

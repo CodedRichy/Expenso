@@ -16,11 +16,8 @@ class SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final skeletonColor = isDark 
-        ? AppColorsDark.border.withValues(alpha: 0.5) 
-        : AppColors.border.withValues(alpha: 0.5);
-    
+    final skeletonColor = context.colorBorder.withValues(alpha: 0.5);
+
     return Container(
       width: width,
       height: height,
@@ -39,11 +36,8 @@ class SkeletonCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final skeletonColor = isDark 
-        ? AppColorsDark.border.withValues(alpha: 0.5) 
-        : AppColors.border.withValues(alpha: 0.5);
-    
+    final skeletonColor = context.colorBorder.withValues(alpha: 0.5);
+
     return Container(
       width: size,
       height: size,
@@ -89,6 +83,11 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final highlight = isDark
+        ? context.colorSurface.withValues(alpha: 0.25)
+        : context.colorSurface.withValues(alpha: 0.6);
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -98,9 +97,9 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.white.withValues(alpha: 0.0),
-                Colors.white.withValues(alpha: 0.2),
-                Colors.white.withValues(alpha: 0.0),
+                highlight.withValues(alpha: 0.0),
+                highlight,
+                highlight.withValues(alpha: 0.0),
               ],
               stops: [
                 _animation.value - 0.3,
@@ -117,6 +116,8 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
   }
 }
 
+/// Skeleton for a single group row — matches GroupsList row layout:
+/// top border, padding 24×22, title + amount + status + chevron.
 class SkeletonGroupCard extends StatelessWidget {
   const SkeletonGroupCard({super.key});
 
@@ -124,28 +125,34 @@ class SkeletonGroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SkeletonShimmer(
       child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          border: Border(
+            top: BorderSide(color: context.colorBorder, width: 1),
+          ),
         ),
         child: Row(
           children: [
-            const SkeletonCircle(size: 48),
-            const SizedBox(width: AppSpacing.spaceLg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SkeletonBox(width: 120, height: 16, borderRadius: 4),
+                  SkeletonBox(width: 160, height: 19, borderRadius: 4),
                   const SizedBox(height: 8),
-                  SkeletonBox(width: 80, height: 12, borderRadius: 4),
+                  Row(
+                    children: [
+                      SkeletonBox(width: 72, height: 17, borderRadius: 4),
+                      const SizedBox(width: 8),
+                      SkeletonBox(width: 52, height: 15, borderRadius: 4),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SkeletonBox(width: 120, height: 15, borderRadius: 4),
                 ],
               ),
             ),
-            SkeletonBox(width: 60, height: 20, borderRadius: 4),
+            const SizedBox(width: 16),
+            SkeletonBox(width: 20, height: 20, borderRadius: 4),
           ],
         ),
       ),
@@ -166,7 +173,7 @@ class SkeletonExpenseRow extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+            bottom: BorderSide(color: context.colorBorder, width: 1),
           ),
         ),
         child: Row(
@@ -191,6 +198,7 @@ class SkeletonExpenseRow extends StatelessWidget {
   }
 }
 
+/// Skeleton for UpiPaymentCard — Pay [name], amount, UPI line, button.
 class SkeletonPaymentCard extends StatelessWidget {
   const SkeletonPaymentCard({super.key});
 
@@ -201,23 +209,30 @@ class SkeletonPaymentCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.spaceLg),
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: context.colorSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          border: Border.all(color: context.colorBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SkeletonBox(width: 100, height: 16, borderRadius: 4),
-                SkeletonBox(width: 80, height: 20, borderRadius: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(width: 140, height: 19, borderRadius: 4),
+                      const SizedBox(height: 2),
+                      SkeletonBox(width: 90, height: 24, borderRadius: 4),
+                    ],
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            SkeletonBox(width: 80, height: 28, borderRadius: 4),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.spaceSm),
+            SkeletonBox(width: 200, height: 20, borderRadius: 6),
+            const SizedBox(height: AppSpacing.spaceLg),
             SkeletonBox(width: double.infinity, height: 44, borderRadius: 8),
           ],
         ),

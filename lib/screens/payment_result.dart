@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/route_args.dart';
+import '../utils/money_format.dart';
 
 class PaymentResult extends StatelessWidget {
   final String status; // 'success', 'failed', 'cancelled'
@@ -68,10 +69,7 @@ class PaymentResult extends StatelessWidget {
                       const SizedBox(height: 12),
                       if (status == 'success' && amount != null) ...[
                         Text(
-                          '₹${amount!.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                            (Match m) => '${m[1]},',
-                          )} transferred',
+                          '${formatMoneyFromMajor(amount!, group.currencyCode)} transferred',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,

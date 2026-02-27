@@ -6,6 +6,7 @@ class Group {
   final String statusLine;
   final String creatorId;
   final List<String> memberIds;
+  final String currencyCode;
 
   Group({
     required this.id,
@@ -15,6 +16,7 @@ class Group {
     required this.statusLine,
     required this.creatorId,
     List<String>? memberIds,
+    this.currencyCode = 'INR',
   }) : memberIds = memberIds ?? [];
 }
 

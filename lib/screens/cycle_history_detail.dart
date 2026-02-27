@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/cycle.dart';
+import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 
 class CycleHistoryDetail extends StatelessWidget {
@@ -15,6 +16,7 @@ class CycleHistoryDetail extends StatelessWidget {
     }
     final cycleData = args['cycle'];
     final groupName = args['groupName'] as String?;
+    final currencyCode = args['currencyCode'] as String? ?? 'INR';
     if (cycleData is! Cycle || groupName == null || groupName.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
@@ -85,10 +87,7 @@ class CycleHistoryDetail extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₹${settledAmount.toStringAsFixed(0).replaceAllMapped(
-                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                      (Match m) => '${m[1]},',
-                    )}',
+                    formatMoneyFromMajor(settledAmount, currencyCode),
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,
@@ -167,10 +166,7 @@ class CycleHistoryDetail extends StatelessWidget {
                               ),
                               const SizedBox(width: 16),
                               Text(
-                                '₹${expense.amount.toStringAsFixed(0).replaceAllMapped(
-                                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                  (Match m) => '${m[1]},',
-                                )}',
+                                formatMoneyFromMajor(expense.amount, currencyCode),
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w600,

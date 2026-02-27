@@ -12,6 +12,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/skeleton_placeholders.dart';
+import '../utils/money_format.dart';
 import 'empty_states.dart';
 
 class GroupsList extends StatefulWidget {
@@ -566,10 +567,7 @@ class _GroupsListState extends State<GroupsList> {
                                                     Row(
                                                       children: [
                                                         Text(
-                                                          '₹${repo.getGroupPendingAmount(group.id).toStringAsFixed(0).replaceAllMapped(
-                                                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                                            (Match m) => '${m[1]},',
-                                                          )}',
+                                                          formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode),
                                                           style: context.amountSM.copyWith(
                                                             color: Theme.of(context).colorScheme.onSurface,
                                                           ),
@@ -675,15 +673,38 @@ class _BoundedGroupsLoading extends StatelessWidget {
     }
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          children: const [
-            SkeletonGroupCard(),
-            SkeletonGroupCard(),
-            SkeletonGroupCard(),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SkeletonShimmer(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SkeletonBox(
+                      width: 120,
+                      height: 34,
+                      borderRadius: 6,
+                    ),
+                  ),
+                  const SkeletonCircle(size: 40),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 88),
+              physics: const NeverScrollableScrollPhysics(),
+              children: const [
+                SkeletonGroupCard(),
+                SkeletonGroupCard(),
+                SkeletonGroupCard(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
