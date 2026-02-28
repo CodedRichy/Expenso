@@ -364,25 +364,23 @@ class _InviteMembersState extends State<InviteMembers> {
                     ),
                   ),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ADD BY PHONE',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ADD BY PHONE',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
                     onChanged: (value) => setState(() {
                       name = value;
                       _contactSuggestionsDismissed = false;
@@ -638,8 +636,10 @@ class _InviteMembersState extends State<InviteMembers> {
                                 );
                               },
                             ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
