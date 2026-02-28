@@ -312,17 +312,17 @@ class _InviteMembersState extends State<InviteMembers> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(
-                    'SHARE LINK',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Semantics(
+                      Text(
+                        'SHARE LINK',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Semantics(
                     label: linkCopied ? 'Link copied' : 'Copy invite link',
                     button: true,
                     child: InkWell(
