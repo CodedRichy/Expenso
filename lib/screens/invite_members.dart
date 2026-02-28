@@ -256,11 +256,9 @@ class _InviteMembersState extends State<InviteMembers> {
         return GradientScaffold(
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH,
@@ -283,7 +281,7 @@ class _InviteMembersState extends State<InviteMembers> {
                     style: IconButton.styleFrom(
                       minimumSize: const Size(32, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                  ),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -306,11 +304,14 @@ class _InviteMembersState extends State<InviteMembers> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   Text(
                     'SHARE LINK',
                     style: TextStyle(
@@ -639,7 +640,7 @@ class _InviteMembersState extends State<InviteMembers> {
                             ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
             Expanded(
