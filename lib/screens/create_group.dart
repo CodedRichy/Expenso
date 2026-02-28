@@ -77,12 +77,16 @@ class _CreateGroupState extends State<CreateGroup> {
         settlementDay: settlementDay,
       );
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => InviteMembers(group: newGroup, groupName: newGroup.name),
-        ),
-      );
+      final groupToPass = newGroup;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InviteMembers(group: groupToPass, groupName: groupToPass.name),
+          ),
+        );
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

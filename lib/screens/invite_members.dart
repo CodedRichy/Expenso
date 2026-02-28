@@ -203,7 +203,37 @@ class _InviteMembersState extends State<InviteMembers> {
     final groupArg = widget.group ?? RouteArgs.getGroup(context);
     if (groupArg == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
-      return const Scaffold(body: SizedBox.shrink());
+      final theme = Theme.of(context);
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Group not found',
+                  style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onSurface),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Go back and try again.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  child: const Text('Go back'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     final displayGroupName = groupArg.name;
     final repo = CycleRepository.instance;
