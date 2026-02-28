@@ -52,7 +52,7 @@ class CycleSettled extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    group.name,
+                    resolvedGroup.name,
                     style: context.screenTitle,
                   ),
                 ],
