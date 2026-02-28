@@ -44,7 +44,7 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _requestContactsOnInit();
+    _checkContactsOnInit();
   }
 
   @override
@@ -71,15 +71,14 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _requestContactsOnInit() async {
-    final granted = await fc.FlutterContacts.requestPermission();
+  Future<void> _checkContactsOnInit() async {
     final status = await Permission.contacts.status;
     if (!mounted) return;
     setState(() {
       _contactsPermissionChecked = true;
-      _contactsPermissionGranted = granted;
+      _contactsPermissionGranted = status.isGranted;
       if (status.isDenied || status.isPermanentlyDenied) _contactsDenialSeen = true;
-      if (granted) _loadContacts();
+      if (status.isGranted) _loadContacts();
     });
   }
 
@@ -409,39 +408,47 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               ),
                               const SizedBox(height: 16),
                             ],
+                            const SizedBox(height: 12),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: context.colorSurface,
-                                    border: Border.all(color: context.colorBorderInput),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: PopupMenuButton<String>(
-                                    onSelected: (code) => setState(() => _selectedCountryCode = code),
-                                    offset: const Offset(0, 48),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
-                                      value: c.dialCode,
-                                      child: Text(
-                                        '${c.dialCode} ${c.countryCode}',
-                                        style: context.input,
+                                SizedBox(
+                                  height: 56,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: context.colorSurface,
+                                      border: Border.all(color: context.colorBorderInput),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: PopupMenuButton<String>(
+                                      onSelected: (code) => setState(() => _selectedCountryCode = code),
+                                      offset: const Offset(0, 48),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
+                                        value: c.dialCode,
+                                        child: Text(
+                                          '${c.dialCode} ${c.countryCode}',
+                                          style: context.input,
+                                        ),
+                                      )).toList(),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(_selectedCountryCode, style: context.input),
+                                          const SizedBox(width: 4),
+                                          Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                        ],
                                       ),
-                                    )).toList(),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(_selectedCountryCode, style: context.input),
-                                        const SizedBox(width: 4),
-                                        Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                      ],
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: TextField(
+                                  child: SizedBox(
+                                    height: 56,
+                                    child: TextField(
                                     focusNode: _phoneFocusNode,
                                     keyboardType: TextInputType.phone,
                                     inputFormatters: [
@@ -455,8 +462,10 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                     onSubmitted: (_) => handleAddMember(),
                                     decoration: const InputDecoration(
                                       hintText: 'Phone number',
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                                     ),
                                     style: context.input,
+                                  ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -466,7 +475,8 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                   child: ElevatedButton(
                                     onPressed: phone.length == 10 ? handleAddMember : null,
                                     style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      minimumSize: const Size(0, 56),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
