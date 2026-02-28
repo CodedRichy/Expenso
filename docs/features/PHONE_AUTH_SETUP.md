@@ -2,6 +2,8 @@
 
 If the app does not send an OTP when you tap "Continue" on the phone screen, Firebase Phone Authentication is not fully configured. Use this checklist.
 
+**User flows:** See [AUTH_FLOW.md](AUTH_FLOW.md) for step-by-step flows (phone vs Google) and how app details (name, photo) are preferred over provider data.
+
 ## 1. Enable sign-in methods in Firebase Console
 
 1. Open [Firebase Console](https://console.firebase.google.com/) and select your project.
