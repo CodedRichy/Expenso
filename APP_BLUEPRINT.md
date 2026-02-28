@@ -50,18 +50,18 @@ The home route `/` uses **Firebase Auth state** first, then repo state:
 
 1. **StreamBuilder** on `PhoneAuthService.instance.authStateChanges`.
 2. If **user == null** → repo is cleared (including local cache) and **PhoneAuth** (login) is shown.
-3. If **user != null** → repo is synced in-memory (`setAuthFromFirebaseUserSync(uid, phone, displayName)`, merging cached photoURL), then after the frame `continueAuthFromFirebaseUser()` runs (writes `users/{uid}`, starts Firestore listeners, updates local cache with fresh data). Then:
+3. If **user != null** → repo is synced in-memory (`setAuthFromFirebaseUserSync(uid, phone, displayName, photoURL: user.photoURL)`, merging cached profile), then after the frame `continueAuthFromFirebaseUser()` runs (writes `users/{uid}`, starts Firestore listeners, updates local cache with fresh data). Then:
    - If `currentUserName.isEmpty` → **OnboardingNameScreen**
    - Else → **GroupsList** (ledger).
 
 Every UID in the app comes from Firebase Auth; there is no mock user id.
 
-**PhoneAuth** — User enters +91 phone → OTP step.
+**PhoneAuth** — Phone (primary) and Google sign-in.
 
-- **When Firebase is configured** (`firebaseAuthAvailable`): `PhoneAuthService` calls `FirebaseAuth.instance.verifyPhoneNumber`; `codeSent` → OTP screen; user enters 6-digit code; on verify, `signInWithCredential` then auth state updates and repo is synced. Errors `invalid-verification-code` and `too-many-requests` are caught; for the test number (+91 79022 03218) the UI shows that code **123456** is the required dev bypass.
-- **When Firebase is not configured**: mock flow — any 10 digits → OTP step, any 6 digits → `setGlobalProfile` only (no UID; creator features unavailable until real auth).
+- **Phone:** User enters phone → OTP step. When Firebase is configured, `PhoneAuthService.verifyPhoneNumber`; `codeSent` → OTP screen; user enters 6-digit code; on verify, `signInWithCredential` then auth state updates and repo is synced. Test number hint for +91 79022 03218 → code **123456**. When Firebase is not configured: mock flow (any 10 digits → OTP step, any 6 digits → `setGlobalProfile` only).
+- **Google:** "Sign in with Google" button (shown when Firebase is configured). `PhoneAuthService.signInWithGoogle()` uses Google Sign-In then Firebase `signInWithCredential`; auth state updates and repo is synced with uid, displayName, and photoURL (phone left empty for Google users).
 
-To enable real phone auth: run `dart run flutterfire configure`, enable **Phone** sign-in in Firebase Console → Authentication → Sign-in method, and add `google-services.json` (Android) / `GoogleService-Info.plist` (iOS) via FlutterFire or manually.
+To enable: run `dart run flutterfire configure`, enable **Phone** and optionally **Google** in Firebase Console → Authentication → Sign-in method, add SHA-1/SHA-256 for Android (see `docs/features/PHONE_AUTH_SETUP.md`).
 
 **OnboardingNameScreen** — “What should we call you?” → user taps “Get Started” → `setGlobalProfile(repo.currentUserPhone, name)` and `FirebaseAuth.instance.currentUser?.updateDisplayName(name)` so the name persists across restarts.
 
@@ -441,7 +441,8 @@ tool/
 | `cupertino_icons` | Icons. |
 | `flutter_contacts` ^1.1.9+1 | Import as `fc` to avoid `Group` clash. |
 | `firebase_core` | Required for Firebase. Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` (stub in repo is replaced). |
-| `firebase_auth` | Phone (OTP) sign-in when Firebase is configured. |
+| `firebase_auth` | Phone (OTP) and Google sign-in when Firebase is configured. |
+| `google_sign_in` | Google Sign-In; used with Firebase Auth for "Sign in with Google". |
 | `cloud_firestore` | Groups, expenses, settled_cycles; Test Mode. All writes use real User.uid. |
 | `firebase_storage` | Profile avatar uploads (users/{uid}/avatar.jpg). |
 | `flutter_dotenv` | Loads `.env`; **GROQ_API_KEY** required for Magic Bar AI parsing. |

@@ -226,10 +226,11 @@ class MyApp extends StatelessWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
               return const PhoneAuth();
             }
+            final isGoogle = user.providerData.any((p) => p.providerId == 'google.com');
             repo.setAuthFromFirebaseUserSync(
               user.uid,
               user.phoneNumber,
-              user.displayName,
+              isGoogle ? null : user.displayName,
               photoURL: user.photoURL,
             );
             WidgetsBinding.instance.addPostFrameCallback((_) async {

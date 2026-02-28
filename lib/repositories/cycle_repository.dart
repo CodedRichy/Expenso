@@ -138,19 +138,17 @@ class CycleRepository extends ChangeNotifier {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
     if (displayName != null && displayName.isNotEmpty) _currentUserName = displayName.trim();
+    final cached = UserProfileCache.instance.getCachedProfile();
+    final usePhoto = (cached != null && cached.userId == uid && cached.photoURL != null && cached.photoURL!.isNotEmpty)
+        ? cached.photoURL!
+        : (photoURL != null && photoURL.isNotEmpty ? photoURL : null);
     _userCache[uid] = {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
-      if (photoURL != null && photoURL.isNotEmpty) 'photoURL': photoURL,
+      if (usePhoto != null) 'photoURL': usePhoto,
     };
-    
-    // Merge with local cache if available (preserves photoURL, currencyCode from cache)
-    final cached = UserProfileCache.instance.getCachedProfile();
     if (cached != null && cached.userId == uid) {
       final cur = _userCache[uid]!;
-      if (cached.photoURL != null && cur['photoURL'] == null) {
-        cur['photoURL'] = cached.photoURL;
-      }
       if (cached.upiId != null && cur['upiId'] == null) {
         cur['upiId'] = cached.upiId;
       }
