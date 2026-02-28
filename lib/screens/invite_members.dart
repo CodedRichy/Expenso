@@ -585,7 +585,7 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                         if (updatedGroup != null) {
                           Navigator.pushReplacementNamed(
                             context,
-                            '/group-detail',
+                            '/group-members',
                             arguments: updatedGroup,
                           );
                         } else {
