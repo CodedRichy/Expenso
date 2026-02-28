@@ -639,7 +639,6 @@ class _InviteMembersState extends State<InviteMembers> {
                     ),
                   ),
                     ],
-                    ],
                   ),
                 ),
               ),
