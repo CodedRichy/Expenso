@@ -30,19 +30,46 @@ class PhoneAuthService {
     return digits.isEmpty ? '' : '+91$clean';
   }
 
-  /// User-friendly message for Firebase auth errors (invalid code, rate limit, test hint).
+  static const String _genericMessage = 'Something went wrong. Please try again.';
+
+  /// User-friendly message for Firebase auth errors. Debug: test hint + raw details. Release: production copy only.
   static String messageForError(dynamic error) {
     if (error is FirebaseAuthException) {
+      final String production;
       switch (error.code) {
         case 'invalid-verification-code':
-          return 'Invalid code. For the test number +91 79022 03218, use the code $devTestCode.';
+          production = 'Invalid code. Please try again.';
+          if (kDebugMode) {
+            return 'Invalid code. For the test number +91 79022 03218, use the code $devTestCode.';
+          }
+          return production;
+        case 'invalid-verification-id':
+          production = 'Verification expired. Please start again from the phone screen.';
+          break;
         case 'too-many-requests':
-          return 'Too many attempts. Please try again later.';
+          production = 'Too many attempts. Please try again later.';
+          break;
+        case 'invalid-phone-number':
+          production = 'Please enter a valid phone number.';
+          break;
+        case 'quota-exceeded':
+          production = 'Temporarily unavailable. Please try again later.';
+          break;
+        case 'network-request-failed':
+          production = 'Check your connection and try again.';
+          break;
+        case 'captcha-check-failed':
+        case 'internal-error':
+          production = _genericMessage;
+          break;
         default:
-          return error.message ?? error.code;
+          if (kDebugMode) return error.message ?? error.code ?? _genericMessage;
+          return _genericMessage;
       }
+      return production;
     }
-    return error.toString();
+    if (kDebugMode) return error.toString();
+    return _genericMessage;
   }
 
   /// Whether the given phone (10 digits or E.164) is the registered test number.
