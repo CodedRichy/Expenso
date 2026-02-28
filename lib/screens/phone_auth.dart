@@ -147,6 +147,24 @@ class _PhoneAuthState extends State<PhoneAuth> {
     });
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    if (!firebaseAuthAvailable) return;
+    _clearError();
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      await PhoneAuthService.instance.signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMessage = PhoneAuthService.messageForError(e);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -268,6 +286,31 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 )
                               : const Text('Continue', style: AppTypography.button),
                         ),
+                        if (firebaseAuthAvailable) ...[
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'or',
+                                  style: context.bodySecondary,
+                                ),
+                              ),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          OutlinedButton.icon(
+                            onPressed: _loading ? null : _handleGoogleSignIn,
+                            icon: Icon(Icons.g_mobiledata, size: 24, color: Theme.of(context).colorScheme.onSurface),
+                            label: const Text('Sign in with Google', style: AppTypography.button),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                       ],
                     ),

@@ -134,13 +134,14 @@ class CycleRepository extends ChangeNotifier {
 
   /// Sets in-memory identity from Firebase user. Call during build; does not notify.
   /// Use _continueAuthFromFirebaseUser() after the frame for Firestore write/listen.
-  void setAuthFromFirebaseUserSync(String uid, String? phone, String? displayName) {
+  void setAuthFromFirebaseUserSync(String uid, String? phone, String? displayName, {String? photoURL}) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
     if (displayName != null && displayName.isNotEmpty) _currentUserName = displayName.trim();
     _userCache[uid] = {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
+      if (photoURL != null && photoURL.isNotEmpty) 'photoURL': photoURL,
     };
     
     // Merge with local cache if available (preserves photoURL, currencyCode from cache)

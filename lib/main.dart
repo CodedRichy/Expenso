@@ -230,6 +230,7 @@ class MyApp extends StatelessWidget {
               user.uid,
               user.phoneNumber,
               user.displayName,
+              photoURL: user.photoURL,
             );
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               await repo.continueAuthFromFirebaseUser();

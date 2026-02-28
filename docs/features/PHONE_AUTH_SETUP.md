@@ -2,11 +2,12 @@
 
 If the app does not send an OTP when you tap "Continue" on the phone screen, Firebase Phone Authentication is not fully configured. Use this checklist.
 
-## 1. Enable Phone sign-in in Firebase Console
+## 1. Enable sign-in methods in Firebase Console
 
 1. Open [Firebase Console](https://console.firebase.google.com/) and select your project.
 2. Go to **Build** → **Authentication** → **Sign-in method**.
-3. Click **Phone** and turn **Enable** on, then Save.
+3. **Phone (primary):** Click **Phone**, turn **Enable** on, then Save.
+4. **Google (optional):** Click **Google**, turn **Enable** on, set a project support email, then Save. The app shows "Sign in with Google" on the phone auth screen; no extra config needed for Android beyond the same SHA-1/SHA-256 as for Phone.
 
 ## 2. Add your app’s SHA-1 and SHA-256 (Android)
 
@@ -47,7 +48,7 @@ To test without sending real SMS:
 
 | Check | Where |
 |-------|--------|
-| Phone provider enabled | Firebase Console → Authentication → Sign-in method → Phone = On |
+| Phone / Google enabled | Firebase Console → Authentication → Sign-in method → Phone and/or Google = On |
 | Android SHA-1/SHA-256 | Firebase Console → Project settings → Your apps → Android → Add fingerprint |
 | App uses correct project | `android/app/google-services.json` has your project’s `project_id` |
 | Firebase init in app | Debug log on launch: "Firebase initialized." |
