@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../design/colors.dart';
+import 'invite_members.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
@@ -76,10 +77,11 @@ class _CreateGroupState extends State<CreateGroup> {
         settlementDay: settlementDay,
       );
       if (!mounted) return;
-      Navigator.pushReplacementNamed(
+      Navigator.pushReplacement(
         context,
-        '/invite-members',
-        arguments: newGroup,
+        MaterialPageRoute(
+          builder: (_) => InviteMembers(group: newGroup, groupName: newGroup.name),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
