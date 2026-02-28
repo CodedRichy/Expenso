@@ -36,6 +36,7 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
   final FocusNode _phoneFocusNode = FocusNode();
   bool _contactsPermissionGranted = false;
   bool _contactsPermissionChecked = false;
+  bool _contactsDenialSeen = false;
   List<fc.Contact> _allContacts = [];
   bool _contactSuggestionsDismissed = false;
 
@@ -72,10 +73,12 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
 
   Future<void> _requestContactsOnInit() async {
     final granted = await fc.FlutterContacts.requestPermission();
+    final status = await Permission.contacts.status;
     if (!mounted) return;
     setState(() {
       _contactsPermissionChecked = true;
       _contactsPermissionGranted = granted;
+      if (status.isDenied || status.isPermanentlyDenied) _contactsDenialSeen = true;
       if (granted) _loadContacts();
     });
   }
@@ -104,8 +107,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
         _contactsPermissionGranted = true;
         _loadContacts();
       });
-    } else if (result.isPermanentlyDenied) {
-      await openAppSettings();
+    } else {
+      setState(() => _contactsDenialSeen = true);
+      if (result.isPermanentlyDenied) await openAppSettings();
     }
   }
 
@@ -385,7 +389,7 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               style: context.input,
                             ),
                             const SizedBox(height: 12),
-                            if (!_contactsPermissionGranted && _contactsPermissionChecked) ...[
+                            if (!_contactsPermissionGranted && _contactsPermissionChecked && !_contactsDenialSeen) ...[
                               const SizedBox(height: 8),
                               Text(
                                 'Contacts access was denied. You can still add members by entering a number below.',
