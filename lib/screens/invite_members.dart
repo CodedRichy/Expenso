@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
 import '../country_codes.dart';
+import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
@@ -26,7 +27,7 @@ class InviteMembers extends StatefulWidget {
   State<InviteMembers> createState() => _InviteMembersState();
 }
 
-class _InviteMembersState extends State<InviteMembers> {
+class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserver {
   String phone = '';
   String name = '';
   bool linkCopied = false;
@@ -41,23 +42,42 @@ class _InviteMembersState extends State<InviteMembers> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _requestContactsOnInit();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _phoneFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _recheckContactsPermission();
+  }
+
+  Future<void> _recheckContactsPermission() async {
+    final status = await Permission.contacts.status;
+    if (!mounted) return;
+    if (status.isGranted && !_contactsPermissionGranted) {
+      setState(() {
+        _contactsPermissionGranted = true;
+        _contactsPermissionChecked = true;
+      });
+      _loadContacts();
+    }
   }
 
   Future<void> _requestContactsOnInit() async {
     final granted = await fc.FlutterContacts.requestPermission();
     if (!mounted) return;
-    _contactsPermissionChecked = true;
     setState(() {
+      _contactsPermissionChecked = true;
       _contactsPermissionGranted = granted;
       if (granted) _loadContacts();
     });
-  }
-
-  @override
-  void dispose() {
-    _phoneFocusNode.dispose();
-    super.dispose();
   }
 
   Future<void> _requestContactsAndLoad() async {
@@ -238,9 +258,6 @@ class _InviteMembersState extends State<InviteMembers> {
     final displayGroupName = groupArg.name;
     final repo = CycleRepository.instance;
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
@@ -255,7 +272,6 @@ class _InviteMembersState extends State<InviteMembers> {
         final filteredContacts = _getFilteredContacts(existingPhones);
         return GradientScaffold(
           body: SafeArea(
-            bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -269,498 +285,315 @@ class _InviteMembersState extends State<InviteMembers> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: theme.colorScheme.onSurface,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      Semantics(
+                        label: 'Back',
+                        button: true,
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.chevron_left, size: 24),
+                          color: context.colorTextPrimary,
+                          padding: EdgeInsets.zero,
+                          alignment: Alignment.centerLeft,
+                          constraints: const BoxConstraints(),
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(32, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        displayGroupName,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
+                      Text(displayGroupName, style: context.screenTitle),
                       const SizedBox(height: 4),
-                      Text(
-                        'Invite members',
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      Text('Invite members', style: context.bodySecondary),
                     ],
                   ),
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text(
-                        'SHARE LINK',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Semantics(
-                    label: linkCopied ? 'Link copied' : 'Copy invite link',
-                    button: true,
-                    child: InkWell(
-                    onTap: handleCopyLink,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                        border: Border.all(color: theme.dividerColor),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.link,
-                                size: 20,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                linkCopied ? 'Link copied' : 'Copy invite link',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Icon(
-                            linkCopied ? Icons.check : Icons.content_copy,
-                            size: 20,
-                            color: linkCopied ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                     ),
-                  ),
-                  ),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'ADD BY PHONE',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                    onChanged: (value) => setState(() {
-                      name = value;
-                      _contactSuggestionsDismissed = false;
-                    }),
-                    decoration: InputDecoration(
-                      hintText: 'Name (optional)',
-                      hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                      helperText: (_contactsPermissionGranted && name.trim().isNotEmpty)
-                          ? 'Suggestions from contacts appear below'
-                          : null,
-                      helperMaxLines: 1,
-                      filled: true,
-                      fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.colorScheme.onSurface),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    ),
-                    style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!_contactsPermissionGranted && _contactsPermissionChecked) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Contacts access was denied. You can still add members by entering a number below.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: TextButton.icon(
-                        onPressed: _requestContactsAndLoad,
-                        icon: Icon(Icons.contacts_outlined, size: 18, color: theme.colorScheme.primary),
-                        label: Text(
-                          'Access Contacts',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ),
-                  ],
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                          border: Border.all(color: theme.dividerColor),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: PopupMenuButton<String>(
-                          onSelected: (code) => setState(() => _selectedCountryCode = code),
-                          offset: const Offset(0, 48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
-                            value: c.dialCode,
-                            child: Text(
-                              '${c.dialCode} ${c.countryCode}',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          )).toList(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _selectedCountryCode,
-                                  style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(Icons.arrow_drop_down, size: 20, color: theme.colorScheme.onSurfaceVariant),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          focusNode: _phoneFocusNode,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                          onChanged: (value) => setState(() {
-                            phone = value;
-                            _contactSuggestionsDismissed = false;
-                          }),
-                          onSubmitted: (_) => handleAddMember(),
-                          decoration: InputDecoration(
-                            hintText: 'Phone number',
-                            hintStyle: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            filled: true,
-                            fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: theme.dividerColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: theme.dividerColor),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: theme.colorScheme.onSurface),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Semantics(
-                        label: 'Add member by phone',
-                        button: true,
-                        child: ElevatedButton(
-                          onPressed: phone.length == 10 ? handleAddMember : null,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                            minimumSize: const Size(0, 44),
-                          ),
-                          child: const Text('Add', style: AppTypography.button),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_contactsPermissionGranted && !_contactSuggestionsDismissed) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      name.trim().isNotEmpty ? 'SUGGESTIONS FROM CONTACTS' : 'FROM YOUR CONTACTS',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 280),
-                      decoration: BoxDecoration(
-                        color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                        border: Border.all(color: theme.dividerColor),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: filteredContacts.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(
-                                _allContacts.isEmpty 
-                                    ? 'Loading contacts...' 
-                                    : (name.trim().isNotEmpty || phone.isNotEmpty) 
-                                        ? 'No matching contacts' 
-                                        : 'All contacts already added',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('SHARE LINK', style: context.sectionLabel),
+                            const SizedBox(height: 12),
+                            Semantics(
+                              label: linkCopied ? 'Link copied' : 'Copy invite link',
+                              button: true,
+                              child: InkWell(
+                                onTap: handleCopyLink,
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: context.colorSurface,
+                                    border: Border.all(color: context.colorBorder),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.link,
+                                            size: 20,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            linkCopied ? 'Link copied' : 'Copy invite link',
+                                            style: context.bodyPrimary,
+                                          ),
+                                        ],
+                                      ),
+                                      Icon(
+                                        linkCopied ? Icons.check : Icons.content_copy,
+                                        size: 20,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              padding: EdgeInsets.zero,
-                              itemCount: filteredContacts.length,
-                              itemBuilder: (context, index) {
-                                final c = filteredContacts[index];
-                                final primaryPhone = c.phones.isNotEmpty
-                                    ? _normalizePhone(c.phones.first.number)
-                                    : '';
-                                final phoneDisplay = primaryPhone.length == 10
-                                    ? '$_selectedCountryCode $primaryPhone'
-                                    : c.phones.isNotEmpty
-                                        ? c.phones.first.number
-                                        : '';
-                                return InkWell(
-                                  onTap: () => _onContactSelected(c),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        top: index > 0
-                                            ? BorderSide(color: theme.dividerColor, width: 1)
-                                            : BorderSide.none,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ADD BY PHONE', style: context.sectionLabel),
+                            const SizedBox(height: 12),
+                            TextField(
+                              onChanged: (value) => setState(() {
+                                name = value;
+                                _contactSuggestionsDismissed = false;
+                              }),
+                              decoration: InputDecoration(
+                                hintText: 'Name (optional)',
+                                helperText: (_contactsPermissionGranted && name.trim().isNotEmpty)
+                                    ? 'Suggestions from contacts appear below'
+                                    : null,
+                                helperMaxLines: 1,
+                              ),
+                              style: context.input,
+                            ),
+                            const SizedBox(height: 12),
+                            if (!_contactsPermissionGranted && _contactsPermissionChecked) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Contacts access was denied. You can still add members by entering a number below.',
+                                style: context.bodySecondary.copyWith(height: 1.4),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: _requestContactsAndLoad,
+                                icon: Icon(Icons.contacts_outlined, size: 18, color: context.colorPrimary),
+                                label: const Text('Access Contacts'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: context.colorPrimary,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: context.colorSurface,
+                                    border: Border.all(color: context.colorBorderInput),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: PopupMenuButton<String>(
+                                    onSelected: (code) => setState(() => _selectedCountryCode = code),
+                                    offset: const Offset(0, 48),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
+                                      value: c.dialCode,
+                                      child: Text(
+                                        '${c.dialCode} ${c.countryCode}',
+                                        style: context.input,
                                       ),
-                                    ),
+                                    )).toList(),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                c.displayName,
-                                                style: TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: theme.colorScheme.onSurface,
-                                                ),
-                                              ),
-                                              if (phoneDisplay.isNotEmpty) ...[
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  phoneDisplay,
-                                                  style: TextStyle(
-                                                    fontSize: 15,
-                                                    color: theme.colorScheme.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.person_add_outlined,
-                                          size: 20,
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                        ),
+                                        Text(_selectedCountryCode, style: context.input),
+                                        const SizedBox(width: 4),
+                                        Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                       ],
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    focusNode: _phoneFocusNode,
+                                    keyboardType: TextInputType.phone,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(10),
+                                    ],
+                                    onChanged: (value) => setState(() {
+                                      phone = value;
+                                      _contactSuggestionsDismissed = false;
+                                    }),
+                                    onSubmitted: (_) => handleAddMember(),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Phone number',
+                                    ),
+                                    style: context.input,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Semantics(
+                                  label: 'Add member by phone',
+                                  button: true,
+                                  child: ElevatedButton(
+                                    onPressed: phone.length == 10 ? handleAddMember : null,
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text('Add', style: AppTypography.button),
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (_contactsPermissionGranted && !_contactSuggestionsDismissed) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                name.trim().isNotEmpty ? 'SUGGESTIONS FROM CONTACTS' : 'FROM YOUR CONTACTS',
+                                style: context.sectionLabel,
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                constraints: const BoxConstraints(maxHeight: 280),
+                                decoration: BoxDecoration(
+                                  color: context.colorSurface,
+                                  border: Border.all(color: context.colorBorder),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: filteredContacts.isEmpty
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Text(
+                                          _allContacts.isEmpty
+                                              ? 'Loading contacts...'
+                                              : (name.trim().isNotEmpty || phone.isNotEmpty)
+                                                  ? 'No matching contacts'
+                                                  : 'All contacts already added',
+                                          style: context.bodySecondary,
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        shrinkWrap: true,
+                                        padding: EdgeInsets.zero,
+                                        itemCount: filteredContacts.length,
+                                        itemBuilder: (context, index) {
+                                          final c = filteredContacts[index];
+                                          final primaryPhone = c.phones.isNotEmpty
+                                              ? _normalizePhone(c.phones.first.number)
+                                              : '';
+                                          final phoneDisplay = primaryPhone.length == 10
+                                              ? '$_selectedCountryCode $primaryPhone'
+                                              : c.phones.isNotEmpty
+                                                  ? c.phones.first.number
+                                                  : '';
+                                          return InkWell(
+                                            onTap: () => _onContactSelected(c),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                              decoration: BoxDecoration(
+                                                border: Border(
+                                                  top: index > 0
+                                                      ? BorderSide(color: context.colorBorder, width: 1)
+                                                      : BorderSide.none,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(c.displayName, style: context.listItemTitle),
+                                                        if (phoneDisplay.isNotEmpty) ...[
+                                                          const SizedBox(height: 2),
+                                                          Text(phoneDisplay, style: context.bodySecondary),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Icon(
+                                                    Icons.person_add_outlined,
+                                                    size: 20,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                   ),
-                    ],
-                  ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: theme.dividerColor,
-                      width: 1,
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      child: Text(
-                        'MEMBERS',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: listMembers.length,
-                        itemBuilder: (context, index) {
-                          final member = listMembers[index];
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: index > 0
-                                    ? BorderSide(color: theme.dividerColor, width: 1)
-                                    : BorderSide.none,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  repo.getMemberDisplayName(member.phone),
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                                if (member.name.isNotEmpty)
-                                  Text(
-                                    member.phone,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                  child: Semantics(
+                    label: 'Done',
+                    button: true,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final updatedGroup = repo.getGroup(groupArg.id);
+                        if (updatedGroup != null) {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/group-detail',
+                            arguments: updatedGroup,
                           );
-                        },
+                        } else {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
                       ),
+                      child: const Text('Done', style: AppTypography.button),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            Container(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 12,
-                bottom: 12 + MediaQuery.of(context).padding.bottom,
-              ),
-              decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainerHighest : const Color(0xFFF7F7F8),
-                border: Border(
-                  top: BorderSide(
-                    color: theme.dividerColor,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  final updatedGroup = repo.getGroup(groupArg.id);
-                  if (updatedGroup != null) {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/group-detail',
-                      arguments: updatedGroup,
-                    );
-                  } else {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Done',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-    );
+          ),
+        );
       },
     );
   }
