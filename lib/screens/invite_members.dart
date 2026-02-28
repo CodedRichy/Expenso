@@ -13,10 +13,12 @@ import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class InviteMembers extends StatefulWidget {
+  final Group? group;
   final String groupName;
 
   const InviteMembers({
     super.key,
+    this.group,
     this.groupName = 'Group Name',
   });
 
@@ -198,7 +200,7 @@ class _InviteMembersState extends State<InviteMembers> {
 
   @override
   Widget build(BuildContext context) {
-    final groupArg = RouteArgs.getGroup(context);
+    final groupArg = widget.group ?? RouteArgs.getGroup(context);
     if (groupArg == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());

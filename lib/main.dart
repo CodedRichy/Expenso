@@ -15,6 +15,7 @@ import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
 import 'widgets/expenso_loader.dart';
 import 'screens/create_group.dart';
+import 'models/models.dart';
 import 'screens/invite_members.dart';
 import 'screens/group_detail.dart';
 import 'screens/expense_input.dart';
@@ -246,7 +247,10 @@ class MyApp extends StatelessWidget {
         ),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
-        '/invite-members': (context) => const InviteMembers(),
+        '/invite-members': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return InviteMembers(group: group, groupName: group?.name ?? 'Group');
+        },
         '/group-detail': (context) => const GroupDetail(),
         '/expense-input': (context) => const ExpenseInput(),
         '/undo-expense': (context) {
