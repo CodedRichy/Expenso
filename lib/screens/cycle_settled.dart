@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
+import '../models/models.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 import '../widgets/fade_in.dart';
 
 class CycleSettled extends StatelessWidget {
-  const CycleSettled({super.key});
+  final Group? group;
+
+  const CycleSettled({super.key, this.group});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final group = RouteArgs.getGroup(context);
-    if (group == null) {
+    final resolvedGroup = group ?? RouteArgs.getGroup(context);
+    if (resolvedGroup == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
@@ -72,9 +75,9 @@ class CycleSettled extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Semantics(
-                          label: '${formatMoneyFromMajor(group.amount, group.currencyCode)} settled',
+                          label: '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
                           child: Text(
-                            '${formatMoneyFromMajor(group.amount, group.currencyCode)} settled',
+                            '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
                             textAlign: TextAlign.center,
                             style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
@@ -97,7 +100,7 @@ class CycleSettled extends StatelessWidget {
                                     context,
                                     '/group-detail',
                                     (route) => route.isFirst,
-                                    arguments: group,
+                                    arguments: resolvedGroup,
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -120,7 +123,7 @@ class CycleSettled extends StatelessWidget {
                               button: true,
                               child: OutlinedButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/cycle-history', arguments: group);
+                                  Navigator.pushNamed(context, '/cycle-history', arguments: resolvedGroup);
                                 },
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,

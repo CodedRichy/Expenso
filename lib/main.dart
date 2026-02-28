@@ -251,8 +251,14 @@ class MyApp extends StatelessWidget {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;
           return InviteMembers(group: group, groupName: group?.name ?? 'Group');
         },
-        '/group-detail': (context) => const GroupDetail(),
-        '/expense-input': (context) => const ExpenseInput(),
+        '/group-detail': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return GroupDetail(group: group);
+        },
+        '/expense-input': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return ExpenseInput(group: group);
+        },
         '/undo-expense': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return UndoExpense(
@@ -263,12 +269,40 @@ class MyApp extends StatelessWidget {
           );
         },
         '/edit-expense': (context) => const EditExpense(),
-        '/group-members': (context) => const GroupMembers(),
+        '/group-members': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return GroupMembers(group: group);
+        },
         '/member-change': (context) => const MemberChange(),
-        '/settlement-confirmation': (context) => const SettlementConfirmation(),
-        '/payment-result': (context) => const PaymentResult(),
-        '/cycle-settled': (context) => const CycleSettled(),
-        '/cycle-history': (context) => const CycleHistory(),
+        '/settlement-confirmation': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final group = args is Group ? args : (args is Map<String, dynamic> ? args['group'] as Group? : null);
+          return SettlementConfirmation(group: group);
+        },
+        '/payment-result': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          Group? group;
+          String status = 'success';
+          double? amount;
+          String? transactionId;
+          if (args is Group) {
+            group = args;
+          } else if (args is Map<String, dynamic>) {
+            group = args['group'] as Group?;
+            status = args['status'] as String? ?? status;
+            amount = (args['amount'] as num?)?.toDouble();
+            transactionId = args['transactionId'] as String?;
+          }
+          return PaymentResult(group: group, status: status, amount: amount, transactionId: transactionId);
+        },
+        '/cycle-settled': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return CycleSettled(group: group);
+        },
+        '/cycle-history': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return CycleHistory(group: group);
+        },
         '/cycle-history-detail': (context) => const CycleHistoryDetail(),
         '/empty-states': (context) => const EmptyStates(),
         '/error-states': (context) {

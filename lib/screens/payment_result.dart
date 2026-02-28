@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../design/typography.dart';
+import '../models/models.dart';
 import '../utils/route_args.dart';
 import '../utils/money_format.dart';
 
 class PaymentResult extends StatefulWidget {
+  final Group? group;
   final String status;
   final double? amount;
   final String? transactionId;
 
   const PaymentResult({
     super.key,
+    this.group,
     this.status = 'success',
     this.amount,
     this.transactionId,
@@ -46,7 +49,7 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final group = RouteArgs.getGroup(context);
+    final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());

@@ -17,7 +17,9 @@ import '../widgets/upi_payment_card.dart';
 import '../utils/money_format.dart';
 
 class SettlementConfirmation extends StatefulWidget {
-  const SettlementConfirmation({super.key});
+  final Group? group;
+
+  const SettlementConfirmation({super.key, this.group});
 
   @override
   State<SettlementConfirmation> createState() => _SettlementConfirmationState();
@@ -30,7 +32,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _group = RouteArgs.getGroup(context);
+    _group = widget.group ?? RouteArgs.getGroup(context);
     if (_group != null) {
       _loadPaymentAttempts();
     } else {

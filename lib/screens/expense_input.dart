@@ -353,7 +353,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   @override
   Widget build(BuildContext context) {
-    final group = RouteArgs.getGroup(context);
+    final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());

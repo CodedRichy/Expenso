@@ -3,6 +3,7 @@ import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/cycle.dart';
+import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
@@ -10,7 +11,9 @@ import '../services/locale_service.dart';
 import '../widgets/gradient_scaffold.dart';
 
 class CycleHistory extends StatefulWidget {
-  const CycleHistory({super.key});
+  final Group? group;
+
+  const CycleHistory({super.key, this.group});
 
   @override
   State<CycleHistory> createState() => _CycleHistoryState();
@@ -24,7 +27,7 @@ class _CycleHistoryState extends State<CycleHistory> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final group = RouteArgs.getGroup(context);
+    final group = widget.group ?? RouteArgs.getGroup(context);
     if (group != null && _groupId != group.id) {
       _groupId = group.id;
       _loadHistory();
@@ -50,7 +53,7 @@ class _CycleHistoryState extends State<CycleHistory> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final group = RouteArgs.getGroup(context);
+    final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
       return const Scaffold(body: SizedBox.shrink());

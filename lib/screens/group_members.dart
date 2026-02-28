@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
+import '../models/models.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
 
 class GroupMembers extends StatelessWidget {
-  const GroupMembers({super.key});
+  final Group? group;
+
+  const GroupMembers({super.key, this.group});
 
   @override
   Widget build(BuildContext context) {
-    final group = RouteArgs.getGroup(context);
-    if (group == null) {
+    final resolvedGroup = group ?? RouteArgs.getGroup(context);
+    if (resolvedGroup == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
       return const Scaffold(body: SizedBox.shrink());
     }
@@ -24,7 +27,7 @@ class GroupMembers extends StatelessWidget {
     return ListenableBuilder(
       listenable: repo,
       builder: (context, _) {
-        final currentGroup = repo.getGroup(group.id);
+        final currentGroup = repo.getGroup(resolvedGroup.id);
         if (currentGroup == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
@@ -36,7 +39,7 @@ class GroupMembers extends StatelessWidget {
             body: const Center(child: ExpensoLoader()),
           );
         }
-        final listMembers = repo.getMembersForGroup(group.id);
+        final listMembers = repo.getMembersForGroup(resolvedGroup.id);
         final currentUserId = repo.currentUserId;
         
         return Scaffold(
@@ -70,7 +73,7 @@ class GroupMembers extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        group.name,
+                        resolvedGroup.name,
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w600,
@@ -119,10 +122,10 @@ class GroupMembers extends StatelessWidget {
                               ...listMembers.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final member = entry.value;
-                                final remainingBalance = repo.getRemainingBalance(group.id, member.id);
+                                final remainingBalance = repo.getRemainingBalance(currentGroup.id, member.id);
                                 final isCreator = member.id == currentGroup.creatorId;
                                 final isPending = member.id.startsWith('p_');
-                                final canRemove = repo.isCreator(group.id, currentUserId) && 
+                                final canRemove = repo.isCreator(currentGroup.id, currentUserId) && 
                                     !isCreator && 
                                     member.id != currentUserId;
                                 
@@ -150,8 +153,8 @@ class GroupMembers extends StatelessWidget {
                                       context,
                                       '/member-change',
                                       arguments: {
-                                        'groupId': group.id,
-                                        'groupName': group.name,
+                                        'groupId': currentGroup.id,
+                                        'groupName': currentGroup.name,
                                         'memberId': member.id,
                                         'memberPhone': member.phone,
                                         'action': 'remove',
@@ -255,7 +258,7 @@ class GroupMembers extends StatelessWidget {
                 Navigator.pushNamed(
                   context,
                   '/invite-members',
-                  arguments: currentGroup,
+                  arguments: currentGroup ?? resolvedGroup,
                 );
               },
               backgroundColor: context.colorPrimary,
