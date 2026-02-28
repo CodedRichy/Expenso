@@ -56,12 +56,9 @@ The home route `/` uses **Firebase Auth state** first, then repo state:
 
 Every UID in the app comes from Firebase Auth; there is no mock user id.
 
-**PhoneAuth** — Phone (primary) and Google sign-in.
+**PhoneAuth** — Phone (OTP) only. User enters phone → OTP step. When Firebase is configured, `PhoneAuthService.verifyPhoneNumber`; `codeSent` → OTP screen; user enters 6-digit code; on verify, `signInWithCredential` then auth state updates and repo is synced. Test number hint for +91 79022 03218 → code **123456**. When Firebase is not configured: mock flow (any 10 digits → OTP step, any 6 digits → `setGlobalProfile` only).
 
-- **Phone:** User enters phone → OTP step. When Firebase is configured, `PhoneAuthService.verifyPhoneNumber`; `codeSent` → OTP screen; user enters 6-digit code; on verify, `signInWithCredential` then auth state updates and repo is synced. Test number hint for +91 79022 03218 → code **123456**. When Firebase is not configured: mock flow (any 10 digits → OTP step, any 6 digits → `setGlobalProfile` only).
-- **Google:** "Sign in with Google" button (shown when Firebase is configured). `PhoneAuthService.signInWithGoogle()` uses Google Sign-In then Firebase `signInWithCredential`; auth state updates and repo is synced with uid, displayName, and photoURL (phone left empty for Google users).
-
-To enable: run `dart run flutterfire configure`, enable **Phone** and optionally **Google** in Firebase Console → Authentication → Sign-in method, add SHA-1/SHA-256 for Android (see `docs/features/PHONE_AUTH_SETUP.md`).
+To enable: run `dart run flutterfire configure`, enable **Phone** in Firebase Console → Authentication → Sign-in method, add SHA-1/SHA-256 for Android (see `docs/features/PHONE_AUTH_SETUP.md`).
 
 **OnboardingNameScreen** — “What should we call you?” → user taps “Get Started” → `setGlobalProfile(repo.currentUserPhone, name)` and `FirebaseAuth.instance.currentUser?.updateDisplayName(name)` so the name persists across restarts.
 

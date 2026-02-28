@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
-/// Centralized auth: phone (primary) and Google sign-in.
+/// Centralized auth: phone (OTP) only.
 /// Handles [codeSent] (OTP screen), [verificationCompleted] (instant sign-in),
 /// and specific error handling for invalid-verification-code and too-many-requests.
 class PhoneAuthService {
@@ -89,23 +88,8 @@ class PhoneAuthService {
     await _auth.signInWithCredential(credential);
   }
 
-  /// Sign in with Google. On success Firebase user is set (authStateChanges emits).
-  /// Throws on cancel or error; [messageForError] can format FirebaseAuthException.
-  Future<void> signInWithGoogle() async {
-    final googleSignIn = GoogleSignIn();
-    final account = await googleSignIn.signIn();
-    if (account == null) return;
-    final auth = await account.authentication;
-    final credential = GoogleAuthProvider.credential(
-      idToken: auth.idToken,
-      accessToken: auth.accessToken,
-    );
-    await _auth.signInWithCredential(credential);
-  }
-
   /// Sign out. Auth state stream will emit null; app should show login.
   Future<void> signOut() async {
-    await GoogleSignIn().signOut();
     await _auth.signOut();
   }
 }
