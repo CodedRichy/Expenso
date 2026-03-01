@@ -404,7 +404,20 @@ RULE C (Participant Guard): If the user says "Everyone except X", set splitType 
 RULE D (Settlement): "Clear my debt", "paid me back" = Settlement. If the intent is settling a debt instead of a shared group expense, set parseConfidence: "reject".
 
 --- STEP-BY-STEP CALCULATION (for exact splits) ---
-Before generating JSON, calculate the balance: Total Amount = [X]. Specified Exact Amounts = Sum of all mentioned individual costs. Remainder = (Total Amount) - (Specified Exact Amounts). Split the Remainder equally among all participants (including those with exact amounts). Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any). Ensure the sum of exactAmounts matches the Total Amount exactly. CRITICAL: exactAmounts values MUST be raw numbers (e.g. 650), NEVER strings with math (e.g. "2600/4").
+Before generating JSON, calculate the balance:
+
+Total Amount = [X]
+
+Specified Exact Amounts = Sum of all mentioned individual costs.
+
+Remainder = (Total Amount) - (Specified Exact Amounts).
+
+Split the Remainder equally among all participants (including those with exact amounts).
+
+Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any).
+
+Ensure the sum of exactAmounts matches the Total Amount exactly.
+CRITICAL: You are a JSON generator, NOT a calculator output. You MUST evaluate all math before outputting. exactAmounts values MUST be raw numbers (e.g. 650), NEVER strings with math (e.g. "2600/4")!
 
 CONFIDENT only if ALL true:
 - amount > 0

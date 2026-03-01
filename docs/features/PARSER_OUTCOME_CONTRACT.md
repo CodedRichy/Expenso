@@ -163,3 +163,7 @@ When rejecting: set `parseConfidence: "reject"` and `needsClarification: true`. 
 7. **No amount → never confident.** If amount is missing or 0, never output `parseConfidence: "confident"`. Use constrained + `amountUnresolved` or reject.
 
 8. **Future intent → reject.** “I’ll take care of mine next time” / promises about the future are not recordable. Reject with `futureIntentNotRecordable`. Never allow future intent into accounting.
+
+9. **Exact splits MUST equal the total.** If `splitType` is `"exact"`, the sum of all values in `exactAmounts` MUST perfectly equal the `amount`. If the sum has a "GAP" (e.g. partial amounts are given, but the remainder is not allocated), the system will defensively intercept it as a Validation Error.
+
+10. **The Remainder Rule.** When a user specifies a specific cost for themselves or someone else out of a larger total, the parser MUST distribute the remaining balance equally among all participants, then add that base share to the individual's specific cost, ensuring the total matches exactly. If the parser hallucinates math formulas (e.g., "2600/4") instead of evaluating them, the validation guard will fail it.
