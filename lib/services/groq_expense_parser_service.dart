@@ -297,7 +297,8 @@ class GroqExpenseParserService {
   }
 
   static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const String _model = 'llama-3.3-70b-versatile';
+  // Model aligned with CLI parser (tool/parser_cli.dart) for consistent behavior.
+  static const String _model = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
   static String? get _apiKey {
     final key = dotenv.env['GROQ_API_KEY'];
