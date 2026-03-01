@@ -300,9 +300,8 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This Scaffold is the 'anchor'. It paints the white/dark background 
-    // immediately so the Splash grey fades directly into this color.
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<User?>(
         initialData: FirebaseAuth.instance.currentUser,
         stream: PhoneAuthService.instance.authStateChanges,
