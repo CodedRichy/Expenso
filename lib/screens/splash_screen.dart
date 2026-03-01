@@ -86,8 +86,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 },
                 child: Image.asset(
                   'assets/images/logoRevamp.png',
-                  width: 150,
-                  height: 150,
+                  width: 220,
+                  height: 220,
                 ),
               ),
       ),
