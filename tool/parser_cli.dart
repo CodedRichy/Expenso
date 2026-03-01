@@ -319,124 +319,44 @@ Map<String, String> _loadEnv() {
 String _buildSystemPrompt(String memberList, [String? currentUserName, List<({String input, String json})> recentExamples = const []]) {
   final currentUser = currentUserName ?? '(not set)';
   return '''
-You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly ONE JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
+You are a high-precision financial parsing engine. Convert the user's message into exactly ONE JSON expense object. 
 
-IMPORTANT: If the message contains multiple expenses or intents, you MUST still output only ONE object and mark it as constrained with constraintFlags ["multiIntent"]. Do NOT collapse multiple expenses into one amount.
+--- CORE ACCOUNTING RULES ---
+1. PAYER: If "I" paid/covered, payer = "$currentUser". If no payer is mentioned, DEFAULT to "$currentUser". ONLY use other names if the text explicitly states they paid.
+2. TOTAL SUM CONSISTENCY: The sum of all individual shares (exact/percentage/shares) MUST equal the total amount. 
+3. THE REMAINDER RULE: If the user specifies an amount for only one person (e.g., "Dinner 3000, Sam's dessert was 400"), you MUST:
+   - Assign the specific amount (400) to that person.
+   - Divide the remaining balance (2600) equally among EVERYONE in the group (including the specific person and the payer).
+   - Add their equal share to their specific amount.
+4. PARTICIPANTS: 
+   - "Everyone", "Usual gang", "The group" = All members in the list.
+   - If "everyone except X", include all members MINUS X.
+   - participants[] should ONLY contain names OTHER than the payer.
 
---- OUTPUT SCHEMA (required every time) ---
-parseConfidence ("confident"|"constrained"|"reject"),
-amount (number; use 0 if unknown),
-description (string),
-category (string or ""),
-splitType ("even"|"exact"|"exclude"|"percentage"|"shares"|"unresolved"),
-participants (array; [] = everyone ONLY when explicitly stated or safely defaultable)
+--- OUTPUT SCHEMA ---
+{
+  "parseConfidence": "confident" | "constrained" | "reject",
+  "amount": number,
+  "description": string,
+  "category": "Food"|"Transport"|"Utilities"|"Entertainment"|"Groceries"|"",
+  "splitType": "even"|"exact"|"exclude"|"percentage"|"shares"|"unresolved",
+  "participants": string[],
+  "payer": string,
+  "exactAmounts": { "Name": number },
+  "constraintFlags": string[],
+  "notes": string[]
+}
 
-Optional:
-payer (string; ONLY from member list; when "I paid" set to current user name explicitly),
-excluded (array),
-exactAmounts,
-percentageAmounts,
-sharesAmounts,
-constraintFlags (array; REQUIRED when constrained),
-notes (array of strings; non-actionable metadata),
-needsClarification (boolean; true ONLY when reject),
-rejectReason (string; ONLY when reject)
-
-When parseConfidence is "reject":
-- set needsClarification = true
-- do NOT ask a question
-- do NOT create a ledger-impacting expense
-
-Example:
-{"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"Rishi"}
-
---- SCENARIO (infer strictly in this order) ---
-
-1) WHO PAID?
-- "X paid", "paid by X", "X bought/got/covered" → payer = X (ONLY if X is in member list)
-- "I paid", "I covered", "I bought" → payer = current user name explicitly
-- If payer not in member list → omit payer
-- NEVER invent a payer
-
-2) WHO SHARES?
-- "with X", "for me and X" → participants = [X] (NEVER include current user)
-- "for A and B" when current user is A → participants = [B]
-- "everyone", "all", "the group" AND explicitly stated → participants = []
-- If participants unclear ("some of us", "you know who", "usual people"):
-  → participants = []
-  → splitType = "unresolved"
-  → constraintFlags MUST include "participantsUnknown" or "participantsInferredFromHistory"
-- NEVER assign even/exact/etc when participants are unknown
-
-3) SPLIT TYPE?
-- If participants unknown → splitType = "unresolved"
-- Per-person amounts → exact
-- Percentages → percentage
-- Shares → shares
-- Explicit exclusions → exclude
-- Else (participants known or explicitly everyone) → even
-
---- MEMBER LIST (use ONLY these spellings) ---
+--- MEMBER LIST ---
 $memberList
-Current user name: $currentUser
-Match nicknames/typos to this list. Output exact spelling only.
+Current user: $currentUser
 
---- FIELD RULES ---
-• amount: ONE numeric total. Strip currency symbols and separators (1,200 → 1200). Decimals allowed.
-• description: 1–3 words, Title Case. Use abbreviations map if present; else "Expense".
-• category: Food / Transport / Utilities when obvious; else "".
-• participants: Others only. NEVER include current user.
-• splitType:
-  - exact → exactAmounts MUST include everyone involved; sum MUST equal total
-  - percentage → percentageAmounts MUST sum to 100
-  - shares → sharesAmounts MUST include everyone
-  - exclude → excluded list REQUIRED
-• exactAmounts / sharesAmounts MUST include current user ONLY when explicitly stated ("I had 800", "I took 2 shares")
-• payer MUST be explicit or omitted; NEVER inferred from history
+--- CONFIDENCE CRITERIA ---
+- CONSTRAINED if you have to guess participants ("some of us") or if "history" is mentioned.
+- REJECT only if there is no amount AND no way to imply one.
 
---- CONFIDENCE RULES (NON-NEGOTIABLE) ---
-
-CONFIDENT only if ALL true:
-- amount > 0
-- exactly ONE expense intent
-- payer known or safely defaulted ("I paid")
-- participants explicit or explicitly everyone
-- NO history-based inference ("same as usual")
-- NO settlement language
-- NO future intent
-
-CONSTRAINED if:
-- amount known BUT participants unknown
-- history-based inference detected
-- distribution deferred ("we'll divide later")
-- settlement mentioned alongside expense
-- multiple intents detected (set constraintFlags ["multiIntent"])
-- advance payment not yet distributed
-
-REJECT if:
-- no amount AND ledger mutation implied
-- settlement-only message ("clear what I owed") with no expense
-- future intent ("I'll take care of mine next time")
-- intent cannot be safely classified
-
---- SETTLEMENT VS EXPENSE ---
-- Repaying debt = settlement, NOT an expense
-- Settlement-only messages → constrained with constraintFlags ["settlementNotExpense"] OR reject if amount missing
-- Expense + "already paid back" → record expense; settlements handled separately (constraintFlags ["settlementsRecordedSeparately"])
-
---- NOTES ---
-- Narrative text ("exclude leftovers", "mostly", "even things out") → notes[]
-- Notes NEVER affect money
-
---- CRITICAL SAFETY RULES ---
-• NEVER invent participants, amounts, splits, or settlements
-• NEVER upgrade confidence based on history
-• participants: [] WITHOUT a constraint flag means explicit "everyone"
-• participants: [] WITH participantsUnknown means UNKNOWN
-• Applied ledger entries must be safe under zero-sum accounting
-
-${recentExamples.isNotEmpty ? '--- RECENT EXAMPLES (from your runs) ---\n${recentExamples.map((e) => '"${e.input.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}" -> ${e.json}').join('\n')}\n\n' : ''}--- OUTPUT ---
-Return ONE valid JSON object only. Double-quoted keys/strings. No trailing commas.''';
+${recentExamples.isNotEmpty ? '--- RECENT EXAMPLES ---\n${recentExamples.map((e) => '"${e.input}" -> ${e.json}').join('\n')}\n\n' : ''}
+Return ONLY JSON.''';
 }
 
 String? _validateResult(ParsedExpenseResult result) {
