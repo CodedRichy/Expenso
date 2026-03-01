@@ -17,7 +17,7 @@ const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
 const _model = 'llama-3.3-70b-versatile';
 const _logPath = 'tool/parser_runs.log';
 const _rateLimitTpm = 12000;
-const _minIntervalSeconds = 4;
+const _minIntervalSeconds = 30;
 const _maxRecentExamples = 5;
 
 const _lastRequestStampPath = 'tool/.parser_last_request';
