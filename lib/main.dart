@@ -302,14 +302,14 @@ class RootScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
+      initialData: FirebaseAuth.instance.currentUser,
       stream: PhoneAuthService.instance.authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: ExpensoLoader()),
-          );
-        }
-        final user = snapshot.data;
+        // Use initialData or current auth state to prevent a jarring 1-frame loader layout shift during the splash transition
+        final user = snapshot.connectionState == ConnectionState.waiting 
+            ? FirebaseAuth.instance.currentUser 
+            : snapshot.data;
+            
         final repo = CycleRepository.instance;
         if (user == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
