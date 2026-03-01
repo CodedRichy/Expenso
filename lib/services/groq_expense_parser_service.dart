@@ -251,8 +251,7 @@ class GroqExpenseParserService {
   }
 
   /// Returns an error message if [result] is invalid; null if valid.
-  /// For confident: amount > 0, splitType not unresolved, and exact/percentage sums match.
-  /// Aligned with CLI (parser_cli.dart): demote confident+unresolved/history; settlements must be rejected.
+  /// Aligned with CLI (tool/parser_cli.dart): demote confident+unresolved/history; settlements must be rejected.
   static String? validateResult(ParsedExpenseResult result) {
     if (result.amount.isNaN || result.amount.isInfinite) {
       return 'Amount must be a valid number.';
@@ -265,14 +264,6 @@ class GroqExpenseParserService {
     if ((descLower.contains('debt') || descLower.contains('settle')) &&
         result.parseConfidence != 'reject') {
       return 'Validation: Settlements must be REJECTED.';
-    }
-    if (result.parseConfidence == 'confident') {
-      if (result.amount <= 0) return 'Amount must be greater than 0.';
-      if (result.splitType == 'unresolved') {
-        return 'Confident parse cannot have splitType unresolved.';
-      }
-      final gap = _findGap(result);
-      if (gap != null) return gap;
     }
     return null;
   }
@@ -590,6 +581,16 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         final fallback = _fallbackParse(userInput);
         if (fallback != null) return fallback;
         throw Exception(validationError);
+      }
+
+      String? gap;
+      if (result.parseConfidence == 'confident') {
+        gap = _findGap(result);
+      }
+      if (gap != null) {
+        final fallback = _fallbackParse(userInput);
+        if (fallback != null) return fallback;
+        throw Exception(gap);
       }
 
       final desc = result.description.trim();
