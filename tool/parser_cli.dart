@@ -374,7 +374,7 @@ Split the Remainder equally among all participants (including those with exact a
 Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any).
 
 Ensure the sum of exactAmounts matches the Total Amount exactly.
-
+CRITICAL: You are a JSON generator, NOT a calculator output. You MUST evaluate all math before outputting. exactAmounts values MUST be raw numbers (e.g. 650), NEVER strings with math (e.g. "2600/4")!
 ${recentExamples.isNotEmpty ? '--- RECENT EXAMPLES ---\n${recentExamples.map((e) => '"${e.input}" -> ${e.json}').join('\n')}\n\n' : ''}
 Return ONLY JSON.''';
 }
