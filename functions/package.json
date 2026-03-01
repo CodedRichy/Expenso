@@ -2,6 +2,9 @@
   "name": "expenso-functions",
   "description": "Cloud Functions for Expenso (Razorpay order creation)",
   "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
   "engines": {
     "node": "20"
   },

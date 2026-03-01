@@ -14,7 +14,10 @@ function deriveKey(prefix, id) {
   } else {
     master = Buffer.from(raw, 'utf8');
   }
-  return crypto.createHmac('sha256', master, prefix + ':' + id).digest('base64');
+  return crypto
+    .createHmac('sha256', master)
+    .update(prefix + ':' + id)
+    .digest('base64');
 }
 
 const getUserEncryptionKey = onCall(
