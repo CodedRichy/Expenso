@@ -211,6 +211,7 @@ class MyApp extends StatelessWidget {
           ],
           initialRoute: 'splash',
           routes: {
+        'splash': (context) => const SplashScreen(),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
         '/invite-members': (context) {
@@ -278,13 +279,6 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         },
         onGenerateRoute: (settings) {
-          if (settings.name == 'splash') {
-            return PageRouteBuilder(
-              pageBuilder: (context, _, __) => const SplashScreen(),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            );
-          }
           if (settings.name == '/') {
             return PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
@@ -307,39 +301,39 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      initialData: FirebaseAuth.instance.currentUser,
-      stream: PhoneAuthService.instance.authStateChanges,
-      builder: (context, snapshot) {
-        // Use initialData or current auth state to prevent a jarring 1-frame loader layout shift during the splash transition
-        final user = snapshot.connectionState == ConnectionState.waiting 
-            ? FirebaseAuth.instance.currentUser 
-            : snapshot.data;
-            
-        final repo = CycleRepository.instance;
-        if (user == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
-          return const PhoneAuth();
-        }
-        repo.setAuthFromFirebaseUserSync(
-          user.uid,
-          user.phoneNumber,
-          user.displayName,
-          photoURL: user.photoURL,
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await repo.continueAuthFromFirebaseUser();
-          // Initialize FCM after auth is complete
-          FcmTokenService.instance.initialize(user.uid);
-        });
-        return ListenableBuilder(
-          listenable: repo,
-          builder: (context, _) {
-            if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
-            return const GroupsList();
-          },
-        );
-      },
+    // The Scaffold here ensures an immediate, theme-aware background color
+    // (white in light mode, dark in dark mode) so no gray shows through.
+    return Scaffold(
+      body: StreamBuilder<User?>(
+        initialData: FirebaseAuth.instance.currentUser,
+        stream: PhoneAuthService.instance.authStateChanges,
+        builder: (context, snapshot) {
+          final user = snapshot.data;
+          final repo = CycleRepository.instance;
+
+          if (user == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
+            return const PhoneAuth();
+          }
+
+          // Sync user data
+          repo.setAuthFromFirebaseUserSync(
+            user.uid,
+            user.phoneNumber,
+            user.displayName,
+            photoURL: user.photoURL,
+          );
+
+          return ListenableBuilder(
+            listenable: repo,
+            builder: (context, _) {
+              // Ensure these screens also have Scaffolds with background colors
+              if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
+              return const GroupsList();
+            },
+          );
+        },
+      ),
     );
   }
 }

@@ -64,10 +64,14 @@ class _SplashScreenState extends State<SplashScreen>
           context,
           PageRouteBuilder(
             settings: const RouteSettings(name: '/'),
-            opaque: true,
             pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
             transitionDuration: const Duration(milliseconds: 300),
+            reverseTransitionDuration: Duration.zero,
+            opaque: true, // Ensures the splash is discarded after transition
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // Use a standard FadeTransition. 
+              // Because we aren't wrapping the splash in an animation, 
+              // it remains static underneath until the new route is opaque.
               return FadeTransition(
                 opacity: CurvedAnimation(
                   parent: animation,
