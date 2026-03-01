@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../widgets/expenso_loader.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -59,7 +60,18 @@ class _SplashScreenState extends State<SplashScreen>
           _loaderHoldDuration,
       () {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushAndRemoveUntil(
+          context,
+          PageRouteBuilder(
+            settings: const RouteSettings(name: '/'),
+            pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
+            transitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+          (route) => false,
+        );
       },
     );
   }
@@ -94,8 +106,8 @@ class _SplashBody extends StatelessWidget {
               opacity: state._logoOpacity,
               child: Image.asset(
                 'assets/images/logoRevamp.png',
-                width: 220,
-                height: 220,
+                width: 300,
+                height: 300,
               ),
             ),
     );
