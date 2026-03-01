@@ -9,6 +9,7 @@ import '../services/connectivity_service.dart';
 import '../utils/money_format.dart';
 import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
+import '../widgets/tap_scale.dart';
 
 class ParsedExpense {
   final String description;
@@ -208,7 +209,16 @@ class _ExpenseInputState extends State<ExpenseInput> {
             return TapScale(
               child: ChoiceChip(
                 label: Text(displayName),
-...
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) setState(() => _paidById = member.id);
+                },
+                selectedColor: theme.colorScheme.primary,
+                labelStyle: TextStyle(
+                  fontSize: 15,
+                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                ),
+                backgroundColor: theme.colorScheme.surface,
                 side: BorderSide(
                   color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
                 ),
@@ -244,10 +254,50 @@ class _ExpenseInputState extends State<ExpenseInput> {
           scaleDown: 0.99,
           child: InkWell(
             onTap: () {
-...
+              setState(() {
+                if (allSelected) {
+                  selectedMemberIds.removeAll(allIds);
+                } else {
+                  selectedMemberIds.addAll(allIds);
+                }
+              });
             },
             child: Padding(
-...
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Checkbox(
+                      value: allSelected,
+                      tristate: false,
+                      onChanged: (_) {
+                        setState(() {
+                          if (allSelected) {
+                            selectedMemberIds.removeAll(allIds);
+                          } else {
+                            selectedMemberIds.addAll(allIds);
+                          }
+                        });
+                      },
+                      activeColor: theme.colorScheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Select All',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -258,10 +308,48 @@ class _ExpenseInputState extends State<ExpenseInput> {
             scaleDown: 0.99,
             child: InkWell(
               onTap: () {
-...
+                setState(() {
+                  if (isSelected) {
+                    selectedMemberIds.remove(member.id);
+                  } else {
+                    selectedMemberIds.add(member.id);
+                  }
+                });
               },
               child: Padding(
-...
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: Checkbox(
+                        value: isSelected,
+                        onChanged: (_) {
+                          setState(() {
+                            if (isSelected) {
+                              selectedMemberIds.remove(member.id);
+                            } else {
+                              selectedMemberIds.add(member.id);
+                            }
+                          });
+                        },
+                        activeColor: theme.colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
