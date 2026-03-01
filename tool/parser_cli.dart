@@ -352,9 +352,13 @@ You are a high-precision financial parsing engine. Convert the user's message in
 $memberList
 Current user: $currentUser
 
---- CONFIDENCE CRITERIA ---
+--- CONFIDENCE CRITERIA & STRICT RULES ---
+- RULE A (Integrity): If splitType is "unresolved", parseConfidence MUST be "constrained". NEVER mark a history-dependent split as confident.
+- RULE B (Exactness): If splitType is "exact", exactAmounts MUST be populated and their sum MUST exactly equal the total amount. If you cannot calculate the specific numbers, use splitType: "unresolved" and mark as "constrained".
+- RULE C (Participant Guard): If the user says "Everyone except X", set splitType to "exclude", put X in the "excluded" array, and leave "participants" empty. Do NOT manually resolve the participants into a list.
+- RULE D (Settlement): "Clear my debt", "paid me back" = Settlement. If the intent is settling a debt instead of a shared group expense, set parseConfidence: "reject".
 - CONSTRAINED if you have to guess participants ("some of us") or if "history" is mentioned.
-- REJECT only if there is no amount AND no way to imply one.
+- REJECT only if there is no amount AND no way to imply one, or if it is a settlement.
 
 ${recentExamples.isNotEmpty ? '--- RECENT EXAMPLES ---\n${recentExamples.map((e) => '"${e.input}" -> ${e.json}').join('\n')}\n\n' : ''}
 Return ONLY JSON.''';
