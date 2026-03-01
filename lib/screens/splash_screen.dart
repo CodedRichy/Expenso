@@ -1,20 +1,103 @@
 import 'package:flutter/material.dart';
+import '../widgets/expenso_loader.dart';
 
-class ExpensoLoader extends StatelessWidget {
-  const ExpensoLoader({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  static const _logoFadeInDuration = Duration(milliseconds: 400);
+  static const _logoHoldDuration = Duration(milliseconds: 1000);
+  static const _logoFadeOutDuration = Duration(milliseconds: 300);
+  static const _loaderHoldDuration = Duration(milliseconds: 1500);
+
+  late final AnimationController _logoController;
+  late final Animation<double> _logoOpacity;
+
+  bool _showLoader = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _logoController = AnimationController(
+      vsync: this,
+      duration: _logoFadeInDuration,
+    );
+
+    _logoOpacity = CurvedAnimation(
+      parent: _logoController,
+      curve: Curves.easeOut,
+    );
+
+    _logoController.forward();
+
+    // Fade out logo
+    Future.delayed(_logoFadeInDuration + _logoHoldDuration, () {
+      if (!mounted) return;
+      _logoController.reverse();
+    });
+
+    // Show loader after logo fades out
+    Future.delayed(
+      _logoFadeInDuration + _logoHoldDuration + _logoFadeOutDuration,
+      () {
+        if (!mounted) return;
+        setState(() => _showLoader = true);
+      },
+    );
+
+    // Navigate to app
+    Future.delayed(
+      _logoFadeInDuration +
+          _logoHoldDuration +
+          _logoFadeOutDuration +
+          _loaderHoldDuration,
+      () {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _logoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 48,
-      height: 48,
-      child: CircularProgressIndicator(
-        strokeWidth: 3,
-        backgroundColor: Colors.transparent,
-        valueColor: AlwaysStoppedAnimation<Color>(
-          Color(0xFF1E1E1E), // or white depending on logo contrast
-        ),
-      ),
+    return const Scaffold(
+      backgroundColor: Color(0xFF7E7E7E),
+      body: _SplashBody(),
+    );
+  }
+}
+
+class _SplashBody extends StatelessWidget {
+  const _SplashBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final state =
+        context.findAncestorStateOfType<_SplashScreenState>()!;
+
+    return Center(
+      child: state._showLoader
+          ? const ExpensoLoader()
+          : FadeTransition(
+              opacity: state._logoOpacity,
+              child: Image.asset(
+                'assets/images/logoRevamp.png',
+                width: 220,
+                height: 220,
+              ),
+            ),
     );
   }
 }
