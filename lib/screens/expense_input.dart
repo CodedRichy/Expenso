@@ -205,20 +205,13 @@ class _ExpenseInputState extends State<ExpenseInput> {
           children: members.map((member) {
             final isSelected = _paidById == member.id;
             final displayName = repo.getMemberDisplayNameById(member.id);
-            return ChoiceChip(
-              label: Text(displayName),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) setState(() => _paidById = member.id);
-              },
-              selectedColor: theme.colorScheme.primary,
-              labelStyle: TextStyle(
-                fontSize: 15,
-                color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
-              ),
-              backgroundColor: theme.colorScheme.surface,
-              side: BorderSide(
-                color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+            return TapScale(
+              child: ChoiceChip(
+                label: Text(displayName),
+...
+                side: BorderSide(
+                  color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+                ),
               ),
             );
           }).toList(),
@@ -247,100 +240,28 @@ class _ExpenseInputState extends State<ExpenseInput> {
           ),
         ),
         const SizedBox(height: 12),
-        InkWell(
-          onTap: () {
-            setState(() {
-              if (allSelected) {
-                selectedMemberIds.removeAll(allIds);
-              } else {
-                selectedMemberIds.addAll(allIds);
-              }
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: Checkbox(
-                    value: allSelected,
-                    tristate: false,
-                    onChanged: (_) {
-                      setState(() {
-                        if (allSelected) {
-                          selectedMemberIds.removeAll(allIds);
-                        } else {
-                          selectedMemberIds.addAll(allIds);
-                        }
-                      });
-                    },
-                    activeColor: theme.colorScheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Select All',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
+        TapScale(
+          scaleDown: 0.99,
+          child: InkWell(
+            onTap: () {
+...
+            },
+            child: Padding(
+...
             ),
           ),
         ),
         ...members.map((member) {
           final isSelected = selectedMemberIds.contains(member.id);
           final displayName = repo.getMemberDisplayNameById(member.id);
-          return InkWell(
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  selectedMemberIds.remove(member.id);
-                } else {
-                  selectedMemberIds.add(member.id);
-                }
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: Checkbox(
-                      value: isSelected,
-                      onChanged: (_) {
-                        setState(() {
-                          if (isSelected) {
-                            selectedMemberIds.remove(member.id);
-                          } else {
-                            selectedMemberIds.add(member.id);
-                          }
-                        });
-                      },
-                      activeColor: theme.colorScheme.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    displayName,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
+          return TapScale(
+            scaleDown: 0.99,
+            child: InkWell(
+              onTap: () {
+...
+              },
+              child: Padding(
+...
               ),
             ),
           );
@@ -392,16 +313,18 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      onPressed: handleEdit,
-                      icon: const Icon(Icons.chevron_left, size: 24),
-                      color: theme.colorScheme.onSurface,
-                      padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft,
-                      constraints: const BoxConstraints(),
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(32, 32),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    TapScale(
+                      child: IconButton(
+                        onPressed: handleEdit,
+                        icon: const Icon(Icons.chevron_left, size: 24),
+                        color: theme.colorScheme.onSurface,
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerLeft,
+                        constraints: const BoxConstraints(),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(32, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -491,35 +414,39 @@ class _ExpenseInputState extends State<ExpenseInput> {
                 ),
                 child: Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: (_paidById != null &&
-                              _paidById!.isNotEmpty &&
-                              parsedData != null &&
-                              parsedData!.amount > 0)
-                          ? handleConfirm
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    TapScale(
+                      child: ElevatedButton(
+                        onPressed: (_paidById != null &&
+                                _paidById!.isNotEmpty &&
+                                parsedData != null &&
+                                parsedData!.amount > 0)
+                            ? handleConfirm
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 0),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
+                        child: Text('Confirm', style: AppTypography.button),
                       ),
-                      child: Text('Confirm', style: AppTypography.button),
                     ),
                     const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: handleEdit,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: Text(
-                        'Edit',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.primary,
+                    TapScale(
+                      child: TextButton(
+                        onPressed: handleEdit,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'Edit',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -543,18 +470,20 @@ class _ExpenseInputState extends State<ExpenseInput> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.chevron_left, size: 24),
-                    color: theme.colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  TapScale(
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.chevron_left, size: 24),
+                      color: theme.colorScheme.onSurface,
+                      padding: EdgeInsets.zero,
+                      alignment: Alignment.centerLeft,
+                      constraints: const BoxConstraints(),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -664,17 +593,19 @@ class _ExpenseInputState extends State<ExpenseInput> {
                     Semantics(
                       label: 'Submit expense',
                       button: true,
-                      child: ElevatedButton(
-                      onPressed: _canSubmit ? handleSubmit : null,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      child: TapScale(
+                        child: ElevatedButton(
+                          onPressed: _canSubmit ? handleSubmit : null,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 0),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
+                        child: Text('Submit', style: AppTypography.button),
                       ),
-                      child: Text('Submit', style: AppTypography.button),
                     ),
                     ),
                     const SizedBox(height: 16),

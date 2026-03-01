@@ -80,71 +80,73 @@ class _GroupsListState extends State<GroupsList> {
       _animatedInvitations.add(invitation.groupId);
     }
     
-    final card = GestureDetector(
-      onTap: () => _showInvitationSheet(context, invitation, repo),
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [bgColor, bgColor.withValues(alpha: 0.8)],
+    final card = TapScale(
+      child: GestureDetector(
+        onTap: () => _showInvitationSheet(context, invitation, repo),
+        child: Container(
+          width: 140,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [bgColor, bgColor.withValues(alpha: 0.8)],
+            ),
+            borderRadius: BorderRadius.circular(16),
           ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: onDarkGradient.withValues(alpha: 0.1),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: onDarkGradient.withValues(alpha: 0.1),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    invitation.groupName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: onDarkGradient,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.group_add_outlined,
-                        size: 14,
-                        color: onDarkGradient.withValues(alpha: 0.7),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      invitation.groupName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: onDarkGradient,
+                        height: 1.2,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Tap to view',
-                        style: TextStyle(
-                          fontSize: 11,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.group_add_outlined,
+                          size: 14,
                           color: onDarkGradient.withValues(alpha: 0.7),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tap to view',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: onDarkGradient.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -462,12 +464,14 @@ class _GroupsListState extends State<GroupsList> {
                                   Expanded(
                                     child: Text('Groups', style: context.heroTitle),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => Navigator.pushNamed(context, '/profile'),
-                                    child: MemberAvatar(
-                                      displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
-                                      photoURL: repo.currentUserPhotoURL,
-                                      size: 40,
+                                  TapScale(
+                                    child: GestureDetector(
+                                      onTap: () => Navigator.pushNamed(context, '/profile'),
+                                      child: MemberAvatar(
+                                        displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
+                                        photoURL: repo.currentUserPhotoURL,
+                                        size: 40,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -547,80 +551,83 @@ class _GroupsListState extends State<GroupsList> {
                                           ],
                                         )
                                       : null,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/group-detail',
-                                        arguments: group,
-                                      );
-                                    },
-                                    child: Opacity(
-                                      opacity: isSettled ? 0.5 : 1.0,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 24,
-                                          vertical: isSettled ? 18 : 22,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          border: Border(
-                                            top: BorderSide(color: context.colorBorder, width: 1),
+                                  child: TapScale(
+                                    scaleDown: 0.99,
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/group-detail',
+                                          arguments: group,
+                                        );
+                                      },
+                                      child: Opacity(
+                                        opacity: isSettled ? 0.5 : 1.0,
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: isSettled ? 18 : 22,
                                           ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    group.name,
-                                                    style: context.listItemTitle.copyWith(
-                                                      fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  if (!isSettled) ...[
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode, LocaleService.instance.localeCode),
-                                                          style: context.amountSM.copyWith(
-                                                            color: Theme.of(context).colorScheme.onSurface,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 8),
-                                                        Text('in cycle', style: context.bodySecondary),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 6),
+                                          decoration: BoxDecoration(
+                                            border: Border(
+                                              top: BorderSide(color: context.colorBorder, width: 1),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
                                                     Text(
-                                                      group.statusLine,
-                                                      style: context.bodySecondary.copyWith(
-                                                        color: isClosing ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
-                                                        fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                                                      group.name,
+                                                      style: context.listItemTitle.copyWith(
+                                                        fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
                                                       ),
                                                     ),
-                                                  ] else
-                                                    Text(
-                                                      'All balances cleared',
-                                                      style: context.bodySecondary.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                                    ),
-                                                ],
+                                                    const SizedBox(height: 8),
+                                                    if (!isSettled) ...[
+                                                      Row(
+                                                        children: [
+                                                          Text(
+                                                            formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode, LocaleService.instance.localeCode),
+                                                            style: context.amountSM.copyWith(
+                                                              color: Theme.of(context).colorScheme.onSurface,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 8),
+                                                          Text('in cycle', style: context.bodySecondary),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      Text(
+                                                        group.statusLine,
+                                                        style: context.bodySecondary.copyWith(
+                                                          color: isClosing ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                                                          fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                                                        ),
+                                                      ),
+                                                    ] else
+                                                      Text(
+                                                        'All balances cleared',
+                                                        style: context.bodySecondary.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                      ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            if (isPinned)
-                                              Padding(
-                                                padding: const EdgeInsets.only(right: 8),
-                                                child: Icon(Icons.push_pin, size: 18, color: context.colorWarning),
+                                              if (isPinned)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(right: 8),
+                                                  child: Icon(Icons.push_pin, size: 18, color: context.colorWarning),
+                                                ),
+                                              const SizedBox(width: 16),
+                                              Icon(
+                                                Icons.chevron_right,
+                                                size: 20,
+                                                color: context.colorTextDisabled,
                                               ),
-                                            const SizedBox(width: 16),
-                                            Icon(
-                                              Icons.chevron_right,
-                                              size: 20,
-                                              color: context.colorTextDisabled,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),

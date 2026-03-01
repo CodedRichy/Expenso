@@ -76,18 +76,17 @@ class _CycleHistoryState extends State<CycleHistory> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.chevron_left, size: 24),
-                    color: theme.colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  TapScale(
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.chevron_left, size: 24),
+                      color: theme.colorScheme.onSurface,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -180,81 +179,83 @@ class _CycleHistoryState extends State<CycleHistory> {
                           );
                           final expenseCount = cycle.expenses.length;
                           final cycleLabel = 'Cycle $startDate to $endDate, ${formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode)} settled, $expenseCount expense${expenseCount != 1 ? 's' : ''}';
-                          return Semantics(
-                            label: cycleLabel,
-                            button: true,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/cycle-history-detail',
-                                  arguments: {
-                                    'cycle': cycle,
-                                    'groupName': groupName,
-                                    'currencyCode': currencyCode,
-                                  },
-                                );
-                              },
-                              child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  top: index > 0
-                                      ? BorderSide(
-                                          color: theme.dividerColor,
-                                          width: 1,
-                                        )
-                                      : BorderSide.none,
+                            return StaggeredListItem(
+                              index: index,
+                              child: TapScale(
+                                scaleDown: 0.99,
+                                child: InkWell(
+                                  onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/cycle-history-detail',
+                                    arguments: {
+                                      'cycle': cycle,
+                                      'groupName': groupName,
+                                      'currencyCode': currencyCode,
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: index > 0
+                                        ? BorderSide(
+                                            color: theme.dividerColor,
+                                            width: 1,
+                                          )
+                                        : BorderSide.none,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '$startDate – $endDate',
+                                            style: context.listItemTitle,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode),
+                                                style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w600),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
+                                                style: context.bodySecondary,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '$startDate – $endDate',
-                                          style: context.listItemTitle,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode),
-                                              style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w600),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
-                                              style: context.bodySecondary,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 20,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
-                          );
-                        },
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
+                    ],
+                  ),
+                );
               },
             ),
           ],
@@ -374,15 +375,17 @@ class _ErrorWithRetry extends StatelessWidget {
             Semantics(
               label: 'Try again',
               button: true,
-              child: OutlinedButton(
-                onPressed: onRetry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurface,
-                side: BorderSide(color: theme.dividerColor),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: TapScale(
+                child: OutlinedButton(
+                  onPressed: onRetry,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.colorScheme.onSurface,
+                    side: BorderSide(color: theme.dividerColor),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Try again'),
+                ),
               ),
-              child: const Text('Try again'),
-            ),
             ),
           ],
         ),

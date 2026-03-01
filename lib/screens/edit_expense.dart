@@ -65,32 +65,34 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildDateChip(String label, bool canEdit, ThemeData theme) {
     final isSelected = _selectedDateDisplay == label;
     final isDark = theme.brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: canEdit
-          ? () {
-              final now = DateTime.now();
-              final today = DateTime(now.year, now.month, now.day);
-              setState(() {
-                if (label == 'Today') {
-                  _selectedTimestamp = today.millisecondsSinceEpoch;
-                } else if (label == 'Yesterday') {
-                  _selectedTimestamp = today.subtract(const Duration(days: 1)).millisecondsSinceEpoch;
-                }
-              });
-            }
-          : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+    return TapScale(
+      child: GestureDetector(
+        onTap: canEdit
+            ? () {
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                setState(() {
+                  if (label == 'Today') {
+                    _selectedTimestamp = today.millisecondsSinceEpoch;
+                  } else if (label == 'Yesterday') {
+                    _selectedTimestamp = today.subtract(const Duration(days: 1)).millisecondsSinceEpoch;
+                  }
+                });
+              }
+            : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+            border: Border.all(color: theme.dividerColor),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),
@@ -310,19 +312,21 @@ class _EditExpenseState extends State<EditExpense> {
                         builder: (context) {
                           final theme = Theme.of(context);
                           final isDark = theme.brightness == Brightness.dark;
-                          return OutlinedButton.icon(
-                            onPressed: handleDelete,
-                            icon: const Icon(Icons.delete_outline, size: 20),
-                            label: const Text('Delete Expense'),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                              foregroundColor: theme.colorScheme.onSurfaceVariant,
-                              side: BorderSide(color: theme.dividerColor),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          return TapScale(
+                            child: OutlinedButton.icon(
+                              onPressed: handleDelete,
+                              icon: const Icon(Icons.delete_outline, size: 20),
+                              label: const Text('Delete Expense'),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                                side: BorderSide(color: theme.dividerColor),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                minimumSize: const Size(double.infinity, 0),
                               ),
-                              minimumSize: const Size(double.infinity, 0),
                             ),
                           );
                         },
@@ -403,16 +407,18 @@ class _EditExpenseState extends State<EditExpense> {
                         const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          child: TapScale(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
                               ),
-                              elevation: 0,
+                              child: const Text('Go back'),
                             ),
-                            child: const Text('Go back'),
                           ),
                         ),
                       ],
@@ -439,16 +445,18 @@ class _EditExpenseState extends State<EditExpense> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.chevron_left, size: 24),
-            color: theme.colorScheme.onSurface,
-            padding: EdgeInsets.zero,
-            alignment: Alignment.centerLeft,
-            constraints: const BoxConstraints(),
-            style: IconButton.styleFrom(
-              minimumSize: const Size(32, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          TapScale(
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.chevron_left, size: 24),
+              color: theme.colorScheme.onSurface,
+              padding: EdgeInsets.zero,
+              alignment: Alignment.centerLeft,
+              constraints: const BoxConstraints(),
+              style: IconButton.styleFrom(
+                minimumSize: const Size(32, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -609,31 +617,33 @@ class _EditExpenseState extends State<EditExpense> {
               const SizedBox(width: 8),
               _buildDateChip('Yesterday', canEdit, theme),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isCustomDate ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
-                    border: Border.all(color: theme.dividerColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: isCustomDate ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      if (isCustomDate) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          _selectedDateDisplay,
-                          style: TextStyle(fontSize: 15, color: theme.colorScheme.onPrimary),
+              TapScale(
+                child: GestureDetector(
+                  onTap: _pickDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isCustomDate ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+                      border: Border.all(color: theme.dividerColor),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: isCustomDate ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
                         ),
+                        if (isCustomDate) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            _selectedDateDisplay,
+                            style: TextStyle(fontSize: 15, color: theme.colorScheme.onPrimary),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -675,24 +685,26 @@ class _EditExpenseState extends State<EditExpense> {
         ),
         const SizedBox(height: 12),
         if (canEdit)
-          InkWell(
-            onTap: _pickPayer,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    displayName,
-                    style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant),
-                ],
+          TapScale(
+            child: InkWell(
+              onTap: _pickPayer,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                  border: Border.all(color: theme.dividerColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      displayName,
+                      style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
+                    ),
+                    const Spacer(),
+                    Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant),
+                  ],
+                ),
               ),
             ),
           )

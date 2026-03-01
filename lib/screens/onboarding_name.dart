@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../design/typography.dart';
 import '../repositories/cycle_repository.dart';
+import '../widgets/fade_in.dart';
+import '../widgets/tap_scale.dart';
 
 class OnboardingNameScreen extends StatefulWidget {
   const OnboardingNameScreen({super.key});
@@ -40,34 +42,45 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'What should we call you?',
-                    style: context.heroTitle.copyWith(height: 1.2),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'This name will appear in groups and expense logs.',
-                    style: context.bodySecondary,
-                  ),
-                ],
+              FadeIn(
+                delay: const Duration(milliseconds: 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What should we call you?',
+                      style: context.heroTitle.copyWith(height: 1.2),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'This name will appear in groups and expense logs.',
+                      style: context.bodySecondary,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 48),
-              TextField(
-                controller: _nameController,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => handleGetStarted(),
-                decoration: const InputDecoration(hintText: 'Your name'),
-                style: context.input,
+              FadeIn(
+                delay: const Duration(milliseconds: 100),
+                child: TextField(
+                  controller: _nameController,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => handleGetStarted(),
+                  decoration: const InputDecoration(hintText: 'Your name'),
+                  style: context.input,
+                ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _nameController.text.trim().isNotEmpty ? handleGetStarted : null,
-                child: const Text('Get Started', style: AppTypography.button),
+              FadeIn(
+                delay: const Duration(milliseconds: 200),
+                child: TapScale(
+                  child: ElevatedButton(
+                    onPressed: _nameController.text.trim().isNotEmpty ? handleGetStarted : null,
+                    child: const Text('Get Started', style: AppTypography.button),
+                  ),
+                ),
               ),
               const Spacer(),
             ],

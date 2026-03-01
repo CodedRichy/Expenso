@@ -136,29 +136,31 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
                     ],
                   ),
                   const SizedBox(height: 48),
-                  Semantics(
-                    label: isSuccess ? 'Done' : 'Close',
-                    button: true,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/cycle-settled',
-                          arguments: group,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  TapScale(
+                    child: Semantics(
+                      label: isSuccess ? 'Done' : 'Close',
+                      button: true,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/cycle-settled',
+                            arguments: group,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 0),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
-                      ),
-                      child: Text(
-                        isSuccess ? 'Done' : 'Close',
-                        style: AppTypography.button,
+                        child: Text(
+                          isSuccess ? 'Done' : 'Close',
+                          style: AppTypography.button,
+                        ),
                       ),
                     ),
                   ),

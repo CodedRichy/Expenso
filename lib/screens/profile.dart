@@ -14,6 +14,8 @@ import '../services/locale_service.dart';
 import '../design/typography.dart';
 import '../widgets/gradient_scaffold.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/tap_scale.dart';
+import '../widgets/fade_in.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
 /// Display name is the same value used for Groq fuzzy matching in the Magic Bar.
@@ -159,14 +161,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: Theme.of(context).colorScheme.onSurface,
-                        padding: EdgeInsets.zero,
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      TapScale(
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.chevron_left, size: 24),
+                          color: Theme.of(context).colorScheme.onSurface,
+                          padding: EdgeInsets.zero,
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(32, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
                       ),
                       Expanded(
@@ -211,122 +215,127 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         colors: [context.colorGradientStart, context.colorGradientEnd],
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              MemberAvatar(
-                                displayName: displayName,
-                                photoURL: photoURL,
-                                size: 88,
-                              ),
-                              if (_uploadingPhoto)
-                                Positioned.fill(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.scrim.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(44),
-                                    ),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 28,
-                                        height: 28,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: theme.colorScheme.surface,
+                    child: FadeIn(
+                      duration: const Duration(milliseconds: 400),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                MemberAvatar(
+                                  displayName: displayName,
+                                  photoURL: photoURL,
+                                  size: 88,
+                                ),
+                                if (_uploadingPhoto)
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.scrim.withValues(alpha: 0.5),
+                                        borderRadius: BorderRadius.circular(44),
+                                      ),
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: theme.colorScheme.surface,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                )
-                              else
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary,
-                                      shape: BoxShape.circle,
+                                  )
+                                else
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.camera_alt, size: 16, color: theme.colorScheme.onPrimary),
                                     ),
-                                    child: Icon(Icons.camera_alt, size: 16, color: theme.colorScheme.onPrimary),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Display name',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark 
+                                  ? theme.colorScheme.onSurfaceVariant 
+                                  : context.colorSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _nameController,
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? theme.colorScheme.onSurface : context.colorSurface,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    filled: true,
+                                    fillColor: isDark 
+                                        ? theme.colorScheme.surfaceContainerLow 
+                                        : context.colorSurface.withValues(alpha: 0.12),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                   ),
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              TapScale(
+                                child: TextButton(
+                                  onPressed: _nameDirty && _nameController.text.trim().isNotEmpty ? _saveName : null,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    minimumSize: const Size(0, 44),
+                                    alignment: Alignment.center,
+                                  ),
+                                  child: Text(
+                                    'Save',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: _nameDirty 
+                                          ? (isDark ? theme.colorScheme.primary : context.colorSurface) 
+                                          : (isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.54)),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Display name',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: isDark 
-                                ? theme.colorScheme.onSurfaceVariant 
-                                : context.colorSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _nameController,
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? theme.colorScheme.onSurface : context.colorSurface,
-                                ),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: isDark 
-                                      ? theme.colorScheme.surfaceContainerLow 
-                                      : context.colorSurface.withValues(alpha: 0.12),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                ),
-                              ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This name is used in groups and for Magic Bar matching.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark 
+                                  ? theme.colorScheme.onSurfaceVariant 
+                                  : context.colorSurface.withValues(alpha: 0.6),
                             ),
-                            const SizedBox(width: 8),
-                            TextButton(
-                              onPressed: _nameDirty && _nameController.text.trim().isNotEmpty ? _saveName : null,
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                minimumSize: const Size(0, 44),
-                                alignment: Alignment.center,
-                              ),
-                              child: Text(
-                                'Save',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: _nameDirty 
-                                      ? (isDark ? theme.colorScheme.primary : context.colorSurface) 
-                                      : (isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.54)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'This name is used in groups and for Magic Bar matching.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark 
-                                ? theme.colorScheme.onSurfaceVariant 
-                                : context.colorSurface.withValues(alpha: 0.6),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -456,45 +465,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Semantics(
                     label: 'Log out',
                     button: true,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Log out?'),
-                            content: const Text('You will need to sign in again with your phone number.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Log out'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed == true && context.mounted) {
-                          await FirebaseAuth.instance.signOut();
-                          CycleRepository.instance.clearAuth();
-                          if (context.mounted) {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                    child: TapScale(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Log out?'),
+                              content: const Text('You will need to sign in again with your phone number.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Log out'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true && context.mounted) {
+                            await FirebaseAuth.instance.signOut();
+                            CycleRepository.instance.clearAuth();
+                            if (context.mounted) {
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                            }
                           }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 0),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
+                        child: const Text('Log out', style: AppTypography.button),
                       ),
-                      child: const Text('Log out', style: AppTypography.button),
                     ),
+                  ),
                 ),
-              ),
                       ],
                     ),
                   ),

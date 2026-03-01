@@ -208,18 +208,20 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                     style: const TextStyle(fontSize: 16),
                                   ),
                                 )).toList(),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _selectedCountryCode,
-                                        style: context.bodySecondary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                    ],
+                                child: TapScale(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _selectedCountryCode,
+                                          style: context.bodySecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -251,22 +253,24 @@ class _PhoneAuthState extends State<PhoneAuth> {
                           ),
                         ],
                         const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: (() {
-                                  final digits = phone.replaceAll(RegExp(r'\D'), '');
-                                  final maxLen = maxPhoneDigitsForDialCode(_selectedCountryCode);
-                                  return digits.length == maxLen && !_loading;
-                                })() ? handlePhoneSubmit : null,
-                          child: _loading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                )
-                              : const Text('Continue', style: AppTypography.button),
+                        TapScale(
+                          child: ElevatedButton(
+                            onPressed: (() {
+                                    final digits = phone.replaceAll(RegExp(r'\D'), '');
+                                    final maxLen = maxPhoneDigitsForDialCode(_selectedCountryCode);
+                                    return digits.length == maxLen && !_loading;
+                                  })() ? handlePhoneSubmit : null,
+                            child: _loading
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  )
+                                : const Text('Continue', style: AppTypography.button),
+                          ),
                         ),
                         const Spacer(),
                       ],
@@ -332,18 +336,20 @@ class _PhoneAuthState extends State<PhoneAuth> {
                           ),
                         ],
                         const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: (otp.length == 6 && !_loading) ? handleOtpSubmit : null,
-                          child: _loading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                )
-                              : const Text('Verify', style: AppTypography.button),
+                        TapScale(
+                          child: ElevatedButton(
+                            onPressed: (otp.length == 6 && !_loading) ? handleOtpSubmit : null,
+                            child: _loading
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  )
+                                : const Text('Verify', style: AppTypography.button),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextButton(

@@ -57,12 +57,14 @@ class EmptyStates extends StatelessWidget {
                           style: context.bodySecondary,
                         ),
                         const SizedBox(height: 32),
-                        ElevatedButton(
-                          onPressed: onActionPressed ?? () => Navigator.pushNamed(context, '/create-group'),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 0),
+                        TapScale(
+                          child: ElevatedButton(
+                            onPressed: onActionPressed ?? () => Navigator.pushNamed(context, '/create-group'),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 0),
+                            ),
+                            child: const Text('Create Group', style: AppTypography.button),
                           ),
-                          child: const Text('Create Group', style: AppTypography.button),
                         ),
                       ],
                     ),
@@ -174,21 +176,23 @@ class EmptyStates extends StatelessWidget {
       final bodyColor = forDarkCard 
           ? Colors.white.withValues(alpha: 0.75) 
           : Theme.of(context).colorScheme.onSurfaceVariant;
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Zero-Waste Cycle',
-            style: context.subheader.copyWith(color: titleColor),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
-            style: context.caption.copyWith(color: bodyColor, height: 1.35),
-          ),
-        ],
+      return FadeIn(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Zero-Waste Cycle',
+              style: context.subheader.copyWith(color: titleColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add expenses with the Magic Bar below or tap the keyboard for manual entry.',
+              style: context.caption.copyWith(color: bodyColor, height: 1.35),
+            ),
+          ],
+        ),
       );
     }
 

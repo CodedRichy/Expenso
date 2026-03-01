@@ -6,6 +6,8 @@ import '../repositories/cycle_repository.dart';
 import '../utils/route_args.dart';
 import '../widgets/expenso_loader.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/staggered_list_item.dart';
+import '../widgets/tap_scale.dart';
 
 class GroupMembers extends StatelessWidget {
   final Group? group;
@@ -56,18 +58,20 @@ class GroupMembers extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: theme.colorScheme.onSurface,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      TapScale(
+                        child: IconButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.chevron_left, size: 24),
+                          color: theme.colorScheme.onSurface,
+                          padding: EdgeInsets.zero,
+                          alignment: Alignment.centerLeft,
+                          constraints: const BoxConstraints(),
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(32, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -128,119 +132,125 @@ class GroupMembers extends StatelessWidget {
                                     !isCreator && 
                                     member.id != currentUserId;
                                 
-                                return InkWell(
-                                  onTap: canRemove ? () {
-                                    if (remainingBalance.abs() >= 0.01) {
-                                      showDialog(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text('Cannot Remove Member'),
-                                          content: const Text(
-                                            'Cannot remove this member. Settle their outstanding debt before removing them from the group.',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(ctx),
-                                              child: const Text('OK'),
+                                return StaggeredListItem(
+                                  index: index,
+                                  child: TapScale(
+                                    scaleDown: 0.99,
+                                    child: InkWell(
+                                      onTap: canRemove ? () {
+                                        if (remainingBalance.abs() >= 0.01) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text('Cannot Remove Member'),
+                                              content: const Text(
+                                                'Cannot remove this member. Settle their outstanding debt before removing them from the group.',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(ctx),
+                                                  child: const Text('OK'),
+                                                ),
+                                              ],
                                             ),
-                                          ],
+                                          );
+                                          return;
+                                        }
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/member-change',
+                                          arguments: {
+                                            'groupId': currentGroup.id,
+                                            'groupName': currentGroup.name,
+                                            'memberId': member.id,
+                                            'memberPhone': member.phone,
+                                            'action': 'remove',
+                                          },
+                                        );
+                                      } : null,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 16,
                                         ),
-                                      );
-                                      return;
-                                    }
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/member-change',
-                                      arguments: {
-                                        'groupId': currentGroup.id,
-                                        'groupName': currentGroup.name,
-                                        'memberId': member.id,
-                                        'memberPhone': member.phone,
-                                        'action': 'remove',
-                                      },
-                                    );
-                                  } : null,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        top: index > 0
-                                            ? BorderSide(
-                                                color: theme.dividerColor,
-                                                width: 1,
-                                              )
-                                            : BorderSide.none,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        MemberAvatar(
-                                          displayName: repo.getMemberDisplayName(member.phone),
-                                          photoURL: repo.getMemberPhotoURL(member.id),
-                                          size: 44,
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            top: index > 0
+                                                ? BorderSide(
+                                                    color: theme.dividerColor,
+                                                    width: 1,
+                                                  )
+                                                : BorderSide.none,
+                                          ),
                                         ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
+                                        child: Row(
+                                          children: [
+                                            MemberAvatar(
+                                              displayName: repo.getMemberDisplayName(member.phone),
+                                              photoURL: repo.getMemberPhotoURL(member.id),
+                                              size: 44,
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    repo.getMemberDisplayName(member.phone),
-                                                    style: TextStyle(
-                                                      fontSize: 17,
-                                                      color: isPending ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface,
-                                                    ),
-                                                  ),
-                                                  if (isCreator) ...[
-                                                    const SizedBox(width: 6),
-                                                    const Text('👑', style: TextStyle(fontSize: 16)),
-                                                  ],
-                                                  if (isPending) ...[
-                                                    const SizedBox(width: 8),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                      decoration: BoxDecoration(
-                                                        color: theme.dividerColor,
-                                                        borderRadius: BorderRadius.circular(4),
-                                                      ),
-                                                      child: Text(
-                                                        'Invited',
+                                                  Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        repo.getMemberDisplayName(member.phone),
                                                         style: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w500,
-                                                          color: theme.colorScheme.onSurfaceVariant,
+                                                          fontSize: 17,
+                                                          color: isPending ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface,
                                                         ),
+                                                      ),
+                                                      if (isCreator) ...[
+                                                        const SizedBox(width: 6),
+                                                        const Text('👑', style: TextStyle(fontSize: 16)),
+                                                      ],
+                                                      if (isPending) ...[
+                                                        const SizedBox(width: 8),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: theme.dividerColor,
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(
+                                                            'Invited',
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: theme.colorScheme.onSurfaceVariant,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                  if (member.name.isNotEmpty) ...[
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      member.phone,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: theme.colorScheme.onSurfaceVariant,
                                                       ),
                                                     ),
                                                   ],
                                                 ],
                                               ),
-                                              if (member.name.isNotEmpty) ...[
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  member.phone,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: theme.colorScheme.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
+                                            ),
+                                            if (canRemove)
+                                              Icon(
+                                                Icons.chevron_right,
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                                size: 20,
+                                              ),
+                                          ],
                                         ),
-                                        if (canRemove)
-                                          Icon(
-                                            Icons.chevron_right,
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                            size: 20,
-                                          ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 );
@@ -252,18 +262,20 @@ class GroupMembers extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/invite-members',
-                  arguments: currentGroup,
-                );
-              },
-              backgroundColor: context.colorPrimary,
-              foregroundColor: context.colorSurface,
-              child: const Icon(Icons.person_add),
-            ),
+          floatingActionButton: TapScale(
+            child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/invite-members',
+                    arguments: currentGroup,
+                  );
+                },
+                backgroundColor: context.colorPrimary,
+                foregroundColor: context.colorSurface,
+                child: const Icon(Icons.person_add),
+              ),
+          ),
         );
       },
     );

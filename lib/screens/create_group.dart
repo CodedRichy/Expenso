@@ -118,20 +118,22 @@ class _CreateGroupState extends State<CreateGroup> {
                   Semantics(
                     label: 'Back',
                     button: true,
-                    child: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.chevron_left, size: 24),
-                    color: context.colorTextPrimary,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    child: TapScale(
+                      child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.chevron_left, size: 24),
+                      color: context.colorTextPrimary,
+                      padding: EdgeInsets.zero,
+                      alignment: Alignment.centerLeft,
+                      constraints: const BoxConstraints(),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
-                  ),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text('Create Group', style: context.screenTitle),
@@ -255,17 +257,19 @@ class _CreateGroupState extends State<CreateGroup> {
               child: Semantics(
                 label: 'Create group',
                 button: true,
-                child: ElevatedButton(
-                  onPressed: name.trim().isNotEmpty ? handleCreate : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: TapScale(
+                  child: ElevatedButton(
+                    onPressed: name.trim().isNotEmpty ? handleCreate : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                      minimumSize: const Size(double.infinity, 0),
                     ),
-                    elevation: 0,
-                    minimumSize: const Size(double.infinity, 0),
+                    child: const Text('Create Group', style: AppTypography.button),
                   ),
-                  child: const Text('Create Group', style: AppTypography.button),
                 ),
               ),
             ),
@@ -277,17 +281,19 @@ class _CreateGroupState extends State<CreateGroup> {
 
   Widget _buildRhythmOption(String value, String label, bool isFirst, bool isLast) {
     final isSelected = rhythm == value;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          rhythm = value;
-          if (value == 'weekly') {
-            settlementDay = 0;
-          } else if (value == 'monthly') {
-            settlementDay = 0;
-          }
-        });
-      },
+    return TapScale(
+      scaleDown: 0.99,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            rhythm = value;
+            if (value == 'weekly') {
+              settlementDay = 0;
+            } else if (value == 'monthly') {
+              settlementDay = 0;
+            }
+          });
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(

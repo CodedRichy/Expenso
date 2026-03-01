@@ -291,18 +291,19 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                       Semantics(
                         label: 'Back',
                         button: true,
+                         child: TapScale(
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.chevron_left, size: 24),
-                          color: context.colorTextPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           padding: EdgeInsets.zero,
-                          alignment: Alignment.centerLeft,
                           constraints: const BoxConstraints(),
                           style: IconButton.styleFrom(
                             minimumSize: const Size(32, 32),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
+                      ),
                       ),
                       const SizedBox(height: 20),
                       Text(displayGroupName, style: context.screenTitle),
@@ -329,38 +330,41 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                             Semantics(
                               label: linkCopied ? 'Link copied' : 'Copy invite link',
                               button: true,
-                              child: InkWell(
-                                onTap: handleCopyLink,
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: context.colorSurface,
-                                    border: Border.all(color: context.colorBorder),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.link,
-                                            size: 20,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            linkCopied ? 'Link copied' : 'Copy invite link',
-                                            style: context.bodyPrimary,
-                                          ),
-                                        ],
-                                      ),
-                                      Icon(
-                                        linkCopied ? Icons.check : Icons.content_copy,
-                                        size: 20,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ],
+                              child: TapScale(
+                                child: InkWell(
+                                  onTap: handleCopyLink,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: context.colorSurface,
+                                      border: Border.all(color: context.colorBorder),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.link,
+                                              size: 20,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              linkCopied ? 'Link copied' : 'Copy invite link',
+                                              style: context.bodyPrimary,
+                                            ),
+                                          ],
+                                        ),
+                                        Icon(
+                                          linkCopied ? Icons.check : Icons.content_copy,
+                                          size: 20,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -472,17 +476,19 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                 Semantics(
                                   label: 'Add member by phone',
                                   button: true,
-                                  child: ElevatedButton(
-                                    onPressed: phone.length == 10 ? handleAddMember : null,
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                                      minimumSize: const Size(0, 56),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                  child: TapScale(
+                                    child: ElevatedButton(
+                                      onPressed: phone.length == 10 ? handleAddMember : null,
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        minimumSize: const Size(0, 56),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        elevation: 0,
                                       ),
-                                      elevation: 0,
+                                      child: const Text('Add', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                                     ),
-                                    child: const Text('Add', style: AppTypography.button),
                                   ),
                                 ),
                               ],
@@ -527,37 +533,42 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                               : c.phones.isNotEmpty
                                                   ? c.phones.first.number
                                                   : '';
-                                          return InkWell(
-                                            onTap: () => _onContactSelected(c),
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                              decoration: BoxDecoration(
-                                                border: Border(
-                                                  top: index > 0
-                                                      ? BorderSide(color: context.colorBorder, width: 1)
-                                                      : BorderSide.none,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(c.displayName, style: context.listItemTitle),
-                                                        if (phoneDisplay.isNotEmpty) ...[
-                                                          const SizedBox(height: 2),
-                                                          Text(phoneDisplay, style: context.bodySecondary),
-                                                        ],
-                                                      ],
+                                          return TapScale(
+                                            scaleDown: 0.99,
+                                            child: InkWell(
+                                              onTap: () => _onContactSelected(c),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                                child: Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      radius: 20,
+                                                      backgroundColor: context.colorPrimary,
+                                                      child: Text(
+                                                        c.displayName.isNotEmpty ? c.displayName[0].toUpperCase() : '',
+                                                        style: context.bodyPrimary.copyWith(color: context.colorOnPrimary),
+                                                      ),
                                                     ),
-                                                  ),
-                                                  Icon(
-                                                    Icons.person_add_outlined,
-                                                    size: 20,
-                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                  ),
-                                                ],
+                                                    const SizedBox(width: 16),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(c.displayName, style: context.listItemTitle),
+                                                          if (phoneDisplay.isNotEmpty) ...[
+                                                            const SizedBox(height: 2),
+                                                            Text(phoneDisplay, style: context.bodySecondary),
+                                                          ],
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.person_add_outlined,
+                                                      size: 20,
+                                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           );
@@ -579,28 +590,30 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                   child: Semantics(
                     label: 'Done',
                     button: true,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final updatedGroup = repo.getGroup(groupArg.id);
-                        if (updatedGroup != null) {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/group-members',
-                            arguments: updatedGroup,
-                          );
-                        } else {
-                          Navigator.of(context).popUntil((route) => route.isFirst);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: TapScale(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final updatedGroup = repo.getGroup(groupArg.id);
+                          if (updatedGroup != null) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/group-members',
+                              arguments: updatedGroup,
+                            );
+                          } else {
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 0),
                         ),
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 0),
+                        child: const Text('Done', style: AppTypography.button),
                       ),
-                      child: const Text('Done', style: AppTypography.button),
                     ),
                   ),
                 ),

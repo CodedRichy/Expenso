@@ -262,16 +262,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.chevron_left, size: 24),
-                    color: theme.colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  TapScale(
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.chevron_left, size: 24),
+                      color: theme.colorScheme.onSurface,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -472,24 +473,26 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                     ],
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () => isCash 
-                      ? _handleConfirmCashReceived(route) 
-                      : _handleConfirmUpiReceived(route),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.colorSuccess,
-                    foregroundColor: context.colorSurface,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.spaceLg,
-                      vertical: AppSpacing.spaceMd,
+                  TapScale(
+                    child: ElevatedButton(
+                      onPressed: () => isCash 
+                          ? _handleConfirmCashReceived(route) 
+                          : _handleConfirmUpiReceived(route),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.colorSuccess,
+                        foregroundColor: context.colorSurface,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.spaceLg,
+                          vertical: AppSpacing.spaceMd,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text('Confirm'),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
                   ),
-                  child: const Text('Confirm'),
-                ),
               ],
             ),
           ),
@@ -694,18 +697,20 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   }
 
   Widget _buildBackButton(BuildContext context) {
-    return Semantics(
-      label: 'Back to group',
-      button: true,
-      child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          minimumSize: const Size(double.infinity, 0),
-          elevation: 0,
+    return TapScale(
+      child: Semantics(
+        label: 'Back to group',
+        button: true,
+        child: ElevatedButton(
+          onPressed: () => Navigator.pop(context),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            minimumSize: const Size(double.infinity, 0),
+            elevation: 0,
+          ),
+          child: const Text('Back to Group', style: AppTypography.button),
         ),
-        child: const Text('Back to Group', style: AppTypography.button),
       ),
     );
   }

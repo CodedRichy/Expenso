@@ -193,15 +193,17 @@ class _GroupDetailState extends State<GroupDetail> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.chevron_left, size: 24),
-                              color: theme.colorScheme.onSurface,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size(32, 32),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            TapScale(
+                              child: IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.chevron_left, size: 24),
+                                color: theme.colorScheme.onSurface,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(32, 32),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
                             ),
                             Expanded(
@@ -218,21 +220,23 @@ class _GroupDetailState extends State<GroupDetail> {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/group-members',
-                                  arguments: defaultGroup,
-                                );
-                              },
-                              icon: const Icon(Icons.people_outline, size: 24),
-                              color: theme.colorScheme.onSurface,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size(32, 32),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            TapScale(
+                              child: IconButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/group-members',
+                                    arguments: defaultGroup,
+                                  );
+                                },
+                                icon: const Icon(Icons.people_outline, size: 24),
+                                color: theme.colorScheme.onSurface,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(32, 32),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
                             ),
                           ],
@@ -280,27 +284,30 @@ class _GroupDetailState extends State<GroupDetail> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/settlement-confirmation',
-                                      arguments: {'group': defaultGroup, 'method': 'upi'},
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                TapScale(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/settlement-confirmation',
+                                        arguments: {'group': defaultGroup, 'method': 'upi'},
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                      minimumSize: const Size(double.infinity, 0),
                                     ),
-                                    elevation: 0,
-                                    minimumSize: const Size(double.infinity, 0),
+                                    child: const Text('Settlement', style: AppTypography.button),
                                   ),
-                                  child: const Text('Settlement', style: AppTypography.button),
                                 ),
                                 if (isCreator) ...[
                                   const SizedBox(height: 10),
-                                  ElevatedButton(
+                                  TapScale(
+                                    child: ElevatedButton(
                                     onPressed: () async {
                                       if (isPassive) {
                                         final confirmed = await showDialog<bool>(
@@ -361,19 +368,20 @@ class _GroupDetailState extends State<GroupDetail> {
                                         }
                                       }
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        elevation: 0,
+                                        minimumSize: const Size(double.infinity, 0),
                                       ),
-                                      elevation: 0,
-                                      minimumSize: const Size(double.infinity, 0),
-                                    ),
-                                    child: Text(
-                                      isPassive
-                                          ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
-                                          : 'Close cycle',
-                                      style: AppTypography.button,
+                                      child: Text(
+                                        isPassive
+                                            ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
+                                            : 'Close cycle',
+                                        style: AppTypography.button,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -405,93 +413,96 @@ class _GroupDetailState extends State<GroupDetail> {
                                 final expense = expenses[index];
                                 return StaggeredListItem(
                                   index: index,
-                                  child: InkWell(
-                                  onTap: isPassive
-                                      ? null
-                                      : () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/edit-expense',
-                                            arguments: {
-                                              'expenseId': expense.id,
-                                              'groupId': defaultGroup.id,
-                                            },
-                                          );
-                                        },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        top: index > 0
-                                            ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
-                                            : BorderSide.none,
+                                  child: TapScale(
+                                    scaleDown: 0.99,
+                                    child: InkWell(
+                                    onTap: isPassive
+                                        ? null
+                                        : () {
+                                            Navigator.pushNamed(
+                                              context,
+                                              '/edit-expense',
+                                              arguments: {
+                                                'expenseId': expense.id,
+                                                'groupId': defaultGroup.id,
+                                              },
+                                            );
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          top: index > 0
+                                              ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
+                                              : BorderSide.none,
+                                        ),
                                       ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Builder(
-                                                builder: (context) {
-                                                  final desc = _buildViewerRelativeDescription(
-                                                    expense: expense,
-                                                    repo: repo,
-                                                  );
-                                                  return Text.rich(
-                                                    TextSpan(
-                                                      children: [
-                                                        TextSpan(
-                                                          text: desc.main,
-                                                          style: TextStyle(
-                                                            fontSize: 17,
-                                                            color: Theme.of(context).colorScheme.onSurface,
-                                                          ),
-                                                        ),
-                                                        if (desc.suffix != null) ...[
-                                                          const TextSpan(text: '  '),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Builder(
+                                                  builder: (context) {
+                                                    final desc = _buildViewerRelativeDescription(
+                                                      expense: expense,
+                                                      repo: repo,
+                                                    );
+                                                    return Text.rich(
+                                                      TextSpan(
+                                                        children: [
                                                           TextSpan(
-                                                            text: desc.suffix,
+                                                            text: desc.main,
                                                             style: TextStyle(
-                                                              fontSize: 14,
-                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                              fontSize: 17,
+                                                              color: Theme.of(context).colorScheme.onSurface,
                                                             ),
                                                           ),
+                                                          if (desc.suffix != null) ...[
+                                                            const TextSpan(text: '  '),
+                                                            TextSpan(
+                                                              text: desc.suffix,
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ],
-                                                      ],
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                expense.displayDate,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
-                                              ),
-                                            ],
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  expense.displayDate,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode, LocaleService.instance.localeCode),
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w600,
-                                            color: Theme.of(context).colorScheme.onSurface,
+                                          const SizedBox(width: 16),
+                                          Text(
+                                            formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode, LocaleService.instance.localeCode),
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
+                                  ),
+                                );
                               },
                               childCount: expenses.length,
                             ),
@@ -807,9 +818,11 @@ class _DecisionClarityCard extends StatelessWidget {
       button: !isEmpty,
       child: GestureDetector(
       onTap: isEmpty ? null : () => _showSettlementDetails(context),
-      child: Opacity(
-        opacity: isMuted ? 0.6 : 1.0,
-        child: Container(
+      child: TapScale(
+        scaleDown: 0.98,
+        child: Opacity(
+          opacity: isMuted ? 0.6 : 1.0,
+          child: Container(
           constraints: const BoxConstraints(minHeight: _minHeight),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -1789,32 +1802,34 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              onPressed: () async {
-                HapticFeedback.lightImpact();
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/expense-input',
-                  arguments: widget.group,
-                );
-                if (!context.mounted) return;
-                final map = result as Map<String, dynamic>?;
-                if (map != null && map['groupId'] != null && map['expenseId'] != null) {
-                  final repo = CycleRepository.instance;
-                  final groupId = map['groupId'] as String;
-                  final expenseId = map['expenseId'] as String;
+            TapScale(
+              child: IconButton(
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/expense-input',
+                    arguments: widget.group,
+                  );
                   if (!context.mounted) return;
-                  _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(groupId)?.currencyCode);
-                }
-              },
-              icon: Icon(
-                Icons.keyboard_alt_outlined,
-                size: 22,
-                color: iconColor,
-              ),
-              style: IconButton.styleFrom(
-                padding: const EdgeInsets.all(8),
-                minimumSize: const Size(40, 40),
+                  final map = result as Map<String, dynamic>?;
+                  if (map != null && map['groupId'] != null && map['expenseId'] != null) {
+                    final repo = CycleRepository.instance;
+                    final groupId = map['groupId'] as String;
+                    final expenseId = map['expenseId'] as String;
+                    if (!context.mounted) return;
+                    _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(groupId)?.currencyCode);
+                  }
+                },
+                icon: Icon(
+                  Icons.keyboard_alt_outlined,
+                  size: 22,
+                  color: iconColor,
+                ),
+                style: IconButton.styleFrom(
+                  padding: const EdgeInsets.all(8),
+                  minimumSize: const Size(40, 40),
+                ),
               ),
             ),
             const SizedBox(width: 4),
@@ -1859,24 +1874,26 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 ),
               )
             else
-              IconButton(
-                onPressed: (_sendAllowed &&
-                        _controller.text.trim().isNotEmpty &&
-                        !_inCooldown)
-                    ? _submit
-                    : null,
-                icon: Icon(
-                  Icons.arrow_upward_rounded,
-                  color: (_sendAllowed &&
+              TapScale(
+                child: IconButton(
+                  onPressed: (_sendAllowed &&
                           _controller.text.trim().isNotEmpty &&
                           !_inCooldown)
-                      ? textColor
-                      : hintColor,
-                  size: 24,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: buttonBgColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ? _submit
+                      : null,
+                  icon: Icon(
+                    Icons.arrow_upward_rounded,
+                    color: (_sendAllowed &&
+                            _controller.text.trim().isNotEmpty &&
+                            !_inCooldown)
+                        ? textColor
+                        : hintColor,
+                    size: 24,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: buttonBgColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
           ],
