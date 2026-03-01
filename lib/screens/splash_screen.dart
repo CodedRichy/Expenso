@@ -106,8 +106,8 @@ class _SplashBody extends StatelessWidget {
               opacity: state._logoOpacity,
               child: Image.asset(
                 'assets/images/logoRevamp.png',
-                width: 300,
-                height: 300,
+                width: 250,
+                height: 250,
               ),
             ),
     );
