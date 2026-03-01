@@ -60,17 +60,17 @@ class _SplashScreenState extends State<SplashScreen>
           _loaderHoldDuration,
       () {
         if (!mounted) return;
-        Navigator.pushAndRemoveUntil(
+        Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             settings: const RouteSettings(name: '/'),
+            opaque: false,
             pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
-            transitionDuration: const Duration(milliseconds: 200),
+            transitionDuration: const Duration(milliseconds: 300),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
           ),
-          (route) => false,
         );
       },
     );
