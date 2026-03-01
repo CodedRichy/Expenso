@@ -674,11 +674,17 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     
     String? currencyCode;
     final upper = trimmed.toUpperCase();
-    if (trimmed.contains(r'$') || upper.contains('USD')) currencyCode = 'USD';
-    else if (trimmed.contains('€') || upper.contains('EUR')) currencyCode = 'EUR';
-    else if (trimmed.contains('£') || upper.contains('GBP')) currencyCode = 'GBP';
-    else if (trimmed.contains('¥') || upper.contains('JPY')) currencyCode = 'JPY';
-    else if (trimmed.contains('₹') || upper.contains('INR')) currencyCode = 'INR';
+    if (trimmed.contains(r'$') || upper.contains('USD')) {
+      currencyCode = 'USD';
+    } else if (trimmed.contains('€') || upper.contains('EUR')) {
+      currencyCode = 'EUR';
+    } else if (trimmed.contains('£') || upper.contains('GBP')) {
+      currencyCode = 'GBP';
+    } else if (trimmed.contains('¥') || upper.contains('JPY')) {
+      currencyCode = 'JPY';
+    } else if (trimmed.contains('₹') || upper.contains('INR')) {
+      currencyCode = 'INR';
+    }
 
     final description = trimmed.isEmpty
         ? 'Expense'
