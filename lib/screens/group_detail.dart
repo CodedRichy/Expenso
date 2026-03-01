@@ -1504,6 +1504,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         userInput: input,
         groupMemberNames: memberNames,
         currentUserDisplayName: repo.currentUserName.isEmpty ? null : repo.currentUserName,
+        expectedCurrencyCode: widget.group.currencyCode,
       );
       if (!mounted) return;
       
@@ -1825,7 +1826,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 decoration: InputDecoration(
                   hintText: _inCooldown
                       ? 'AI cooling down — use keyboard for manual entry'
-                      : 'e.g. Dinner 500 with Ash',
+                      : 'e.g. Dinner ${CurrencyRegistry.symbol(widget.group.currencyCode)}500 with Ash',
                   hintStyle: TextStyle(
                     color: hintColor,
                     fontSize: 17,
