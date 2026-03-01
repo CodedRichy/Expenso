@@ -193,14 +193,12 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   await _throttleForRateLimit();
   http.Response response = await _post(apiKey, body);
   _markRequestDone();
-  if (response.statusCode == 429) {
+  while (response.statusCode == 429 || response.statusCode >= 500) {
+    stderr.writeln('Transient error (HTTP \${response.statusCode}). Waiting to retry...');
     final waitSeconds = _retryAfterSeconds(response);
     await Future<void>.delayed(Duration(seconds: waitSeconds));
     response = await _post(apiKey, body);
     _markRequestDone();
-    if (response.statusCode == 429) {
-      return (result: null, rawJson: null, error: '429 rate limit');
-    }
   }
   if (response.statusCode != 200) {
     if (response.statusCode != 429) {
