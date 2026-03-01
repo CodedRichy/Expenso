@@ -509,7 +509,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
   }) async {
     final apiKey = _apiKey;
     if (apiKey == null) {
-      final fallback = _fallbackParse(userInput);
+      final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
       if (fallback != null) return fallback;
       throw Exception('GROQ_API_KEY is not set in environment.');
     }
@@ -553,14 +553,14 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
 
       if (response.statusCode != 200) {
         debugPrint('Groq API error: ${response.statusCode} ${response.body}');
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception('AI request failed. Try again or use a clearer format like "Dinner 500".');
       }
 
       final map = jsonDecode(response.body) as Map<String, dynamic>?;
       if (map == null) {
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception('Invalid response from AI.');
       }
@@ -572,7 +572,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       String raw = (content is String) ? content.trim() : '';
 
       if (raw.isEmpty) {
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception('No content from AI.');
       }
@@ -587,7 +587,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           final preview = raw.length > 400 ? '${raw.substring(0, 400)}...' : raw;
           debugPrint('Groq parse failed (JSON decode). Raw response: $preview');
         }
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
       }
@@ -601,7 +601,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           debugPrint('Error: $e');
           debugPrint(st.toString());
         }
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
       }
@@ -623,7 +623,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         gap = _findGap(result);
       }
       if (gap != null) {
-        final fallback = _fallbackParse(userInput);
+        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
         if (fallback != null) return fallback;
         throw Exception(gap);
       }
@@ -660,22 +660,33 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       // Semantic rejects must propagate as user-facing errors; do not apply fallback.
       rethrow;
     } catch (e) {
-      final fallback = _fallbackParse(userInput);
+      final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
       if (fallback != null) return fallback;
       rethrow;
     }
   }
 
   /// Fallback: extract first number from input and return minimal ParsedExpenseResult if valid.
-  static ParsedExpenseResult? _fallbackParse(String userInput) {
+  static ParsedExpenseResult? _fallbackParse(String userInput, {String? expectedCurrencyCode}) {
     final amount = _extractAmountFromText(userInput);
     if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite) return null;
     final trimmed = userInput.trim();
+    
+    String? currencyCode;
+    final upper = trimmed.toUpperCase();
+    if (trimmed.contains(r'$') || upper.contains('USD')) currencyCode = 'USD';
+    else if (trimmed.contains('€') || upper.contains('EUR')) currencyCode = 'EUR';
+    else if (trimmed.contains('£') || upper.contains('GBP')) currencyCode = 'GBP';
+    else if (trimmed.contains('¥') || upper.contains('JPY')) currencyCode = 'JPY';
+    else if (trimmed.contains('₹') || upper.contains('INR')) currencyCode = 'INR';
+
     final description = trimmed.isEmpty
         ? 'Expense'
         : (trimmed.length > 80 ? '${trimmed.substring(0, 80)}…' : trimmed);
-    return ParsedExpenseResult(
+        
+    final result = ParsedExpenseResult(
       amount: amount,
+      currencyCode: currencyCode,
       description: description,
       category: '',
       splitType: 'even',
@@ -683,6 +694,11 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       parseConfidence: 'constrained',
       constraintFlags: ['fallbackExtraction'],
     );
+    
+    final err = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
+    if (err != null) throw GroqParserRejectException(err);
+    
+    return result;
   }
 
   /// Extracts the first numeric amount from text (handles "500", "1,200", "99.50", "₹500", gibberish with digits).
