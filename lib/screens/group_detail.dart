@@ -1438,12 +1438,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       }
     }
 
-    Set<String> _assignedIds() =>
+    Set<String> assignedIds() =>
         slots.where((s) => s.id != null && s.id!.isNotEmpty).map((s) => s.id!).toSet();
-    List<Member> _unassigned(Set<String> assigned) =>
+    List<Member> unassigned(Set<String> assigned) =>
         members.where((m) => !assigned.contains(m.id)).toList();
 
-    Set<String> _memberIdsMatchingName(String name, List<Member> candidates) {
+    Set<String> memberIdsMatchingName(String name, List<Member> candidates) {
       final n = name.trim().toLowerCase();
       if (n.isEmpty) return {};
       final ids = <String>{};
@@ -1459,11 +1459,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     bool changed = true;
     while (changed) {
       changed = false;
-      final assigned = _assignedIds();
-      final unassigned = _unassigned(assigned);
+      final assigned = assignedIds();
+      final unassignedMembers = unassigned(assigned);
       for (var i = 0; i < slots.length; i++) {
         if (slots[i].id != null && slots[i].id!.isNotEmpty) continue;
-        final matchIds = _memberIdsMatchingName(slots[i].name, unassigned);
+        final matchIds = memberIdsMatchingName(slots[i].name, unassignedMembers);
         if (matchIds.length == 1) {
           slots[i] = _ParticipantSlot(
             name: slots[i].name,
@@ -1746,7 +1746,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         magicBarInput: magicBarInput,
       ),
     );
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
       final gid = undoResult['groupId'] as String;
       final eid = undoResult['expenseId'] as String;
@@ -2117,38 +2117,35 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       if (widget.magicBarInput != null && widget.magicBarInput!.trim().isNotEmpty) {
         GroqExpenseParserService.recordSuccessfulParse(widget.magicBarInput!.trim(), widget.result);
       }
-      if (!context.mounted) return;
+      if (!mounted) return;
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
     } on NormalizedExpenseError catch (e) {
       HapticFeedback.heavyImpact();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } on ArgumentError catch (e) {
       HapticFeedback.heavyImpact();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ?? 'Invalid expense.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Invalid expense.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (_) {
       HapticFeedback.heavyImpact();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not save expense. Try again.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save expense. Try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -2157,8 +2154,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     final repo = widget.repo;
     final currencyCode = repo.getGroup(widget.groupId)?.currencyCode ?? 'INR';
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
+
     final dialogBgColor = context.colorSurface;
     final inputBgColor = context.colorSurface;
     final borderColor = context.colorBorder;

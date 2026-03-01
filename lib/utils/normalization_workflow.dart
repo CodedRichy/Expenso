@@ -1,19 +1,20 @@
 /// UI workflow helpers for expense normalization.
-/// 
+///
 /// This file contains UI-specific concepts that bridge the gap between
 /// parsing (names) and accounting (IDs). These are NOT part of the core
 /// accounting model and should not be used in balance computation.
-/// 
+///
 /// Key distinction:
 /// - [ParticipantSlot] is a UI concept for confirmation dialogs
 /// - [NormalizedExpense] is an accounting concept for ledger computation
-/// 
+///
 /// The workflow is: ParsedExpenseResult → ParticipantSlots (UI) → NormalizedExpense (accounting)
-/// 
+///
 /// ## Currency Handling
 /// - UI layer works with doubles for display
 /// - Conversion to [MoneyMinor] happens once at normalization boundary
 /// - Remainder from integer division is handled deterministically
+library;
 
 import '../models/models.dart';
 import '../models/money_minor.dart';

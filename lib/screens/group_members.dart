@@ -22,7 +22,6 @@ class GroupMembers extends StatelessWidget {
     final repo = CycleRepository.instance;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return ListenableBuilder(
       listenable: repo,
@@ -258,7 +257,7 @@ class GroupMembers extends StatelessWidget {
                 Navigator.pushNamed(
                   context,
                   '/invite-members',
-                  arguments: currentGroup ?? resolvedGroup,
+                  arguments: currentGroup,
                 );
               },
               backgroundColor: context.colorPrimary,

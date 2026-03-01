@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../services/upi_payment_service.dart';

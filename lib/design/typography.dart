@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
 
 extension ThemedTypography on BuildContext {
   TextStyle get heroTitle => AppTypography.heroTitle.copyWith(

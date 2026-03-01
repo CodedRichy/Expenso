@@ -63,7 +63,7 @@ class PhoneAuthService {
           production = _genericMessage;
           break;
         default:
-          if (kDebugMode) return error.message ?? error.code ?? _genericMessage;
+          if (kDebugMode) return error.message ?? error.code;
           return _genericMessage;
       }
       return production;

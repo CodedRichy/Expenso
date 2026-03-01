@@ -26,14 +26,12 @@ class GroupsList extends StatefulWidget {
 }
 
 class _GroupsListState extends State<GroupsList> {
-  DateTime? _loadingStartedAt;
   bool _showSlowLoadingHint = false;
 
   @override
   void initState() {
     super.initState();
     PinnedGroupsService.instance.load();
-    _loadingStartedAt = DateTime.now();
     _startLoadingTimeout();
   }
 
@@ -91,7 +89,7 @@ class _GroupsListState extends State<GroupsList> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [bgColor, bgColor.withOpacity(0.8)],
+            colors: [bgColor, bgColor.withValues(alpha: 0.8)],
           ),
           borderRadius: BorderRadius.circular(16),
         ),

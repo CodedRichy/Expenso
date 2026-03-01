@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
-import '../models/money_minor.dart';
 import '../models/payment_attempt.dart';
 import '../utils/money_format.dart';
 import '../services/upi_payment_service.dart';
@@ -513,8 +512,6 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildPayButton() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final buttonBg = context.colorSurface;
     final buttonFg = context.colorTextPrimary;
     return Column(
@@ -569,8 +566,6 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildCashPaymentOption() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final buttonBg = context.colorSurface;
     final buttonFg = context.colorTextPrimary;
     return Column(

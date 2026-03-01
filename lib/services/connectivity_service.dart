@@ -22,7 +22,6 @@ class ConnectivityService extends ChangeNotifier {
   bool get isOffline => _status == ConnectivityStatus.offline;
 
   Timer? _periodicTimer;
-  DateTime? _lastCheck;
 
   void _startPeriodicCheck() {
     _checkConnectivity();
@@ -51,8 +50,6 @@ class ConnectivityService extends ChangeNotifier {
       _status = ConnectivityStatus.offline;
     }
 
-    _lastCheck = DateTime.now();
-    
     if (wasOffline && _status == ConnectivityStatus.online) {
       debugPrint('ConnectivityService: Back online');
     } else if (!wasOffline && _status == ConnectivityStatus.offline) {

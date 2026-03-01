@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/typography.dart';
-import '../models/models.dart';
 import '../models/payment_attempt.dart';
 import '../repositories/cycle_repository.dart';
 import '../utils/settlement_engine.dart';

@@ -104,7 +104,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
             paidById: payerId,
           );
           await repo.addExpense(group.id, expense);
-          if (!context.mounted) return;
+          if (!mounted) return;
           setState(() {
             input = '';
             parsedData = null;
@@ -115,24 +115,22 @@ class _ExpenseInputState extends State<ExpenseInput> {
           Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
           return;
         } on ArgumentError catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.message ?? 'Invalid expense.'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message ?? 'Invalid expense.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           return;
         } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Could not save expense. Try again.'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not save expense. Try again.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           return;
         }
       }
@@ -144,7 +142,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
       selectedMemberIds.clear();
       _paidById = CycleRepository.instance.currentUserId;
     });
-    if (context.mounted) Navigator.pop(context);
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   void handleEdit() {
@@ -187,7 +186,6 @@ class _ExpenseInputState extends State<ExpenseInput> {
     final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
     if (members.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

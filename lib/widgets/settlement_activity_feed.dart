@@ -80,7 +80,7 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                                 controller: scrollController,
                                 padding: const EdgeInsets.only(bottom: 24),
                                 itemCount: list.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+                                separatorBuilder: (_, index) => const Divider(height: 1, indent: 48),
                                 itemBuilder: (context, index) => _EventRow(event: list[index]),
                               );
                             },
@@ -135,7 +135,7 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,
                     itemCount: displayEvents.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+                    separatorBuilder: (_, index) => const Divider(height: 1, indent: 48),
                     itemBuilder: (context, index) => _EventRow(event: displayEvents[index]),
                   ),
                   if (events.length > _previewCount)
