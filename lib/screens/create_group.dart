@@ -339,6 +339,7 @@ class _CreateGroupState extends State<CreateGroup> {
             ],
           ),
         ),
+      ),
     );
   }
 
