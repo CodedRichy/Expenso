@@ -211,7 +211,6 @@ class MyApp extends StatelessWidget {
           ],
           initialRoute: 'splash',
           routes: {
-        'splash': (context) => const SplashScreen(),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
         '/invite-members': (context) {
@@ -279,6 +278,13 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         },
         onGenerateRoute: (settings) {
+          if (settings.name == 'splash') {
+            return PageRouteBuilder(
+              pageBuilder: (context, _, __) => const SplashScreen(),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            );
+          }
           if (settings.name == '/') {
             return PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
