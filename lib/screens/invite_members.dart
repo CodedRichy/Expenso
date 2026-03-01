@@ -547,7 +547,7 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                                       backgroundColor: context.colorPrimary,
                                                       child: Text(
                                                         c.displayName.isNotEmpty ? c.displayName[0].toUpperCase() : '',
-                                                        style: context.bodyPrimary.copyWith(color: context.colorOnPrimary),
+                                                        style: context.bodyPrimary.copyWith(color: Theme.of(context).colorScheme.onPrimary),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 16),

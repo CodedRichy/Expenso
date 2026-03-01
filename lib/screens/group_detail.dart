@@ -864,6 +864,7 @@ class _DecisionClarityCard extends StatelessWidget {
           ),
         ),
       ),
+      ),
     ),
   );
   }
