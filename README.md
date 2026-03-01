@@ -296,11 +296,11 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status
 
-Expenso is at **V4** (in progress). Core logic (expense recording, split calculation, settlement engine, cycle management) is stable. All primary flows are implemented, with **187+ tests** covering: settlement engine (net balances, debts, payment routes, G9 edge cases, balance-after-settlements contract), expense validation, normalization, encryption, parser result/outcome, revisions; **widget tests** (EmptyStates, ExpensoLoader); and an **integration test** (app launch). See [docs/internal/STORE_CHECKLIST.md](docs/internal/STORE_CHECKLIST.md) for pre-submit steps. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
+Expenso is **v5.0.0** (released). Core logic (expense recording, split calculation, settlement engine, cycle management) and V4 cross-group sync and FCM features are complete. Extensive animations and premium micro-interactions (V5) have refined the app experience. All primary flows are secured with **187+ tests**. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
 
 **Known limitations (documented in [STABILIZATION.md](docs/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
 
-**Past releases:** V3 added logout, international phone number support (15 countries), settlement activity feed, offline resilience, and Dynamic UPI QR. See [docs/releases/V3_RELEASE.md](docs/releases/V3_RELEASE.md).
+**Past releases:** V4 added cross-group identity and Sync/FCM scaffolding. V5 polished user interfaces seamlessly using interactive micro-animations native to Flutter. See [docs/releases/](docs/releases/) for history.
 
 **Planned features** (not yet implemented) are listed in APP_BLUEPRINT.md Section 9. No timeline commitments.
 
