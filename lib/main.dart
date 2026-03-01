@@ -13,7 +13,6 @@ import 'services/user_profile_cache.dart';
 import 'screens/phone_auth.dart';
 import 'screens/onboarding_name.dart';
 import 'screens/groups_list.dart';
-import 'widgets/expenso_loader.dart';
 import 'screens/create_group.dart';
 import 'models/models.dart';
 import 'screens/invite_members.dart';
@@ -301,22 +300,24 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The Scaffold here ensures an immediate, theme-aware background color
-    // (white in light mode, dark in dark mode) so no gray shows through.
+    // This Scaffold is the 'anchor'. It paints the white/dark background 
+    // immediately so the Splash grey fades directly into this color.
     return Scaffold(
       body: StreamBuilder<User?>(
         initialData: FirebaseAuth.instance.currentUser,
         stream: PhoneAuthService.instance.authStateChanges,
         builder: (context, snapshot) {
-          final user = snapshot.data;
+          final user = snapshot.connectionState == ConnectionState.waiting 
+              ? FirebaseAuth.instance.currentUser 
+              : snapshot.data;
+              
           final repo = CycleRepository.instance;
-
+          
           if (user == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
             return const PhoneAuth();
           }
 
-          // Sync user data
           repo.setAuthFromFirebaseUserSync(
             user.uid,
             user.phoneNumber,
@@ -324,10 +325,15 @@ class RootScreen extends StatelessWidget {
             photoURL: user.photoURL,
           );
 
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await repo.continueAuthFromFirebaseUser();
+            // Initialize FCM after auth is complete
+            FcmTokenService.instance.initialize(user.uid);
+          });
+
           return ListenableBuilder(
             listenable: repo,
             builder: (context, _) {
-              // Ensure these screens also have Scaffolds with background colors
               if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
               return const GroupsList();
             },

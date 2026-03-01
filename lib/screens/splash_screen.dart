@@ -60,23 +60,21 @@ class _SplashScreenState extends State<SplashScreen>
           _loaderHoldDuration,
       () {
         if (!mounted) return;
+        // Inside _SplashScreenState where you handle navigation
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             settings: const RouteSettings(name: '/'),
             pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
-            transitionDuration: const Duration(milliseconds: 300),
-            reverseTransitionDuration: Duration.zero,
-            opaque: true, // Ensures the splash is discarded after transition
+            transitionDuration: const Duration(milliseconds: 300), // Precise cross-fade speed
+            opaque: true, 
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              // Use a standard FadeTransition. 
-              // Because we aren't wrapping the splash in an animation, 
-              // it remains static underneath until the new route is opaque.
               return FadeTransition(
                 opacity: CurvedAnimation(
                   parent: animation,
                   curve: Curves.easeOut,
                 ),
+                // The child (RootScreen) fades in OVER the Splash grey
                 child: child,
               );
             },
