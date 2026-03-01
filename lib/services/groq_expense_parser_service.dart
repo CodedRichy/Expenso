@@ -10,6 +10,16 @@ class GroqRateLimitException implements Exception {
   final String? message;
 }
 
+/// Thrown when the parser returns a semantic reject (parseConfidence == 'reject').
+/// These must always surface to the user and must not be masked by fallback parsing.
+class GroqParserRejectException implements Exception {
+  GroqParserRejectException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Result of parsing natural language into structured expense data.
 /// splitType: "even" | "exact" | "exclude" | "percentage" | "shares" | "unresolved"
 /// - even: split equally among participants
@@ -586,7 +596,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         final msg = result.rejectReason?.trim().isNotEmpty == true
             ? result.rejectReason!
             : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".';
-        throw Exception(msg);
+        throw GroqParserRejectException(msg);
       }
 
       final validationError = validateResult(result);
@@ -632,6 +642,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         _inFlight = false;
       }
     } on GroqRateLimitException {
+      rethrow;
+    } on GroqParserRejectException {
+      // Semantic rejects must propagate as user-facing errors; do not apply fallback.
       rethrow;
     } catch (e) {
       final fallback = _fallbackParse(userInput);

@@ -6,30 +6,39 @@ Module and directory structure of **Expenso**, inferred from Git history. This d
 
 ## Current structure (HEAD)
 
-- **Total files:** 234
-- **Top-level directories:** .gitignore, .metadata, BUGS_FIXED.md, BUG_REPORT.md, EXCEPTION_FIXED.md, FINAL_STATUS.md, FLOW_VERIFICATION.md, NAVIGATION_MAP.md, README.md, analysis_options.yaml, android, figma, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
+- **Total files (git-tracked):** 312
+- **Top-level entries:** .cursor, .github, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, PRIVACY.md, SECURITY.md, README.md, analysis_options.yaml, devtools_options.yaml, firebase.json, firestore.rules, flutter_01.png, flutter_02.png, android, assets, docs, functions, integration_test, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
 
-### Top-level modules
+### Top-level modules (HEAD, from `git ls-files`)
 
+| `.cursor/` | 5 files |
+| `.github/` | 2 files |
 | `.gitignore/` | 1 files |
 | `.metadata/` | 1 files |
-| `BUGS_FIXED.md/` | 1 files |
-| `BUG_REPORT.md/` | 1 files |
-| `EXCEPTION_FIXED.md/` | 1 files |
-| `FINAL_STATUS.md/` | 1 files |
-| `FLOW_VERIFICATION.md/` | 1 files |
-| `NAVIGATION_MAP.md/` | 1 files |
+| `APP_BLUEPRINT.md/` | 1 files |
+| `LICENSE/` | 1 files |
+| `PRIVACY.md/` | 1 files |
+| `SECURITY.md/` | 1 files |
 | `README.md/` | 1 files |
 | `analysis_options.yaml/` | 1 files |
-| `android/` | 19 files |
-| `figma/` | 80 files |
-| `ios/` | 39 files |
-| `lib/` | 20 files |
+| `devtools_options.yaml/` | 1 files |
+| `firebase.json/` | 1 files |
+| `firestore.rules/` | 1 files |
+| `flutter_01.png/` | 1 files |
+| `flutter_02.png/` | 1 files |
+| `android/` | 33 files |
+| `assets/` | 5 files |
+| `docs/` | 49 files |
+| `functions/` | 6 files |
+| `integration_test/` | 1 files |
+| `ios/` | 46 files |
+| `lib/` | 75 files |
 | `linux/` | 10 files |
 | `macos/` | 28 files |
 | `pubspec.lock/` | 1 files |
 | `pubspec.yaml/` | 1 files |
-| `test/` | 1 files |
+| `test/` | 8 files |
+| `tool/` | 5 files |
 | `web/` | 7 files |
 | `windows/` | 18 files |
 

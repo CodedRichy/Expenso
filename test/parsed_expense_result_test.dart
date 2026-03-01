@@ -88,7 +88,7 @@ void main() {
       expect(result2.amount, 0.0);
     });
 
-    test('partial success: valid amount with empty description yields description in fromJson', () {
+    test('partial success: valid amount with empty description yields empty description from fromJson', () {
       final result = ParsedExpenseResult.fromJson({
         'amount': 100,
         'description': '',
@@ -152,11 +152,13 @@ void main() {
           'splitType': 'even',
           'participants': names,
         });
-        expect(result.participantNames.length, n);
-        final splitCount = result.participantNames.length + 1;
-        final perShare = amount / splitCount;
-        expect(splitCount, n + 1);
-        expect(perShare, amount / (n + 1));
+        expect(result.amount, amount);
+        expect(result.splitType, 'even');
+        expect(result.participantNames, names);
+        // For even splits we should not get any precomputed exact/percentage/shares in fromJson.
+        expect(result.exactAmountsByName, isEmpty);
+        expect(result.percentageByName, isEmpty);
+        expect(result.sharesByName, isEmpty);
       }
     });
   });
