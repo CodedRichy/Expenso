@@ -234,7 +234,7 @@ On launch, the app shows a splash then routes by Firebase Auth state: unauthenti
 
 - **Client:** Flutter (Dart), Material 3
 - **Backend / services:** Firebase (Phone Auth, Cloud Firestore, Cloud Functions, Storage)
-- **APIs:** Groq (Llama 3.3 70B) for natural-language expense parsing
+- **APIs:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) for natural-language expense parsing
 - **Payments:** UPI deep links via `upi_india` package (GPay, PhonePe, Paytm, BHIM, etc.)
 - **Local:** SharedPreferences (pinned groups), `flutter_contacts`, `flutter_dotenv` (e.g. `GROQ_API_KEY`)
 

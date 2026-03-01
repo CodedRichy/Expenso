@@ -19,7 +19,7 @@ Cached tokens do not count toward limits.
 
 ## Model used by Expenso
 
-We use **`llama-3.3-70b-versatile`** for expense parsing.
+We use **`meta-llama/llama-4-scout-17b-16e-instruct`** for expense parsing (via Groq).
 
 | Plan | RPM | RPD | TPM | TPD |
 |------|-----|-----|-----|-----|
@@ -46,4 +46,4 @@ Response headers (values are illustrative):
 
 When a limit is exceeded, the API returns **429 Too Many Requests**. The `retry-after` header (in seconds) indicates how long to wait before retrying.
 
-**In Expenso:** `GroqExpenseParserService` uses **proactive throttling** (minimum 2 seconds between requests) so rapid Magic Bar sends are spaced out. On 429 it retries once after waiting; it uses `retry-after` when present (clamped to a reasonable range), otherwise defaults to 2 seconds. If the retry also returns 429, we throw `GroqRateLimitException` and the Magic Bar shows a 30s cooldown and suggests manual entry. See `lib/services/groq_expense_parser_service.dart` and APP_BLUEPRINT § GroqExpenseParserService. The CLI (`tool/parser_cli.dart`) uses a 4s minimum interval and a file-based timestamp for batch runs.
+**In Expenso:** `GroqExpenseParserService` uses **proactive throttling** (minimum 2 seconds between requests) so rapid Magic Bar sends are spaced out. On 429 it retries once after waiting; it uses `retry-after` when present (clamped to a reasonable range), otherwise defaults to 2 seconds. If the retry also returns 429, we throw `GroqRateLimitException` and the Magic Bar shows a 30s cooldown and suggests manual entry. See `lib/services/groq_expense_parser_service.dart` and APP_BLUEPRINT § GroqExpenseParserService. The CLI (`tool/parser_cli.dart`) uses the same 2-second minimum interval and a file-based timestamp for batch runs.
