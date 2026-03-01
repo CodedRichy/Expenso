@@ -1627,7 +1627,9 @@ class CycleRepository extends ChangeNotifier {
     if (meta == null) throw StateError('Group not loaded');
 
     final existing = getPaymentAttemptForRoute(groupId, fromMemberId, toMemberId);
-    if (existing != null) return existing;
+    if (existing != null && existing.amountMinor == amountMinor) {
+      return existing;
+    }
 
     final attempt = PaymentAttempt.create(
       groupId: groupId,
