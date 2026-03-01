@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../design/spacing.dart';
-import '../repositories/cycle_repository.dart';
 import '../widgets/fade_in.dart';
 import '../widgets/tap_scale.dart';
 import '../models/cycle.dart';

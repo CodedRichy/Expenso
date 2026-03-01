@@ -180,7 +180,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                             (sum, e) => sum + e.amount,
                           );
                           final expenseCount = cycle.expenses.length;
-                          final cycleLabel = 'Cycle $startDate to $endDate, ${formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode)} settled, $expenseCount expense${expenseCount != 1 ? 's' : ''}';
+
                             return StaggeredListItem(
                               index: index,
                               child: TapScale(
