@@ -252,9 +252,19 @@ class GroqExpenseParserService {
 
   /// Returns an error message if [result] is invalid; null if valid.
   /// For confident: amount > 0, splitType not unresolved, and exact/percentage sums match.
+  /// Aligned with CLI (parser_cli.dart): demote confident+unresolved/history; settlements must be rejected.
   static String? validateResult(ParsedExpenseResult result) {
     if (result.amount.isNaN || result.amount.isInfinite) {
       return 'Amount must be a valid number.';
+    }
+    if (result.parseConfidence == 'confident' &&
+        (result.splitType == 'unresolved' || result.constraintFlags.contains('history'))) {
+      return 'Validation: Confident parse cannot have splitType unresolved or history flags.';
+    }
+    final descLower = result.description.toLowerCase();
+    if ((descLower.contains('debt') || descLower.contains('settle')) &&
+        result.parseConfidence != 'reject') {
+      return 'Validation: Settlements must be REJECTED.';
     }
     if (result.parseConfidence == 'confident') {
       if (result.amount <= 0) return 'Amount must be greater than 0.';
@@ -268,18 +278,19 @@ class GroqExpenseParserService {
   }
 
   /// Returns a description of a gap if split amounts don't match total; null if no gap.
+  /// Wording aligned with CLI (parser_cli.dart).
   static String? _findGap(ParsedExpenseResult result) {
     const tolerance = 0.01;
     if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
       final sum = result.exactAmountsByName.values.fold<double>(0, (a, b) => a + b);
       if ((sum - result.amount).abs() > tolerance) {
-        return 'Exact split gap: amounts sum to $sum but total is ${result.amount}.';
+        return 'Exact split: amounts sum to $sum but total is ${result.amount}.';
       }
     }
     if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
       final sum = result.percentageByName.values.fold<double>(0, (a, b) => a + b);
       if ((sum - 100).abs() > tolerance) {
-        return 'Percentage split gap: percentages sum to $sum, should be 100.';
+        return 'Percentage split: sum is $sum, should be 100.';
       }
     }
     return null;
@@ -308,6 +319,12 @@ class GroqExpenseParserService {
     return '''
 You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly ONE JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
 
+--- CORE ACCOUNTING RULES (source of truth; follow exactly) ---
+1. PAYER: If "I" paid/covered, payer = "$currentUser". If no payer is mentioned, DEFAULT to "$currentUser". ONLY use other names if the text explicitly states they paid.
+2. TOTAL SUM CONSISTENCY: The sum of all individual shares (exact/percentage/shares) MUST equal the total amount.
+3. THE REMAINDER RULE: If the user specifies an amount for only one person (e.g., "Dinner 3000, Sam's dessert was 400"), you MUST: Assign the specific amount (400) to that person. Divide the remaining balance (2600) equally among EVERYONE in the group (including the specific person and the payer). Add their equal share to their specific amount. If a specific amount is mentioned for one person, the remaining amount MUST be distributed among all participants. If participants are listed but no specific amounts are given for them, split the remainder evenly.
+4. PARTICIPANTS: "Everyone", "Usual gang", "The group" = All members in the list. If "everyone except X", set splitType to "exclude", put X in the "excluded" array, leave "participants" empty—do NOT manually resolve the participants into a list. participants[] should ONLY contain names OTHER than the payer.
+
 IMPORTANT: If the message contains multiple expenses or intents, you MUST still output only ONE object and mark it as constrained with constraintFlags ["multiIntent"]. Do NOT collapse multiple expenses into one amount.
 
 --- OUTPUT SCHEMA (required every time) ---
@@ -326,7 +343,7 @@ percentageAmounts,
 sharesAmounts,
 constraintFlags (array; REQUIRED when constrained),
 notes (array of strings; non-actionable metadata),
-needsClarification (boolean; true ONLY when reject),
+needsClarification (boolean; true when reject, or when constrained and you need to ask the user something),
 rejectReason (string; ONLY when reject)
 
 When parseConfidence is "reject":
@@ -388,6 +405,14 @@ Match nicknames/typos to this list. Output exact spelling only.
 • Match "user b" / "user B" to member list (e.g. B); use exact spelling from MEMBER LIST.
 
 --- CONFIDENCE RULES (NON-NEGOTIABLE) ---
+
+RULE A (Integrity): If splitType is "unresolved", parseConfidence MUST be "constrained". NEVER mark a history-dependent split as confident.
+RULE B (Exactness): If splitType is "exact", exactAmounts MUST be populated and their sum MUST exactly equal the total amount. If you cannot calculate the specific numbers, use splitType: "unresolved" and mark as "constrained".
+RULE C (Participant Guard): If the user says "Everyone except X", set splitType to "exclude", put X in the "excluded" array, and leave "participants" empty. Do NOT manually resolve the participants into a list.
+RULE D (Settlement): "Clear my debt", "paid me back" = Settlement. If the intent is settling a debt instead of a shared group expense, set parseConfidence: "reject".
+
+--- STEP-BY-STEP CALCULATION (for exact splits) ---
+Before generating JSON, calculate the balance: Total Amount = [X]. Specified Exact Amounts = Sum of all mentioned individual costs. Remainder = (Total Amount) - (Specified Exact Amounts). Split the Remainder equally among all participants (including those with exact amounts). Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any). Ensure the sum of exactAmounts matches the Total Amount exactly. CRITICAL: exactAmounts values MUST be raw numbers (e.g. 650), NEVER strings with math (e.g. "2600/4").
 
 CONFIDENT only if ALL true:
 - amount > 0
