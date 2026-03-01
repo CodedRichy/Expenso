@@ -84,9 +84,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF7E7E7E),
-      body: _SplashBody(),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: const _SplashBody(),
     );
   }
 }
@@ -105,7 +105,7 @@ class _SplashBody extends StatelessWidget {
           : FadeTransition(
               opacity: state._logoOpacity,
               child: Image.asset(
-                'assets/images/logoRevamp.png',
+                'assets/images/logoTransparentRevamp.png',
                 width: 250,
                 height: 250,
               ),
