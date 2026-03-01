@@ -71,8 +71,6 @@ dev_dependencies:
 
 flutter_launcher_icons:
   image_path: assets/images/logoRevamp.png
-  height: 300
-  width: 300
   android: true
   ios: true
   min_sdk_android: 21

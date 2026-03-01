@@ -209,9 +209,9 @@ class MyApp extends StatelessWidget {
           navigatorObservers: [
             FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
           ],
-          initialRoute: '/splash',
+          initialRoute: 'splash',
           routes: {
-        '/splash': (context) => const SplashScreen(),
+        'splash': (context) => const SplashScreen(),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
         '/invite-members': (context) {
