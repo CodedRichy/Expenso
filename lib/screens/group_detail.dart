@@ -27,6 +27,7 @@ import '../widgets/settlement_progress_indicator.dart';
 import '../widgets/staggered_list_item.dart';
 import '../widgets/undo_toast.dart';
 import 'empty_states.dart';
+import '../widgets/tap_scale.dart';
 
 class _StyledDescription {
   final String main;

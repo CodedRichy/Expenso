@@ -15,6 +15,7 @@ import '../widgets/skeleton_placeholders.dart';
 import '../widgets/staggered_list_item.dart';
 import '../widgets/upi_payment_card.dart';
 import '../utils/money_format.dart';
+import '../widgets/tap_scale.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   final Group? group;

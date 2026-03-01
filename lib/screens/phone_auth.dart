@@ -7,6 +7,7 @@ import '../design/typography.dart';
 import '../firebase_app.dart';
 import '../repositories/cycle_repository.dart';
 import '../services/phone_auth_service.dart';
+import '../widgets/tap_scale.dart';
 
 class PhoneAuth extends StatefulWidget {
   const PhoneAuth({super.key});
