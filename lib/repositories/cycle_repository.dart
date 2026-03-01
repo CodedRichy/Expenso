@@ -1592,10 +1592,17 @@ class CycleRepository extends ChangeNotifier {
   PaymentAttempt? getPaymentAttemptForRoute(String groupId, String fromId, String toId) {
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     final routeKey = '${fromId}_$toId';
+    PaymentAttempt? latestNotConfirmed;
     for (final attempt in attempts) {
-      if (attempt.routeKey == routeKey) return attempt;
+      if (attempt.routeKey == routeKey) {
+        if (!attempt.status.isFullyConfirmed) {
+          if (latestNotConfirmed == null || attempt.createdAt > latestNotConfirmed.createdAt) {
+            latestNotConfirmed = attempt;
+          }
+        }
+      }
     }
-    return null;
+    return latestNotConfirmed;
   }
 
   Future<void> loadPaymentAttempts(String groupId) async {
