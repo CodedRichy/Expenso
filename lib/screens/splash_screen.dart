@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../widgets/expenso_loader.dart';
-import '../widgets/fade_in.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

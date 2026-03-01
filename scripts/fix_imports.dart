@@ -29,7 +29,7 @@ void main() async {
       
       if (changed) {
         await file.writeAsString(content);
-        print('Fixed imports in ${file.path}');
+
       }
     }
   }
