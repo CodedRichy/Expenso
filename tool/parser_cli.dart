@@ -360,14 +360,34 @@ Current user: $currentUser
 - CONSTRAINED if you have to guess participants ("some of us") or if "history" is mentioned.
 - REJECT only if there is no amount AND no way to imply one, or if it is a settlement.
 
+--- STEP-BY-STEP CALCULATION ---
+Before generating JSON, calculate the balance:
+Total Amount = [X]
+Specified Exact Amounts = Sum of all mentioned individual costs.
+Remainder = (Total Amount) - (Specified Exact Amounts).
+Split the Remainder equally among all participants (including those with exact amounts).
+Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any).
+Ensure the sum of exactAmounts matches the Total Amount exactly.
+
 ${recentExamples.isNotEmpty ? '--- RECENT EXAMPLES ---\n${recentExamples.map((e) => '"${e.input}" -> ${e.json}').join('\n')}\n\n' : ''}
 Return ONLY JSON.''';
 }
 
 String? _validateResult(ParsedExpenseResult result) {
   if (result.amount.isNaN || result.amount.isInfinite) return 'Amount must be a valid number.';
-  if (result.parseConfidence == 'confident' && result.amount <= 0) return 'Amount must be greater than 0.';
-  if (result.parseConfidence == 'confident' && result.splitType == 'unresolved') return 'Confident parse cannot have splitType unresolved.';
+  
+  // Demote confidence if history or unresolved splits are mentioned
+  if (result.parseConfidence == 'confident' && 
+     (result.splitType == 'unresolved' || result.constraintFlags.contains('history'))) {
+    return 'Validation: Confident parse cannot have splitType unresolved or history flags.';
+  }
+
+  // Force reject for settlements to prevent ledger pollution
+  if (result.description.toLowerCase().contains('debt') || 
+      result.description.toLowerCase().contains('settle')) {
+    if (result.parseConfidence != 'reject') return 'Validation: Settlements must be REJECTED.';
+  }
+
   return null;
 }
 
