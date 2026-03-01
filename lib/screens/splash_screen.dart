@@ -105,7 +105,9 @@ class _SplashBody extends StatelessWidget {
           : FadeTransition(
               opacity: state._logoOpacity,
               child: Image.asset(
-                'assets/images/logoTransparentRevamp.png',
+                Theme.of(context).brightness == Brightness.dark
+                    ? 'assets/app_icon_dark.png'
+                    : 'assets/app_icon_light.png',
                 width: 250,
                 height: 250,
               ),
