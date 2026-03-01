@@ -194,7 +194,7 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   http.Response response = await _post(apiKey, body);
   _markRequestDone();
   while (response.statusCode == 429 || response.statusCode >= 500) {
-    stderr.writeln('Transient error (HTTP \${response.statusCode}). Waiting to retry...');
+    stderr.writeln('Transient error (HTTP ${response.statusCode}). Waiting to retry...');
     final waitSeconds = _retryAfterSeconds(response);
     await Future<void>.delayed(Duration(seconds: waitSeconds));
     response = await _post(apiKey, body);
