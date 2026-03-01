@@ -212,40 +212,6 @@ class MyApp extends StatelessWidget {
           initialRoute: '/splash',
           routes: {
         '/splash': (context) => const SplashScreen(),
-        '/': (context) => StreamBuilder<User?>(
-          stream: PhoneAuthService.instance.authStateChanges,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: ExpensoLoader()),
-              );
-            }
-            final user = snapshot.data;
-            final repo = CycleRepository.instance;
-            if (user == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
-              return const PhoneAuth();
-            }
-            repo.setAuthFromFirebaseUserSync(
-              user.uid,
-              user.phoneNumber,
-              user.displayName,
-              photoURL: user.photoURL,
-            );
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              await repo.continueAuthFromFirebaseUser();
-              // Initialize FCM after auth is complete
-              FcmTokenService.instance.initialize(user.uid);
-            });
-            return ListenableBuilder(
-              listenable: repo,
-              builder: (context, _) {
-                if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
-                return const GroupsList();
-              },
-            );
-          },
-        ),
         '/groups': (context) => const GroupsList(),
         '/create-group': (context) => const CreateGroup(),
         '/invite-members': (context) {
@@ -312,8 +278,62 @@ class MyApp extends StatelessWidget {
         },
         '/profile': (context) => const ProfileScreen(),
         },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/') {
+            return PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
+              transitionDuration: const Duration(milliseconds: 200),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            );
+          }
+          return null;
+        },
       );
     },
   );
+  }
+}
+
+class RootScreen extends StatelessWidget {
+  const RootScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: PhoneAuthService.instance.authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: ExpensoLoader()),
+          );
+        }
+        final user = snapshot.data;
+        final repo = CycleRepository.instance;
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
+          return const PhoneAuth();
+        }
+        repo.setAuthFromFirebaseUserSync(
+          user.uid,
+          user.phoneNumber,
+          user.displayName,
+          photoURL: user.photoURL,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await repo.continueAuthFromFirebaseUser();
+          // Initialize FCM after auth is complete
+          FcmTokenService.instance.initialize(user.uid);
+        });
+        return ListenableBuilder(
+          listenable: repo,
+          builder: (context, _) {
+            if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
+            return const GroupsList();
+          },
+        );
+      },
+    );
   }
 }
