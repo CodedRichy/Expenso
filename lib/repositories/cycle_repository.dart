@@ -1500,7 +1500,10 @@ class CycleRepository extends ChangeNotifier {
       }
       if (parts.isNotEmpty || isAdminOverride) {
         final prefix = isAdminOverride ? '$actorName (admin) edited' : '$actorName edited';
-        final detail = parts.isNotEmpty ? parts.join(', ') : existing.description;
+        String detail = parts.isNotEmpty ? parts.join(', ') : existing.description;
+        if (isAdminOverride) {
+          detail += '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
+        }
         FirestoreService.instance.addSystemMessage(
           groupId,
           type: 'expense_edited',
@@ -1554,7 +1557,10 @@ class CycleRepository extends ChangeNotifier {
       final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
       final fmtAmount = formatMoneyFromMajor(existing.amount, currencyCode);
       final prefix = isAdminOverride ? '$actorName (admin) deleted' : '$actorName deleted';
-      final detail = '${existing.description} $fmtAmount';
+      String detail = '${existing.description} $fmtAmount';
+      if (isAdminOverride) {
+        detail += '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
+      }
       FirestoreService.instance.addSystemMessage(
         groupId,
         type: 'expense_deleted',
