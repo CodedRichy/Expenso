@@ -299,16 +299,6 @@ class _PhoneAuthState extends State<PhoneAuth> {
                               'Sent to $_selectedCountryCode $phone',
                               style: context.bodySecondary,
                             ),
-                            if (PhoneAuthService.isTestNumber(phone)) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'For this test number, use the code ${PhoneAuthService.devTestCode}.',
-                                style: context.caption.copyWith(
-                                  color: AppColors.accent,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 48),

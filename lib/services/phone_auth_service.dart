@@ -38,11 +38,7 @@ class PhoneAuthService {
       final String production;
       switch (error.code) {
         case 'invalid-verification-code':
-          production = 'Invalid code. Please try again.';
-          if (kDebugMode) {
-            return 'Invalid code. For the test number +91 79022 03218, use the code $devTestCode.';
-          }
-          return production;
+          return 'Invalid code. Please try again.';
         case 'invalid-verification-id':
           production = 'Verification expired. Please start again from the phone screen.';
           break;
@@ -63,12 +59,10 @@ class PhoneAuthService {
           production = _genericMessage;
           break;
         default:
-          if (kDebugMode) return error.message ?? error.code;
           return _genericMessage;
       }
       return production;
     }
-    if (kDebugMode) return error.toString();
     return _genericMessage;
   }
 
