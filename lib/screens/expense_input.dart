@@ -247,34 +247,25 @@ class _ExpenseInputState extends State<ExpenseInput> {
             final isSelected = _paidById == member.id;
             final displayName = repo.getMemberDisplayNameById(member.id);
             return TapScale(
-              child: GestureDetector(
-                onTap: () => setState(() => _paidById = member.id),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.dividerColor,
+              child: isSelected
+                  ? ElevatedButton(
+                      onPressed: () => setState(() => _paidById = member.id),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(displayName, style: AppTypography.button),
+                    )
+                  : OutlinedButton(
+                      onPressed: () => setState(() => _paidById = member.id),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(displayName),
                     ),
-                  ),
-                  child: Text(
-                    displayName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: isSelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
             );
           }).toList(),
         ),
