@@ -33,6 +33,7 @@ import 'screens/profile.dart';
 
 import 'services/fcm_token_service.dart';
 import 'services/locale_service.dart';
+import 'widgets/expenso_loader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -284,15 +285,22 @@ class RootScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<User?>(
+        // initialData lets us resolve auth synchronously on warm restarts.
+        // For cold starts the stream is in 'waiting' briefly — we show the
+        // loader during that window so it is tied to real work, not a timer.
         initialData: FirebaseAuth.instance.currentUser,
         stream: PhoneAuthService.instance.authStateChanges,
         builder: (context, snapshot) {
-          final user = snapshot.connectionState == ConnectionState.waiting 
-              ? FirebaseAuth.instance.currentUser 
-              : snapshot.data;
-              
+          // Show branded loader while auth stream warms up (genuine async work).
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              snapshot.data == null) {
+            return const Center(child: ExpensoLoader());
+          }
+
+          final user = snapshot.data;
+
           final repo = CycleRepository.instance;
-          
+
           if (user == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
             return const PhoneAuth();
