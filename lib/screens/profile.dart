@@ -184,6 +184,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
+                      // Mirror the back button width so the title is truly centred
+                      const SizedBox(width: 32),
                     ],
                   ),
                 ),
