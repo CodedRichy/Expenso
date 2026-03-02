@@ -42,6 +42,8 @@ class Expense {
   final String date;
   final List<String> participantIds;
   final String paidById;
+  /// UID of the user who originally created this expense. Used for permission checks.
+  final String createdById;
   /// Per-person share (member id -> amount). When non-null, balances use these; else equal split.
   final Map<String, double>? splitAmountsById;
   final String category;
@@ -57,6 +59,7 @@ class Expense {
     required this.date,
     List<String>? participantIds,
     this.paidById = '',
+    this.createdById = '',
     this.splitAmountsById,
     this.category = '',
     this.splitType = 'Even',
