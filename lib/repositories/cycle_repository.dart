@@ -1673,20 +1673,25 @@ class CycleRepository extends ChangeNotifier {
 
   Future<void> markPaymentInitiated(String groupId, String attemptId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
+    // Guard: can only initiate from notStarted.
+    final current = _paymentAttemptsByGroup[groupId]
+        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
+              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+              amountMinor: 0, currencyCode: 'INR',
+              status: PaymentAttemptStatus.notStarted, createdAt: 0));
+    if (current != null && current.status != PaymentAttemptStatus.notStarted) {
+      debugPrint('markPaymentInitiated: skipped (already ${current.status.firestoreValue})');
+      return; // idempotent — already past this state
+    }
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.initiated.firestoreValue,
       initiatedAt: now,
     );
-
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.initiated, initiatedAt: now);
-    
-    final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
-      (a) => a.id == attemptId,
-      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
-    );
-    _logSettlementEvent(groupId, SettlementEventType.paymentInitiated, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(groupId, SettlementEventType.paymentInitiated,
+        amountMinor: current?.amountMinor, paymentAttemptId: attemptId);
   }
 
   Future<void> markPaymentConfirmedByPayer(
@@ -1696,6 +1701,23 @@ class CycleRepository extends ChangeNotifier {
     String? upiResponseCode,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
+    // Guard: payer can only confirm from initiated or notStarted.
+    // confirmedByPayer/receiver/cashConfirmed are terminal — never regress.
+    final current = _paymentAttemptsByGroup[groupId]
+        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
+              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+              amountMinor: 0, currencyCode: 'INR',
+              status: PaymentAttemptStatus.notStarted, createdAt: 0));
+    if (current != null && current.status.isSettled) {
+      debugPrint('markPaymentConfirmedByPayer: skipped (already settled: ${current.status.firestoreValue})');
+      return; // idempotent — already settled
+    }
+    if (current != null &&
+        current.status != PaymentAttemptStatus.notStarted &&
+        current.status != PaymentAttemptStatus.initiated) {
+      throw StateError(
+          'Invalid transition: cannot move from ${current.status.firestoreValue} to confirmedByPayer.');
+    }
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
@@ -1704,7 +1726,6 @@ class CycleRepository extends ChangeNotifier {
       upiTransactionId: upiTransactionId,
       upiResponseCode: upiResponseCode,
     );
-
     _updateLocalAttemptStatus(
       groupId,
       attemptId,
@@ -1719,19 +1740,36 @@ class CycleRepository extends ChangeNotifier {
 
   Future<void> markPaymentConfirmedByReceiver(String groupId, String attemptId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
+    // Guard: receiver can only confirm from confirmedByPayer.
+    // This ensures the payer has explicitly claimed to have paid before the receiver settles.
+    final current = _paymentAttemptsByGroup[groupId]
+        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
+              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+              amountMinor: 0, currencyCode: 'INR',
+              status: PaymentAttemptStatus.notStarted, createdAt: 0));
+    if (current != null && current.status == PaymentAttemptStatus.confirmedByReceiver) {
+      debugPrint('markPaymentConfirmedByReceiver: skipped (already confirmedByReceiver)');
+      return; // idempotent
+    }
+    if (current != null && current.status != PaymentAttemptStatus.confirmedByPayer) {
+      throw StateError(
+          'Invalid transition: receiver cannot confirm from ${current.status.firestoreValue}. '
+          'Payer must confirm first (confirmedByPayer).');
+    }
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.confirmedByReceiver.firestoreValue,
       confirmedAt: now,
     );
-
     _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByReceiver, confirmedAt: now);
     final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
       (a) => a.id == attemptId,
-      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
+          amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
     );
-    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver,
+        amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
     _checkAndEmitFullySettled(groupId);
   }
 

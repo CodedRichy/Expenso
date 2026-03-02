@@ -63,31 +63,38 @@ class _ExpenseInputState extends State<ExpenseInput> {
     );
   }
 
-  /// Returns true if [description] matches exactly one group member's display name.
-  /// Used to block ambiguous inputs like "Rishi 5" where the description has no
-  /// semantic verb/intent — it could mean "I paid for Rishi" or "Rishi paid me" etc.
-  bool _descriptionIsSolelyAMemberName(String description, Group group) {
+  // ─── Semantic completeness ────────────────────────────────────────────────
+  // The domain-layer rule for "Name Amount" ambiguity (e.g. "Rishi 5") lives in
+  // GroqExpenseParserService._fallbackParse, which returns needsClarification=true
+  // with constraintFlag 'semanticIncomplete' when the non-numeric text resolves to
+  // a member name with no verb. That result surfaces through the Magic Bar's
+  // clarification prompt, which is the primary fast-entry path.
+  //
+  // This legacy ExpenseInput screen uses a simple local parser (parseExpense) only
+  // for the numeric quick-path confirmation flow. We apply the same semantic rule
+  // here as a local guard so the two paths remain consistent, without duplicating
+  // the domain logic: we delegate to the same verb-list heuristic the parser uses.
+
+  bool _isSemanticallIncomplete(String description) {
     if (description.isEmpty) return false;
-    final repo = CycleRepository.instance;
-    final words = description.trim().toLowerCase().split(RegExp(r'\s+'));
-    if (words.length > 2) return false; // 3+ words are unlikely to be just a name
-    final members = repo.getMembersForGroup(group.id);
-    return members.any((m) {
-      final displayName = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
-      return displayName.isNotEmpty && displayName == description.trim().toLowerCase();
-    });
+    // If the description has more than 2 words it almost certainly has intent.
+    if (description.trim().split(RegExp(r'\s+')).length > 2) return false;
+    // If any known verb/category word is present, intent is clear.
+    return !RegExp(
+      r'\b(paid|bought|covered|for|with|spent|got|took|owe|owes|had|lent|gave|'
+      r'dinner|lunch|breakfast|coffee|uber|cab|rent|groceries|movie|bill|ticket|petrol|hotel|flight)\b',
+      caseSensitive: false,
+    ).hasMatch(description);
   }
 
   void handleSubmit() {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return;
-    final group = RouteArgs.getGroup(context);
     final parsed = parseExpense(input);
     if (parsed == null || parsed.amount <= 0 || parsed.amount.isNaN || parsed.amount.isInfinite) return;
 
-    // Block semantically incomplete inputs like "Rishi 5" where the description
-    // is solely a member name — the user's intent is ambiguous.
-    if (group != null && _descriptionIsSolelyAMemberName(parsed.description, group)) {
+    // Delegate semantic completeness to domain rule (mirrors _fallbackParse logic).
+    if (_isSemanticallIncomplete(parsed.description)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(

@@ -509,7 +509,11 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
   }) async {
     final apiKey = _apiKey;
     if (apiKey == null) {
-      final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
+      final fallback = _fallbackParse(
+        userInput,
+        expectedCurrencyCode: expectedCurrencyCode,
+        groupMemberNames: groupMemberNames,
+      );
       if (fallback != null) return fallback;
       throw Exception('GROQ_API_KEY is not set in environment.');
     }
@@ -660,18 +664,29 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       // Semantic rejects must propagate as user-facing errors; do not apply fallback.
       rethrow;
     } catch (e) {
-      final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
+      final fallback = _fallbackParse(
+        userInput,
+        expectedCurrencyCode: expectedCurrencyCode,
+        groupMemberNames: groupMemberNames,
+      );
       if (fallback != null) return fallback;
       rethrow;
     }
   }
 
   /// Fallback: extract first number from input and return minimal ParsedExpenseResult if valid.
-  static ParsedExpenseResult? _fallbackParse(String userInput, {String? expectedCurrencyCode}) {
+  /// Also enforces semantic completeness: if the non-numeric portion of the input matches
+  /// exactly one group member name (i.e. "Rishi 5"), returns a constrained result with
+  /// needsClarification=true — never auto-commits a name+amount with no verb/description.
+  static ParsedExpenseResult? _fallbackParse(
+    String userInput, {
+    String? expectedCurrencyCode,
+    List<String> groupMemberNames = const [],
+  }) {
     final amount = _extractAmountFromText(userInput);
     if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite) return null;
     final trimmed = userInput.trim();
-    
+
     String? currencyCode;
     final upper = trimmed.toUpperCase();
     if (trimmed.contains(r'$') || upper.contains('USD')) {
@@ -688,8 +703,48 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
 
     final description = trimmed.isEmpty
         ? 'Expense'
-        : (trimmed.length > 80 ? '${trimmed.substring(0, 80)}…' : trimmed);
-        
+        : (trimmed.length > 80 ? '${trimmed.substring(0, 80)}\u2026' : trimmed);
+
+    // --- Semantic completeness check (domain rule, not UI rule) ---
+    // If the non-numeric portion of the input is solely a member name (e.g. "Rishi 5"),
+    // the input has no verb, direction, or description — it is semantically incomplete.
+    // Return constrained+needsClarification so every caller surfaces it identically.
+    final nonNumeric = trimmed
+        .replaceAll(RegExp(r'[\d,]+\.?\d*'), '')
+        .replaceAll(RegExp(r'[₹\$€£¥]'), '')
+        .trim()
+        .toLowerCase();
+    if (nonNumeric.isNotEmpty) {
+      // Single-word non-numeric portion that matches a group member name exactly.
+      final isMemberNameOnly = groupMemberNames.any(
+        (name) => name.trim().toLowerCase() == nonNumeric,
+      );
+      // Heuristic: single capitalised word with no known verb/preposition is also ambiguous.
+      final hasVerb = RegExp(
+        r'\b(paid|bought|covered|for|with|spent|got|took|owe|owes|had|lent|gave|dinner|lunch|breakfast|coffee|uber|cab|rent|groceries|movie|bill|ticket|petrol|hotel|flight)\b',
+        caseSensitive: false,
+      ).hasMatch(trimmed);
+      if (isMemberNameOnly || (!hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 2)) {
+        // Return constrained with clarification — never commit.
+        final result = ParsedExpenseResult(
+          amount: amount,
+          currencyCode: currencyCode,
+          description: 'Expense',
+          category: '',
+          splitType: 'unresolved',
+          participantNames: [],
+          parseConfidence: 'constrained',
+          constraintFlags: ['semanticIncomplete'],
+          needsClarification: true,
+          clarificationQuestion:
+              'What was this expense for? Try something like "Dinner $amount with ${nonNumeric.isNotEmpty ? nonNumeric : 'them'}".',
+        );
+        final err = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
+        if (err != null) throw GroqParserRejectException(err);
+        return result;
+      }
+    }
+
     final result = ParsedExpenseResult(
       amount: amount,
       currencyCode: currencyCode,
@@ -700,10 +755,10 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       parseConfidence: 'constrained',
       constraintFlags: ['fallbackExtraction'],
     );
-    
+
     final err = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
     if (err != null) throw GroqParserRejectException(err);
-    
+
     return result;
   }
 

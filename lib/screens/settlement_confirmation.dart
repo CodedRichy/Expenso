@@ -116,23 +116,28 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       route.toMemberId,
     );
 
-    if (attempt != null && (attempt.status == PaymentAttemptStatus.initiated || attempt.status == PaymentAttemptStatus.notStarted)) {
+    if (attempt != null &&
+        (attempt.status == PaymentAttemptStatus.initiated ||
+            attempt.status == PaymentAttemptStatus.notStarted)) {
       await repo.markPaymentConfirmedByPayer(
         _group!.id,
         attempt.id,
         upiTransactionId: transactionId,
         upiResponseCode: responseCode,
       );
-      final hasUpiSuccess = transactionId != null && transactionId.isNotEmpty;
-      if (hasUpiSuccess) {
-        await repo.markPaymentConfirmedByReceiver(_group!.id, attempt.id);
-      }
+      // Domain rule: confirmedByPayer is NOT settled. Settlement requires the
+      // receiver to independently confirm via markPaymentConfirmedByReceiver.
+      // A non-null transactionId means the payer's UPI app returned a reference;
+      // it does NOT mean the bank transfer completed or the receiver got funds.
+      // Never auto-call markPaymentConfirmedByReceiver from the payer's device.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(hasUpiSuccess
-                ? 'Payment confirmed'
-                : 'Payment marked as complete. Receiver can confirm.'),
+            content: Text(
+              transactionId != null && transactionId.isNotEmpty
+                  ? 'Payment sent. Waiting for ${repo.getMemberDisplayNameById(route.toMemberId)} to confirm receipt.'
+                  : 'Marked as paid. Waiting for receiver to confirm.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -164,7 +169,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       currencyCode: route.currencyCode,
     );
 
-    if (attempt.status == PaymentAttemptStatus.notStarted || 
+    if (attempt.status == PaymentAttemptStatus.notStarted ||
         attempt.status == PaymentAttemptStatus.initiated) {
       await repo.markPaymentAsCash(_group!.id, attempt.id);
       if (mounted) {
