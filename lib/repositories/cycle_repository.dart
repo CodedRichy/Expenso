@@ -721,6 +721,8 @@ class CycleRepository extends ChangeNotifier {
         userName: m['userName'] as String? ?? '',
         date: dateStr,
         timestamp: ts,
+        detail: m['detail'] as String? ?? '',
+        prefix: m['prefix'] as String? ?? '',
       );
     }).toList();
     _requestNotify();
@@ -821,6 +823,7 @@ class CycleRepository extends ChangeNotifier {
       date: data['date'] as String? ?? 'Today',
       participantIds: participantIds,
       paidById: payerId,
+      createdById: data['createdById'] as String? ?? '',
       splitAmountsById: splitAmountsById.isEmpty ? null : splitAmountsById,
       category: data['category'] as String? ?? '',
       splitType: splitType,
@@ -1087,6 +1090,28 @@ class CycleRepository extends ChangeNotifier {
     return meta.cycleStatus == 'active';
   }
 
+  /// Returns true if [userId] may edit or delete [expenseId] in [groupId].
+  ///
+  /// Rules (domain layer — cannot be bypassed via UI):
+  /// - Cycle must be active (not settling/closed). Hard block.
+  /// - Creator of the expense can always mutate their own expense.
+  /// - Group admin (group.creatorId) can mutate any expense, but an
+  ///   activity log entry will be written automatically.
+  bool canMutateExpense(String groupId, String expenseId, String userId) {
+    final meta = _groupMeta[groupId];
+    if (meta == null) return false;
+    // Hard block: closed or settling cycles are immutable.
+    if (meta.cycleStatus != 'active') return false;
+    // Expense must be in an active lifecycle state.
+    if (!canEditExpense(groupId, expenseId)) return false;
+    // Creator of the expense can always mutate.
+    final expense = getExpense(groupId, expenseId);
+    if (expense != null && expense.createdById == userId) return true;
+    // Group admin (group creator) can override.
+    if (isCreator(groupId, userId)) return true;
+    return false;
+  }
+
   bool canDeleteGroup(String groupId, String userId) {
     return isCreator(groupId, userId);
   }
@@ -1168,6 +1193,7 @@ class CycleRepository extends ChangeNotifier {
       'description': expense.description,
       'date': expense.date,
       'dateSortKey': _dateStringToSortKey(expense.date),
+      'createdById': _currentUserId,
       if (expense.category.isNotEmpty) 'category': expense.category,
     };
     await FirestoreService.instance.addExpense(groupId, data);
@@ -1371,22 +1397,34 @@ class CycleRepository extends ChangeNotifier {
     return cycle.expenses.where((e) => canEditExpense(groupId, e.id)).toList();
   }
 
-  /// Updates an expense in-place. Validates that the expense is active
-  /// (not deleted or superseded) before allowing the update.
+  /// Updates an expense in-place.
+  /// Enforces: cycle must be active; caller must be expense creator or group admin.
+  /// Admin overrides always emit a system activity entry for auditability.
   void updateExpense(String groupId, Expense updatedExpense) {
     final amountError = validateExpenseAmount(updatedExpense.amount);
     if (amountError != null) throw ArgumentError(amountError);
     final descError = validateExpenseDescription(updatedExpense.description);
     if (descError != null) throw ArgumentError(descError);
 
-    final revisions = _revisionsByGroup[groupId] ?? [];
+    final revisions = _revisionsByGroup[groupId] ?? {};
     final deletedIds = _deletedIdsByGroup[groupId] ?? {};
 
     guardEdit(
       expenseId: updatedExpense.id,
-      revisions: revisions,
+      revisions: revisions is List ? revisions : [],
       deletedExpenseIds: deletedIds,
     );
+
+    if (!canMutateExpense(groupId, updatedExpense.id, _currentUserId)) {
+      throw StateError('You do not have permission to edit this expense.');
+    }
+
+    // Capture old values for activity log before writing.
+    final existing = getExpense(groupId, updatedExpense.id);
+    final isAdminOverride = existing != null &&
+        existing.createdById.isNotEmpty &&
+        existing.createdById != _currentUserId &&
+        isCreator(groupId, _currentUserId);
 
     final meta = _groupMeta[groupId];
     if (meta == null) return;
@@ -1426,25 +1464,84 @@ class CycleRepository extends ChangeNotifier {
       'splits': splits.map((k, v) => MapEntry(k, v)),
       if (updatedExpense.category.isNotEmpty) 'category': updatedExpense.category,
     });
+
+    // Emit activity log for admin overrides or any material change.
+    if (existing != null) {
+      final actorName = _currentUserName.isNotEmpty ? _currentUserName : 'Someone';
+      final parts = <String>[];
+      if (existing.description != updatedExpense.description) {
+        parts.add('"${existing.description}" → "${updatedExpense.description}"');
+      }
+      if ((existing.amount - updatedExpense.amount).abs() > 0.001) {
+        final fmtOld = formatMoneyFromMajor(existing.amount, currencyCode);
+        final fmtNew = formatMoneyFromMajor(updatedExpense.amount, currencyCode);
+        parts.add('$fmtOld → $fmtNew');
+      }
+      if (parts.isNotEmpty || isAdminOverride) {
+        final prefix = isAdminOverride ? '$actorName (admin) edited' : '$actorName edited';
+        final detail = parts.isNotEmpty ? parts.join(', ') : existing.description;
+        FirestoreService.instance.addSystemMessage(
+          groupId,
+          type: 'expense_edited',
+          userName: actorName,
+          odId: _currentUserId,
+          detail: detail,
+          prefix: prefix,
+        ).catchError((e) => debugPrint('Activity log write failed: $e'));
+      }
+    }
   }
 
   /// Soft-deletes an expense using the compensation model.
-  /// The expense is marked as deleted and its effect on balances is negated,
-  /// but the original data is preserved for audit trail.
+  /// Enforces: cycle must be active; caller must be expense creator or group admin.
+  /// Admin overrides always emit a system activity entry for auditability.
+  /// The original expense document is preserved for audit trail.
   Future<void> deleteExpense(String groupId, String expenseId) async {
+    if (!canMutateExpense(groupId, expenseId, _currentUserId)) {
+      throw StateError('You do not have permission to delete this expense.');
+    }
+
     final revisions = _revisionsByGroup[groupId] ?? [];
     final deletedIds = _deletedIdsByGroup[groupId] ?? {};
 
     guardDelete(
       expenseId: expenseId,
-      revisions: revisions,
+      revisions: revisions is List ? revisions : [],
       deletedExpenseIds: deletedIds,
     );
 
-    await FirestoreService.instance.markExpenseDeleted(groupId, expenseId);
+    // Capture before deleting for activity log.
+    final existing = getExpense(groupId, expenseId);
+    final isAdminOverride = existing != null &&
+        existing.createdById.isNotEmpty &&
+        existing.createdById != _currentUserId &&
+        isCreator(groupId, _currentUserId);
+
+    await FirestoreService.instance.markExpenseDeleted(
+      groupId,
+      expenseId,
+      deletedById: _currentUserId,
+    );
 
     if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) {
       _clearLastAdded();
+    }
+
+    // Activity log: always emit for admin overrides; for creators only if it's a non-trivial expense.
+    if (existing != null) {
+      final actorName = _currentUserName.isNotEmpty ? _currentUserName : 'Someone';
+      final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+      final fmtAmount = formatMoneyFromMajor(existing.amount, currencyCode);
+      final prefix = isAdminOverride ? '$actorName (admin) deleted' : '$actorName deleted';
+      final detail = '${existing.description} $fmtAmount';
+      FirestoreService.instance.addSystemMessage(
+        groupId,
+        type: 'expense_deleted',
+        userName: actorName,
+        odId: _currentUserId,
+        detail: detail,
+        prefix: prefix,
+      ).catchError((e) => debugPrint('Activity log write failed: $e'));
     }
   }
 

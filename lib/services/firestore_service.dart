@@ -219,11 +219,13 @@ class FirestoreService {
     }
   }
 
-  /// Add a system message to the group (e.g. "Alice joined", "Bob declined").
+  /// Add a system message to the group (e.g. "Alice joined", "Bob edited Dinner ₹500 → ₹600").
   Future<void> addSystemMessage(String groupId, {
     required String type,
     String userName = '',
     String odId = '',
+    String detail = '',
+    String prefix = '',
   }) async {
     final now = DateTime.now();
     final id = 'sys_${now.millisecondsSinceEpoch}';
@@ -234,6 +236,8 @@ class FirestoreService {
       'userId': odId,
       'userName': userName,
       'timestamp': now.millisecondsSinceEpoch,
+      if (detail.isNotEmpty) 'detail': detail,
+      if (prefix.isNotEmpty) 'prefix': prefix,
     });
   }
 
@@ -452,11 +456,14 @@ class FirestoreService {
         .update(toWrite);
   }
 
-  /// Soft-delete: marks expense as deleted (compensation model).
-  /// The expense document remains but is marked deleted for audit trail.
-  Future<void> markExpenseDeleted(String groupId, String expenseId) async {
+  /// Soft-delete: marks expense as deleted with actor id for audit trail.
+  /// The expense document remains and is preserved for audit.
+  Future<void> markExpenseDeleted(String groupId, String expenseId, {String deletedById = ''}) async {
     final ref = _firestore.collection(FirestorePaths.groupDeletedExpenses(groupId)).doc(expenseId);
-    await ref.set({'deletedAt': FieldValue.serverTimestamp()});
+    await ref.set({
+      'deletedAt': FieldValue.serverTimestamp(),
+      if (deletedById.isNotEmpty) 'deletedById': deletedById,
+    });
   }
 
   /// Hard-delete expense from current cycle (legacy method, use markExpenseDeleted for audit trail).

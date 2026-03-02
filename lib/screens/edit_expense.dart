@@ -134,7 +134,7 @@ class _EditExpenseState extends State<EditExpense> {
     final parsedTimestamp = int.tryParse(expense.date);
     _selectedTimestamp = parsedTimestamp ?? DateTime.now().millisecondsSinceEpoch;
     _selectedPayerId = expense.paidById.isNotEmpty ? expense.paidById : repo.currentUserId;
-    _canEdit = repo.canEditCycle(groupId, repo.currentUserId);
+    _canEdit = repo.canMutateExpense(groupId, expenseId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);
     setState(() {});
@@ -218,6 +218,13 @@ class _EditExpenseState extends State<EditExpense> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } on StateError catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -234,8 +241,17 @@ class _EditExpenseState extends State<EditExpense> {
       );
       return;
     }
-    CycleRepository.instance.deleteExpense(groupId, expenseId);
-    Navigator.pop(context);
+    try {
+      CycleRepository.instance.deleteExpense(groupId, expenseId);
+      Navigator.pop(context);
+    } on StateError catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
