@@ -32,16 +32,14 @@ import 'screens/error_states.dart';
 import 'screens/profile.dart';
 import 'screens/splash_screen.dart';
 import 'services/fcm_token_service.dart';
-import 'services/theme_service.dart';
 import 'services/locale_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load local profile cache and theme FIRST (instant, before any network)
+  // Load local profile cache FIRST (instant, before any network)
   await Future.wait([
     UserProfileCache.instance.load(),
-    ThemeService.instance.load(),
     LocaleService.instance.load(),
   ]);
   CycleRepository.instance.loadFromLocalCache();
@@ -196,102 +194,97 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: ThemeService.instance,
-      builder: (context, _) {
-        return MaterialApp(
-          title: 'Expenso',
-          debugShowCheckedModeBanner: false,
-          theme: _buildTheme(Brightness.light),
-          darkTheme: _buildTheme(Brightness.dark),
-          themeMode: ThemeService.instance.themeMode,
-          navigatorObservers: [
-            FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-          ],
-          initialRoute: 'splash',
-          routes: {
-        'splash': (context) => const SplashScreen(),
-        '/groups': (context) => const GroupsList(),
-        '/create-group': (context) => const CreateGroup(),
-        '/invite-members': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return InviteMembers(group: group, groupName: group?.name ?? 'Group');
-        },
-        '/group-detail': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return GroupDetail(group: group);
-        },
-        '/expense-input': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return ExpenseInput(group: group);
-        },
-        '/undo-expense': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return UndoExpense(
-            groupId: args?['groupId'] as String?,
-            expenseId: args?['expenseId'] as String?,
-            description: args?['description'] as String?,
-            amount: (args?['amount'] as num?)?.toDouble(),
-          );
-        },
-        '/edit-expense': (context) => const EditExpense(),
-        '/group-members': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return GroupMembers(group: group);
-        },
-        '/member-change': (context) => const MemberChange(),
-        '/settlement-confirmation': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          final group = args is Group ? args : (args is Map<String, dynamic> ? args['group'] as Group? : null);
-          return SettlementConfirmation(group: group);
-        },
-        '/payment-result': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          Group? group;
-          String status = 'success';
-          double? amount;
-          String? transactionId;
-          if (args is Group) {
-            group = args;
-          } else if (args is Map<String, dynamic>) {
-            group = args['group'] as Group?;
-            status = args['status'] as String? ?? status;
-            amount = (args['amount'] as num?)?.toDouble();
-            transactionId = args['transactionId'] as String?;
-          }
-          return PaymentResult(group: group, status: status, amount: amount, transactionId: transactionId);
-        },
-        '/cycle-settled': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return CycleSettled(group: group);
-        },
-        '/cycle-history': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return CycleHistory(group: group);
-        },
-        '/cycle-history-detail': (context) => const CycleHistoryDetail(),
-        '/empty-states': (context) => const EmptyStates(),
-        '/error-states': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return ErrorStates(type: args?['type'] as String? ?? 'generic');
-        },
-        '/profile': (context) => const ProfileScreen(),
-        },
-        onGenerateRoute: (settings) {
-          if (settings.name == '/') {
-            return PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
-              transitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-            );
-          }
-          return null;
-        },
+    return MaterialApp(
+      title: 'Expenso',
+      debugShowCheckedModeBanner: false,
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      themeMode: ThemeMode.system,
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
+      initialRoute: 'splash',
+      routes: {
+    'splash': (context) => const SplashScreen(),
+    '/groups': (context) => const GroupsList(),
+    '/create-group': (context) => const CreateGroup(),
+    '/invite-members': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return InviteMembers(group: group, groupName: group?.name ?? 'Group');
+    },
+    '/group-detail': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return GroupDetail(group: group);
+    },
+    '/expense-input': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return ExpenseInput(group: group);
+    },
+    '/undo-expense': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return UndoExpense(
+        groupId: args?['groupId'] as String?,
+        expenseId: args?['expenseId'] as String?,
+        description: args?['description'] as String?,
+        amount: (args?['amount'] as num?)?.toDouble(),
       );
     },
-  );
+    '/edit-expense': (context) => const EditExpense(),
+    '/group-members': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return GroupMembers(group: group);
+    },
+    '/member-change': (context) => const MemberChange(),
+    '/settlement-confirmation': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final group = args is Group ? args : (args is Map<String, dynamic> ? args['group'] as Group? : null);
+      return SettlementConfirmation(group: group);
+    },
+    '/payment-result': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      Group? group;
+      String status = 'success';
+      double? amount;
+      String? transactionId;
+      if (args is Group) {
+        group = args;
+      } else if (args is Map<String, dynamic>) {
+        group = args['group'] as Group?;
+        status = args['status'] as String? ?? status;
+        amount = (args['amount'] as num?)?.toDouble();
+        transactionId = args['transactionId'] as String?;
+      }
+      return PaymentResult(group: group, status: status, amount: amount, transactionId: transactionId);
+    },
+    '/cycle-settled': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return CycleSettled(group: group);
+    },
+    '/cycle-history': (context) {
+      final group = ModalRoute.of(context)?.settings.arguments as Group?;
+      return CycleHistory(group: group);
+    },
+    '/cycle-history-detail': (context) => const CycleHistoryDetail(),
+    '/empty-states': (context) => const EmptyStates(),
+    '/error-states': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return ErrorStates(type: args?['type'] as String? ?? 'generic');
+    },
+    '/profile': (context) => const ProfileScreen(),
+    },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
+            transitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          );
+        }
+        return null;
+      },
+    );
   }
 }
 
