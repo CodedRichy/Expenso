@@ -30,7 +30,7 @@ import 'screens/cycle_history_detail.dart';
 import 'screens/empty_states.dart';
 import 'screens/error_states.dart';
 import 'screens/profile.dart';
-import 'screens/splash_screen.dart';
+
 import 'services/fcm_token_service.dart';
 import 'services/locale_service.dart';
 
@@ -203,9 +203,9 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      initialRoute: 'splash',
+      initialRoute: '/',
       routes: {
-    'splash': (context) => const SplashScreen(),
+    '/': (context) => const RootScreen(),
     '/groups': (context) => const GroupsList(),
     '/create-group': (context) => const CreateGroup(),
     '/invite-members': (context) {
@@ -272,18 +272,6 @@ class MyApp extends StatelessWidget {
     },
     '/profile': (context) => const ProfileScreen(),
     },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/') {
-          return PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
-            transitionDuration: const Duration(milliseconds: 200),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          );
-        }
-        return null;
-      },
     );
   }
 }
