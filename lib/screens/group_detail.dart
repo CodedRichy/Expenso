@@ -1570,7 +1570,29 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       _controller.clear();
       setState(() => _sendAllowed = false);
       HapticFeedback.lightImpact();
+
+      // Domain rule: if the parser flagged the result as needing clarification
+      // (e.g. semanticIncomplete, unresolved participants), do not dispatch to
+      // the confirmation dialog. Surface the clarification prompt and let the
+      // user refine their input. This ensures every code path respects the
+      // parser's needsClarification signal, not just the local fallback path.
+      if (result.needsClarification) {
+        final question = result.clarificationQuestion?.trim().isNotEmpty == true
+            ? result.clarificationQuestion!
+            : 'Could you be more specific? Try something like "Dinner 500 with Ash".';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(question),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+
       _showConfirmationDialog(repo, result, magicBarInput: input, contactNameToNormalizedPhones: _contactNameToNormalizedPhones);
+
     } on GroqRateLimitException catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
