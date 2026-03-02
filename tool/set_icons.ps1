@@ -18,11 +18,21 @@ function Save-Icon {
 }
 
 $res = "$PSScriptRoot\..\android\app\src\main\res"
+# Regular mipmap fallbacks (Android < 8)
 Save-Icon "$res\mipmap-mdpi\ic_launcher.png"    48
 Save-Icon "$res\mipmap-hdpi\ic_launcher.png"    72
 Save-Icon "$res\mipmap-xhdpi\ic_launcher.png"   96
 Save-Icon "$res\mipmap-xxhdpi\ic_launcher.png"  144
 Save-Icon "$res\mipmap-xxxhdpi\ic_launcher.png" 192
+
+# Adaptive icon foreground layers (Android 8+)
+# Canvas is 108dp at each density; launcher masks to 72dp circle.
+# We fill the full canvas so the image bleeds edge-to-edge inside any shape.
+Save-Icon "$res\drawable-mdpi\ic_launcher_foreground.png"    108
+Save-Icon "$res\drawable-hdpi\ic_launcher_foreground.png"    162
+Save-Icon "$res\drawable-xhdpi\ic_launcher_foreground.png"   216
+Save-Icon "$res\drawable-xxhdpi\ic_launcher_foreground.png"  324
+Save-Icon "$res\drawable-xxxhdpi\ic_launcher_foreground.png" 432
 
 $ios = "$PSScriptRoot\..\ios\Runner\Assets.xcassets\AppIcon.appiconset"
 Save-Icon "$ios\Icon-App-20x20@1x.png"      20
