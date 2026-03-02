@@ -662,78 +662,101 @@ class _GroupsListState extends State<GroupsList> {
 
 class _BoundedGroupsLoading extends StatelessWidget {
   final bool showSlowHint;
-  
+
   const _BoundedGroupsLoading({this.showSlowHint = false});
-  
+
   @override
   Widget build(BuildContext context) {
-    if (showSlowHint) {
-      return SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.hourglass_empty, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                const SizedBox(height: 16),
-                Text(
-                  'Taking longer than expected',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Check your connection',
-                  style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                OutlinedButton(
-                  onPressed: () {
-                    ConnectivityService.instance.checkNow();
-                    CycleRepository.instance.restartListening();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onSurface,
-                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
+    // Header measurements must match the real GroupsList header exactly:
+    //   padding: fromLTRB(screenPaddingH=24, spaceXl=16, spaceXl=16, space4xl=32)
+    //   title: heroTitle ≈ fontSize 34, height ~40px
+    //   avatar: size 40, circle
+    // Any deviation here causes a layout shift the moment real data arrives.
     return SafeArea(
+      bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Header skeleton (matches real GroupsList header 1:1) ──────────
           SkeletonShimmer(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH, // 24
+                AppSpacing.spaceXl,        // 16
+                AppSpacing.spaceXl,        // 16  ← was 16, matches real right padding
+                AppSpacing.space4xl,       // 32
+              ),
               child: Row(
                 children: [
+                  // "Groups" title: heroTitle is 34px, line-height ~40px
                   Expanded(
-                    child: SkeletonBox(
-                      width: 120,
-                      height: 34,
-                      borderRadius: 6,
-                    ),
+                    child: SkeletonBox(width: 120, height: 34, borderRadius: 6),
                   ),
+                  // Avatar: 40px circle, matches MemberAvatar(size:40)
                   const SkeletonCircle(size: 40),
                 ],
               ),
             ),
           ),
+          // ── Slow hint banner (inline, never replaces chrome) ─────────────
+          // Rendered between header and cards so the skeleton structure is
+          // unchanged. Fades in only after showSlowHint = true (≥5s elapsed).
+          if (showSlowHint)
+            AnimatedOpacity(
+              opacity: showSlowHint ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenPaddingH,
+                  0,
+                  AppSpacing.screenPaddingH,
+                  AppSpacing.spaceLg,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.wifi_off_outlined,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Taking longer than expected — check your connection',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () {
+                        ConnectivityService.instance.checkNow();
+                        CycleRepository.instance.restartListening();
+                      },
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // ── Card skeletons (viewport-filling, bottom-padded for FAB) ─────
+          // bottom: 88 = bottomNavClearance, matches the FAB clearance in the
+          // real list (ListView padding: EdgeInsets.only(bottom: 88)).
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(bottom: 88),
+              padding: const EdgeInsets.only(bottom: AppSpacing.bottomNavClearance),
               physics: const NeverScrollableScrollPhysics(),
               children: const [
+                SkeletonGroupCard(),
                 SkeletonGroupCard(),
                 SkeletonGroupCard(),
                 SkeletonGroupCard(),
@@ -745,3 +768,4 @@ class _BoundedGroupsLoading extends StatelessWidget {
     );
   }
 }
+

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Primitive skeleton atoms
+// ─────────────────────────────────────────────────────────────────────────────
+
 class SkeletonBox extends StatelessWidget {
   final double width;
   final double height;
@@ -17,7 +21,6 @@ class SkeletonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skeletonColor = context.colorBorder.withValues(alpha: 0.5);
-
     return Container(
       width: width,
       height: height,
@@ -37,7 +40,6 @@ class SkeletonCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skeletonColor = context.colorBorder.withValues(alpha: 0.5);
-
     return Container(
       width: size,
       height: size,
@@ -48,6 +50,10 @@ class SkeletonCircle extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shimmer animation wrapper
+// ─────────────────────────────────────────────────────────────────────────────
 
 class SkeletonShimmer extends StatefulWidget {
   final Widget child;
@@ -116,8 +122,17 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
   }
 }
 
-/// Skeleton for a single group row — matches GroupsList row layout:
-/// top border, padding 24×22, title + amount + status + chevron.
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonGroupCard
+//
+// Mirrors a single group row in GroupsList:
+//   top border (1px), padding h:24 v:22
+//   left col: title (160×19) + [amount (72×17) + badge (52×15)] + sub (120×15)
+//   right: chevron placeholder (20×20)
+//
+// Do NOT change these measurements without updating the real row too.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class SkeletonGroupCard extends StatelessWidget {
   const SkeletonGroupCard({super.key});
 
@@ -160,37 +175,66 @@ class SkeletonGroupCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonExpenseRow
+//
+// Mirrors a single expense row in GroupDetail:
+//   Real row: padding h:24 v:14, top border on index>0 (→ use top border on
+//   all skeleton rows to be conservative), NO leading icon, two text lines.
+//
+//   Layout:
+//     left col: description (140×17) + SizedBox(2) + date (100×14)
+//     right: amount (64×17)
+//
+// The previous version had a 40px circle (wrong — no icon in real rows),
+// v-padding of 12 (wrong — real uses 14), and a bottom border (wrong — real
+// uses top border). All three are fixed here.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class SkeletonExpenseRow extends StatelessWidget {
-  const SkeletonExpenseRow({super.key});
+  /// Show the top border separator. Pass false for the very first row since
+  /// the real list omits the top border on index == 0.
+  final bool showTopBorder;
+
+  const SkeletonExpenseRow({super.key, this.showTopBorder = true});
 
   @override
   Widget build(BuildContext context) {
     return SkeletonShimmer(
       child: Container(
+        // v:14 matches real expense row (horizontal: 24, vertical: 14)
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenPaddingH,
-          vertical: AppSpacing.spaceLg,
+          vertical: 14,
         ),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: context.colorBorder, width: 1),
+            top: showTopBorder
+                ? BorderSide(color: context.colorBorder, width: 1)
+                : BorderSide.none,
           ),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SkeletonCircle(size: 40),
-            const SizedBox(width: AppSpacing.spaceLg),
+            // Left: description + date — no leading icon (real row has none)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SkeletonBox(width: 140, height: 14, borderRadius: 4),
-                  const SizedBox(height: 6),
-                  SkeletonBox(width: 100, height: 11, borderRadius: 4),
+                  // fontSize:17 in real row → height 17+padding = ~17px block
+                  SkeletonBox(width: 140, height: 17, borderRadius: 4),
+                  const SizedBox(height: 2),
+                  // fontSize:14 date line
+                  SkeletonBox(width: 100, height: 14, borderRadius: 4),
                 ],
               ),
             ),
-            SkeletonBox(width: 50, height: 16, borderRadius: 4),
+            const SizedBox(width: 16),
+            // Right: amount, fontSize:17 w600
+            SkeletonBox(width: 64, height: 17, borderRadius: 4),
           ],
         ),
       ),
@@ -198,7 +242,55 @@ class SkeletonExpenseRow extends StatelessWidget {
   }
 }
 
-/// Skeleton for UpiPaymentCard — Pay [name], amount, UPI line, button.
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonExpenseList
+//
+// Viewport-filling expense list skeleton. Uses LayoutBuilder to compute how
+// many rows fit in the available height, then renders that many + 1 (overshoot
+// by 1 so the last row is never missing). This prevents the "last row pop-in"
+// when real data arrives and fills space that was blank in the skeleton.
+//
+// Usage (inside an Expanded or SizedBox with a fixed height):
+//   SkeletonExpenseList()
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SkeletonExpenseList extends StatelessWidget {
+  const SkeletonExpenseList({super.key});
+
+  // Single row height: v-padding 14*2 + content max(17,14+2+14)=17 → 14+14+17 = 45px
+  // Use 45 as the row height estimate for the count calculation.
+  static const double _rowHeight = 45.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height;
+        // Overshoot by 1 so there is never visible blank space below the last row.
+        final count = (availableHeight / _rowHeight).ceil() + 1;
+        return ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: count,
+          itemBuilder: (context, index) =>
+              SkeletonExpenseRow(showTopBorder: index > 0),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonPaymentCard
+//
+// Mirrors UpiPaymentCard: card border radius 12, border all, padding cardPadding,
+// margin bottom spaceLg.
+//   title row: 140×19 + 90×24 (name + amount)
+//   UPI ID badge: 200×20
+//   button: full-width 44px
+// ─────────────────────────────────────────────────────────────────────────────
+
 class SkeletonPaymentCard extends StatelessWidget {
   const SkeletonPaymentCard({super.key});
 
@@ -240,6 +332,10 @@ class SkeletonPaymentCard extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonList — generic, fixed-count skeleton list
+// ─────────────────────────────────────────────────────────────────────────────
 
 class SkeletonList extends StatelessWidget {
   final int itemCount;
