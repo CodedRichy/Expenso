@@ -1406,12 +1406,12 @@ class CycleRepository extends ChangeNotifier {
     final descError = validateExpenseDescription(updatedExpense.description);
     if (descError != null) throw ArgumentError(descError);
 
-    final revisions = _revisionsByGroup[groupId] ?? {};
+    final revisions = _revisionsByGroup[groupId] ?? <ExpenseRevision>[];
     final deletedIds = _deletedIdsByGroup[groupId] ?? {};
 
     guardEdit(
       expenseId: updatedExpense.id,
-      revisions: revisions is List ? revisions : [],
+      revisions: revisions,
       deletedExpenseIds: deletedIds,
     );
 
@@ -1501,12 +1501,12 @@ class CycleRepository extends ChangeNotifier {
       throw StateError('You do not have permission to delete this expense.');
     }
 
-    final revisions = _revisionsByGroup[groupId] ?? [];
+    final revisions = _revisionsByGroup[groupId] ?? <ExpenseRevision>[];
     final deletedIds = _deletedIdsByGroup[groupId] ?? {};
 
     guardDelete(
       expenseId: expenseId,
-      revisions: revisions is List ? revisions : [],
+      revisions: revisions,
       deletedExpenseIds: deletedIds,
     );
 
