@@ -388,7 +388,17 @@ class _GroupsListState extends State<GroupsList> {
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (!context.mounted) return;
+      // Post-condition check: if the group is no longer in the list, deletion
+      // actually succeeded — the Firestore stream already removed it, or the
+      // repository confirmed idempotent removal. Show success, not an error.
+      final groupStillExists = repo.getGroup(group.id) != null;
+      if (!groupStillExists) {
+        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Group deleted'), behavior: SnackBarBehavior.floating),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Could not delete group. Check your connection and try again.'),

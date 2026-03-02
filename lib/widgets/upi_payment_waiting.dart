@@ -98,6 +98,9 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
             _state = PaymentWaitingState.success;
             break;
           case UpiTransactionStatus.failure:
+            // Many UPI apps (including GPay) return 'failure' for transactions
+            // that settled asynchronously. Show a non-definitive state and let
+            // the user verify in their UPI app before deciding what to do.
             _state = PaymentWaitingState.failure;
             break;
           case UpiTransactionStatus.submitted:
@@ -107,13 +110,17 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
             _state = PaymentWaitingState.cancelled;
             break;
           case UpiTransactionStatus.unknown:
+            // Unknown = the app returned before the transaction resolved.
+            // Treat as pending so the user can self-confirm.
             _state = PaymentWaitingState.pending;
             break;
         }
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _state = PaymentWaitingState.failure);
+        // Exception thrown by the UPI plugin — treat as pending, not hard failure,
+        // because the user may have completed payment in the external app.
+        setState(() => _state = PaymentWaitingState.pending);
       }
     }
   }
@@ -278,18 +285,18 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: context.colorError.withValues(alpha: 0.2),
+            color: context.colorWarning.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Icon(
-            Icons.close,
+            Icons.warning_amber_rounded,
             size: 56,
-            color: context.colorError,
+            color: context.colorWarning,
           ),
         ),
         const SizedBox(height: AppSpacing.space3xl),
         Text(
-          'Payment Failed',
+          'Payment May Have Failed',
           style: AppTypography.screenTitle.copyWith(
             color: Colors.white,
             fontSize: 22,
@@ -297,7 +304,7 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
         ),
         const SizedBox(height: AppSpacing.spaceLg),
         Text(
-          'Something went wrong. Please try again.',
+          'The UPI app reported an error, but your bank may\nhave processed the payment. Check your UPI app\nbefore trying again to avoid a duplicate charge.',
           style: AppTypography.bodySecondary.copyWith(
             color: Colors.white70,
           ),
@@ -518,15 +525,31 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: widget.onRetry,
+            onPressed: widget.onManualConfirm,
             style: ElevatedButton.styleFrom(
-              backgroundColor: context.colorPrimary,
+              backgroundColor: context.colorSuccess,
               foregroundColor: context.colorSurface,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
+            ),
+            child: const Text('I\'ve completed payment'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spaceLg),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: widget.onRetry,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Try Again'),
           ),

@@ -33,11 +33,14 @@ class UpiPaymentData {
 
   double get amountDisplay => amountMinor / 100;
 
+  /// UPI deep-link used for QR display and fallback launches.
+  /// Includes tr= (transaction reference) as required by the UPI spec.
   String get upiDeepLink {
     final amount = amountDisplay.toStringAsFixed(2);
     final encodedName = Uri.encodeComponent(payeeName);
     final encodedNote = Uri.encodeComponent(transactionNote);
-    return 'upi://pay?pa=$payeeUpiId&pn=$encodedName&am=$amount&cu=$currencyCode&tn=$encodedNote';
+    final encodedRef = Uri.encodeComponent(transactionRef);
+    return 'upi://pay?pa=$payeeUpiId&pn=$encodedName&am=$amount&cu=$currencyCode&tn=$encodedNote&tr=$encodedRef';
   }
 
   String get qrData => upiDeepLink;
@@ -78,22 +81,33 @@ class UpiPaymentService {
   static final upi.UpiPay _upiPay = upi.UpiPay();
   static List<UpiAppInfo>? _cachedApps;
 
+  /// Creates a validated [UpiPaymentData] for the given payee and amount.
+  /// [transactionRef] MUST be generated once per payment attempt (e.g. at the
+  /// settlement-confirmation level) and passed in — never let this method generate
+  /// a fresh ref on each call, as that would produce duplicate transactions on retry.
   static UpiPaymentData createPaymentData({
     required String payeeUpiId,
     required String payeeName,
     required int amountMinor,
     required String groupName,
+    required String transactionRef,
     String currencyCode = 'INR',
-    String? transactionRef,
   }) {
-    final ref = transactionRef ?? 'EXP${DateTime.now().millisecondsSinceEpoch}';
+    // Sanitize UPI ID — strip whitespace, enforce basic format.
+    final sanitizedUpiId = payeeUpiId.trim();
+    assert(
+      RegExp(r'^[a-zA-Z0-9._\-]+@[a-zA-Z0-9]+$').hasMatch(sanitizedUpiId),
+      'UPI ID does not match expected format: $sanitizedUpiId',
+    );
+    // Sanitize payee name — UPI spec disallows some special characters.
+    final sanitizedName = payeeName.trim().replaceAll(RegExp(r'[&=#+%]'), '');
     return UpiPaymentData(
-      payeeUpiId: payeeUpiId,
-      payeeName: payeeName,
+      payeeUpiId: sanitizedUpiId,
+      payeeName: sanitizedName.isNotEmpty ? sanitizedName : 'Payee',
       amountMinor: amountMinor,
-      currencyCode: currencyCode,
+      currencyCode: currencyCode.toUpperCase(),
       transactionNote: 'Expenso • $groupName • Cycle',
-      transactionRef: ref,
+      transactionRef: transactionRef,
     );
   }
 

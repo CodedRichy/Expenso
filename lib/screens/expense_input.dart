@@ -46,10 +46,11 @@ class _ExpenseInputState extends State<ExpenseInput> {
     _paidById = CycleRepository.instance.currentUserId;
   }
 
-  ParsedExpense parseExpense(String text) {
+  ParsedExpense? parseExpense(String text) {
     final amountPart = RegExp(r'[\d,]+').firstMatch(text);
     final amountStr = amountPart?.group(0)?.replaceAll(',', '') ?? '';
     final amount = amountStr.isNotEmpty ? (double.tryParse(amountStr) ?? 0.0) : 0.0;
+    if (amount <= 0) return null;
 
     final withIndex = text.toLowerCase().indexOf('with');
     final description = withIndex > 0
@@ -62,11 +63,43 @@ class _ExpenseInputState extends State<ExpenseInput> {
     );
   }
 
+  /// Returns true if [description] matches exactly one group member's display name.
+  /// Used to block ambiguous inputs like "Rishi 5" where the description has no
+  /// semantic verb/intent — it could mean "I paid for Rishi" or "Rishi paid me" etc.
+  bool _descriptionIsSolelyAMemberName(String description, Group group) {
+    if (description.isEmpty) return false;
+    final repo = CycleRepository.instance;
+    final words = description.trim().toLowerCase().split(RegExp(r'\s+'));
+    if (words.length > 2) return false; // 3+ words are unlikely to be just a name
+    final members = repo.getMembersForGroup(group.id);
+    return members.any((m) {
+      final displayName = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+      return displayName.isNotEmpty && displayName == description.trim().toLowerCase();
+    });
+  }
+
   void handleSubmit() {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return;
+    final group = RouteArgs.getGroup(context);
     final parsed = parseExpense(input);
-    if (parsed.amount <= 0 || parsed.amount.isNaN || parsed.amount.isInfinite) return;
+    if (parsed == null || parsed.amount <= 0 || parsed.amount.isNaN || parsed.amount.isInfinite) return;
+
+    // Block semantically incomplete inputs like "Rishi 5" where the description
+    // is solely a member name — the user's intent is ambiguous.
+    if (group != null && _descriptionIsSolelyAMemberName(parsed.description, group)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'What was this expense for? Add a description, e.g. "Dinner 5 with Ash".',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       parsedData = parsed;
       showConfirmation = true;
@@ -157,7 +190,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
   bool get _canSubmit {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return false;
-    final amount = parseExpense(input).amount;
+    final amount = parseExpense(input)?.amount ?? 0.0;
     return amount > 0 && !amount.isNaN && !amount.isInfinite;
   }
 

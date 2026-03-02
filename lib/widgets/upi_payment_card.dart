@@ -46,6 +46,15 @@ class UpiPaymentCard extends StatefulWidget {
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool _loading = false;
   UpiAppPickerResult? _lastResult;
+  // Generated once per card instance and reused on retry — prevents duplicate
+  // transactions when the user hits "Pay again" for the same settlement route.
+  late final String _transactionRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionRef = 'EXP${DateTime.now().millisecondsSinceEpoch}';
+  }
 
   String get _formattedAmount =>
       formatMoneyWithCurrency(widget.amountMinor, widget.currencyCode);
@@ -65,6 +74,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       amountMinor: widget.amountMinor,
       groupName: widget.groupName,
       currencyCode: widget.currencyCode,
+      transactionRef: _transactionRef,
     );
   }
 

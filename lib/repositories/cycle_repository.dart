@@ -117,6 +117,8 @@ class CycleRepository extends ChangeNotifier {
 
   /// Load user profile from local cache (instant, before Firestore).
   /// Call once at app start after UserProfileCache.load() completes.
+  /// Sets _groupsLoading = true when a userId is cached so that GroupsList shows
+  /// skeleton immediately instead of the empty state before the first Firestore snapshot.
   void loadFromLocalCache() {
     final cached = UserProfileCache.instance.getCachedProfile();
     if (cached == null) return;
@@ -130,6 +132,10 @@ class CycleRepository extends ChangeNotifier {
       if (cached.upiId != null) 'upiId': cached.upiId,
       if (cached.currencyCode != null) 'currencyCode': cached.currencyCode,
     };
+    // A cached profile means the user is (or was) authenticated — pre-arm the
+    // loading flag so GroupsList shows skeleton, not the empty/Create Group screen,
+    // during the addPostFrameCallback window before _startListening fires.
+    _groupsLoading = true;
   }
 
   /// Sets in-memory identity from Firebase user. Call during build; does not notify.
@@ -1452,6 +1458,7 @@ class CycleRepository extends ChangeNotifier {
   /// Deletes the group from Firestore. Only the creator can delete.
   /// Cancels the group's expense subscription first so no pending writes can recreate an empty group doc after delete.
   /// Removes the group from local state after delete so the UI updates.
+  /// Idempotent: if Firestore reports NOT_FOUND the group is already gone — treat as success.
   Future<void> deleteGroup(String groupId) async {
     if (!canDeleteGroup(groupId, _currentUserId)) {
       throw StateError('Only the group creator can delete this group.');
@@ -1461,7 +1468,17 @@ class CycleRepository extends ChangeNotifier {
     _paymentAttemptSubs[groupId]?.cancel();
     _paymentAttemptSubs.remove(groupId);
     _paymentAttemptCycleId.remove(groupId);
-    await FirestoreService.instance.deleteGroup(groupId);
+    try {
+      await FirestoreService.instance.deleteGroup(groupId);
+    } catch (e) {
+      // Treat NOT_FOUND as success — the group is already gone.
+      // Only rethrow if the group is still present in our local state,
+      // which indicates a real permission or network error.
+      final stillExists = _groups.any((g) => g.id == groupId);
+      if (stillExists) rethrow;
+      // Group no longer exists locally either — deletion succeeded despite the error.
+      debugPrint('CycleRepository.deleteGroup: swallowed benign error (group already gone): $e');
+    }
     _removeGroupLocally(groupId);
   }
 
