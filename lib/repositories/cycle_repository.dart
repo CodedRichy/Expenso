@@ -1094,6 +1094,8 @@ class CycleRepository extends ChangeNotifier {
   ///
   /// Rules (domain layer — cannot be bypassed via UI):
   /// - Cycle must be active (not settling/closed). Hard block.
+  /// - Expense must be in an active lifecycle state.
+  /// - No participant may have an in-flight or settled PaymentAttempt. Hard block.
   /// - Creator of the expense can always mutate their own expense.
   /// - Group admin (group.creatorId) can mutate any expense, but an
   ///   activity log entry will be written automatically.
@@ -1104,8 +1106,23 @@ class CycleRepository extends ChangeNotifier {
     if (meta.cycleStatus != 'active') return false;
     // Expense must be in an active lifecycle state.
     if (!canEditExpense(groupId, expenseId)) return false;
-    // Creator of the expense can always mutate.
+
+    // Hard block: settlement corruption prevention.
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     final expense = getExpense(groupId, expenseId);
+    final participantSet = expense?.participantIds.toSet() ?? {};
+    
+    final relevantAttempts = attempts.where((a) =>
+        participantSet.contains(a.fromMemberId) || participantSet.contains(a.toMemberId));
+        
+    // If any relevant attempt is fully settled (confirmed by receiver or cash confirmed),
+    // we block the mutation entirely. Real money has moved.
+    if (relevantAttempts.any((a) => a.status.isFullyConfirmed)) return false;
+    // If any relevant attempt is in flight (initiated, confirmed by payer, cash pending),
+    // we block to prevent invalidating an active settlement plan.
+    if (relevantAttempts.any((a) => a.status.isInFlight)) return false;
+
+    // Creator of the expense can always mutate.
     if (expense != null && expense.createdById == userId) return true;
     // Group admin (group creator) can override.
     if (isCreator(groupId, userId)) return true;

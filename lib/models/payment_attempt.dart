@@ -75,6 +75,7 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
   bool get isSettled => isConfirmedByPayer || isConfirmedByReceiver || isCashConfirmed;
   bool get isFullyConfirmed => isConfirmedByReceiver || isCashConfirmed;
   bool get isAwaitingReceiverAction => isConfirmedByPayer || isCashPending;
+  bool get isInFlight => this == PaymentAttemptStatus.initiated || this == PaymentAttemptStatus.confirmedByPayer || this == PaymentAttemptStatus.cashPending;
 }
 
 class PaymentAttempt {
