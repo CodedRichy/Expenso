@@ -247,20 +247,32 @@ class _ExpenseInputState extends State<ExpenseInput> {
             final isSelected = _paidById == member.id;
             final displayName = repo.getMemberDisplayNameById(member.id);
             return TapScale(
-              child: ChoiceChip(
-                label: Text(displayName),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) setState(() => _paidById = member.id);
-                },
-                selectedColor: theme.colorScheme.primary,
-                labelStyle: TextStyle(
-                  fontSize: 15,
-                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
-                ),
-                backgroundColor: theme.colorScheme.surface,
-                side: BorderSide(
-                  color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+              child: GestureDetector(
+                onTap: () => setState(() => _paidById = member.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.dividerColor,
+                    ),
+                  ),
+                  child: Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
                 ),
               ),
             );
