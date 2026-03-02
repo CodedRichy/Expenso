@@ -87,6 +87,8 @@ ThemeData _buildTheme(Brightness brightness) {
     colorScheme: ColorScheme.fromSeed(
       seedColor: primary,
       brightness: brightness,
+      primary: primary,
+      onPrimary: surface,
       surface: surface,
       error: error,
     ),
