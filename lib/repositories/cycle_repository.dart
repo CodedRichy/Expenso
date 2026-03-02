@@ -1112,8 +1112,12 @@ class CycleRepository extends ChangeNotifier {
     final expense = getExpense(groupId, expenseId);
     final participantSet = expense?.participantIds.toSet() ?? {};
     
-    final relevantAttempts = attempts.where((a) =>
-        participantSet.contains(a.fromMemberId) || participantSet.contains(a.toMemberId));
+    final relevantAttempts = attempts.where((a) {
+      final isRelevant = participantSet.contains(a.fromMemberId) || 
+                         participantSet.contains(a.toMemberId) ||
+                         (expense != null && (a.fromMemberId == expense.paidById || a.toMemberId == expense.paidById));
+      return isRelevant;
+    });
         
     // If any relevant attempt is fully settled (confirmed by receiver or cash confirmed),
     // we block the mutation entirely. Real money has moved.
