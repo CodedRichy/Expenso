@@ -184,7 +184,7 @@ class EmptyStates extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Zero-Waste Cycle',
+              'No expenses yet ...',
               style: context.subheader.copyWith(color: titleColor),
             ),
             const SizedBox(height: 8),
