@@ -591,7 +591,7 @@ class _GroupsListState extends State<GroupsList> {
                                                   children: [
                                                     Text(
                                                       group.name,
-                                                      style: context.listItemTitle.copyWith(
+                                                      style: context.listItemTitle.copyWith.call(
                                                         fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
                                                       ),
                                                     ),
