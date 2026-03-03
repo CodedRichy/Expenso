@@ -91,7 +91,7 @@ class _UpiAppPickerState extends State<UpiAppPicker> {
 
   void _onAppTap(UpiAppInfo appInfo) {
     setState(() => _processingApp = appInfo);
-    widget.onPaymentComplete(appInfo, const UpiTransactionResult(status: UpiTransactionStatus.unknown));
+    widget.onPaymentComplete(appInfo, const UpiTransactionResult(status: UpiTransactionStatus.intentRejected));
   }
 
   @override

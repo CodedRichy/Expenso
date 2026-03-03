@@ -46,15 +46,9 @@ class UpiPaymentCard extends StatefulWidget {
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool _loading = false;
   UpiAppPickerResult? _lastResult;
-  // Generated once per card instance and reused on retry — prevents duplicate
-  // transactions when the user hits "Pay again" for the same settlement route.
-  late final String _transactionRef;
-
-  @override
-  void initState() {
-    super.initState();
-    _transactionRef = 'EXP${DateTime.now().millisecondsSinceEpoch}';
-  }
+  /// Tracks consecutive intent rejections (GPay back-press / unregistered app blocks).
+  /// After 2 consecutive rejections, suppress UPI button and show manual-only UI.
+  int _intentRejectedCount = 0;
 
   String get _formattedAmount =>
       formatMoneyWithCurrency(widget.amountMinor, widget.currencyCode);
@@ -66,6 +60,10 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   bool get _showMarkAsPaid => _status == PaymentAttemptStatus.initiated;
   bool get _isConfirmed => _status.isSettled;
 
+  /// After 2 consecutive intent rejections (GPay blocked the app), stop launching
+  /// the intent and surface only manual confirmation. Prevents endless PSP bouncing.
+  bool get _upiIntentBlocked => _intentRejectedCount >= 2;
+
   UpiPaymentData? get _paymentData {
     if (!_hasUpiId) return null;
     return UpiPaymentService.createPaymentData(
@@ -74,7 +72,6 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       amountMinor: widget.amountMinor,
       groupName: widget.groupName,
       currencyCode: widget.currencyCode,
-      transactionRef: _transactionRef,
     );
   }
 
@@ -101,6 +98,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
 
         final txn = result.transactionResult!;
         if (txn.isSuccess) {
+          // Confirmed network success with txnId.
+          setState(() => _intentRejectedCount = 0);
           widget.onMarkAsPaid?.call(
             transactionId: txn.transactionId,
             responseCode: txn.responseCode,
@@ -126,6 +125,14 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ),
             );
           }
+        } else if (txn.isIntentRejected) {
+          // Intent was blocked by GPay / back-press. No network attempt.
+          setState(() => _intentRejectedCount += 1);
+        }
+        // bankFailure: real network attempt, money NOT debited — reset counter.
+        // submitted: in-progress — leave counter, surface manual confirm.
+        if (txn.isFailed) {
+          setState(() => _intentRejectedCount = 0);
         }
       } else if (result.manuallyConfirmed) {
         widget.onMarkAsPaid?.call();
@@ -514,7 +521,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       );
     }
 
-    if (!_hasUpiId) {
+    if (!_hasUpiId || _upiIntentBlocked) {
       return _buildCashPaymentOption();
     }
 

@@ -97,22 +97,20 @@ class _UpiPaymentWaitingOverlayState extends State<UpiPaymentWaitingOverlay>
           case UpiTransactionStatus.success:
             _state = PaymentWaitingState.success;
             break;
-          case UpiTransactionStatus.failure:
-            // Many UPI apps (including GPay) return 'failure' for transactions
-            // that settled asynchronously. Show a non-definitive state and let
-            // the user verify in their UPI app before deciding what to do.
+          case UpiTransactionStatus.bankFailure:
+            // Real bank failure — money was NOT debited. Show failure UI.
             _state = PaymentWaitingState.failure;
+            break;
+          case UpiTransactionStatus.intentRejected:
+            // GPay blocked the intent / user back-pressed. No network attempt.
+            // Treat as cancelled so user can retry cleanly.
+            _state = PaymentWaitingState.cancelled;
             break;
           case UpiTransactionStatus.submitted:
             _state = PaymentWaitingState.pending;
             break;
           case UpiTransactionStatus.cancelled:
             _state = PaymentWaitingState.cancelled;
-            break;
-          case UpiTransactionStatus.unknown:
-            // Unknown = the app returned before the transaction resolved.
-            // Treat as pending so the user can self-confirm.
-            _state = PaymentWaitingState.pending;
             break;
         }
       });
