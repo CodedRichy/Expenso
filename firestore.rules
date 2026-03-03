@@ -16,7 +16,8 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow read: if request.auth != null
-        && (request.auth.uid in resource.data.members
+        && (resource.data.inviteLinkEnabled == true
+            || request.auth.uid in resource.data.members
             || request.auth.token.phone_number in resource.data.pendingPhones);
       allow update: if request.auth != null
         && (request.auth.uid in resource.data.members
