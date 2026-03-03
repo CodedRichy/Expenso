@@ -13,6 +13,8 @@ import '../services/connectivity_service.dart';
 import '../utils/route_args.dart';
 import '../widgets/gradient_scaffold.dart';
 import '../widgets/tap_scale.dart';
+import '../services/firestore_service.dart';
+
 
 class InviteMembers extends StatefulWidget {
   final Group? group;
@@ -183,16 +185,65 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
     });
   }
 
-  Future<void> handleCopyLink() async {
-    final group = RouteArgs.getGroup(context);
-    if (group == null) return;
-    final link = 'expenso://join/${group.id}';
+  bool _isGeneratingLink = false;
+  bool _isRevokingLink = false;
+
+  bool _isCreator(Group group) {
+    return group.creatorId == CycleRepository.instance.currentUserId;
+  }
+
+  Future<void> _generateLink(Group group) async {
+    if (ConnectivityService.instance.isOffline) {
+      _showOfflineSnack();
+      return;
+    }
+    setState(() => _isGeneratingLink = true);
+    try {
+      await FirestoreService.instance.generateInviteToken(group.id);
+    } finally {
+      if (mounted) setState(() => _isGeneratingLink = false);
+    }
+  }
+
+  Future<void> _revokeLink(Group group) async {
+    if (ConnectivityService.instance.isOffline) {
+      _showOfflineSnack();
+      return;
+    }
+    setState(() => _isRevokingLink = true);
+    try {
+      await FirestoreService.instance.revokeInviteToken(group.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invite link revoked and regenerated.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRevokingLink = false);
+    }
+  }
+
+  Future<void> handleCopyLink(Group group) async {
+    if (!group.inviteLinkEnabled || group.inviteLinkToken == null) return;
+    final link = 'expenso://invite/${group.id}/${group.inviteLinkToken}';
     await Clipboard.setData(ClipboardData(text: link));
     if (!mounted) return;
     setState(() => linkCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => linkCopied = false);
     });
+  }
+
+  void _showOfflineSnack() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cannot perform this action while offline'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void handleAddMember() {
@@ -326,50 +377,87 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('SHARE LINK', style: context.sectionLabel),
-                            const SizedBox(height: 12),
-                            Semantics(
-                              label: linkCopied ? 'Link copied' : 'Copy invite link',
-                              button: true,
-                              child: TapScale(
-                                child: InkWell(
-                                  onTap: handleCopyLink,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: context.colorSurface,
-                                      border: Border.all(color: context.colorBorder),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.link,
-                                              size: 20,
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              linkCopied ? 'Link copied' : 'Copy invite link',
-                                              style: context.bodyPrimary,
-                                            ),
-                                          ],
-                                        ),
-                                        Icon(
-                                          linkCopied ? Icons.check : Icons.content_copy,
-                                          size: 20,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ],
+                            if (groupArg.inviteLinkEnabled && groupArg.inviteLinkToken != null) ...[
+                              Text('SHARE LINK', style: context.sectionLabel),
+                              const SizedBox(height: 12),
+                              Semantics(
+                                label: linkCopied ? 'Link copied' : 'Copy invite link',
+                                button: true,
+                                child: TapScale(
+                                  child: InkWell(
+                                    onTap: () => handleCopyLink(groupArg),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: context.colorSurface,
+                                        border: Border.all(color: context.colorBorder),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.link,
+                                                size: 20,
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                linkCopied ? 'Link copied' : 'Copy invite link',
+                                                style: context.bodyPrimary,
+                                              ),
+                                            ],
+                                          ),
+                                          Icon(
+                                            linkCopied ? Icons.check : Icons.content_copy,
+                                            size: 20,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+                              if (_isCreator(groupArg)) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: _isRevokingLink ? null : () => _revokeLink(groupArg),
+                                    icon: _isRevokingLink
+                                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                      : const Icon(Icons.refresh, size: 16),
+                                    label: const Text('Revoke & Regenerate Link'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: context.colorError,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ] else if (_isCreator(groupArg)) ...[
+                              Text('SHARE LINK', style: context.sectionLabel),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: _isGeneratingLink ? null : () => _generateLink(groupArg),
+                                  icon: _isGeneratingLink
+                                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                      : const Icon(Icons.add_link),
+                                  label: const Text('Generate Invite Link'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 32),

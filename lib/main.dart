@@ -34,6 +34,9 @@ import 'screens/profile.dart';
 import 'services/fcm_token_service.dart';
 import 'services/locale_service.dart';
 import 'widgets/expenso_loader.dart';
+import 'screens/invite_resolver.dart';
+import 'dart:async';
+import 'package:app_links/app_links.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -192,12 +195,83 @@ ThemeData _buildTheme(Brightness brightness) {
   );
 }
 
-class MyApp extends StatelessWidget {
+final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+    
+    // Check initial link if app was cold-started by a deep link
+    try {
+      final initialUri = await _appLinks.getInitialAppLink();
+      if (initialUri != null) _handleLink(initialUri);
+    } catch (e) {
+      debugPrint('Error getting initial app link: $e');
+    }
+
+    // Listen to links while app is running/backgrounded
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleLink(uri);
+    }, onError: (err) {
+      debugPrint('Error listening to app links: $err');
+    });
+  }
+
+  void _handleLink(Uri uri) {
+    debugPrint('Received deep link: $uri');
+    if (uri.scheme == 'expenso' || uri.scheme.contains('expenso')) {
+      final path = uri.path.replaceAll(RegExp(r'^/'), '');
+      if (uri.host == 'invite' || path.startsWith('invite/')) {
+        // format: expenso://invite/groupId/token
+        final parts = (uri.host == 'invite' ? uri.pathSegments : path.split('/'));
+        // If host is invite, parts = ['groupId', 'token']
+        // If host is empty but path is invite/groupId/token, handle appropriately
+        final segments = uri.host == 'invite' ? uri.pathSegments : path.split('/').skip(1).toList();
+        
+        if (segments.length == 2) {
+          final groupId = segments[0];
+          final token = segments[1];
+          // Delay pushing to allow app to finish initializing if it's a cold boot
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              globalNavigatorKey.currentState?.push(
+                MaterialPageRoute(
+                  builder: (context) => InviteResolverScreen(groupId: groupId, token: token),
+                ),
+              );
+            });
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: globalNavigatorKey,
       title: 'Expenso',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(Brightness.light),
