@@ -61,35 +61,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     return allRoutes.where((r) => r.toMemberId == repo.currentUserId).toList();
   }
 
-  Future<void> _handlePaymentInitiated(PaymentRoute route) async {
-    if (_group == null) return;
-    if (ConnectivityService.instance.isOffline) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cannot initiate payment while offline'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-    final repo = CycleRepository.instance;
 
-    final attempt = await repo.getOrCreatePaymentAttempt(
-      groupId: _group!.id,
-      fromMemberId: route.fromMemberId,
-      toMemberId: route.toMemberId,
-      amountMinor: route.amountMinor,
-      currencyCode: route.currencyCode,
-    );
-
-    if (attempt.status == PaymentAttemptStatus.notStarted) {
-      await repo.markPaymentInitiated(_group!.id, attempt.id);
-    }
-
-    if (mounted) setState(() {});
-  }
 
   Future<void> _handleMarkAsPaid(
     PaymentRoute route, {
@@ -661,7 +633,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               currencyCode: route.currencyCode,
               attemptStatus: status,
               upiTransactionId: attempt?.upiTransactionId,
-              onPaymentInitiated: () => _handlePaymentInitiated(route),
               onMarkAsPaid: ({String? transactionId, String? responseCode}) =>
                   _handleMarkAsPaid(route, transactionId: transactionId, responseCode: responseCode),
               onPaidViaCash: () => _handlePaidViaCash(route),

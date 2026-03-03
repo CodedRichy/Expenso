@@ -7,6 +7,11 @@ class Group {
   final String creatorId;
   final List<String> memberIds;
   final String currencyCode;
+  /// Random 16-char alphanumeric token for the invite link.
+  /// Null if invite links have never been generated for this group.
+  final String? inviteLinkToken;
+  /// Whether invite links are currently active for this group.
+  final bool inviteLinkEnabled;
 
   Group({
     required this.id,
@@ -17,8 +22,11 @@ class Group {
     required this.creatorId,
     List<String>? memberIds,
     this.currencyCode = 'INR',
+    this.inviteLinkToken,
+    this.inviteLinkEnabled = false,
   }) : memberIds = memberIds ?? [];
 }
+
 
 class Member {
   final String id;

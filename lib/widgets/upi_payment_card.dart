@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/payment_attempt.dart';
 import '../utils/money_format.dart';
 import '../services/upi_payment_service.dart';
-import 'upi_app_picker.dart';
 
 class UpiPaymentCard extends StatefulWidget {
   final String payeeName;
@@ -15,11 +16,9 @@ class UpiPaymentCard extends StatefulWidget {
   final String currencyCode;
   final PaymentAttemptStatus? attemptStatus;
   final String? upiTransactionId;
-  final VoidCallback? onPaymentInitiated;
   final void Function({String? transactionId, String? responseCode})? onMarkAsPaid;
   final VoidCallback? onPaidViaCash;
   final VoidCallback? onConfirmCashReceived;
-  final Function(UpiTransactionResult result)? onPaymentResult;
   final bool isReceiver;
 
   const UpiPaymentCard({
@@ -31,11 +30,9 @@ class UpiPaymentCard extends StatefulWidget {
     this.currencyCode = 'INR',
     this.attemptStatus,
     this.upiTransactionId,
-    this.onPaymentInitiated,
     this.onMarkAsPaid,
     this.onPaidViaCash,
     this.onConfirmCashReceived,
-    this.onPaymentResult,
     this.isReceiver = false,
   });
 
@@ -44,25 +41,18 @@ class UpiPaymentCard extends StatefulWidget {
 }
 
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
-  bool _loading = false;
-  UpiAppPickerResult? _lastResult;
-  /// Tracks consecutive intent rejections (GPay back-press / unregistered app blocks).
-  /// After 2 consecutive rejections, suppress UPI button and show manual-only UI.
-  int _intentRejectedCount = 0;
+  bool _qrExpanded = false;
+  bool _copying = false;
 
   String get _formattedAmount =>
       formatMoneyWithCurrency(widget.amountMinor, widget.currencyCode);
 
   bool get _hasUpiId => widget.payeeUpiId != null && widget.payeeUpiId!.isNotEmpty;
 
-  PaymentAttemptStatus get _status => widget.attemptStatus ?? PaymentAttemptStatus.notStarted;
+  PaymentAttemptStatus get _status =>
+      widget.attemptStatus ?? PaymentAttemptStatus.notStarted;
 
-  bool get _showMarkAsPaid => _status == PaymentAttemptStatus.initiated;
   bool get _isConfirmed => _status.isSettled;
-
-  /// After 2 consecutive intent rejections (GPay blocked the app), stop launching
-  /// the intent and surface only manual confirmation. Prevents endless PSP bouncing.
-  bool get _upiIntentBlocked => _intentRejectedCount >= 2;
 
   UpiPaymentData? get _paymentData {
     if (!_hasUpiId) return null;
@@ -75,68 +65,20 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     );
   }
 
-  Future<void> _showUpiAppPicker() async {
-    final data = _paymentData;
-    if (data == null) return;
-
-    setState(() => _loading = true);
-
-    final result = await UpiAppPicker.show(
-      context: context,
-      paymentData: data,
-    );
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    if (result != null) {
-      setState(() => _lastResult = result);
-      widget.onPaymentInitiated?.call();
-
-      if (result.transactionResult != null) {
-        widget.onPaymentResult?.call(result.transactionResult!);
-
-        final txn = result.transactionResult!;
-        if (txn.isSuccess) {
-          // Confirmed network success with txnId.
-          setState(() => _intentRejectedCount = 0);
-          widget.onMarkAsPaid?.call(
-            transactionId: txn.transactionId,
-            responseCode: txn.responseCode,
-          );
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: context.colorSurface, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        txn.transactionId != null
-                            ? 'Payment confirmed (Txn: ${txn.transactionId})'
-                            : 'Payment confirmed',
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: context.colorSuccess,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        } else if (txn.isIntentRejected) {
-          // Intent was blocked by GPay / back-press. No network attempt.
-          setState(() => _intentRejectedCount += 1);
-        }
-        // bankFailure: real network attempt, money NOT debited — reset counter.
-        // submitted: in-progress — leave counter, surface manual confirm.
-        if (txn.isFailed) {
-          setState(() => _intentRejectedCount = 0);
-        }
-      } else if (result.manuallyConfirmed) {
-        widget.onMarkAsPaid?.call();
-      }
+  Future<void> _copyUpiId() async {
+    if (!_hasUpiId) return;
+    setState(() => _copying = true);
+    await Clipboard.setData(ClipboardData(text: widget.payeeUpiId!));
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) setState(() => _copying = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Copied: ${widget.payeeUpiId}'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -144,13 +86,13 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor = _isConfirmed 
-        ? context.colorSuccessBackground 
+    final cardColor = _isConfirmed
+        ? context.colorSuccessBackground
         : (isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface);
-    final borderColor = _isConfirmed 
-        ? context.colorSuccess.withValues(alpha: 0.3) 
+    final borderColor = _isConfirmed
+        ? context.colorSuccess.withValues(alpha: 0.3)
         : theme.dividerColor;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.spaceLg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -162,6 +104,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header: name + amount + status chip ─────────────────────────
           Row(
             children: [
               Expanded(
@@ -186,8 +129,11 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                     Text(
                       _formattedAmount,
                       style: context.amountMD.copyWith(
-                        color: _isConfirmed ? context.colorSuccess : theme.colorScheme.onSurface,
-                        decoration: _isConfirmed ? TextDecoration.lineThrough : null,
+                        color: _isConfirmed
+                            ? context.colorSuccess
+                            : theme.colorScheme.onSurface,
+                        decoration:
+                            _isConfirmed ? TextDecoration.lineThrough : null,
                       ),
                     ),
                   ],
@@ -195,133 +141,160 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ),
             ],
           ),
+
+          // ── UPI ID + copy button ─────────────────────────────────────────
           if (_hasUpiId && !_isConfirmed) ...[
-            const SizedBox(height: AppSpacing.spaceSm),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spaceMd,
-                vertical: AppSpacing.spaceXs,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                widget.payeeUpiId!,
-                style: context.captionSmall.copyWith(
-                  fontFamily: 'monospace',
-                  color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: AppSpacing.spaceMd),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.spaceMd,
+                      vertical: AppSpacing.spaceXs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      widget.payeeUpiId!,
+                      style: context.captionSmall.copyWith(
+                        fontFamily: 'monospace',
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ),
+                const SizedBox(width: AppSpacing.spaceSm),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _copying
+                      ? Icon(
+                          Icons.check,
+                          key: const ValueKey('check'),
+                          size: 20,
+                          color: context.colorSuccess,
+                        )
+                      : IconButton(
+                          key: const ValueKey('copy'),
+                          onPressed: _copyUpiId,
+                          icon: const Icon(Icons.copy, size: 18),
+                          color: theme.colorScheme.onSurfaceVariant,
+                          tooltip: 'Copy UPI ID',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+
+            // ── QR Code (expandable) ───────────────────────────────────────
+            const SizedBox(height: AppSpacing.spaceSm),
+            GestureDetector(
+              onTap: () => setState(() => _qrExpanded = !_qrExpanded),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.qr_code_2,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.spaceXs),
+                  Text(
+                    _qrExpanded ? 'Hide QR code' : 'Show QR code',
+                    style: context.captionSmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _qrExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 250),
+              crossFadeState: _qrExpanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: _buildQrPanel(theme),
+              secondChild: const SizedBox.shrink(),
+            ),
           ],
-          const SizedBox(height: AppSpacing.spaceLg),
-          _buildActionArea(),
-          if (_lastResult != null && !_isConfirmed) ...[
-            const SizedBox(height: AppSpacing.spaceLg),
-            _buildLastResultBanner(),
-          ],
+
+          // ── No UPI ID notice ─────────────────────────────────────────────
           if (!_hasUpiId && !_isConfirmed) ...[
             const SizedBox(height: AppSpacing.spaceMd),
-            Text(
-              '${widget.payeeName} hasn\'t added their UPI ID yet. Ask them to update their profile.',
-              style: context.caption,
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceLg,
+                vertical: AppSpacing.spaceMd,
+              ),
+              decoration: BoxDecoration(
+                color: context.colorWarningBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: context.colorWarning),
+                  const SizedBox(width: AppSpacing.spaceSm),
+                  Expanded(
+                    child: Text(
+                      '${widget.payeeName} hasn\'t added their UPI ID. Pay by cash or ask them to update their profile.',
+                      style: context.caption.copyWith(
+                        color: context.colorWarning,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
+
+          const SizedBox(height: AppSpacing.spaceLg),
+          _buildActionArea(),
         ],
       ),
     );
   }
 
-  Widget _buildLastResultBanner() {
-    final pickerResult = _lastResult!;
-    
-    if (pickerResult.manuallyConfirmed) {
-      return Container(
-        padding: const EdgeInsets.all(AppSpacing.spaceLg),
-        decoration: BoxDecoration(
-          color: context.colorSuccess.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.colorSuccess.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle, size: 20, color: context.colorSuccess),
-            const SizedBox(width: AppSpacing.spaceLg),
-            Expanded(
-              child: Text(
-                'Payment manually confirmed',
-                style: AppTypography.caption.copyWith(
-                  color: context.colorSuccess,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+  Widget _buildQrPanel(ThemeData theme) {
+    final data = _paymentData;
+    if (data == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.spaceMd),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: QrImageView(
+            data: data.qrData,
+            version: QrVersions.auto,
+            size: 180,
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Colors.black,
             ),
-            IconButton(
-              onPressed: () => setState(() => _lastResult = null),
-              icon: const Icon(Icons.close, size: 16),
-              color: context.colorTextTertiary,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
-        ),
-      );
-    }
-
-    final txnResult = pickerResult.transactionResult;
-    if (txnResult == null) return const SizedBox.shrink();
-    
-    final color = UpiPaymentService.getStatusColor(txnResult);
-    final icon = UpiPaymentService.getStatusIcon(txnResult);
-    final message = UpiPaymentService.getStatusMessage(txnResult);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.spaceLg),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: AppSpacing.spaceLg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  message,
-                  style: AppTypography.caption.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (txnResult.transactionId != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Txn: ${txnResult.transactionId}',
-                    style: AppTypography.caption.copyWith(
-                      fontSize: 10,
-                      color: context.colorTextTertiary,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ],
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Colors.black,
             ),
           ),
-          IconButton(
-            onPressed: () => setState(() => _lastResult = null),
-            icon: const Icon(Icons.close, size: 16),
-                      color: context.colorTextTertiary,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -329,7 +302,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   Widget _buildStatusChip() {
     Color bgColor;
     Color textColor;
-    String label = _status.displayLabel;
+    final label = _status.displayLabel;
 
     switch (_status) {
       case PaymentAttemptStatus.initiated:
@@ -381,6 +354,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
   }
 
   Widget _buildActionArea() {
+    // ── Fully confirmed ───────────────────────────────────────────────────
     if (_isConfirmed) {
       String message;
       if (_status == PaymentAttemptStatus.cashConfirmed) {
@@ -406,7 +380,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ),
             ],
           ),
-          if (widget.upiTransactionId != null && widget.upiTransactionId!.isNotEmpty) ...[
+          if (widget.upiTransactionId != null &&
+              widget.upiTransactionId!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.spaceSm),
             Container(
               padding: const EdgeInsets.symmetric(
@@ -414,19 +389,26 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                 vertical: AppSpacing.spaceXs,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.receipt_long, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(Icons.receipt_long,
+                      size: 12,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant),
                   const SizedBox(width: AppSpacing.spaceXs),
                   Text(
                     'Txn: ${widget.upiTransactionId}',
                     style: context.captionSmall.copyWith(
                       fontFamily: 'monospace',
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -437,6 +419,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       );
     }
 
+    // ── Cash pending — receiver confirms ─────────────────────────────────
     if (_status.isCashPending) {
       if (widget.isReceiver) {
         return SizedBox(
@@ -448,9 +431,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
             style: ElevatedButton.styleFrom(
               backgroundColor: context.colorSuccess,
               foregroundColor: context.colorSurface,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.spaceLg,
-              ),
+              padding:
+                  const EdgeInsets.symmetric(vertical: AppSpacing.spaceLg),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -461,7 +443,8 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       } else {
         return Row(
           children: [
-            Icon(Icons.hourglass_empty, color: context.colorWarning, size: 20),
+            Icon(Icons.hourglass_empty,
+                color: context.colorWarning, size: 20),
             const SizedBox(width: AppSpacing.spaceSm),
             Expanded(
               child: Text(
@@ -477,159 +460,118 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
       }
     }
 
-    if (_showMarkAsPaid) {
-      final theme = Theme.of(context);
-      return Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _loading ? null : _showUpiAppPicker,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Pay again'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurfaceVariant,
-                side: BorderSide(color: theme.dividerColor),
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.spaceLg,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+    // ── Payer confirmed — waiting for receiver ────────────────────────────
+    if (_status == PaymentAttemptStatus.confirmedByPayer) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.spaceLg),
+        decoration: BoxDecoration(
+          color: context.colorSuccessBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+              color: context.colorSuccess.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.hourglass_bottom,
+                color: context.colorSuccess, size: 20),
+            const SizedBox(width: AppSpacing.spaceLg),
+            Expanded(
+              child: Text(
+                'Marked as sent. Waiting for ${widget.payeeName} to confirm receipt.',
+                style: context.caption.copyWith(
+                  color: context.colorSuccess,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.spaceMd),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => widget.onMarkAsPaid?.call(),
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Mark as paid'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.colorSuccess,
-                foregroundColor: context.colorSurface,
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.spaceLg,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
-    if (!_hasUpiId || _upiIntentBlocked) {
-      return _buildCashPaymentOption();
+    // ── Disputed ─────────────────────────────────────────────────────────
+    if (_status == PaymentAttemptStatus.disputed) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.spaceLg),
+        decoration: BoxDecoration(
+          color: context.colorErrorBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+              color: context.colorError.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: context.colorError, size: 20),
+            const SizedBox(width: AppSpacing.spaceLg),
+            Expanded(
+              child: Text(
+                '${widget.payeeName} says they didn\'t receive this payment. Discuss and re-send if needed.',
+                style: context.caption.copyWith(
+                  color: context.colorError,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    return _buildPayButton();
-  }
-
-  Widget _buildPayButton() {
-    final buttonBg = context.colorSurface;
-    final buttonFg = context.colorTextPrimary;
+    // ── Default: primary + secondary CTAs ────────────────────────────────
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _loading ? null : _showUpiAppPicker,
-            icon: _loading
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: buttonFg,
-                    ),
-                  )
-                : const Icon(Icons.payment, size: 18),
-            label: Text(_loading ? 'Loading...' : 'Pay via UPI'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: buttonBg,
-              foregroundColor: buttonFg,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spaceXl,
-                vertical: AppSpacing.spaceLg,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.spaceMd),
-        Center(
-          child: TextButton.icon(
-            onPressed: widget.onPaidViaCash,
-            icon: const Icon(Icons.payments_outlined, size: 16),
-            label: const Text('Paid via cash'),
-            style: TextButton.styleFrom(
-              foregroundColor: context.colorTextPrimary,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spaceMd,
-                vertical: AppSpacing.spaceXs,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCashPaymentOption() {
-    final buttonBg = context.colorSurface;
-    final buttonFg = context.colorTextPrimary;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+        // Disclaimer
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.spaceLg,
             vertical: AppSpacing.spaceMd,
           ),
           decoration: BoxDecoration(
-            color: context.colorWarningBackground,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, size: 16, color: context.colorWarning),
-              const SizedBox(width: AppSpacing.spaceSm),
-              Expanded(
-                child: Text(
-                  '${widget.payeeName} hasn\'t added UPI ID',
-                  style: context.caption.copyWith(
-                    color: context.colorWarning,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            'Expenso can\'t verify UPI transfers. Only tap "I\'ve sent" after you\'ve confirmed the payment in your UPI app.',
+            style: context.captionSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.spaceMd),
+        // Primary CTA
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: widget.onPaidViaCash,
-            icon: const Icon(Icons.payments_outlined, size: 18),
-            label: const Text('Paid via cash'),
+            onPressed: () => widget.onMarkAsPaid?.call(),
+            icon: const Icon(Icons.check, size: 18),
+            label: Text('I\'ve sent $_formattedAmount'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: buttonBg,
-              foregroundColor: buttonFg,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.spaceLg,
-              ),
+              backgroundColor: context.colorSuccess,
+              foregroundColor: context.colorSurface,
+              padding:
+                  const EdgeInsets.symmetric(vertical: AppSpacing.spaceLg),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spaceSm),
+        // Secondary CTA
+        Center(
+          child: TextButton.icon(
+            onPressed: widget.onPaidViaCash,
+            icon: const Icon(Icons.payments_outlined, size: 16),
+            label: const Text('Paid in cash'),
+            style: TextButton.styleFrom(
+              foregroundColor:
+                  Theme.of(context).colorScheme.onSurfaceVariant,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spaceMd,
+                vertical: AppSpacing.spaceXs,
+              ),
             ),
           ),
         ),

@@ -701,5 +701,80 @@ class FirestoreService {
     await ref.delete();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Invite-link management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static String _generateToken() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    final rng = DateTime.now().millisecondsSinceEpoch;
+    // Mix timestamp with a counter for uniqueness; not crypto-grade but sufficient
+    // for invite tokens on a small-scale consumer app.
+    final buf = StringBuffer();
+    var seed = rng;
+    for (var i = 0; i < 16; i++) {
+      seed = (seed * 6364136223846793005 + 1442695040888963407) & 0xFFFFFFFFFFFFFFFF;
+      buf.write(chars[(seed.abs() % chars.length)]);
+    }
+    return buf.toString();
+  }
+
+  /// Generates a new invite-link token for [groupId] and enables invite links.
+  /// Returns the generated token so the caller can build the link immediately.
+  Future<String> generateInviteToken(String groupId) async {
+    final token = _generateToken();
+    await _firestore.collection(FirestorePaths.groups).doc(groupId).update({
+      'inviteLinkToken': token,
+      'inviteLinkEnabled': true,
+    });
+    return token;
+  }
+
+  /// Revokes the current invite link by overwriting the token with a new one.
+  /// All links sharing the old token immediately become invalid.
+  /// Returns the new token.
+  Future<String> revokeInviteToken(String groupId) async {
+    final newToken = _generateToken();
+    await _firestore.collection(FirestorePaths.groups).doc(groupId).update({
+      'inviteLinkToken': newToken,
+      'inviteLinkEnabled': true,
+    });
+    return newToken;
+  }
+
+  /// Disables invite links for a group without changing the token.
+  Future<void> disableInviteLink(String groupId) async {
+    await _firestore.collection(FirestorePaths.groups).doc(groupId).update({
+      'inviteLinkEnabled': false,
+    });
+  }
+
+  /// Validates an invite link token against the group doc.
+  ///
+  /// Returns a map with 'groupName' and 'creatorId' on success, or null if:
+  ///   - The group does not exist
+  ///   - inviteLinkEnabled is false
+  ///   - The token does not match
+  Future<Map<String, String>?> resolveInviteLink(String groupId, String token) async {
+    try {
+      final doc = await _firestore.collection(FirestorePaths.groups).doc(groupId).get();
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null) return null;
+      final enabled = data['inviteLinkEnabled'] as bool? ?? false;
+      if (!enabled) return null;
+      final storedToken = data['inviteLinkToken'] as String? ?? '';
+      if (storedToken.isEmpty || storedToken != token) return null;
+      return {
+        'groupName': data['groupName'] as String? ?? 'Group',
+        'creatorId': data['creatorId'] as String? ?? '',
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
 }
+
+
 

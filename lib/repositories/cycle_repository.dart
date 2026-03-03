@@ -526,6 +526,8 @@ class CycleRepository extends ChangeNotifier {
         ...members,
         ...pendingList.map((p) => 'p_${p['phone'] ?? ''}'),
       ];
+      final inviteLinkToken = data['inviteLinkToken'] as String?;
+      final inviteLinkEnabled = data['inviteLinkEnabled'] as bool? ?? false;
       _groups.add(Group(
         id: groupId,
         name: groupName,
@@ -535,6 +537,8 @@ class CycleRepository extends ChangeNotifier {
         creatorId: creatorId,
         memberIds: memberIds,
         currencyCode: currencyCode,
+        inviteLinkToken: inviteLinkToken,
+        inviteLinkEnabled: inviteLinkEnabled,
       ));
 
       for (final g in _groups) {
@@ -854,6 +858,8 @@ class CycleRepository extends ChangeNotifier {
         creatorId: g.creatorId,
         memberIds: g.memberIds,
         currencyCode: g.currencyCode,
+        inviteLinkToken: g.inviteLinkToken,
+        inviteLinkEnabled: g.inviteLinkEnabled,
       );
     }
   }
@@ -1022,6 +1028,8 @@ class CycleRepository extends ChangeNotifier {
       creatorId: g.creatorId,
       memberIds: [...g.memberIds, pid],
       currencyCode: g.currencyCode,
+      inviteLinkToken: g.inviteLinkToken,
+      inviteLinkEnabled: g.inviteLinkEnabled,
     );
     notifyListeners();
   }
@@ -1068,6 +1076,8 @@ class CycleRepository extends ChangeNotifier {
           creatorId: g.creatorId,
           memberIds: g.memberIds.where((id) => id != memberId).toList(),
           currencyCode: g.currencyCode,
+          inviteLinkToken: g.inviteLinkToken,
+          inviteLinkEnabled: g.inviteLinkEnabled,
         );
       }
       notifyListeners();
