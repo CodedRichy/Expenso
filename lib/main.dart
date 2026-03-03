@@ -219,7 +219,7 @@ class _MyAppState extends State<MyApp> {
     
     // Check initial link if app was cold-started by a deep link
     try {
-      final initialUri = await _appLinks.getInitialAppLink();
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) _handleLink(initialUri);
     } catch (e) {
       debugPrint('Error getting initial app link: $e');
@@ -239,8 +239,6 @@ class _MyAppState extends State<MyApp> {
       final path = uri.path.replaceAll(RegExp(r'^/'), '');
       if (uri.host == 'invite' || path.startsWith('invite/')) {
         // format: expenso://invite/groupId/token
-        final parts = (uri.host == 'invite' ? uri.pathSegments : path.split('/'));
-        // If host is invite, parts = ['groupId', 'token']
         // If host is empty but path is invite/groupId/token, handle appropriately
         final segments = uri.host == 'invite' ? uri.pathSegments : path.split('/').skip(1).toList();
         

@@ -1,6 +1,3 @@
-import 'package:flutter/material.dart';
-import '../design/colors.dart';
-
 /// Payment data needed for QR display and copy-to-clipboard UPI flows.
 /// Intent launching is NOT supported — this class is used for QR code
 /// generation and UPI ID display only.
