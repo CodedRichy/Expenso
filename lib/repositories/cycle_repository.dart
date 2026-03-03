@@ -1174,6 +1174,11 @@ class CycleRepository extends ChangeNotifier {
     if (descError != null) throw ArgumentError(descError);
 
     final meta = _groupMeta[groupId];
+    if (meta?.cycleStatus == 'settling') {
+      throw StateError(
+        'This cycle is being settled. New expenses cannot be added until the next cycle begins.',
+      );
+    }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
       throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
@@ -1241,6 +1246,11 @@ class CycleRepository extends ChangeNotifier {
     if (descError != null) throw ArgumentError(descError);
 
     final meta = _groupMeta[groupId];
+    if (meta?.cycleStatus == 'settling') {
+      throw StateError(
+        'This cycle is being settled. New expenses cannot be added until the next cycle begins.',
+      );
+    }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
       throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
@@ -1319,6 +1329,11 @@ class CycleRepository extends ChangeNotifier {
     required String splitType,
   }) async {
     final meta = _groupMeta[groupId];
+    if (meta?.cycleStatus == 'settling') {
+      throw StateError(
+        'This cycle is being settled. New expenses cannot be added until the next cycle begins.',
+      );
+    }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
       throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
