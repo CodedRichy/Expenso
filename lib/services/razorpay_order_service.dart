@@ -11,8 +11,9 @@ Future<RazorpayOrderResult> createRazorpayOrder({
   required int amountPaise,
   String? receipt,
 }) async {
-  final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
-      .httpsCallable('createRazorpayOrder');
+  final callable = FirebaseFunctions.instanceFor(
+    region: 'asia-south1',
+  ).httpsCallable('createRazorpayOrder');
   final result = await callable.call({
     'amountPaise': amountPaise,
     if (receipt != null) 'receipt': receipt,

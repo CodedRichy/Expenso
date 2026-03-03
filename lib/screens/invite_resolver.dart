@@ -28,7 +28,14 @@ class InviteResolverScreen extends StatefulWidget {
   State<InviteResolverScreen> createState() => _InviteResolverScreenState();
 }
 
-enum _ResolveState { loading, alreadyMember, joining, success, invalidLink, error }
+enum _ResolveState {
+  loading,
+  alreadyMember,
+  joining,
+  success,
+  invalidLink,
+  error,
+}
 
 class _InviteResolverScreenState extends State<InviteResolverScreen> {
   _ResolveState _state = _ResolveState.loading;
@@ -53,8 +60,10 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
       return;
     }
 
-    final result = await FirestoreService.instance
-        .resolveInviteLink(widget.groupId, widget.token);
+    final result = await FirestoreService.instance.resolveInviteLink(
+      widget.groupId,
+      widget.token,
+    );
 
     if (!mounted) return;
 
@@ -137,7 +146,8 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
           icon: Icons.group_add_outlined,
           iconColor: AppColors.primary,
           title: 'Join "$_groupName"?',
-          subtitle: 'You\'ve been invited to join this group. Tap below to accept.',
+          subtitle:
+              'You\'ve been invited to join this group. Tap below to accept.',
           primaryLabel: 'Join group',
           onPrimary: _acceptAndJoin,
           secondaryLabel: 'Decline',
@@ -159,7 +169,8 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
           icon: Icons.link_off,
           iconColor: AppColors.error,
           title: 'Invite link expired or revoked',
-          subtitle: 'This link is no longer valid. Ask a group admin to share a new one.',
+          subtitle:
+              'This link is no longer valid. Ask a group admin to share a new one.',
           primaryLabel: 'Go to home',
           onPrimary: _goHome,
         );

@@ -103,37 +103,65 @@ extension AppColorsX on BuildContext {
   bool get _isDark => Theme.of(this).brightness == Brightness.dark;
 
   Color get colorPrimary => _isDark ? AppColorsDark.primary : AppColors.primary;
-  Color get colorPrimaryVariant => _isDark ? AppColorsDark.primaryVariant : AppColors.primaryVariant;
-  Color get colorTextPrimary => _isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
-  Color get colorTextSecondary => _isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
-  Color get colorTextTertiary => _isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;
-  Color get colorTextDisabled => _isDark ? AppColorsDark.textDisabled : AppColors.textDisabled;
-  Color get colorBackground => _isDark ? AppColorsDark.background : AppColors.background;
-  Color get colorBackgroundGradientStart => _isDark ? AppColorsDark.backgroundGradientStart : AppColors.backgroundGradientStart;
-  Color get colorBackgroundGradientEnd => _isDark ? AppColorsDark.backgroundGradientEnd : AppColors.backgroundGradientEnd;
+  Color get colorPrimaryVariant =>
+      _isDark ? AppColorsDark.primaryVariant : AppColors.primaryVariant;
+  Color get colorTextPrimary =>
+      _isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+  Color get colorTextSecondary =>
+      _isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+  Color get colorTextTertiary =>
+      _isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;
+  Color get colorTextDisabled =>
+      _isDark ? AppColorsDark.textDisabled : AppColors.textDisabled;
+  Color get colorBackground =>
+      _isDark ? AppColorsDark.background : AppColors.background;
+  Color get colorBackgroundGradientStart => _isDark
+      ? AppColorsDark.backgroundGradientStart
+      : AppColors.backgroundGradientStart;
+  Color get colorBackgroundGradientEnd => _isDark
+      ? AppColorsDark.backgroundGradientEnd
+      : AppColors.backgroundGradientEnd;
   Color get colorSurface => _isDark ? AppColorsDark.surface : AppColors.surface;
-  Color get colorSurfaceVariant => _isDark ? AppColorsDark.surfaceVariant : AppColors.surfaceVariant;
-  Color get colorCardGradientStart => _isDark ? AppColorsDark.cardGradientStart : AppColors.cardGradientStart;
-  Color get colorCardGradientEnd => _isDark ? AppColorsDark.cardGradientEnd : AppColors.cardGradientEnd;
-  Color get colorCardBorder => _isDark ? AppColorsDark.cardBorder : AppColors.cardBorder;
-  Color get colorCardShadow => _isDark ? AppColorsDark.cardShadow : AppColors.cardShadow;
+  Color get colorSurfaceVariant =>
+      _isDark ? AppColorsDark.surfaceVariant : AppColors.surfaceVariant;
+  Color get colorCardGradientStart =>
+      _isDark ? AppColorsDark.cardGradientStart : AppColors.cardGradientStart;
+  Color get colorCardGradientEnd =>
+      _isDark ? AppColorsDark.cardGradientEnd : AppColors.cardGradientEnd;
+  Color get colorCardBorder =>
+      _isDark ? AppColorsDark.cardBorder : AppColors.cardBorder;
+  Color get colorCardShadow =>
+      _isDark ? AppColorsDark.cardShadow : AppColors.cardShadow;
   Color get colorBorder => _isDark ? AppColorsDark.border : AppColors.border;
-  Color get colorBorderInput => _isDark ? AppColorsDark.borderInput : AppColors.borderInput;
-  Color get colorBorderFocused => _isDark ? AppColorsDark.borderFocused : AppColors.borderFocused;
+  Color get colorBorderInput =>
+      _isDark ? AppColorsDark.borderInput : AppColors.borderInput;
+  Color get colorBorderFocused =>
+      _isDark ? AppColorsDark.borderFocused : AppColors.borderFocused;
   Color get colorAccent => _isDark ? AppColorsDark.accent : AppColors.accent;
-  Color get colorAccentBackground => _isDark ? AppColorsDark.accentBackground : AppColors.accentBackground;
+  Color get colorAccentBackground =>
+      _isDark ? AppColorsDark.accentBackground : AppColors.accentBackground;
   Color get colorError => _isDark ? AppColorsDark.error : AppColors.error;
-  Color get colorErrorBackground => _isDark ? AppColorsDark.errorBackground : AppColors.errorBackground;
+  Color get colorErrorBackground =>
+      _isDark ? AppColorsDark.errorBackground : AppColors.errorBackground;
   Color get colorWarning => _isDark ? AppColorsDark.warning : AppColors.warning;
-  Color get colorWarningBackground => _isDark ? AppColorsDark.warningBackground : AppColors.warningBackground;
-  Color get colorDestructive => _isDark ? AppColorsDark.destructive : AppColors.destructive;
+  Color get colorWarningBackground =>
+      _isDark ? AppColorsDark.warningBackground : AppColors.warningBackground;
+  Color get colorDestructive =>
+      _isDark ? AppColorsDark.destructive : AppColors.destructive;
   Color get colorSuccess => _isDark ? AppColorsDark.success : AppColors.success;
-  Color get colorSuccessLight => _isDark ? AppColorsDark.successLight : AppColors.successLight;
-  Color get colorSuccessBackground => _isDark ? AppColorsDark.successBackground : AppColors.successBackground;
+  Color get colorSuccessLight =>
+      _isDark ? AppColorsDark.successLight : AppColors.successLight;
+  Color get colorSuccessBackground =>
+      _isDark ? AppColorsDark.successBackground : AppColors.successBackground;
   Color get colorDebtRed => _isDark ? AppColorsDark.debtRed : AppColors.debtRed;
-  Color get colorDisabledBackground => _isDark ? AppColorsDark.disabledBackground : AppColors.disabledBackground;
-  Color get colorDisabledForeground => _isDark ? AppColorsDark.disabledForeground : AppColors.disabledForeground;
-  Color get colorGradientStart => _isDark ? AppColorsDark.gradientStart : AppColors.gradientStart;
-  Color get colorGradientMid => _isDark ? AppColorsDark.gradientMid : AppColors.gradientMid;
-  Color get colorGradientEnd => _isDark ? AppColorsDark.gradientEnd : AppColors.gradientEnd;
+  Color get colorDisabledBackground =>
+      _isDark ? AppColorsDark.disabledBackground : AppColors.disabledBackground;
+  Color get colorDisabledForeground =>
+      _isDark ? AppColorsDark.disabledForeground : AppColors.disabledForeground;
+  Color get colorGradientStart =>
+      _isDark ? AppColorsDark.gradientStart : AppColors.gradientStart;
+  Color get colorGradientMid =>
+      _isDark ? AppColorsDark.gradientMid : AppColors.gradientMid;
+  Color get colorGradientEnd =>
+      _isDark ? AppColorsDark.gradientEnd : AppColors.gradientEnd;
 }

@@ -8,44 +8,44 @@ class NormalizedExpenseError extends Error {
 }
 
 /// Immutable, ID-only expense representation for accounting.
-/// 
+///
 /// This model represents a fully-resolved accounting event.
 /// It must be safe to replay at any time in the future.
-/// 
+///
 /// ## Design Principles
 /// - **UI-agnostic:** No UI concepts (slots, selections, confirmation state)
 /// - **Timeless:** Can be reconstructed from storage without current group state
 /// - **Replay-safe:** Produces identical LedgerDeltas regardless of when computed
 /// - **Integer-only:** All money values use [MoneyMinor] (no floating-point)
 /// - **Single-currency:** All amounts use the same currency
-/// 
+///
 /// ## Money Invariants (enforced at construction)
 /// - `sum(payerContributions.amountMinor) == total.amountMinor` (exact)
 /// - `sum(participantShares.amountMinor) == total.amountMinor` (exact)
 /// - All MoneyMinor instances share the same `currencyCode`
 /// - All map keys are valid member IDs (no `p_` prefixes, non-empty)
 /// - All amounts are non-negative
-/// 
+///
 /// ## Non-Invariants (NOT validated here)
 /// - Description content (validated at UI/parsing layer)
 /// - Category validity
 /// - Date format
-/// 
+///
 /// All person references are member IDs (UUIDs), never names.
 /// "Everyone" semantics must be expanded to concrete IDs before construction.
 class NormalizedExpense {
   /// Total expense amount in minor units.
   final MoneyMinor total;
-  
+
   final String description;
   final String category;
   final String date;
-  
+
   /// Who paid and how much. Supports multiple payers (future-proof).
   /// Keys are member IDs, values are positive contribution amounts in minor units.
   /// Sum must equal [total].
   final Map<String, MoneyMinor> payerContributionsByMemberId;
-  
+
   /// Who owes what share. Keys are member IDs, values are positive amounts owed in minor units.
   /// Sum must equal [total].
   final Map<String, MoneyMinor> participantSharesByMemberId;
@@ -63,7 +63,7 @@ class NormalizedExpense {
   });
 
   /// Creates a NormalizedExpense with money invariant validation.
-  /// 
+  ///
   /// Throws [NormalizedExpenseError] if money invariants are violated.
   /// Does NOT validate description, category, or date (those are UI concerns).
   factory NormalizedExpense({
@@ -88,7 +88,9 @@ class NormalizedExpense {
 
     for (final entry in payerContributionsByMemberId.entries) {
       if (entry.key.startsWith('p_')) {
-        throw NormalizedExpenseError('Payer ID cannot be a pending member: ${entry.key}');
+        throw NormalizedExpenseError(
+          'Payer ID cannot be a pending member: ${entry.key}',
+        );
       }
       if (entry.key.isEmpty) {
         throw NormalizedExpenseError('Payer ID cannot be empty');
@@ -106,7 +108,9 @@ class NormalizedExpense {
 
     for (final entry in participantSharesByMemberId.entries) {
       if (entry.key.startsWith('p_')) {
-        throw NormalizedExpenseError('Participant ID cannot be a pending member: ${entry.key}');
+        throw NormalizedExpenseError(
+          'Participant ID cannot be a pending member: ${entry.key}',
+        );
       }
       if (entry.key.isEmpty) {
         throw NormalizedExpenseError('Participant ID cannot be empty');
@@ -122,16 +126,20 @@ class NormalizedExpense {
       }
     }
 
-    final payerSum = payerContributionsByMemberId.values
-        .fold(0, (sum, m) => sum + m.amountMinor);
+    final payerSum = payerContributionsByMemberId.values.fold(
+      0,
+      (sum, m) => sum + m.amountMinor,
+    );
     if (payerSum != total.amountMinor) {
       throw NormalizedExpenseError(
         'Payer contributions ($payerSum) must equal total (${total.amountMinor})',
       );
     }
 
-    final participantSum = participantSharesByMemberId.values
-        .fold(0, (sum, m) => sum + m.amountMinor);
+    final participantSum = participantSharesByMemberId.values.fold(
+      0,
+      (sum, m) => sum + m.amountMinor,
+    );
     if (participantSum != total.amountMinor) {
       throw NormalizedExpenseError(
         'Participant shares ($participantSum) must equal total (${total.amountMinor})',
@@ -143,8 +151,12 @@ class NormalizedExpense {
       description: description,
       category: category,
       date: date,
-      payerContributionsByMemberId: Map.unmodifiable(payerContributionsByMemberId),
-      participantSharesByMemberId: Map.unmodifiable(participantSharesByMemberId),
+      payerContributionsByMemberId: Map.unmodifiable(
+        payerContributionsByMemberId,
+      ),
+      participantSharesByMemberId: Map.unmodifiable(
+        participantSharesByMemberId,
+      ),
     );
   }
 
@@ -171,8 +183,10 @@ class NormalizedExpense {
       description: description ?? this.description,
       category: category ?? this.category,
       date: date ?? this.date,
-      payerContributionsByMemberId: payerContributionsByMemberId ?? this.payerContributionsByMemberId,
-      participantSharesByMemberId: participantSharesByMemberId ?? this.participantSharesByMemberId,
+      payerContributionsByMemberId:
+          payerContributionsByMemberId ?? this.payerContributionsByMemberId,
+      participantSharesByMemberId:
+          participantSharesByMemberId ?? this.participantSharesByMemberId,
     );
   }
 

@@ -24,14 +24,27 @@ class CycleRepository extends ChangeNotifier {
   static CycleRepository get instance => _instance;
 
   static String _formatDate(DateTime d) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[d.month - 1]} ${d.day}';
   }
 
   static int _dateStringToSortKey(String date) {
     final timestamp = int.tryParse(date);
     if (timestamp != null) return timestamp;
-    
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     switch (date) {
@@ -44,11 +57,28 @@ class CycleRepository extends ChangeNotifier {
         if (parsed != null) return parsed.millisecondsSinceEpoch;
         final match = RegExp(r'(\w+)\s+(\d+)').firstMatch(date);
         if (match != null) {
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
           final monthName = match.group(1)!;
           final day = int.tryParse(match.group(2)!);
           final month = months.indexOf(monthName) + 1;
-          if (month >= 1 && month <= 12 && day != null && day >= 1 && day <= 31) {
+          if (month >= 1 &&
+              month <= 12 &&
+              day != null &&
+              day >= 1 &&
+              day <= 31) {
             var d = DateTime(now.year, month, day);
             if (d.isAfter(today.add(const Duration(days: 1)))) {
               d = DateTime(now.year - 1, month, day);
@@ -75,13 +105,16 @@ class CycleRepository extends ChangeNotifier {
   String _currentUserName = '';
 
   /// True if the current user is the creator of the group (for Settle & Restart, etc.).
-  bool isCurrentUserCreator(String groupId) => isCreator(groupId, _currentUserId);
+  bool isCurrentUserCreator(String groupId) =>
+      isCreator(groupId, _currentUserId);
 
   /// Current user profile photo URL (from Firestore). Same value used for NLP display name matching.
-  String? get currentUserPhotoURL => _userCache[_currentUserId]?['photoURL'] as String?;
+  String? get currentUserPhotoURL =>
+      _userCache[_currentUserId]?['photoURL'] as String?;
 
   /// Current user UPI ID for payments.
-  String? get currentUserUpiId => _userCache[_currentUserId]?['upiId'] as String?;
+  String? get currentUserUpiId =>
+      _userCache[_currentUserId]?['upiId'] as String?;
 
   /// Preferred currency from user profile (set at auth from country selection). Defaults to INR.
   String get currentUserCurrencyCode =>
@@ -89,10 +122,16 @@ class CycleRepository extends ChangeNotifier {
 
   /// Updates the global profile (phone, name, and optionally auth user id and currency). Notifies listeners.
   /// Persists to Firestore and local cache when [_currentUserId] is set.
-  void setGlobalProfile(String phone, String name, {String? authUserId, String? currencyCode}) {
+  void setGlobalProfile(
+    String phone,
+    String name, {
+    String? authUserId,
+    String? currencyCode,
+  }) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
-    if (authUserId != null && authUserId.isNotEmpty) _currentUserId = authUserId;
+    if (authUserId != null && authUserId.isNotEmpty)
+      _currentUserId = authUserId;
     if (_currentUserId.isNotEmpty) {
       if (currencyCode != null && currencyCode.isNotEmpty) {
         _userCache[_currentUserId] ??= <String, dynamic>{};
@@ -140,12 +179,22 @@ class CycleRepository extends ChangeNotifier {
 
   /// Sets in-memory identity from Firebase user. Call during build; does not notify.
   /// Use _continueAuthFromFirebaseUser() after the frame for Firestore write/listen.
-  void setAuthFromFirebaseUserSync(String uid, String? phone, String? displayName, {String? photoURL}) {
+  void setAuthFromFirebaseUserSync(
+    String uid,
+    String? phone,
+    String? displayName, {
+    String? photoURL,
+  }) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
-    if (displayName != null && displayName.isNotEmpty) _currentUserName = displayName.trim();
+    if (displayName != null && displayName.isNotEmpty)
+      _currentUserName = displayName.trim();
     final cached = UserProfileCache.instance.getCachedProfile();
-    final usePhoto = (cached != null && cached.userId == uid && cached.photoURL != null && cached.photoURL!.isNotEmpty)
+    final usePhoto =
+        (cached != null &&
+            cached.userId == uid &&
+            cached.photoURL != null &&
+            cached.photoURL!.isNotEmpty)
         ? cached.photoURL!
         : (photoURL != null && photoURL.isNotEmpty ? photoURL : null);
     _userCache[uid] = {
@@ -176,7 +225,9 @@ class CycleRepository extends ChangeNotifier {
     }
     FirestoreService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
-      debugPrint('CycleRepository.continueAuthFromFirebaseUser write failed: $e');
+      debugPrint(
+        'CycleRepository.continueAuthFromFirebaseUser write failed: $e',
+      );
       if (kDebugMode) debugPrint(st.toString());
     });
     _loadCurrentUserProfileFromFirestore();
@@ -199,7 +250,7 @@ class CycleRepository extends ChangeNotifier {
         if (u['upiId'] != null) cur['upiId'] = u['upiId'];
         if (u['currencyCode'] != null) cur['currencyCode'] = u['currencyCode'];
         _userCache[_currentUserId] = cur;
-        
+
         // Persist to local cache for instant load on next cold start
         UserProfileCache.instance.save(
           userId: _currentUserId,
@@ -209,11 +260,13 @@ class CycleRepository extends ChangeNotifier {
           phone: _currentUserPhone,
           currencyCode: cur['currencyCode'] as String?,
         );
-        
+
         notifyListeners();
       }
     } catch (e, st) {
-      debugPrint('CycleRepository._loadCurrentUserProfileFromFirestore failed: $e');
+      debugPrint(
+        'CycleRepository._loadCurrentUserProfileFromFirestore failed: $e',
+      );
       if (kDebugMode) debugPrint(st.toString());
     }
   }
@@ -313,7 +366,12 @@ class CycleRepository extends ChangeNotifier {
   String? get lastAddedDescription => _lastAddedDescription;
   double? get lastAddedAmount => _lastAddedAmount;
 
-  void _setLastAdded(String groupId, String expenseId, String description, double amount) {
+  void _setLastAdded(
+    String groupId,
+    String expenseId,
+    String description,
+    double amount,
+  ) {
     _lastAddedGroupId = groupId;
     _lastAddedExpenseId = expenseId;
     _lastAddedDescription = description;
@@ -331,22 +389,27 @@ class CycleRepository extends ChangeNotifier {
 
   final List<Group> _groups = [];
   final Map<String, Member> _membersById = {};
+
   /// cycleId -> list of expenses for that cycle (current cycle per group).
   final Map<String, List<Expense>> _expensesByCycleId = {};
+
   /// groupId -> { activeCycleId, cycleStatus } from Firestore.
   final Map<String, _GroupMeta> _groupMeta = {};
   final Map<String, Map<String, dynamic>> _userCache = {};
 
   /// groupId -> list of expense revisions (for edit tracking).
   final Map<String, List<ExpenseRevision>> _revisionsByGroup = {};
+
   /// groupId -> set of deleted expense IDs.
   final Map<String, Set<String>> _deletedIdsByGroup = {};
 
   StreamSubscription<List<DocView>>? _groupsSub;
   StreamSubscription<List<DocView>>? _invitationsSub;
   final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
-  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _systemMessageSubs = {};
-  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _revisionSubs = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>>
+  _systemMessageSubs = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>>
+  _revisionSubs = {};
   final Map<String, StreamSubscription<Set<String>>> _deletedIdsSubs = {};
   final Map<String, StreamSubscription<List<DocView>>> _paymentAttemptSubs = {};
   final Map<String, String> _paymentAttemptCycleId = {};
@@ -370,8 +433,9 @@ class CycleRepository extends ChangeNotifier {
 
   /// Pending group invitations for the current user.
   final List<GroupInvitation> _pendingInvitations = [];
-  List<GroupInvitation> get pendingInvitations => List.unmodifiable(_pendingInvitations);
-  
+  List<GroupInvitation> get pendingInvitations =>
+      List.unmodifiable(_pendingInvitations);
+
   /// True while waiting for the first invitations snapshot.
   bool get invitationsLoading => _invitationsLoading;
   bool _invitationsLoading = false;
@@ -400,28 +464,32 @@ class CycleRepository extends ChangeNotifier {
     _invitationsSub?.cancel();
     _groupsLoading = true;
     notifyListeners();
-    _groupsSub = FirestoreService.instance.groupsStream(_currentUserId).listen(
-      _onGroupsSnapshot,
-      onError: (e, st) {
-        debugPrint('CycleRepository groupsStream error: $e');
-        if (kDebugMode && st != null) debugPrint(st.toString());
-        _groupsLoading = false;
-        _streamError = e.toString();
-        SyncStatusService.instance.markError(e.toString());
-        notifyListeners();
-      },
-    );
+    _groupsSub = FirestoreService.instance
+        .groupsStream(_currentUserId)
+        .listen(
+          _onGroupsSnapshot,
+          onError: (e, st) {
+            debugPrint('CycleRepository groupsStream error: $e');
+            if (kDebugMode && st != null) debugPrint(st.toString());
+            _groupsLoading = false;
+            _streamError = e.toString();
+            SyncStatusService.instance.markError(e.toString());
+            notifyListeners();
+          },
+        );
     if (_currentUserPhone.isNotEmpty) {
       _invitationsLoading = true;
-      _invitationsSub = FirestoreService.instance.pendingInvitationsStream(_currentUserPhone).listen(
-        _onInvitationsSnapshot,
-        onError: (e, st) {
-          debugPrint('CycleRepository invitationsStream error: $e');
-          if (kDebugMode && st != null) debugPrint(st.toString());
-          _invitationsLoading = false;
-          notifyListeners();
-        },
-      );
+      _invitationsSub = FirestoreService.instance
+          .pendingInvitationsStream(_currentUserPhone)
+          .listen(
+            _onInvitationsSnapshot,
+            onError: (e, st) {
+              debugPrint('CycleRepository invitationsStream error: $e');
+              if (kDebugMode && st != null) debugPrint(st.toString());
+              _invitationsLoading = false;
+              notifyListeners();
+            },
+          );
     }
   }
 
@@ -430,11 +498,13 @@ class CycleRepository extends ChangeNotifier {
     _pendingInvitations.clear();
     for (final doc in docs) {
       final data = doc.data();
-      _pendingInvitations.add(GroupInvitation(
-        groupId: doc.id,
-        groupName: data['groupName'] as String? ?? 'Unknown Group',
-        creatorId: data['creatorId'] as String? ?? '',
-      ));
+      _pendingInvitations.add(
+        GroupInvitation(
+          groupId: doc.id,
+          groupName: data['groupName'] as String? ?? 'Unknown Group',
+          creatorId: data['creatorId'] as String? ?? '',
+        ),
+      );
     }
     notifyListeners();
   }
@@ -516,11 +586,18 @@ class CycleRepository extends ChangeNotifier {
       final cycleStatus = data['cycleStatus'] as String? ?? 'active';
       final pendingList = _extractPendingMembersList(data['pendingMembers']);
 
-      _groupMeta[groupId] = _GroupMeta(activeCycleId: activeCycleId, cycleStatus: cycleStatus);
-      final status = cycleStatus == 'settling' ? 'closing' : (cycleStatus == 'active' ? 'open' : 'settled');
+      _groupMeta[groupId] = _GroupMeta(
+        activeCycleId: activeCycleId,
+        cycleStatus: cycleStatus,
+      );
+      final status = cycleStatus == 'settling'
+          ? 'closing'
+          : (cycleStatus == 'active' ? 'open' : 'settled');
       final expenses = _expensesByCycleId[activeCycleId] ?? [];
       final pendingAmount = expenses.fold<double>(0.0, (s, e) => s + e.amount);
-      final statusLine = cycleStatus == 'settling' ? 'Cycle Settled - Pending Restart' : 'Cycle open';
+      final statusLine = cycleStatus == 'settling'
+          ? 'Cycle Settled - Pending Restart'
+          : 'Cycle open';
 
       final memberIds = <String>[
         ...members,
@@ -528,18 +605,20 @@ class CycleRepository extends ChangeNotifier {
       ];
       final inviteLinkToken = data['inviteLinkToken'] as String?;
       final inviteLinkEnabled = data['inviteLinkEnabled'] as bool? ?? false;
-      _groups.add(Group(
-        id: groupId,
-        name: groupName,
-        status: status,
-        amount: pendingAmount,
-        statusLine: statusLine,
-        creatorId: creatorId,
-        memberIds: memberIds,
-        currencyCode: currencyCode,
-        inviteLinkToken: inviteLinkToken,
-        inviteLinkEnabled: inviteLinkEnabled,
-      ));
+      _groups.add(
+        Group(
+          id: groupId,
+          name: groupName,
+          status: status,
+          amount: pendingAmount,
+          statusLine: statusLine,
+          creatorId: creatorId,
+          memberIds: memberIds,
+          currencyCode: currencyCode,
+          inviteLinkToken: inviteLinkToken,
+          inviteLinkEnabled: inviteLinkEnabled,
+        ),
+      );
 
       for (final g in _groups) {
         final meta = _groupMeta[g.id];
@@ -569,51 +648,70 @@ class CycleRepository extends ChangeNotifier {
       }
 
       if (!_expenseSubs.containsKey(groupId)) {
-        _expenseSubs[groupId] = FirestoreService.instance.expensesStream(groupId).listen(
-          (expDocs) => _onExpensesSnapshot(groupId, expDocs),
-          onError: (e, st) {
-            debugPrint('CycleRepository expensesStream($groupId) error: $e');
-            if (kDebugMode && st != null) debugPrint(st.toString());
-            _streamError = e.toString();
-            notifyListeners();
-          },
-        );
+        _expenseSubs[groupId] = FirestoreService.instance
+            .expensesStream(groupId)
+            .listen(
+              (expDocs) => _onExpensesSnapshot(groupId, expDocs),
+              onError: (e, st) {
+                debugPrint(
+                  'CycleRepository expensesStream($groupId) error: $e',
+                );
+                if (kDebugMode && st != null) debugPrint(st.toString());
+                _streamError = e.toString();
+                notifyListeners();
+              },
+            );
       }
       if (!_systemMessageSubs.containsKey(groupId)) {
-        _systemMessageSubs[groupId] = FirestoreService.instance.systemMessagesStream(groupId).listen(
-          (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
-          onError: (e, st) {
-            debugPrint('CycleRepository systemMessagesStream($groupId) error: $e');
-          },
-        );
+        _systemMessageSubs[groupId] = FirestoreService.instance
+            .systemMessagesStream(groupId)
+            .listen(
+              (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
+              onError: (e, st) {
+                debugPrint(
+                  'CycleRepository systemMessagesStream($groupId) error: $e',
+                );
+              },
+            );
       }
       if (!_revisionSubs.containsKey(groupId)) {
-        _revisionSubs[groupId] = FirestoreService.instance.expenseRevisionsStream(groupId).listen(
-          (revs) => _onRevisionsSnapshot(groupId, revs),
-          onError: (e, st) {
-            debugPrint('CycleRepository expenseRevisionsStream($groupId) error: $e');
-          },
-        );
+        _revisionSubs[groupId] = FirestoreService.instance
+            .expenseRevisionsStream(groupId)
+            .listen(
+              (revs) => _onRevisionsSnapshot(groupId, revs),
+              onError: (e, st) {
+                debugPrint(
+                  'CycleRepository expenseRevisionsStream($groupId) error: $e',
+                );
+              },
+            );
       }
       if (!_deletedIdsSubs.containsKey(groupId)) {
-        _deletedIdsSubs[groupId] = FirestoreService.instance.deletedExpenseIdsStream(groupId).listen(
-          (ids) => _onDeletedIdsSnapshot(groupId, ids),
-          onError: (e, st) {
-            debugPrint('CycleRepository deletedExpenseIdsStream($groupId) error: $e');
-          },
-        );
+        _deletedIdsSubs[groupId] = FirestoreService.instance
+            .deletedExpenseIdsStream(groupId)
+            .listen(
+              (ids) => _onDeletedIdsSnapshot(groupId, ids),
+              onError: (e, st) {
+                debugPrint(
+                  'CycleRepository deletedExpenseIdsStream($groupId) error: $e',
+                );
+              },
+            );
       }
-      final needPaymentAttemptSub = _paymentAttemptCycleId[groupId] != activeCycleId;
+      final needPaymentAttemptSub =
+          _paymentAttemptCycleId[groupId] != activeCycleId;
       if (needPaymentAttemptSub) {
         _paymentAttemptSubs[groupId]?.cancel();
         _paymentAttemptSubs[groupId] = FirestoreService.instance
             .paymentAttemptsStream(groupId, activeCycleId)
             .listen(
-          (attemptDocs) => _onPaymentAttemptsSnapshot(groupId, attemptDocs),
-          onError: (e, st) {
-            debugPrint('CycleRepository paymentAttemptsStream($groupId) error: $e');
-          },
-        );
+              (attemptDocs) => _onPaymentAttemptsSnapshot(groupId, attemptDocs),
+              onError: (e, st) {
+                debugPrint(
+                  'CycleRepository paymentAttemptsStream($groupId) error: $e',
+                );
+              },
+            );
         _paymentAttemptCycleId[groupId] = activeCycleId;
       }
     }
@@ -644,7 +742,9 @@ class CycleRepository extends ChangeNotifier {
           }
         }
       } catch (e, st) {
-        debugPrint('CycleRepository._loadUsersForMembers error for uid $uid: $e');
+        debugPrint(
+          'CycleRepository._loadUsersForMembers error for uid $uid: $e',
+        );
         if (kDebugMode) debugPrint(st.toString());
       }
     }
@@ -662,10 +762,10 @@ class CycleRepository extends ChangeNotifier {
     final idx = _groups.indexWhere((g) => g.id == groupId);
     if (idx < 0) return;
     final group = _groups[idx];
-    
+
     final uids = group.memberIds.where((id) => !id.startsWith('p_')).toList();
     bool changed = false;
-    
+
     for (final uid in uids) {
       try {
         final u = await FirestoreService.instance.getUser(uid);
@@ -684,10 +784,12 @@ class CycleRepository extends ChangeNotifier {
           }
         }
       } catch (e) {
-        debugPrint('CycleRepository.refreshGroupMemberProfiles error for uid $uid: $e');
+        debugPrint(
+          'CycleRepository.refreshGroupMemberProfiles error for uid $uid: $e',
+        );
       }
     }
-    
+
     if (changed) notifyListeners();
   }
 
@@ -696,24 +798,36 @@ class CycleRepository extends ChangeNotifier {
     if (meta == null) return;
     final cycleId = meta.activeCycleId;
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-    final list = expDocs.map((d) => _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode)).toList();
+    final list = expDocs
+        .map(
+          (d) =>
+              _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode),
+        )
+        .toList();
     _expensesByCycleId[cycleId] = list;
     _refreshGroupAmounts(groupId);
     _requestNotify();
   }
 
-  void _onSystemMessagesSnapshot(String groupId, List<Map<String, dynamic>> msgs) {
+  void _onSystemMessagesSnapshot(
+    String groupId,
+    List<Map<String, dynamic>> msgs,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    
+
     _systemMessagesByGroup[groupId] = msgs.map((m) {
       final ts = m['timestamp'] as int? ?? 0;
       final dt = DateTime.fromMillisecondsSinceEpoch(ts);
       String dateStr;
-      if (dt.year == today.year && dt.month == today.month && dt.day == today.day) {
+      if (dt.year == today.year &&
+          dt.month == today.month &&
+          dt.day == today.day) {
         dateStr = 'Today';
-      } else if (dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day) {
+      } else if (dt.year == yesterday.year &&
+          dt.month == yesterday.month &&
+          dt.day == yesterday.day) {
         dateStr = 'Yesterday';
       } else {
         dateStr = _formatDate(dt);
@@ -733,10 +847,14 @@ class CycleRepository extends ChangeNotifier {
   }
 
   void _onRevisionsSnapshot(String groupId, List<Map<String, dynamic>> revs) {
-    _revisionsByGroup[groupId] = revs.map((r) => ExpenseRevision(
-      expenseId: r['expenseId'] as String? ?? r['id'] as String? ?? '',
-      replacesExpenseId: r['replacesExpenseId'] as String?,
-    )).toList();
+    _revisionsByGroup[groupId] = revs
+        .map(
+          (r) => ExpenseRevision(
+            expenseId: r['expenseId'] as String? ?? r['id'] as String? ?? '',
+            replacesExpenseId: r['replacesExpenseId'] as String?,
+          ),
+        )
+        .toList();
   }
 
   void _onDeletedIdsSnapshot(String groupId, Set<String> ids) {
@@ -752,17 +870,26 @@ class CycleRepository extends ChangeNotifier {
 
   String _phoneForUid(String uid) {
     if (uid == _currentUserId) return _currentUserPhone;
-    return _membersById[uid]?.phone ?? _userCache[uid]?['phoneNumber'] as String? ?? '';
+    return _membersById[uid]?.phone ??
+        _userCache[uid]?['phoneNumber'] as String? ??
+        '';
   }
 
-  Expense _expenseFromFirestore(Map<String, dynamic> data, String id, {String currencyCode = 'INR'}) {
+  Expense _expenseFromFirestore(
+    Map<String, dynamic> data,
+    String id, {
+    String currencyCode = 'INR',
+  }) {
     final payerId = data['payerId'] as String? ?? '';
     final participantIdsRaw = data['participantIds'] as List<dynamic>?;
     final splits = data['splits'] as Map<String, dynamic>?;
     final splitsMinorRaw = data['splitsMinor'] as Map<String, dynamic>?;
     final amountMinorStored = data['amountMinor'];
-    final hasMinor = amountMinorStored != null &&
-        (amountMinorStored is int || (amountMinorStored is num && amountMinorStored == amountMinorStored.roundToDouble())) &&
+    final hasMinor =
+        amountMinorStored != null &&
+        (amountMinorStored is int ||
+            (amountMinorStored is num &&
+                amountMinorStored == amountMinorStored.roundToDouble())) &&
         splitsMinorRaw != null &&
         splitsMinorRaw.isNotEmpty;
 
@@ -772,7 +899,9 @@ class CycleRepository extends ChangeNotifier {
     Map<String, int>? splitAmountsByIdMinor;
 
     if (hasMinor) {
-      final am = amountMinorStored is int ? amountMinorStored : (amountMinorStored as num).round();
+      final am = amountMinorStored is int
+          ? amountMinorStored
+          : (amountMinorStored as num).round();
       amountMinor = am;
       amount = MoneyConversion.minorToDisplay(am, currencyCode);
       splitAmountsByIdMinor = {};
@@ -780,13 +909,21 @@ class CycleRepository extends ChangeNotifier {
         final key = entry.key.toString();
         if (key.startsWith('p_')) continue;
         final v = entry.value;
-        final minor = v is int ? v : (v is num ? v.round() : int.tryParse(v?.toString() ?? '0') ?? 0);
+        final minor = v is int
+            ? v
+            : (v is num ? v.round() : int.tryParse(v?.toString() ?? '0') ?? 0);
         splitAmountsByIdMinor[key] = minor;
-        splitAmountsById[key] = MoneyConversion.minorToDisplay(minor, currencyCode);
+        splitAmountsById[key] = MoneyConversion.minorToDisplay(
+          minor,
+          currencyCode,
+        );
       }
     } else {
-      amount = (data['amount'] is num) ? (data['amount'] as num).toDouble() : 0.0;
-      final participantIds = participantIdsRaw
+      amount = (data['amount'] is num)
+          ? (data['amount'] as num).toDouble()
+          : 0.0;
+      final participantIds =
+          participantIdsRaw
               ?.map((e) => e?.toString())
               .where((s) => s != null && s.isNotEmpty)
               .cast<String>()
@@ -795,7 +932,9 @@ class CycleRepository extends ChangeNotifier {
           [];
       for (final uid in participantIds) {
         final amt = splits != null && splits.containsKey(uid)
-            ? ((splits[uid] is num) ? (splits[uid] as num).toDouble() : double.tryParse(splits[uid]?.toString() ?? '') ?? 0.0)
+            ? ((splits[uid] is num)
+                  ? (splits[uid] as num).toDouble()
+                  : double.tryParse(splits[uid]?.toString() ?? '') ?? 0.0)
             : 0.0;
         splitAmountsById[uid] = amt;
       }
@@ -811,12 +950,12 @@ class CycleRepository extends ChangeNotifier {
     final participantIds = splitAmountsById.isNotEmpty
         ? splitAmountsById.keys.toList()
         : (participantIdsRaw
-                ?.map((e) => e?.toString())
-                .where((s) => s != null && s.isNotEmpty)
-                .cast<String>()
-                .toList() ??
-            splits?.keys.toList() ??
-            []);
+                  ?.map((e) => e?.toString())
+                  .where((s) => s != null && s.isNotEmpty)
+                  .cast<String>()
+                  .toList() ??
+              splits?.keys.toList() ??
+              []);
     final splitType = (data['splitType'] as String?)?.trim().isNotEmpty == true
         ? (data['splitType'] as String).trim()
         : 'Even';
@@ -847,8 +986,12 @@ class CycleRepository extends ChangeNotifier {
       if (meta == null) continue;
       final expenses = _expensesByCycleId[meta.activeCycleId] ?? [];
       final amount = expenses.fold<double>(0.0, (s, e) => s + e.amount);
-      final status = meta.cycleStatus == 'settling' ? 'closing' : (meta.cycleStatus == 'active' ? 'open' : 'settled');
-      final statusLine = meta.cycleStatus == 'settling' ? 'Cycle Settled - Pending Restart' : 'Cycle open';
+      final status = meta.cycleStatus == 'settling'
+          ? 'closing'
+          : (meta.cycleStatus == 'active' ? 'open' : 'settled');
+      final statusLine = meta.cycleStatus == 'settling'
+          ? 'Cycle Settled - Pending Restart'
+          : 'Cycle open';
       _groups[i] = Group(
         id: g.id,
         name: g.name,
@@ -918,7 +1061,8 @@ class CycleRepository extends ChangeNotifier {
 
   String getMemberDisplayNameById(String uid) {
     if (uid.isEmpty) return '';
-    if (uid == _currentUserId) return _currentUserName.isNotEmpty ? _currentUserName : 'You';
+    if (uid == _currentUserId)
+      return _currentUserName.isNotEmpty ? _currentUserName : 'You';
     final m = _membersById[uid];
     if (m != null) {
       // Check IdentityService for unified cross-group name
@@ -972,31 +1116,43 @@ class CycleRepository extends ChangeNotifier {
 
   static String _formatPhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 11 && digits.startsWith('91')) return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
-    if (digits.length == 10) return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
+    if (digits.length == 11 && digits.startsWith('91'))
+      return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
+    if (digits.length == 10)
+      return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
     return phone;
   }
 
   static String _normalizePhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 11 && digits.startsWith('91')) return digits.substring(digits.length - 10);
+    if (digits.length >= 11 && digits.startsWith('91'))
+      return digits.substring(digits.length - 10);
     if (digits.length >= 10) return digits.substring(digits.length - 10);
     return digits;
   }
 
   /// Extracts pendingMembers list, handling legacy encrypted data gracefully.
   /// If data is a String (legacy encrypted), returns empty list - pendingPhones is source of truth.
-  static List<Map<String, String>> _extractPendingMembersList(dynamic rawPending) {
+  static List<Map<String, String>> _extractPendingMembersList(
+    dynamic rawPending,
+  ) {
     if (rawPending is List) {
       return rawPending
-          .map((e) => Map<String, String>.from((e as Map).map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+          .map(
+            (e) => Map<String, String>.from(
+              (e as Map).map(
+                (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
+              ),
+            ),
+          )
           .toList();
     }
     return <Map<String, String>>[];
   }
 
   void addMemberToGroup(String groupId, Member member) {
-    if (member.id.startsWith('p_') || (member.id.startsWith('m_') && member.id.length < 28)) {
+    if (member.id.startsWith('p_') ||
+        (member.id.startsWith('m_') && member.id.length < 28)) {
       FirestoreService.instance.addPendingMemberToGroup(
         groupId,
         member.phone,
@@ -1006,7 +1162,10 @@ class CycleRepository extends ChangeNotifier {
       _refreshGroupPendingMembersLocally(groupId, member);
     } else {
       FirestoreService.instance.addMemberToGroup(groupId, member.id);
-      _userCache[member.id] = {'displayName': member.name, 'phoneNumber': member.phone};
+      _userCache[member.id] = {
+        'displayName': member.name,
+        'phoneNumber': member.phone,
+      };
       _membersById[member.id] = member;
       notifyListeners();
     }
@@ -1121,14 +1280,17 @@ class CycleRepository extends ChangeNotifier {
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     final expense = getExpense(groupId, expenseId);
     final participantSet = expense?.participantIds.toSet() ?? {};
-    
+
     final relevantAttempts = attempts.where((a) {
-      final isRelevant = participantSet.contains(a.fromMemberId) || 
-                         participantSet.contains(a.toMemberId) ||
-                         (expense != null && (a.fromMemberId == expense.paidById || a.toMemberId == expense.paidById));
+      final isRelevant =
+          participantSet.contains(a.fromMemberId) ||
+          participantSet.contains(a.toMemberId) ||
+          (expense != null &&
+              (a.fromMemberId == expense.paidById ||
+                  a.toMemberId == expense.paidById));
       return isRelevant;
     });
-        
+
     // If any relevant attempt is fully settled (confirmed by receiver or cash confirmed),
     // we block the mutation entirely. Real money has moved.
     if (relevantAttempts.any((a) => a.status.isFullyConfirmed)) return false;
@@ -1151,7 +1313,9 @@ class CycleRepository extends ChangeNotifier {
     final meta = _groupMeta[groupId];
     final group = getGroup(groupId);
     if (meta != null && group != null) {
-      final status = meta.cycleStatus == 'settling' ? CycleStatus.settling : CycleStatus.active;
+      final status = meta.cycleStatus == 'settling'
+          ? CycleStatus.settling
+          : CycleStatus.active;
       final expenses = _expensesByCycleId[meta.activeCycleId] ?? [];
       return Cycle(
         id: meta.activeCycleId,
@@ -1191,16 +1355,24 @@ class CycleRepository extends ChangeNotifier {
     }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
-      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+      throw ArgumentError(
+        'No active cycle. Start a new cycle to add expenses.',
+      );
     }
-    final payerId = expense.paidById.isNotEmpty ? expense.paidById : _currentUserId;
+    final payerId = expense.paidById.isNotEmpty
+        ? expense.paidById
+        : _currentUserId;
     final members = getMembersForGroup(groupId);
-    final realMemberIds = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+    final realMemberIds = members
+        .where((m) => !m.id.startsWith('p_'))
+        .map((m) => m.id)
+        .toList();
     final participantIds = expense.participantIds.isNotEmpty
         ? expense.participantIds
         : (realMemberIds.isNotEmpty ? realMemberIds : [_currentUserId]);
     final splits = <String, double>{};
-    if (expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty) {
+    if (expense.splitAmountsById != null &&
+        expense.splitAmountsById!.isNotEmpty) {
       for (final e in expense.splitAmountsById!.entries) {
         if (!e.key.startsWith('p_')) splits[e.key] = e.value;
       }
@@ -1214,8 +1386,16 @@ class CycleRepository extends ChangeNotifier {
     if (splits.isEmpty) splits[payerId] = expense.amount;
     final uids = splits.keys.toList();
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-    final amountMinor = MoneyConversion.parseToMinor(expense.amount, currencyCode).amountMinor;
-    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
+    final amountMinor = MoneyConversion.parseToMinor(
+      expense.amount,
+      currencyCode,
+    ).amountMinor;
+    final splitsMinor = splits.map(
+      (k, v) => MapEntry(
+        k,
+        MoneyConversion.parseToMinor(v, currencyCode).amountMinor,
+      ),
+    );
     final data = {
       'id': expense.id,
       'groupId': groupId,
@@ -1263,21 +1443,32 @@ class CycleRepository extends ChangeNotifier {
     }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
-      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+      throw ArgumentError(
+        'No active cycle. Start a new cycle to add expenses.',
+      );
     }
     final effectivePayerId = payerId.isNotEmpty ? payerId : _currentUserId;
     final members = getMembersForGroup(groupId);
-    final allIds = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+    final allIds = members
+        .where((m) => !m.id.startsWith('p_'))
+        .map((m) => m.id)
+        .toList();
 
     List<String> idsInSplit = [];
     Map<String, double> splitsById = {};
 
-    if (splitType == 'Exact' && exactAmountsById != null && exactAmountsById.isNotEmpty) {
-      idsInSplit = exactAmountsById.keys.where((k) => !k.startsWith('p_')).toList();
+    if (splitType == 'Exact' &&
+        exactAmountsById != null &&
+        exactAmountsById.isNotEmpty) {
+      idsInSplit = exactAmountsById.keys
+          .where((k) => !k.startsWith('p_'))
+          .toList();
       for (final e in exactAmountsById.entries) {
         if (!e.key.startsWith('p_')) splitsById[e.key] = e.value;
       }
-    } else if (splitType == 'Exclude' && excludedIds != null && excludedIds.isNotEmpty) {
+    } else if (splitType == 'Exclude' &&
+        excludedIds != null &&
+        excludedIds.isNotEmpty) {
       final excludedSet = excludedIds.toSet();
       idsInSplit = allIds.where((id) => !excludedSet.contains(id)).toList();
       if (idsInSplit.isEmpty) idsInSplit = [effectivePayerId];
@@ -1303,8 +1494,16 @@ class CycleRepository extends ChangeNotifier {
     if (splits.isEmpty) splits[effectivePayerId] = amount;
 
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-    final amountMinor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
-    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
+    final amountMinor = MoneyConversion.parseToMinor(
+      amount,
+      currencyCode,
+    ).amountMinor;
+    final splitsMinor = splits.map(
+      (k, v) => MapEntry(
+        k,
+        MoneyConversion.parseToMinor(v, currencyCode).amountMinor,
+      ),
+    );
     final writtenParticipantIds = splits.keys.toList();
     final data = {
       'id': id,
@@ -1326,10 +1525,10 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Adds an expense from a NormalizedExpense (the canonical path).
-  /// 
+  ///
   /// This method takes an already-validated, ID-only NormalizedExpense and persists it.
   /// No split calculation is needed - all amounts are already computed in the normalization layer.
-  /// 
+  ///
   /// The splitType parameter indicates the original user intent for UI display purposes only.
   /// The actual amounts are stored in participantSharesByMemberId.
   Future<void> addExpenseFromNormalized(
@@ -1346,7 +1545,9 @@ class CycleRepository extends ChangeNotifier {
     }
     final cycleId = meta?.activeCycleId;
     if (cycleId == null) {
-      throw ArgumentError('No active cycle. Start a new cycle to add expenses.');
+      throw ArgumentError(
+        'No active cycle. Start a new cycle to add expenses.',
+      );
     }
 
     final payerId = normalized.primaryPayerId;
@@ -1381,7 +1582,11 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Converts a NormalizedExpense to an Expense model (for local use).
-  Expense normalizedToExpense(String id, NormalizedExpense normalized, String splitType) {
+  Expense normalizedToExpense(
+    String id,
+    NormalizedExpense normalized,
+    String splitType,
+  ) {
     final displayAmount = MoneyConversion.toDisplay(normalized.total);
     final splitAmounts = normalized.participantSharesByMemberId.map(
       (memberId, money) => MapEntry(memberId, MoneyConversion.toDisplay(money)),
@@ -1412,7 +1617,10 @@ class CycleRepository extends ChangeNotifier {
   }
 
   /// Returns the lifecycle state of an expense (active, deleted, or superseded).
-  ExpenseLifecycleState getExpenseLifecycleState(String groupId, String expenseId) {
+  ExpenseLifecycleState getExpenseLifecycleState(
+    String groupId,
+    String expenseId,
+  ) {
     final revisions = _revisionsByGroup[groupId] ?? [];
     final deletedIds = _deletedIdsByGroup[groupId] ?? {};
     return deriveExpenseState(
@@ -1424,17 +1632,20 @@ class CycleRepository extends ChangeNotifier {
 
   /// Returns true if the expense can be edited (is active).
   bool canEditExpense(String groupId, String expenseId) {
-    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.active;
+    return getExpenseLifecycleState(groupId, expenseId) ==
+        ExpenseLifecycleState.active;
   }
 
   /// Returns true if the expense can be deleted (is active).
   bool canDeleteExpense(String groupId, String expenseId) {
-    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.active;
+    return getExpenseLifecycleState(groupId, expenseId) ==
+        ExpenseLifecycleState.active;
   }
 
   /// Returns true if the expense is deleted (soft-deleted via compensation model).
   bool isExpenseDeleted(String groupId, String expenseId) {
-    return getExpenseLifecycleState(groupId, expenseId) == ExpenseLifecycleState.deleted;
+    return getExpenseLifecycleState(groupId, expenseId) ==
+        ExpenseLifecycleState.deleted;
   }
 
   /// Returns all active (non-deleted, non-superseded) expenses for a group.
@@ -1467,19 +1678,23 @@ class CycleRepository extends ChangeNotifier {
 
     // Capture old values for activity log before writing.
     final existing = getExpense(groupId, updatedExpense.id);
-    final isAdminOverride = existing != null &&
+    final isAdminOverride =
+        existing != null &&
         existing.createdById.isNotEmpty &&
         existing.createdById != _currentUserId &&
         isCreator(groupId, _currentUserId);
 
     final meta = _groupMeta[groupId];
     if (meta == null) return;
-    final payerId = updatedExpense.paidById.isNotEmpty ? updatedExpense.paidById : _currentUserId;
+    final payerId = updatedExpense.paidById.isNotEmpty
+        ? updatedExpense.paidById
+        : _currentUserId;
 
     final Map<String, double> splits;
     final String splitType;
     List<String> participantIds;
-    if (updatedExpense.splitAmountsById != null && updatedExpense.splitAmountsById!.isNotEmpty) {
+    if (updatedExpense.splitAmountsById != null &&
+        updatedExpense.splitAmountsById!.isNotEmpty) {
       splits = Map.from(updatedExpense.splitAmountsById!);
       if (splits.isEmpty) splits[payerId] = updatedExpense.amount;
       splitType = updatedExpense.splitType;
@@ -1495,8 +1710,16 @@ class CycleRepository extends ChangeNotifier {
     }
 
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-    final amountMinor = MoneyConversion.parseToMinor(updatedExpense.amount, currencyCode).amountMinor;
-    final splitsMinor = splits.map((k, v) => MapEntry(k, MoneyConversion.parseToMinor(v, currencyCode).amountMinor));
+    final amountMinor = MoneyConversion.parseToMinor(
+      updatedExpense.amount,
+      currencyCode,
+    ).amountMinor;
+    final splitsMinor = splits.map(
+      (k, v) => MapEntry(
+        k,
+        MoneyConversion.parseToMinor(v, currencyCode).amountMinor,
+      ),
+    );
     FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
       'amount': updatedExpense.amount,
       'amountMinor': amountMinor,
@@ -1508,35 +1731,50 @@ class CycleRepository extends ChangeNotifier {
       'splitType': splitType,
       'participantIds': participantIds,
       'splits': splits.map((k, v) => MapEntry(k, v)),
-      if (updatedExpense.category.isNotEmpty) 'category': updatedExpense.category,
+      if (updatedExpense.category.isNotEmpty)
+        'category': updatedExpense.category,
     });
 
     // Emit activity log for admin overrides or any material change.
     if (existing != null) {
-      final actorName = _currentUserName.isNotEmpty ? _currentUserName : 'Someone';
+      final actorName = _currentUserName.isNotEmpty
+          ? _currentUserName
+          : 'Someone';
       final parts = <String>[];
       if (existing.description != updatedExpense.description) {
-        parts.add('"${existing.description}" → "${updatedExpense.description}"');
+        parts.add(
+          '"${existing.description}" → "${updatedExpense.description}"',
+        );
       }
       if ((existing.amount - updatedExpense.amount).abs() > 0.001) {
         final fmtOld = formatMoneyFromMajor(existing.amount, currencyCode);
-        final fmtNew = formatMoneyFromMajor(updatedExpense.amount, currencyCode);
+        final fmtNew = formatMoneyFromMajor(
+          updatedExpense.amount,
+          currencyCode,
+        );
         parts.add('$fmtOld → $fmtNew');
       }
       if (parts.isNotEmpty || isAdminOverride) {
-        final prefix = isAdminOverride ? '$actorName (admin) edited' : '$actorName edited';
-        String detail = parts.isNotEmpty ? parts.join(', ') : existing.description;
+        final prefix = isAdminOverride
+            ? '$actorName (admin) edited'
+            : '$actorName edited';
+        String detail = parts.isNotEmpty
+            ? parts.join(', ')
+            : existing.description;
         if (isAdminOverride) {
-          detail += '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
+          detail +=
+              '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
         }
-        FirestoreService.instance.addSystemMessage(
-          groupId,
-          type: 'expense_edited',
-          userName: actorName,
-          odId: _currentUserId,
-          detail: detail,
-          prefix: prefix,
-        ).catchError((e) => debugPrint('Activity log write failed: $e'));
+        FirestoreService.instance
+            .addSystemMessage(
+              groupId,
+              type: 'expense_edited',
+              userName: actorName,
+              odId: _currentUserId,
+              detail: detail,
+              prefix: prefix,
+            )
+            .catchError((e) => debugPrint('Activity log write failed: $e'));
       }
     }
   }
@@ -1561,7 +1799,8 @@ class CycleRepository extends ChangeNotifier {
 
     // Capture before deleting for activity log.
     final existing = getExpense(groupId, expenseId);
-    final isAdminOverride = existing != null &&
+    final isAdminOverride =
+        existing != null &&
         existing.createdById.isNotEmpty &&
         existing.createdById != _currentUserId &&
         isCreator(groupId, _currentUserId);
@@ -1578,22 +1817,29 @@ class CycleRepository extends ChangeNotifier {
 
     // Activity log: always emit for admin overrides; for creators only if it's a non-trivial expense.
     if (existing != null) {
-      final actorName = _currentUserName.isNotEmpty ? _currentUserName : 'Someone';
+      final actorName = _currentUserName.isNotEmpty
+          ? _currentUserName
+          : 'Someone';
       final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
       final fmtAmount = formatMoneyFromMajor(existing.amount, currencyCode);
-      final prefix = isAdminOverride ? '$actorName (admin) deleted' : '$actorName deleted';
+      final prefix = isAdminOverride
+          ? '$actorName (admin) deleted'
+          : '$actorName deleted';
       String detail = '${existing.description} $fmtAmount';
       if (isAdminOverride) {
-        detail += '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
+        detail +=
+            '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
       }
-      FirestoreService.instance.addSystemMessage(
-        groupId,
-        type: 'expense_deleted',
-        userName: actorName,
-        odId: _currentUserId,
-        detail: detail,
-        prefix: prefix,
-      ).catchError((e) => debugPrint('Activity log write failed: $e'));
+      FirestoreService.instance
+          .addSystemMessage(
+            groupId,
+            type: 'expense_deleted',
+            userName: actorName,
+            odId: _currentUserId,
+            detail: detail,
+            prefix: prefix,
+          )
+          .catchError((e) => debugPrint('Activity log write failed: $e'));
     }
   }
 
@@ -1601,7 +1847,8 @@ class CycleRepository extends ChangeNotifier {
   /// Use for undo operations within the undo window only.
   void hardDeleteExpense(String groupId, String expenseId) {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
-    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) _clearLastAdded();
+    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId)
+      _clearLastAdded();
   }
 
   /// Deletes the group from Firestore. Only the creator can delete.
@@ -1626,7 +1873,9 @@ class CycleRepository extends ChangeNotifier {
       final stillExists = _groups.any((g) => g.id == groupId);
       if (stillExists) rethrow;
       // Group no longer exists locally either — deletion succeeded despite the error.
-      debugPrint('CycleRepository.deleteGroup: swallowed benign error (group already gone): $e');
+      debugPrint(
+        'CycleRepository.deleteGroup: swallowed benign error (group already gone): $e',
+      );
     }
     _removeGroupLocally(groupId);
   }
@@ -1653,9 +1902,16 @@ class CycleRepository extends ChangeNotifier {
   Map<String, int> getNetBalancesAfterSettlementsMinor(String groupId) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
-    final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
+    final ids = members
+        .where((m) => !m.id.startsWith('p_'))
+        .map((m) => m.id)
+        .toSet();
     final net = Map<String, int>.from(
-      SettlementEngine.computeNetBalances(cycle.expenses, members, currencyCode: 'INR'),
+      SettlementEngine.computeNetBalances(
+        cycle.expenses,
+        members,
+        currencyCode: 'INR',
+      ),
     );
     for (final id in ids) {
       net.putIfAbsent(id, () => 0);
@@ -1696,7 +1952,9 @@ class CycleRepository extends ChangeNotifier {
     while (d < debtors.length && c < creditors.length) {
       final debtor = debtors[d];
       final creditor = creditors[c];
-      final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
+      final amount = (debtor.amount < creditor.amount
+          ? debtor.amount
+          : creditor.amount);
       if (amount < 0.01) break;
       result.add(
         '${getMemberDisplayNameById(debtor.id)} owes ${getMemberDisplayNameById(creditor.id)} ${formatMoneyFromMajor(amount, currencyCode)}',
@@ -1711,7 +1969,9 @@ class CycleRepository extends ChangeNotifier {
 
   /// Settlement transfers for the current user as debtor: (creditor, amount) pairs and total.
   /// Empty list and 0 if current user owes nothing.
-  List<SettlementTransfer> getSettlementTransfersForCurrentUser(String groupId) {
+  List<SettlementTransfer> getSettlementTransfersForCurrentUser(
+    String groupId,
+  ) {
     final balances = calculateBalances(groupId);
     final debtors = balances.entries
         .where((e) => e.value < -0.01)
@@ -1728,14 +1988,18 @@ class CycleRepository extends ChangeNotifier {
     while (d < debtors.length && c < creditors.length) {
       final debtor = debtors[d];
       final creditor = creditors[c];
-      final amount = (debtor.amount < creditor.amount ? debtor.amount : creditor.amount);
+      final amount = (debtor.amount < creditor.amount
+          ? debtor.amount
+          : creditor.amount);
       if (amount < 0.01) break;
       if (debtor.id == _currentUserId) {
-        result.add(SettlementTransfer(
-          creditorPhone: _phoneForUid(creditor.id),
-          creditorDisplayName: getMemberDisplayNameById(creditor.id),
-          amount: amount,
-        ));
+        result.add(
+          SettlementTransfer(
+            creditorPhone: _phoneForUid(creditor.id),
+            creditorDisplayName: getMemberDisplayNameById(creditor.id),
+            amount: amount,
+          ),
+        );
       }
       debtor.amount -= amount;
       creditor.amount -= amount;
@@ -1755,14 +2019,19 @@ class CycleRepository extends ChangeNotifier {
     return _paymentAttemptsByGroup[groupId] ?? [];
   }
 
-  PaymentAttempt? getPaymentAttemptForRoute(String groupId, String fromId, String toId) {
+  PaymentAttempt? getPaymentAttemptForRoute(
+    String groupId,
+    String fromId,
+    String toId,
+  ) {
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     final routeKey = '${fromId}_$toId';
     PaymentAttempt? latestNotConfirmed;
     for (final attempt in attempts) {
       if (attempt.routeKey == routeKey) {
         if (!attempt.status.isFullyConfirmed) {
-          if (latestNotConfirmed == null || attempt.createdAt > latestNotConfirmed.createdAt) {
+          if (latestNotConfirmed == null ||
+              attempt.createdAt > latestNotConfirmed.createdAt) {
             latestNotConfirmed = attempt;
           }
         }
@@ -1774,8 +2043,11 @@ class CycleRepository extends ChangeNotifier {
   Future<void> loadPaymentAttempts(String groupId) async {
     final meta = _groupMeta[groupId];
     if (meta == null) return;
-    
-    final docs = await FirestoreService.instance.getPaymentAttempts(groupId, meta.activeCycleId);
+
+    final docs = await FirestoreService.instance.getPaymentAttempts(
+      groupId,
+      meta.activeCycleId,
+    );
     _paymentAttemptsByGroup[groupId] = docs
         .map((d) => PaymentAttempt.fromFirestore(d.id, d.data()))
         .toList();
@@ -1792,7 +2064,11 @@ class CycleRepository extends ChangeNotifier {
     final meta = _groupMeta[groupId];
     if (meta == null) throw StateError('Group not loaded');
 
-    final existing = getPaymentAttemptForRoute(groupId, fromMemberId, toMemberId);
+    final existing = getPaymentAttemptForRoute(
+      groupId,
+      fromMemberId,
+      toMemberId,
+    );
     if (existing != null && existing.amountMinor == amountMinor) {
       return existing;
     }
@@ -1823,13 +2099,24 @@ class CycleRepository extends ChangeNotifier {
   Future<void> markPaymentInitiated(String groupId, String attemptId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     // Guard: can only initiate from notStarted.
-    final current = _paymentAttemptsByGroup[groupId]
-        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
-              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-              amountMinor: 0, currencyCode: 'INR',
-              status: PaymentAttemptStatus.notStarted, createdAt: 0));
+    final current = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
+    );
     if (current != null && current.status != PaymentAttemptStatus.notStarted) {
-      debugPrint('markPaymentInitiated: skipped (already ${current.status.firestoreValue})');
+      debugPrint(
+        'markPaymentInitiated: skipped (already ${current.status.firestoreValue})',
+      );
       return; // idempotent — already past this state
     }
     await FirestoreService.instance.updatePaymentAttemptStatus(
@@ -1838,9 +2125,18 @@ class CycleRepository extends ChangeNotifier {
       PaymentAttemptStatus.initiated.firestoreValue,
       initiatedAt: now,
     );
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.initiated, initiatedAt: now);
-    _logSettlementEvent(groupId, SettlementEventType.paymentInitiated,
-        amountMinor: current?.amountMinor, paymentAttemptId: attemptId);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.initiated,
+      initiatedAt: now,
+    );
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.paymentInitiated,
+      amountMinor: current?.amountMinor,
+      paymentAttemptId: attemptId,
+    );
   }
 
   Future<void> markPaymentConfirmedByPayer(
@@ -1852,20 +2148,32 @@ class CycleRepository extends ChangeNotifier {
     final now = DateTime.now().millisecondsSinceEpoch;
     // Guard: payer can only confirm from initiated or notStarted.
     // confirmedByPayer/receiver/cashConfirmed are terminal — never regress.
-    final current = _paymentAttemptsByGroup[groupId]
-        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
-              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-              amountMinor: 0, currencyCode: 'INR',
-              status: PaymentAttemptStatus.notStarted, createdAt: 0));
+    final current = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
+    );
     if (current != null && current.status.isSettled) {
-      debugPrint('markPaymentConfirmedByPayer: skipped (already settled: ${current.status.firestoreValue})');
+      debugPrint(
+        'markPaymentConfirmedByPayer: skipped (already settled: ${current.status.firestoreValue})',
+      );
       return; // idempotent — already settled
     }
     if (current != null &&
         current.status != PaymentAttemptStatus.notStarted &&
         current.status != PaymentAttemptStatus.initiated) {
       throw StateError(
-          'Invalid transition: cannot move from ${current.status.firestoreValue} to confirmedByPayer.');
+        'Invalid transition: cannot move from ${current.status.firestoreValue} to confirmedByPayer.',
+      );
     }
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
@@ -1883,27 +2191,48 @@ class CycleRepository extends ChangeNotifier {
       upiTransactionId: upiTransactionId,
       upiResponseCode: upiResponseCode,
     );
-    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByPayer, paymentAttemptId: attemptId);
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.paymentConfirmedByPayer,
+      paymentAttemptId: attemptId,
+    );
     _checkAndEmitFullySettled(groupId);
   }
 
-  Future<void> markPaymentConfirmedByReceiver(String groupId, String attemptId) async {
+  Future<void> markPaymentConfirmedByReceiver(
+    String groupId,
+    String attemptId,
+  ) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     // Guard: receiver can only confirm from confirmedByPayer.
     // This ensures the payer has explicitly claimed to have paid before the receiver settles.
-    final current = _paymentAttemptsByGroup[groupId]
-        ?.firstWhere((a) => a.id == attemptId, orElse: () => PaymentAttempt(
-              id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-              amountMinor: 0, currencyCode: 'INR',
-              status: PaymentAttemptStatus.notStarted, createdAt: 0));
-    if (current != null && current.status == PaymentAttemptStatus.confirmedByReceiver) {
-      debugPrint('markPaymentConfirmedByReceiver: skipped (already confirmedByReceiver)');
+    final current = _paymentAttemptsByGroup[groupId]?.firstWhere(
+      (a) => a.id == attemptId,
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
+    );
+    if (current != null &&
+        current.status == PaymentAttemptStatus.confirmedByReceiver) {
+      debugPrint(
+        'markPaymentConfirmedByReceiver: skipped (already confirmedByReceiver)',
+      );
       return; // idempotent
     }
-    if (current != null && current.status != PaymentAttemptStatus.confirmedByPayer) {
+    if (current != null &&
+        current.status != PaymentAttemptStatus.confirmedByPayer) {
       throw StateError(
-          'Invalid transition: receiver cannot confirm from ${current.status.firestoreValue}. '
-          'Payer must confirm first (confirmedByPayer).');
+        'Invalid transition: receiver cannot confirm from ${current.status.firestoreValue}. '
+        'Payer must confirm first (confirmedByPayer).',
+      );
     }
     await FirestoreService.instance.updatePaymentAttemptStatus(
       groupId,
@@ -1911,14 +2240,32 @@ class CycleRepository extends ChangeNotifier {
       PaymentAttemptStatus.confirmedByReceiver.firestoreValue,
       confirmedAt: now,
     );
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.confirmedByReceiver, confirmedAt: now);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.confirmedByReceiver,
+      confirmedAt: now,
+    );
     final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
       (a) => a.id == attemptId,
-      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-          amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
     );
-    _logSettlementEvent(groupId, SettlementEventType.paymentConfirmedByReceiver,
-        amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.paymentConfirmedByReceiver,
+      amountMinor: attempt?.amountMinor,
+      paymentAttemptId: attemptId,
+    );
     _checkAndEmitFullySettled(groupId);
   }
 
@@ -1929,8 +2276,16 @@ class CycleRepository extends ChangeNotifier {
       PaymentAttemptStatus.disputed.firestoreValue,
     );
 
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.disputed);
-    _logSettlementEvent(groupId, SettlementEventType.paymentDisputed, paymentAttemptId: attemptId);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.disputed,
+    );
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.paymentDisputed,
+      paymentAttemptId: attemptId,
+    );
   }
 
   Future<void> markPaymentAsCash(String groupId, String attemptId) async {
@@ -1942,13 +2297,33 @@ class CycleRepository extends ChangeNotifier {
       initiatedAt: now,
     );
 
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.cashPending, initiatedAt: now);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.cashPending,
+      initiatedAt: now,
+    );
 
     final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
       (a) => a.id == attemptId,
-      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
     );
-    _logSettlementEvent(groupId, SettlementEventType.cashConfirmationRequested, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.cashConfirmationRequested,
+      amountMinor: attempt?.amountMinor,
+      paymentAttemptId: attemptId,
+    );
   }
 
   Future<void> confirmCashReceived(String groupId, String attemptId) async {
@@ -1960,13 +2335,33 @@ class CycleRepository extends ChangeNotifier {
       confirmedAt: now,
     );
 
-    _updateLocalAttemptStatus(groupId, attemptId, PaymentAttemptStatus.cashConfirmed, confirmedAt: now);
+    _updateLocalAttemptStatus(
+      groupId,
+      attemptId,
+      PaymentAttemptStatus.cashConfirmed,
+      confirmedAt: now,
+    );
 
     final attempt = _paymentAttemptsByGroup[groupId]?.firstWhere(
       (a) => a.id == attemptId,
-      orElse: () => PaymentAttempt(id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '', amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0),
+      orElse: () => PaymentAttempt(
+        id: '',
+        groupId: '',
+        cycleId: '',
+        fromMemberId: '',
+        toMemberId: '',
+        amountMinor: 0,
+        currencyCode: 'INR',
+        status: PaymentAttemptStatus.notStarted,
+        createdAt: 0,
+      ),
     );
-    _logSettlementEvent(groupId, SettlementEventType.cashConfirmed, amountMinor: attempt?.amountMinor, paymentAttemptId: attemptId);
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.cashConfirmed,
+      amountMinor: attempt?.amountMinor,
+      paymentAttemptId: attemptId,
+    );
     _checkAndEmitFullySettled(groupId);
   }
 
@@ -2002,7 +2397,10 @@ class CycleRepository extends ChangeNotifier {
     final meta = _groupMeta[groupId];
     if (meta == null) return;
     FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
-    _groupMeta[groupId] = _GroupMeta(activeCycleId: meta.activeCycleId, cycleStatus: 'settling');
+    _groupMeta[groupId] = _GroupMeta(
+      activeCycleId: meta.activeCycleId,
+      cycleStatus: 'settling',
+    );
     _refreshGroupAmounts();
     _logSettlementEvent(groupId, SettlementEventType.cycleSettlementStarted);
     notifyListeners();
@@ -2013,7 +2411,9 @@ class CycleRepository extends ChangeNotifier {
   /// Throws if not creator or group meta missing so the UI can show an error.
   Future<void> archiveAndRestart(String groupId) async {
     if (!isCreator(groupId, _currentUserId)) {
-      throw StateError('Only the group creator can settle and start a new cycle.');
+      throw StateError(
+        'Only the group creator can settle and start a new cycle.',
+      );
     }
     final meta = _groupMeta[groupId];
     if (meta == null) {
@@ -2022,7 +2422,11 @@ class CycleRepository extends ChangeNotifier {
     final now = DateTime.now();
     final endStr = _formatDate(now);
     final startStr = meta.activeCycleId.startsWith('c_')
-        ? _formatDate(DateTime.fromMillisecondsSinceEpoch(int.tryParse(meta.activeCycleId.substring(2)) ?? 0))
+        ? _formatDate(
+            DateTime.fromMillisecondsSinceEpoch(
+              int.tryParse(meta.activeCycleId.substring(2)) ?? 0,
+            ),
+          )
         : endStr;
     await FirestoreService.instance.archiveCycleExpenses(
       groupId,
@@ -2035,7 +2439,10 @@ class CycleRepository extends ChangeNotifier {
       'activeCycleId': newCycleId,
       'cycleStatus': 'active',
     });
-    _groupMeta[groupId] = _GroupMeta(activeCycleId: newCycleId, cycleStatus: 'active');
+    _groupMeta[groupId] = _GroupMeta(
+      activeCycleId: newCycleId,
+      cycleStatus: 'active',
+    );
     _expensesByCycleId.remove(meta.activeCycleId);
     _expensesByCycleId[newCycleId] = [];
     _paymentAttemptsByGroup.remove(groupId);
@@ -2048,24 +2455,37 @@ class CycleRepository extends ChangeNotifier {
   /// Returns all closed cycles for the group, newest first (from Firestore settled_cycles).
   Future<List<Cycle>> getHistory(String groupId) async {
     try {
-      final settledDocs = await FirestoreService.instance.getSettledCycles(groupId);
+      final settledDocs = await FirestoreService.instance.getSettledCycles(
+        groupId,
+      );
       final List<Cycle> closed = [];
       for (final doc in settledDocs) {
         final data = doc.data();
         final cycleId = doc.id;
         final startDate = data['startDate'] as String? ?? '';
         final endDate = data['endDate'] as String? ?? '';
-        final expenseDocs = await FirestoreService.instance.getSettledCycleExpenses(groupId, cycleId);
+        final expenseDocs = await FirestoreService.instance
+            .getSettledCycleExpenses(groupId, cycleId);
         final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-        final expenses = expenseDocs.map((d) => _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode)).toList();
-        closed.add(Cycle(
-          id: cycleId,
-          groupId: groupId,
-          status: CycleStatus.closed,
-          startDate: startDate,
-          endDate: endDate,
-          expenses: expenses,
-        ));
+        final expenses = expenseDocs
+            .map(
+              (d) => _expenseFromFirestore(
+                d.data(),
+                d.id,
+                currencyCode: currencyCode,
+              ),
+            )
+            .toList();
+        closed.add(
+          Cycle(
+            id: cycleId,
+            groupId: groupId,
+            status: CycleStatus.closed,
+            startDate: startDate,
+            endDate: endDate,
+            expenses: expenses,
+          ),
+        );
       }
       return closed;
     } catch (e) {
@@ -2076,9 +2496,12 @@ class CycleRepository extends ChangeNotifier {
 
   /// Stream of settlement events for a group (most recent first).
   Stream<List<SettlementEvent>> settlementEventsStream(String groupId) {
-    return FirestoreService.instance.settlementEventsStream(groupId).map(
-      (list) => list.map((data) => SettlementEvent.fromFirestore(data)).toList(),
-    );
+    return FirestoreService.instance
+        .settlementEventsStream(groupId)
+        .map(
+          (list) =>
+              list.map((data) => SettlementEvent.fromFirestore(data)).toList(),
+        );
   }
 
   /// Get settlement events for a group (one-time fetch).
@@ -2124,7 +2547,7 @@ class CycleRepository extends ChangeNotifier {
 
   void _checkAndEmitFullySettled(String groupId) {
     if (_fullySettledEmitted.contains(groupId)) return;
-    
+
     final meta = _groupMeta[groupId];
     if (meta == null || meta.cycleStatus != 'settling') return;
 
@@ -2135,16 +2558,24 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
-  void _logSettlementEvent(String groupId, SettlementEventType type, {int? amountMinor, String? paymentAttemptId, int? pendingCount}) {
-    FirestoreService.instance.addSettlementEvent(
-      groupId,
-      type: type.firestoreValue,
-      amountMinor: amountMinor,
-      paymentAttemptId: paymentAttemptId,
-      pendingCount: pendingCount,
-    ).catchError((e) {
-      debugPrint('CycleRepository._logSettlementEvent failed: $e');
-    });
+  void _logSettlementEvent(
+    String groupId,
+    SettlementEventType type, {
+    int? amountMinor,
+    String? paymentAttemptId,
+    int? pendingCount,
+  }) {
+    FirestoreService.instance
+        .addSettlementEvent(
+          groupId,
+          type: type.firestoreValue,
+          amountMinor: amountMinor,
+          paymentAttemptId: paymentAttemptId,
+          pendingCount: pendingCount,
+        )
+        .catchError((e) {
+          debugPrint('CycleRepository._logSettlementEvent failed: $e');
+        });
   }
 
   final Map<String, DateTime> _lastPendingReminderDate = {};
@@ -2161,7 +2592,7 @@ class CycleRepository extends ChangeNotifier {
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     final lastEmitted = _lastPendingReminderDate[groupId];
-    
+
     if (lastEmitted != null && !lastEmitted.isBefore(todayDate)) {
       return;
     }
@@ -2171,7 +2602,11 @@ class CycleRepository extends ChangeNotifier {
       if (data['type'] == 'pending_reminder') {
         final ts = data['timestamp'] as int? ?? 0;
         final eventDate = DateTime.fromMillisecondsSinceEpoch(ts);
-        final eventDay = DateTime(eventDate.year, eventDate.month, eventDate.day);
+        final eventDay = DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+        );
         if (!eventDay.isBefore(todayDate)) {
           _lastPendingReminderDate[groupId] = todayDate;
           return;
@@ -2180,19 +2615,28 @@ class CycleRepository extends ChangeNotifier {
       }
     }
 
-    _logSettlementEvent(groupId, SettlementEventType.pendingReminder, pendingCount: pendingCount);
+    _logSettlementEvent(
+      groupId,
+      SettlementEventType.pendingReminder,
+      pendingCount: pendingCount,
+    );
     _lastPendingReminderDate[groupId] = todayDate;
   }
 
   /// Get member settlement status: returns (settledCount, totalWithDues, pendingMemberIds).
   /// A member is "settled" if all their outgoing payment routes are confirmed.
   /// Members with no dues (net balance >= 0) are not counted.
-  (int settled, int total, List<String> pendingIds) getMemberSettlementStatus(String groupId) {
+  (int settled, int total, List<String> pendingIds) getMemberSettlementStatus(
+    String groupId,
+  ) {
     final cycle = getActiveCycle(groupId);
     final members = getMembersForGroup(groupId);
     if (members.isEmpty) return (0, 0, []);
 
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final netBalances = SettlementEngine.computeNetBalances(
+      cycle.expenses,
+      members,
+    );
     final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
 
@@ -2215,10 +2659,19 @@ class CycleRepository extends ChangeNotifier {
 
       for (final route in myRoutes) {
         final attempt = attempts.firstWhere(
-          (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+          (a) =>
+              a.fromMemberId == route.fromMemberId &&
+              a.toMemberId == route.toMemberId,
           orElse: () => PaymentAttempt(
-            id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-            amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
+            id: '',
+            groupId: '',
+            cycleId: '',
+            fromMemberId: '',
+            toMemberId: '',
+            amountMinor: 0,
+            currencyCode: 'INR',
+            status: PaymentAttemptStatus.notStarted,
+            createdAt: 0,
           ),
         );
         if (!attempt.status.isFullyConfirmed) {
@@ -2243,7 +2696,10 @@ class CycleRepository extends ChangeNotifier {
     final members = getMembersForGroup(groupId);
     if (members.isEmpty) return true;
 
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final netBalances = SettlementEngine.computeNetBalances(
+      cycle.expenses,
+      members,
+    );
     final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
     final myRoutes = routes.where((r) => r.fromMemberId == memberId).toList();
 
@@ -2253,10 +2709,19 @@ class CycleRepository extends ChangeNotifier {
 
     for (final route in myRoutes) {
       final attempt = attempts.firstWhere(
-        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        (a) =>
+            a.fromMemberId == route.fromMemberId &&
+            a.toMemberId == route.toMemberId,
         orElse: () => PaymentAttempt(
-          id: '', groupId: '', cycleId: '', fromMemberId: '', toMemberId: '',
-          amountMinor: 0, currencyCode: 'INR', status: PaymentAttemptStatus.notStarted, createdAt: 0,
+          id: '',
+          groupId: '',
+          cycleId: '',
+          fromMemberId: '',
+          toMemberId: '',
+          amountMinor: 0,
+          currencyCode: 'INR',
+          status: PaymentAttemptStatus.notStarted,
+          createdAt: 0,
         ),
       );
       if (!attempt.status.isFullyConfirmed) return false;

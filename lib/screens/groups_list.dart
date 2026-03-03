@@ -64,7 +64,12 @@ class _GroupsListState extends State<GroupsList> {
   // Track which invitations have already animated
   static final Set<String> _animatedInvitations = {};
 
-  Widget _buildInvitationCard(BuildContext context, GroupInvitation invitation, CycleRepository repo, int index) {
+  Widget _buildInvitationCard(
+    BuildContext context,
+    GroupInvitation invitation,
+    CycleRepository repo,
+    int index,
+  ) {
     final colors = [
       context.colorGradientStart,
       context.colorPrimaryVariant,
@@ -74,12 +79,12 @@ class _GroupsListState extends State<GroupsList> {
     final bgColor = colors[index % colors.length];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onDarkGradient = isDark ? context.colorPrimary : context.colorSurface;
-    
+
     final alreadyAnimated = _animatedInvitations.contains(invitation.groupId);
     if (!alreadyAnimated) {
       _animatedInvitations.add(invitation.groupId);
     }
-    
+
     final card = TapScale(
       child: GestureDetector(
         onTap: () => _showInvitationSheet(context, invitation, repo),
@@ -150,27 +155,28 @@ class _GroupsListState extends State<GroupsList> {
         ),
       ),
     );
-    
+
     if (alreadyAnimated) {
       return card;
     }
-    
+
     return TweenAnimationBuilder<double>(
       key: ValueKey('anim_${invitation.groupId}'),
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 200 + (index * 40)),
       curve: Curves.easeOut,
       builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: child,
-        );
+        return Opacity(opacity: value, child: child);
       },
       child: card,
     );
   }
 
-  void _showInvitationSheet(BuildContext context, GroupInvitation invitation, CycleRepository repo) {
+  void _showInvitationSheet(
+    BuildContext context,
+    GroupInvitation invitation,
+    CycleRepository repo,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -207,15 +213,22 @@ class _GroupsListState extends State<GroupsList> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [context.colorGradientStart, context.colorGradientEnd],
+                      colors: [
+                        context.colorGradientStart,
+                        context.colorGradientEnd,
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
                     child: Text(
-                      invitation.groupName.isNotEmpty ? invitation.groupName[0].toUpperCase() : '?',
+                      invitation.groupName.isNotEmpty
+                          ? invitation.groupName[0].toUpperCase()
+                          : '?',
                       style: TextStyle(
-                        color: Theme.of(ctx).brightness == Brightness.dark ? ctx.colorPrimary : ctx.colorSurface,
+                        color: Theme.of(ctx).brightness == Brightness.dark
+                            ? ctx.colorPrimary
+                            : ctx.colorSurface,
                         fontSize: 32,
                         fontWeight: FontWeight.w600,
                       ),
@@ -240,12 +253,13 @@ class _GroupsListState extends State<GroupsList> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.mail_outline_rounded, size: 16, color: ctx.colorTextSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Group invitation',
-                    style: context.sectionLabel,
+                  Icon(
+                    Icons.mail_outline_rounded,
+                    size: 16,
+                    color: ctx.colorTextSecondary,
                   ),
+                  const SizedBox(width: 6),
+                  Text('Group invitation', style: context.sectionLabel),
                 ],
               ),
             ),
@@ -262,7 +276,9 @@ class _GroupsListState extends State<GroupsList> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Could not decline invitation. Check your connection and try again.'),
+                              content: Text(
+                                'Could not decline invitation. Check your connection and try again.',
+                              ),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
@@ -278,7 +294,9 @@ class _GroupsListState extends State<GroupsList> {
                       child: Center(
                         child: Text(
                           'Decline',
-                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
@@ -303,7 +321,9 @@ class _GroupsListState extends State<GroupsList> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Could not join group. Check your connection and try again.'),
+                              content: Text(
+                                'Could not join group. Check your connection and try again.',
+                              ),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
@@ -319,7 +339,9 @@ class _GroupsListState extends State<GroupsList> {
                       child: Center(
                         child: Text(
                           'Join Group',
-                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: Theme.of(ctx).colorScheme.surface),
+                          style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(ctx).colorScheme.surface,
+                          ),
                         ),
                       ),
                     ),
@@ -371,7 +393,9 @@ class _GroupsListState extends State<GroupsList> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -384,7 +408,10 @@ class _GroupsListState extends State<GroupsList> {
       if (context.mounted) {
         if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group deleted'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Group deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -396,12 +423,17 @@ class _GroupsListState extends State<GroupsList> {
       if (!groupStillExists) {
         if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group deleted'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Group deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not delete group. Check your connection and try again.'),
+            content: Text(
+              'Could not delete group. Check your connection and try again.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -423,28 +455,33 @@ class _GroupsListState extends State<GroupsList> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
             if (CycleRepository.instance.streamError == null) return;
-            Navigator.of(context).pushNamed('/error-states', arguments: {'type': 'network'});
+            Navigator.of(
+              context,
+            ).pushNamed('/error-states', arguments: {'type': 'network'});
             CycleRepository.instance.clearStreamError();
           });
         }
         return GradientScaffold(
-          floatingActionButton: !loading && (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
+          floatingActionButton:
+              !loading &&
+                  (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
               ? Semantics(
                   label: 'Create new group',
                   button: true,
                   child: TapScale(
                     child: FloatingActionButton(
-                  onPressed: () => Navigator.pushNamed(context, '/create-group'),
-                  backgroundColor: context.colorPrimary,
-                  foregroundColor: context.colorSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/create-group'),
+                      backgroundColor: context.colorPrimary,
+                      foregroundColor: context.colorSurface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                      child: const Icon(Icons.add),
+                    ),
                   ),
-                  elevation: 0,
-                  child: const Icon(Icons.add),
-                ),
-                  ),
-              )
+                )
               : null,
           body: Column(
             children: [
@@ -472,13 +509,22 @@ class _GroupsListState extends State<GroupsList> {
                               child: Row(
                                 children: [
                                   Expanded(
-                                    child: Text('Groups', style: context.heroTitle),
+                                    child: Text(
+                                      'Groups',
+                                      style: context.heroTitle,
+                                    ),
                                   ),
                                   TapScale(
                                     child: GestureDetector(
-                                      onTap: () => Navigator.pushNamed(context, '/profile'),
+                                      onTap: () => Navigator.pushNamed(
+                                        context,
+                                        '/profile',
+                                      ),
                                       child: MemberAvatar(
-                                        displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
+                                        displayName:
+                                            repo.currentUserName.isEmpty
+                                            ? 'You'
+                                            : repo.currentUserName,
                                         photoURL: repo.currentUserPhotoURL,
                                         size: 40,
                                       ),
@@ -487,12 +533,16 @@ class _GroupsListState extends State<GroupsList> {
                                 ],
                               ),
                             ),
-                            if (groups.isEmpty && repo.pendingInvitations.isEmpty)
+                            if (groups.isEmpty &&
+                                repo.pendingInvitations.isEmpty)
                               Expanded(
                                 child: EmptyStates(
                                   type: 'no-groups',
                                   wrapInScaffold: false,
-                                  onActionPressed: () => Navigator.pushNamed(context, '/create-group'),
+                                  onActionPressed: () => Navigator.pushNamed(
+                                    context,
+                                    '/create-group',
+                                  ),
                                 ),
                               )
                             else ...[
@@ -503,158 +553,243 @@ class _GroupsListState extends State<GroupsList> {
                               ],
                               Expanded(
                                 child: ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 88),
-                              itemCount: groups.length,
-                              itemBuilder: (context, index) {
-                                final group = groups[index];
-                                final isSettled = group.status == 'settled';
-                                final isClosing = group.status == 'closing';
-                                final isPinned = pinService.isPinned(group.id);
-                                final isCreator = repo.isCurrentUserCreator(group.id);
+                                  padding: const EdgeInsets.only(bottom: 88),
+                                  itemCount: groups.length,
+                                  itemBuilder: (context, index) {
+                                    final group = groups[index];
+                                    final isSettled = group.status == 'settled';
+                                    final isClosing = group.status == 'closing';
+                                    final isPinned = pinService.isPinned(
+                                      group.id,
+                                    );
+                                    final isCreator = repo.isCurrentUserCreator(
+                                      group.id,
+                                    );
 
-                                return StaggeredListItem(
-                                  index: index,
-                                  child: Slidable(
-                                  key: ValueKey(group.id),
-                                  startActionPane: ActionPane(
-                                    motion: const DrawerMotion(),
-                                    extentRatio: 0.25,
-                                    children: [
-                                      SlidableAction(
-                                        onPressed: (_) async {
-                                          HapticFeedback.lightImpact();
-                                          if (!isPinned && !pinService.canPinMore) {
-                                            if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('You can pin up to 3 groups. Unpin one first.'),
-                                                  behavior: SnackBarBehavior.floating,
-                                                ),
-                                              );
-                                            }
-                                            return;
-                                          }
-                                          await pinService.togglePin(group.id);
-                                        },
-                                        backgroundColor: context.colorWarning,
-                                        foregroundColor: context.colorSurface,
-                                        icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                                        label: isPinned ? 'Unpin' : 'Pin',
-                                      ),
-                                    ],
-                                  ),
-                                  endActionPane: isCreator
-                                      ? ActionPane(
+                                    return StaggeredListItem(
+                                      index: index,
+                                      child: Slidable(
+                                        key: ValueKey(group.id),
+                                        startActionPane: ActionPane(
                                           motion: const DrawerMotion(),
                                           extentRatio: 0.25,
                                           children: [
                                             SlidableAction(
-                                              onPressed: (_) {
+                                              onPressed: (_) async {
                                                 HapticFeedback.lightImpact();
-                                                _confirmDeleteGroup(context, group);
+                                                if (!isPinned &&
+                                                    !pinService.canPinMore) {
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'You can pin up to 3 groups. Unpin one first.',
+                                                        ),
+                                                        behavior:
+                                                            SnackBarBehavior
+                                                                .floating,
+                                                      ),
+                                                    );
+                                                  }
+                                                  return;
+                                                }
+                                                await pinService.togglePin(
+                                                  group.id,
+                                                );
                                               },
-                                              backgroundColor: context.colorError,
-                                              foregroundColor: context.colorSurface,
-                                              icon: Icons.delete_outline,
-                                              label: 'Delete',
+                                              backgroundColor:
+                                                  context.colorWarning,
+                                              foregroundColor:
+                                                  context.colorSurface,
+                                              icon: isPinned
+                                                  ? Icons.push_pin
+                                                  : Icons.push_pin_outlined,
+                                              label: isPinned ? 'Unpin' : 'Pin',
                                             ),
                                           ],
-                                        )
-                                      : null,
-                                  child: TapScale(
-                                    scaleDown: 0.99,
-                                    child: InkWell(
-                                      onTap: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/group-detail',
-                                          arguments: group,
-                                        );
-                                      },
-                                      child: Opacity(
-                                        opacity: isSettled ? 0.5 : 1.0,
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: isSettled ? 18 : 22,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                              top: BorderSide(color: context.colorBorder, width: 1),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      group.name,
-                                                      style: context.listItemTitle.copyWith.call(
-                                                        fontWeight: isClosing ? FontWeight.w600 : FontWeight.w500,
-                                                      ),
+                                        ),
+                                        endActionPane: isCreator
+                                            ? ActionPane(
+                                                motion: const DrawerMotion(),
+                                                extentRatio: 0.25,
+                                                children: [
+                                                  SlidableAction(
+                                                    onPressed: (_) {
+                                                      HapticFeedback.lightImpact();
+                                                      _confirmDeleteGroup(
+                                                        context,
+                                                        group,
+                                                      );
+                                                    },
+                                                    backgroundColor:
+                                                        context.colorError,
+                                                    foregroundColor:
+                                                        context.colorSurface,
+                                                    icon: Icons.delete_outline,
+                                                    label: 'Delete',
+                                                  ),
+                                                ],
+                                              )
+                                            : null,
+                                        child: TapScale(
+                                          scaleDown: 0.99,
+                                          child: InkWell(
+                                            onTap: () {
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/group-detail',
+                                                arguments: group,
+                                              );
+                                            },
+                                            child: Opacity(
+                                              opacity: isSettled ? 0.5 : 1.0,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 24,
+                                                  vertical: isSettled ? 18 : 22,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  border: Border(
+                                                    top: BorderSide(
+                                                      color:
+                                                          context.colorBorder,
+                                                      width: 1,
                                                     ),
-                                                    const SizedBox(height: 8),
-                                                    if (!isSettled) ...[
-                                                      Row(
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
                                                           Text(
-                                                            formatMoneyFromMajor(repo.getGroupPendingAmount(group.id), group.currencyCode, LocaleService.instance.localeCode),
-                                                            style: context.amountSM.copyWith(
-                                                              color: Theme.of(context).colorScheme.onSurface,
-                                                            ),
+                                                            group.name,
+                                                            style: context
+                                                                .listItemTitle
+                                                                .copyWith
+                                                                .call(
+                                                                  fontWeight:
+                                                                      isClosing
+                                                                      ? FontWeight
+                                                                            .w600
+                                                                      : FontWeight
+                                                                            .w500,
+                                                                ),
                                                           ),
-                                                          const SizedBox(width: 8),
-                                                          Text('in cycle', style: context.bodySecondary),
+                                                          const SizedBox(
+                                                            height: 8,
+                                                          ),
+                                                          if (!isSettled) ...[
+                                                            Row(
+                                                              children: [
+                                                                Text(
+                                                                  formatMoneyFromMajor(
+                                                                    repo.getGroupPendingAmount(
+                                                                      group.id,
+                                                                    ),
+                                                                    group
+                                                                        .currencyCode,
+                                                                    LocaleService
+                                                                        .instance
+                                                                        .localeCode,
+                                                                  ),
+                                                                  style: context
+                                                                      .amountSM
+                                                                      .copyWith(
+                                                                        color: Theme.of(
+                                                                          context,
+                                                                        ).colorScheme.onSurface,
+                                                                      ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Text(
+                                                                  'in cycle',
+                                                                  style: context
+                                                                      .bodySecondary,
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 6,
+                                                            ),
+                                                            Text(
+                                                              group.statusLine,
+                                                              style: context.bodySecondary.copyWith(
+                                                                color: isClosing
+                                                                    ? Theme.of(
+                                                                        context,
+                                                                      ).colorScheme.onSurface
+                                                                    : Theme.of(
+                                                                        context,
+                                                                      ).colorScheme.onSurfaceVariant,
+                                                                fontWeight:
+                                                                    isClosing
+                                                                    ? FontWeight
+                                                                          .w500
+                                                                    : FontWeight
+                                                                          .w400,
+                                                              ),
+                                                            ),
+                                                          ] else
+                                                            Text(
+                                                              'All balances cleared',
+                                                              style: context
+                                                                  .bodySecondary
+                                                                  .copyWith(
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.onSurfaceVariant,
+                                                                  ),
+                                                            ),
                                                         ],
                                                       ),
-                                                      const SizedBox(height: 6),
-                                                      Text(
-                                                        group.statusLine,
-                                                        style: context.bodySecondary.copyWith(
-                                                          color: isClosing ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
-                                                          fontWeight: isClosing ? FontWeight.w500 : FontWeight.w400,
+                                                    ),
+                                                    if (isPinned)
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              right: 8,
+                                                            ),
+                                                        child: Icon(
+                                                          Icons.push_pin,
+                                                          size: 18,
+                                                          color: context
+                                                              .colorWarning,
                                                         ),
                                                       ),
-                                                    ] else
-                                                      Text(
-                                                        'All balances cleared',
-                                                        style: context.bodySecondary.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                                      ),
+                                                    const SizedBox(width: 16),
+                                                    Icon(
+                                                      Icons.chevron_right,
+                                                      size: 20,
+                                                      color: context
+                                                          .colorTextDisabled,
+                                                    ),
                                                   ],
                                                 ),
                                               ),
-                                              if (isPinned)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(right: 8),
-                                                  child: Icon(Icons.push_pin, size: 18, color: context.colorWarning),
-                                                ),
-                                              const SizedBox(width: 16),
-                                              Icon(
-                                                Icons.chevron_right,
-                                                size: 20,
-                                                color: context.colorTextDisabled,
-                                              ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-                                );
-                              },
-                            ),
-                          ),
+                              ),
                             ],
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -682,9 +817,9 @@ class _BoundedGroupsLoading extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH, // 24
-                AppSpacing.spaceXl,        // 16
-                AppSpacing.spaceXl,        // 16  ← was 16, matches real right padding
-                AppSpacing.space4xl,       // 32
+                AppSpacing.spaceXl, // 16
+                AppSpacing.spaceXl, // 16  ← was 16, matches real right padding
+                AppSpacing.space4xl, // 32
               ),
               child: Row(
                 children: [
@@ -753,7 +888,9 @@ class _BoundedGroupsLoading extends StatelessWidget {
           // real list (ListView padding: EdgeInsets.only(bottom: 88)).
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(bottom: AppSpacing.bottomNavClearance),
+              padding: const EdgeInsets.only(
+                bottom: AppSpacing.bottomNavClearance,
+              ),
               physics: const NeverScrollableScrollPhysics(),
               children: const [
                 SkeletonGroupCard(),
@@ -768,4 +905,3 @@ class _BoundedGroupsLoading extends StatelessWidget {
     );
   }
 }
-

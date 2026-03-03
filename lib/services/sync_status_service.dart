@@ -1,11 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum SyncStatus {
-  synced,
-  syncing,
-  offline,
-  error,
-}
+enum SyncStatus { synced, syncing, offline, error }
 
 class SyncStatusService extends ChangeNotifier {
   SyncStatusService._internal();

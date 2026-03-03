@@ -1,8 +1,8 @@
 /// Currency metadata using ISO 4217 standard.
-/// 
+///
 /// This model provides currency-specific information needed for
 /// correct integer-based accounting math.
-/// 
+///
 /// ## Design Principles
 /// - **Metadata-driven:** Currency behavior is declarative, not hardcoded
 /// - **Extensible:** New currencies can be added without touching accounting logic
@@ -12,20 +12,17 @@ class Currency {
   final String code;
 
   /// Number of decimal places in the minor unit.
-  /// 
+  ///
   /// Examples:
   /// - INR, USD, EUR: 2 (100 paise/cents per unit)
   /// - JPY, KRW: 0 (no minor unit)
   /// - KWD, BHD: 3 (1000 fils per dinar)
   final int minorUnitScale;
 
-  const Currency({
-    required this.code,
-    required this.minorUnitScale,
-  });
+  const Currency({required this.code, required this.minorUnitScale});
 
   /// The multiplier to convert major units to minor units.
-  /// 
+  ///
   /// Examples:
   /// - minorUnitScale 2: multiplier = 100
   /// - minorUnitScale 0: multiplier = 1
@@ -54,7 +51,7 @@ class Currency {
 }
 
 /// Registry of supported currencies.
-/// 
+///
 /// This is the single source of truth for currency metadata.
 /// To add a new currency, add it here. No other changes needed.
 class CurrencyRegistry {
@@ -78,21 +75,47 @@ class CurrencyRegistry {
   static const Currency zar = Currency(code: 'ZAR', minorUnitScale: 2);
 
   static const List<Currency> _all = [
-    inr, usd, eur, gbp, jpy, krw, kwd, bhd,
-    aed, sgd, aud, cny, brl, mxn, rub, zar,
+    inr,
+    usd,
+    eur,
+    gbp,
+    jpy,
+    krw,
+    kwd,
+    bhd,
+    aed,
+    sgd,
+    aud,
+    cny,
+    brl,
+    mxn,
+    rub,
+    zar,
   ];
 
   static const Map<String, String> _symbols = {
-    'INR': '₹', 'USD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'KRW': '₩',
-    'KWD': 'KD', 'BHD': 'BD', 'AED': 'د.إ', 'SGD': 'S\$', 'AUD': 'A\$',
-    'CNY': '¥', 'BRL': 'R\$', 'MXN': '\$', 'RUB': '₽', 'ZAR': 'R',
+    'INR': '₹',
+    'USD': '\$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'KRW': '₩',
+    'KWD': 'KD',
+    'BHD': 'BD',
+    'AED': 'د.إ',
+    'SGD': 'S\$',
+    'AUD': 'A\$',
+    'CNY': '¥',
+    'BRL': 'R\$',
+    'MXN': '\$',
+    'RUB': '₽',
+    'ZAR': 'R',
   };
 
   static const Currency defaultCurrency = inr;
 
   /// Returns the display symbol for a currency code (e.g. INR → ₹). Falls back to code if unknown.
-  static String symbol(String code) =>
-      _symbols[code.toUpperCase()] ?? code;
+  static String symbol(String code) => _symbols[code.toUpperCase()] ?? code;
 
   /// Returns the Currency for the given code, or null if not found.
   static Currency? lookup(String code) {
@@ -113,7 +136,7 @@ class CurrencyRegistry {
   }
 
   /// Returns the minor unit scale for a currency code.
-  /// 
+  ///
   /// Defaults to 2 if currency is unknown (safe default for most currencies).
   static int minorUnitScale(String code) {
     return lookup(code)?.minorUnitScale ?? 2;

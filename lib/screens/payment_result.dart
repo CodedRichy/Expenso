@@ -24,7 +24,8 @@ class PaymentResult extends StatefulWidget {
   State<PaymentResult> createState() => _PaymentResultState();
 }
 
-class _PaymentResultState extends State<PaymentResult> with SingleTickerProviderStateMixin {
+class _PaymentResultState extends State<PaymentResult>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -35,9 +36,10 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
     _controller.forward();
   }
 
@@ -52,14 +54,16 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
     final theme = Theme.of(context);
     final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     final statusLabel = widget.status == 'success'
         ? 'Payment successful'
         : widget.status == 'failed'
-            ? 'Payment failed'
-            : 'Payment cancelled';
+        ? 'Payment failed'
+        : 'Payment cancelled';
     final isSuccess = widget.status == 'success';
 
     return Scaffold(
@@ -75,21 +79,27 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
                   Semantics(
                     label: statusLabel,
                     child: ScaleTransition(
-                      scale: isSuccess ? _scaleAnimation : const AlwaysStoppedAnimation(1.0),
+                      scale: isSuccess
+                          ? _scaleAnimation
+                          : const AlwaysStoppedAnimation(1.0),
                       child: Container(
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: isSuccess ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
+                          color: isSuccess
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surfaceContainerHighest,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isSuccess
                               ? Icons.check
                               : widget.status == 'failed'
-                                  ? Icons.error_outline
-                                  : Icons.close,
-                          color: isSuccess ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                              ? Icons.error_outline
+                              : Icons.close,
+                          color: isSuccess
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurfaceVariant,
                           size: 32,
                         ),
                       ),
@@ -106,11 +116,14 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
                       const SizedBox(height: 12),
                       if (isSuccess && widget.amount != null) ...[
                         Semantics(
-                          label: '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
+                          label:
+                              '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
                           child: Text(
                             '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
                             textAlign: TextAlign.center,
-                            style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: context.bodyPrimary.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                         if (widget.transactionId != null) ...[
@@ -118,7 +131,9 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
                           Text(
                             'Transaction ID: ${widget.transactionId}',
                             textAlign: TextAlign.center,
-                            style: context.caption.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: context.caption.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ],
@@ -126,13 +141,17 @@ class _PaymentResultState extends State<PaymentResult> with SingleTickerProvider
                         Text(
                           'The transaction could not be completed',
                           textAlign: TextAlign.center,
-                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: context.bodyPrimary.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       if (widget.status == 'cancelled')
                         Text(
                           'No amount was transferred',
                           textAlign: TextAlign.center,
-                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: context.bodyPrimary.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                     ],
                   ),

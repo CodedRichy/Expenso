@@ -94,7 +94,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
       final user = PhoneAuthService.instance.currentUser;
       if (!mounted || user == null) return;
       final formattedPhone = _formatPhone(_selectedCountryCode, phone);
-      final currencyCode = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
+      final currencyCode =
+          currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
       CycleRepository.instance.setGlobalProfile(
         formattedPhone,
         user.displayName ?? '',
@@ -115,14 +116,22 @@ class _PhoneAuthState extends State<PhoneAuth> {
     _clearError();
     final formattedPhone = _formatPhone(_selectedCountryCode, phone);
     if (!firebaseAuthAvailable) {
-      final currencyCode = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
-      CycleRepository.instance.setGlobalProfile(formattedPhone, '', currencyCode: currencyCode);
+      final currencyCode =
+          currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
+      CycleRepository.instance.setGlobalProfile(
+        formattedPhone,
+        '',
+        currencyCode: currencyCode,
+      );
       return;
     }
     final verificationId = _verificationId;
     if (verificationId == null) {
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/error-states', arguments: {'type': 'session-expired'});
+      Navigator.of(context).pushReplacementNamed(
+        '/error-states',
+        arguments: {'type': 'session-expired'},
+      );
       return;
     }
     setState(() {
@@ -186,32 +195,51 @@ class _PhoneAuthState extends State<PhoneAuth> {
                             Container(
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
-                                border: Border.all(color: Theme.of(context).dividerColor),
+                                border: Border.all(
+                                  color: Theme.of(context).dividerColor,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                                child: PopupMenuButton<String>(
+                              child: PopupMenuButton<String>(
                                 onSelected: (code) {
                                   setState(() {
                                     _selectedCountryCode = code;
-                                    final maxLen = maxPhoneDigitsForDialCode(code);
-                                    final digits = phone.replaceAll(RegExp(r'\D'), '');
+                                    final maxLen = maxPhoneDigitsForDialCode(
+                                      code,
+                                    );
+                                    final digits = phone.replaceAll(
+                                      RegExp(r'\D'),
+                                      '',
+                                    );
                                     if (digits.length > maxLen) {
                                       phone = digits.substring(0, maxLen);
                                     }
                                   });
                                 },
                                 offset: const Offset(0, 48),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
-                                  value: c.dialCode,
-                                  child: Text(
-                                    '${c.dialCode} ${c.countryCode}',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                )).toList(),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                itemBuilder: (context) =>
+                                    countryCodesWithCurrency
+                                        .map(
+                                          (c) => PopupMenuItem<String>(
+                                            value: c.dialCode,
+                                            child: Text(
+                                              '${c.dialCode} ${c.countryCode}',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
                                 child: TapScale(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 16,
+                                    ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -220,7 +248,13 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                           style: context.bodySecondary,
                                         ),
                                         const SizedBox(width: 4),
-                                        Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          size: 20,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -234,13 +268,19 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 keyboardType: TextInputType.phone,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(maxPhoneDigitsForDialCode(_selectedCountryCode)),
+                                  LengthLimitingTextInputFormatter(
+                                    maxPhoneDigitsForDialCode(
+                                      _selectedCountryCode,
+                                    ),
+                                  ),
                                 ],
                                 onChanged: (value) {
                                   setState(() => phone = value);
                                 },
                                 onSubmitted: (_) => handlePhoneSubmit(),
-                                decoration: const InputDecoration(hintText: 'Phone number'),
+                                decoration: const InputDecoration(
+                                  hintText: 'Phone number',
+                                ),
                                 style: context.input,
                               ),
                             ),
@@ -250,27 +290,42 @@ class _PhoneAuthState extends State<PhoneAuth> {
                           const SizedBox(height: 12),
                           Text(
                             _errorMessage!,
-                            style: context.bodySecondary.copyWith(color: context.colorError),
+                            style: context.bodySecondary.copyWith(
+                              color: context.colorError,
+                            ),
                           ),
                         ],
                         const SizedBox(height: 16),
                         TapScale(
                           child: ElevatedButton(
-                            onPressed: (() {
-                                    final digits = phone.replaceAll(RegExp(r'\D'), '');
-                                    final maxLen = maxPhoneDigitsForDialCode(_selectedCountryCode);
-                                    return digits.length == maxLen && !_loading;
-                                  })() ? handlePhoneSubmit : null,
+                            onPressed:
+                                (() {
+                                  final digits = phone.replaceAll(
+                                    RegExp(r'\D'),
+                                    '',
+                                  );
+                                  final maxLen = maxPhoneDigitsForDialCode(
+                                    _selectedCountryCode,
+                                  );
+                                  return digits.length == maxLen && !_loading;
+                                })()
+                                ? handlePhoneSubmit
+                                : null,
                             child: _loading
                                 ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                   )
-                                : const Text('Continue', style: AppTypography.button),
+                                : const Text(
+                                    'Continue',
+                                    style: AppTypography.button,
+                                  ),
                           ),
                         ),
                         const Spacer(),
@@ -316,30 +371,41 @@ class _PhoneAuthState extends State<PhoneAuth> {
                             });
                           },
                           onSubmitted: (_) => handleOtpSubmit(),
-                          decoration: const InputDecoration(hintText: '6-digit code'),
+                          decoration: const InputDecoration(
+                            hintText: '6-digit code',
+                          ),
                           style: context.input.copyWith(letterSpacing: 8),
                         ),
                         if (_errorMessage != null) ...[
                           const SizedBox(height: 12),
                           Text(
                             _errorMessage!,
-                            style: context.bodySecondary.copyWith(color: context.colorError),
+                            style: context.bodySecondary.copyWith(
+                              color: context.colorError,
+                            ),
                           ),
                         ],
                         const SizedBox(height: 16),
                         TapScale(
                           child: ElevatedButton(
-                            onPressed: (otp.length == 6 && !_loading) ? handleOtpSubmit : null,
+                            onPressed: (otp.length == 6 && !_loading)
+                                ? handleOtpSubmit
+                                : null,
                             child: _loading
                                 ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                   )
-                                : const Text('Verify', style: AppTypography.button),
+                                : const Text(
+                                    'Verify',
+                                    style: AppTypography.button,
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 16),

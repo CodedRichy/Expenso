@@ -26,7 +26,8 @@ class UndoToast extends StatefulWidget {
   State<UndoToast> createState() => _UndoToastState();
 }
 
-class _UndoToastState extends State<UndoToast> with SingleTickerProviderStateMixin {
+class _UndoToastState extends State<UndoToast>
+    with SingleTickerProviderStateMixin {
   late AnimationController _enterController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -41,13 +42,14 @@ class _UndoToastState extends State<UndoToast> with SingleTickerProviderStateMix
       vsync: this,
       duration: const Duration(milliseconds: 280),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic));
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _enterController, curve: Curves.easeOut),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+          CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic),
+        );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _enterController, curve: Curves.easeOut));
     _enterController.forward();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) {
@@ -80,9 +82,15 @@ class _UndoToastState extends State<UndoToast> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final toastBgColor = isDark ? theme.colorScheme.surfaceContainerHighest : context.colorPrimary;
-    final toastTextColor = isDark ? theme.colorScheme.onSurface : context.colorSurface;
-    final toastSecondaryColor = isDark ? theme.colorScheme.onSurfaceVariant : context.colorSurface.withValues(alpha: 0.7);
+    final toastBgColor = isDark
+        ? theme.colorScheme.surfaceContainerHighest
+        : context.colorPrimary;
+    final toastTextColor = isDark
+        ? theme.colorScheme.onSurface
+        : context.colorSurface;
+    final toastSecondaryColor = isDark
+        ? theme.colorScheme.onSurfaceVariant
+        : context.colorSurface.withValues(alpha: 0.7);
     final progress = _timeLeft / widget.countdownSeconds;
 
     return Material(
@@ -99,7 +107,10 @@ class _UndoToastState extends State<UndoToast> with SingleTickerProviderStateMix
                 opacity: _fadeAnimation,
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 430),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: toastBgColor,
                     borderRadius: BorderRadius.circular(12),
@@ -136,20 +147,35 @@ class _UndoToastState extends State<UndoToast> with SingleTickerProviderStateMix
                         child: CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 2,
-                          backgroundColor: toastTextColor.withValues(alpha: 0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(toastTextColor),
+                          backgroundColor: toastTextColor.withValues(
+                            alpha: 0.2,
+                          ),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            toastTextColor,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       TextButton.icon(
                         onPressed: _onUndo,
-                        icon: Icon(Icons.refresh, size: 16, color: toastTextColor),
+                        icon: Icon(
+                          Icons.refresh,
+                          size: 16,
+                          color: toastTextColor,
+                        ),
                         label: Text(
                           'Undo',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: toastTextColor),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: toastTextColor,
+                          ),
                         ),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
                       ),
                     ],

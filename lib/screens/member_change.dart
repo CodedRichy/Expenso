@@ -42,15 +42,17 @@ class MemberChange extends StatelessWidget {
     }
 
     if (displayGroupId.isEmpty || displayMemberId.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
-    
+
     final repo = CycleRepository.instance;
-    final memberDisplayName = displayMemberId.isNotEmpty 
+    final memberDisplayName = displayMemberId.isNotEmpty
         ? repo.getMemberDisplayName(displayMemberPhone)
         : displayMemberPhone;
-    
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -81,24 +83,26 @@ class MemberChange extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    displayGroupName,
-                    style: context.screenTitle,
-                  ),
+                  Text(displayGroupName, style: context.screenTitle),
                 ],
               ),
             ),
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 96,
+                  ),
                   child: SizedBox(
                     width: 320,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          displayAction == 'leave' ? 'Leave group' : 'Remove member',
+                          displayAction == 'leave'
+                              ? 'Leave group'
+                              : 'Remove member',
                           textAlign: TextAlign.center,
                           style: context.subheader,
                         ),
@@ -108,7 +112,9 @@ class MemberChange extends StatelessWidget {
                               ? 'You will be removed from this group. You can leave anytime; any balance carries to the next cycle until settled.'
                               : '$memberDisplayName will be removed from this group',
                           textAlign: TextAlign.center,
-                          style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          style: context.bodyPrimary.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -124,24 +130,36 @@ class MemberChange extends StatelessWidget {
                               button: true,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  if (displayGroupId.isNotEmpty && displayMemberId.isNotEmpty) {
-                                    if (ConnectivityService.instance.isOffline) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                  if (displayGroupId.isNotEmpty &&
+                                      displayMemberId.isNotEmpty) {
+                                    if (ConnectivityService
+                                        .instance
+                                        .isOffline) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Cannot remove member while offline'),
+                                          content: Text(
+                                            'Cannot remove member while offline',
+                                          ),
                                           behavior: SnackBarBehavior.floating,
                                         ),
                                       );
                                       return;
                                     }
-                                    repo.removeMemberFromGroup(displayGroupId, displayMemberId);
+                                    repo.removeMemberFromGroup(
+                                      displayGroupId,
+                                      displayMemberId,
+                                    );
                                   }
                                   Navigator.pop(context);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme.colorScheme.error,
                                   foregroundColor: theme.colorScheme.onError,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -163,10 +181,16 @@ class MemberChange extends StatelessWidget {
                                   Navigator.pop(context);
                                 },
                                 style: OutlinedButton.styleFrom(
-                                  backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
+                                  backgroundColor: isDark
+                                      ? theme
+                                            .colorScheme
+                                            .surfaceContainerHighest
+                                      : context.colorSurface,
                                   foregroundColor: theme.colorScheme.onSurface,
                                   side: BorderSide(color: theme.dividerColor),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),

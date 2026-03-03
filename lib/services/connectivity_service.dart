@@ -2,11 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-enum ConnectivityStatus {
-  online,
-  offline,
-  unknown,
-}
+enum ConnectivityStatus { online, offline, unknown }
 
 class ConnectivityService extends ChangeNotifier {
   static final ConnectivityService _instance = ConnectivityService._internal();
@@ -32,11 +28,12 @@ class ConnectivityService extends ChangeNotifier {
 
   Future<void> _checkConnectivity() async {
     final wasOffline = _status == ConnectivityStatus.offline;
-    
+
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
-      
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
+
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         _status = ConnectivityStatus.online;
       } else {
@@ -55,7 +52,7 @@ class ConnectivityService extends ChangeNotifier {
     } else if (!wasOffline && _status == ConnectivityStatus.offline) {
       debugPrint('ConnectivityService: Gone offline');
     }
-    
+
     notifyListeners();
   }
 

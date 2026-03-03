@@ -8,7 +8,10 @@ void main() {
     return MaterialApp(
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.light),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.light,
+        ),
         textTheme: const TextTheme(
           headlineLarge: AppTypography.heroTitle,
           titleMedium: AppTypography.listItemTitle,
@@ -24,28 +27,42 @@ void main() {
 
   group('EmptyStates', () {
     testWidgets('no-expenses shows "No expenses yet"', (tester) async {
-      await tester.pumpWidget(wrap(const EmptyStates(type: 'no-expenses', wrapInScaffold: false)));
+      await tester.pumpWidget(
+        wrap(const EmptyStates(type: 'no-expenses', wrapInScaffold: false)),
+      );
       expect(find.text('No expenses yet'), findsOneWidget);
     });
 
-    testWidgets('no-groups shows "No groups yet" and Create Group button', (tester) async {
-      await tester.pumpWidget(wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: false)));
+    testWidgets('no-groups shows "No groups yet" and Create Group button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: false)),
+      );
       expect(find.text('No groups yet'), findsOneWidget);
       expect(find.text('Create Group'), findsOneWidget);
     });
 
     testWidgets('new-cycle shows "New cycle started"', (tester) async {
-      await tester.pumpWidget(wrap(const EmptyStates(type: 'new-cycle', wrapInScaffold: false)));
+      await tester.pumpWidget(
+        wrap(const EmptyStates(type: 'new-cycle', wrapInScaffold: false)),
+      );
       expect(find.text('New cycle started'), findsOneWidget);
     });
 
     testWidgets('zero-waste-cycle shows "Zero-Waste Cycle"', (tester) async {
-      await tester.pumpWidget(wrap(const EmptyStates(type: 'zero-waste-cycle', wrapInScaffold: false)));
+      await tester.pumpWidget(
+        wrap(
+          const EmptyStates(type: 'zero-waste-cycle', wrapInScaffold: false),
+        ),
+      );
       expect(find.text('Zero-Waste Cycle'), findsOneWidget);
     });
 
     testWidgets('no-groups with wrapInScaffold has Scaffold', (tester) async {
-      await tester.pumpWidget(wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: true)));
+      await tester.pumpWidget(
+        wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: true)),
+      );
       expect(find.byType(Scaffold), findsWidgets);
     });
   });

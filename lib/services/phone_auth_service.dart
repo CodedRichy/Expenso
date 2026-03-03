@@ -30,7 +30,8 @@ class PhoneAuthService {
     return digits.isEmpty ? '' : '+91$clean';
   }
 
-  static const String _genericMessage = 'Something went wrong. Please try again.';
+  static const String _genericMessage =
+      'Something went wrong. Please try again.';
 
   /// User-friendly message for Firebase auth errors. Debug: test hint + raw details. Release: production copy only.
   static String messageForError(dynamic error) {
@@ -40,7 +41,8 @@ class PhoneAuthService {
         case 'invalid-verification-code':
           return 'Invalid code. Please try again.';
         case 'invalid-verification-id':
-          production = 'Verification expired. Please start again from the phone screen.';
+          production =
+              'Verification expired. Please start again from the phone screen.';
           break;
         case 'too-many-requests':
           production = 'Too many attempts. Please try again later.';
@@ -76,7 +78,8 @@ class PhoneAuthService {
   void verifyPhoneNumber({
     required String phoneNumber,
     required void Function(String verificationId, int? resendToken) onCodeSent,
-    required void Function(PhoneAuthCredential credential) onVerificationCompleted,
+    required void Function(PhoneAuthCredential credential)
+    onVerificationCompleted,
     required void Function(String message) onError,
     int? resendToken,
   }) {
@@ -89,11 +92,15 @@ class PhoneAuthService {
         onVerificationCompleted(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
-        debugPrint('PhoneAuth: verificationFailed code=${e.code} message=${e.message}');
+        debugPrint(
+          'PhoneAuth: verificationFailed code=${e.code} message=${e.message}',
+        );
         onError(messageForError(e));
       },
       codeSent: (String verificationId, int? token) {
-        debugPrint('PhoneAuth: codeSent verificationId=${verificationId.substring(0, 20)}...');
+        debugPrint(
+          'PhoneAuth: codeSent verificationId=${verificationId.substring(0, 20)}...',
+        );
         onCodeSent(verificationId, token);
       },
       codeAutoRetrievalTimeout: (String verificationId) {

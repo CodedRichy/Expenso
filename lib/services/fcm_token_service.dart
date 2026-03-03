@@ -61,14 +61,12 @@ class FcmTokenService {
 
   Future<void> _storeToken(String token) async {
     if (_userId == null || _userId!.isEmpty) return;
-    
+
     try {
-      final platform = Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown');
-      await FirestoreService.instance.storeFcmToken(
-        _userId!,
-        token,
-        platform,
-      );
+      final platform = Platform.isAndroid
+          ? 'android'
+          : (Platform.isIOS ? 'ios' : 'unknown');
+      await FirestoreService.instance.storeFcmToken(_userId!, token, platform);
     } catch (e) {
       debugPrint('FCM: Store token failed: $e');
     }
@@ -77,7 +75,10 @@ class FcmTokenService {
   Future<void> deleteToken() async {
     try {
       if (_currentToken != null && _userId != null) {
-        await FirestoreService.instance.deleteFcmToken(_userId!, _currentToken!);
+        await FirestoreService.instance.deleteFcmToken(
+          _userId!,
+          _currentToken!,
+        );
       }
       await _messaging.deleteToken();
       _currentToken = null;

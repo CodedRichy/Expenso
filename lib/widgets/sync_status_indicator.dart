@@ -15,7 +15,7 @@ class SyncStatusIndicator extends StatelessWidget {
       listenable: SyncStatusService.instance,
       builder: (context, _) {
         final service = SyncStatusService.instance;
-        
+
         if (compact) {
           return _buildCompact(service);
         }
@@ -25,10 +25,22 @@ class SyncStatusIndicator extends StatelessWidget {
   }
 
   Widget _buildCompact(SyncStatusService service) {
-    final (IconData icon, Color color, String tooltip) = switch (service.status) {
-      SyncStatus.synced => (Icons.cloud_done_outlined, AppColors.success, 'Synced ${service.lastSyncDisplay}'),
+    final (
+      IconData icon,
+      Color color,
+      String tooltip,
+    ) = switch (service.status) {
+      SyncStatus.synced => (
+        Icons.cloud_done_outlined,
+        AppColors.success,
+        'Synced ${service.lastSyncDisplay}',
+      ),
       SyncStatus.syncing => (Icons.sync, AppColors.accent, 'Syncing...'),
-      SyncStatus.offline => (Icons.cloud_off_outlined, AppColors.warning, 'Offline'),
+      SyncStatus.offline => (
+        Icons.cloud_off_outlined,
+        AppColors.warning,
+        'Offline',
+      ),
       SyncStatus.error => (Icons.cloud_off, AppColors.error, 'Sync error'),
     };
 
@@ -44,10 +56,7 @@ class SyncStatusIndicator extends StatelessWidget {
             ? SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
               )
             : Icon(icon, size: 16, color: color),
       ),
@@ -56,9 +65,17 @@ class SyncStatusIndicator extends StatelessWidget {
 
   Widget _buildFull(SyncStatusService service) {
     final (IconData icon, Color color, String text) = switch (service.status) {
-      SyncStatus.synced => (Icons.cloud_done_outlined, AppColors.success, 'Last synced ${service.lastSyncDisplay}'),
+      SyncStatus.synced => (
+        Icons.cloud_done_outlined,
+        AppColors.success,
+        'Last synced ${service.lastSyncDisplay}',
+      ),
       SyncStatus.syncing => (Icons.sync, AppColors.accent, 'Syncing...'),
-      SyncStatus.offline => (Icons.cloud_off_outlined, AppColors.warning, 'Offline — using cached data'),
+      SyncStatus.offline => (
+        Icons.cloud_off_outlined,
+        AppColors.warning,
+        'Offline — using cached data',
+      ),
       SyncStatus.error => (Icons.cloud_off, AppColors.error, 'Sync error'),
     };
 

@@ -39,16 +39,19 @@ class _CycleHistoryState extends State<CycleHistory> {
   void _loadHistory() {
     setState(() {
       _hasError = false;
-      _historyFuture = CycleRepository.instance.getHistory(_groupId!).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          _hasError = true;
-          return <Cycle>[];
-        },
-      ).catchError((e) {
-        _hasError = true;
-        return <Cycle>[];
-      });
+      _historyFuture = CycleRepository.instance
+          .getHistory(_groupId!)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              _hasError = true;
+              return <Cycle>[];
+            },
+          )
+          .catchError((e) {
+            _hasError = true;
+            return <Cycle>[];
+          });
     });
   }
 
@@ -57,7 +60,9 @@ class _CycleHistoryState extends State<CycleHistory> {
     final theme = Theme.of(context);
     final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.maybePop(context),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     final groupName = group.name;
@@ -92,14 +97,13 @@ class _CycleHistoryState extends State<CycleHistory> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    groupName,
-                    style: context.screenTitle,
-                  ),
+                  Text(groupName, style: context.screenTitle),
                   const SizedBox(height: 4),
                   Text(
                     'Settlement history',
-                    style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: context.bodyPrimary.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -162,10 +166,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                        child: Text(
-                          'PAST CYCLES',
-                          style: context.sectionLabel,
-                        ),
+                        child: Text('PAST CYCLES', style: context.sectionLabel),
                       ),
                       Expanded(
                         child: ListView.builder(
@@ -173,13 +174,13 @@ class _CycleHistoryState extends State<CycleHistory> {
                           itemCount: cycles.length,
                           itemBuilder: (context, index) {
                             final cycle = cycles[index];
-                          final startDate = cycle.startDate ?? '–';
-                          final endDate = cycle.endDate ?? '–';
-                          final settledAmount = cycle.expenses.fold<double>(
-                            0.0,
-                            (sum, e) => sum + e.amount,
-                          );
-                          final expenseCount = cycle.expenses.length;
+                            final startDate = cycle.startDate ?? '–';
+                            final endDate = cycle.endDate ?? '–';
+                            final settledAmount = cycle.expenses.fold<double>(
+                              0.0,
+                              (sum, e) => sum + e.amount,
+                            );
+                            final expenseCount = cycle.expenses.length;
 
                             return StaggeredListItem(
                               index: index,
@@ -187,69 +188,82 @@ class _CycleHistoryState extends State<CycleHistory> {
                                 scaleDown: 0.99,
                                 child: InkWell(
                                   onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/cycle-history-detail',
-                                    arguments: {
-                                      'cycle': cycle,
-                                      'groupName': groupName,
-                                      'currencyCode': currencyCode,
-                                    },
-                                  );
-                                },
-                                child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    top: index > 0
-                                        ? BorderSide(
-                                            color: theme.dividerColor,
-                                            width: 1,
-                                          )
-                                        : BorderSide.none,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '$startDate – $endDate',
-                                            style: context.listItemTitle,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/cycle-history-detail',
+                                      arguments: {
+                                        'cycle': cycle,
+                                        'groupName': groupName,
+                                        'currencyCode': currencyCode,
+                                      },
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        top: index > 0
+                                            ? BorderSide(
+                                                color: theme.dividerColor,
+                                                width: 1,
+                                              )
+                                            : BorderSide.none,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                formatMoneyFromMajor(settledAmount, currencyCode, LocaleService.instance.localeCode),
-                                                style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w600),
+                                                '$startDate – $endDate',
+                                                style: context.listItemTitle,
                                               ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
-                                                style: context.bodySecondary,
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    formatMoneyFromMajor(
+                                                      settledAmount,
+                                                      currencyCode,
+                                                      LocaleService
+                                                          .instance
+                                                          .localeCode,
+                                                    ),
+                                                    style: context.bodyPrimary
+                                                        .copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'settled · $expenseCount expense${expenseCount != 1 ? 's' : ''}',
+                                                    style:
+                                                        context.bodySecondary,
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 20,
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 16),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      size: 20,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
                               ),
                             );
                           },
@@ -269,16 +283,16 @@ class _CycleHistoryState extends State<CycleHistory> {
 
 class _BoundedLoadingState extends StatefulWidget {
   final VoidCallback? onTimeout;
-  
+
   const _BoundedLoadingState({this.onTimeout});
-  
+
   @override
   State<_BoundedLoadingState> createState() => _BoundedLoadingStateState();
 }
 
 class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
   bool _timedOut = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -289,7 +303,7 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
       }
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -300,16 +314,27 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.hourglass_empty, size: 48, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.hourglass_empty,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Taking longer than expected',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Check your connection',
-                style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -323,12 +348,18 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
           SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.onSurface),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'Loading history...',
-            style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 15,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -339,9 +370,9 @@ class _BoundedLoadingStateState extends State<_BoundedLoadingState> {
 class _ErrorWithRetry extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  
+
   const _ErrorWithRetry({required this.message, required this.onRetry});
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -356,21 +387,34 @@ class _ErrorWithRetry extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorBorder,
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : context.colorBorder,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.wifi_off, size: 28, color: theme.colorScheme.onSurfaceVariant),
+              child: Icon(
+                Icons.wifi_off,
+                size: 28,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
               message,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Check your connection and try again',
-              style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 15,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -383,7 +427,10 @@ class _ErrorWithRetry extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: theme.colorScheme.onSurface,
                     side: BorderSide(color: theme.dividerColor),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                   child: const Text('Try again'),
                 ),

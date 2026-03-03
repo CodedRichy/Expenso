@@ -88,17 +88,20 @@ void main() {
       expect(result2.amount, 0.0);
     });
 
-    test('partial success: valid amount with empty description yields empty description from fromJson', () {
-      final result = ParsedExpenseResult.fromJson({
-        'amount': 100,
-        'description': '',
-        'splitType': 'even',
-        'participants': [],
-      });
-      expect(result.amount, 100.0);
-      expect(result.description, '');
-      expect(result.participantNames, isEmpty);
-    });
+    test(
+      'partial success: valid amount with empty description yields empty description from fromJson',
+      () {
+        final result = ParsedExpenseResult.fromJson({
+          'amount': 100,
+          'description': '',
+          'splitType': 'even',
+          'participants': [],
+        });
+        expect(result.amount, 100.0);
+        expect(result.description, '');
+        expect(result.participantNames, isEmpty);
+      },
+    );
 
     test('parses percentage split with percentageAmounts', () {
       final result = ParsedExpenseResult.fromJson({
@@ -128,39 +131,45 @@ void main() {
       expect(result.sharesByName, {'A': 2.0, 'B': 3.0});
     });
 
-    test('even with one participant: split between me and them (e.g. dinner with B 300)', () {
-      final result = ParsedExpenseResult.fromJson({
-        'amount': 300,
-        'description': 'Dinner',
-        'category': 'Food',
-        'splitType': 'even',
-        'participants': ['B'],
-      });
-      expect(result.amount, 300.0);
-      expect(result.splitType, 'even');
-      expect(result.participantNames, ['B']);
-      expect(result.payerName, isNull);
-    });
-
-    test('even split general rule: N participantNames => N+1 people, perShare = amount/(N+1)', () {
-      const amount = 900.0;
-      for (final n in [1, 2, 3, 5]) {
-        final names = List.generate(n, (i) => 'Person${i + 1}');
+    test(
+      'even with one participant: split between me and them (e.g. dinner with B 300)',
+      () {
         final result = ParsedExpenseResult.fromJson({
-          'amount': amount,
-          'description': 'Split test',
+          'amount': 300,
+          'description': 'Dinner',
+          'category': 'Food',
           'splitType': 'even',
-          'participants': names,
+          'participants': ['B'],
         });
-        expect(result.amount, amount);
+        expect(result.amount, 300.0);
         expect(result.splitType, 'even');
-        expect(result.participantNames, names);
-        // For even splits we should not get any precomputed exact/percentage/shares in fromJson.
-        expect(result.exactAmountsByName, isEmpty);
-        expect(result.percentageByName, isEmpty);
-        expect(result.sharesByName, isEmpty);
-      }
-    });
+        expect(result.participantNames, ['B']);
+        expect(result.payerName, isNull);
+      },
+    );
+
+    test(
+      'even split general rule: N participantNames => N+1 people, perShare = amount/(N+1)',
+      () {
+        const amount = 900.0;
+        for (final n in [1, 2, 3, 5]) {
+          final names = List.generate(n, (i) => 'Person${i + 1}');
+          final result = ParsedExpenseResult.fromJson({
+            'amount': amount,
+            'description': 'Split test',
+            'splitType': 'even',
+            'participants': names,
+          });
+          expect(result.amount, amount);
+          expect(result.splitType, 'even');
+          expect(result.participantNames, names);
+          // For even splits we should not get any precomputed exact/percentage/shares in fromJson.
+          expect(result.exactAmountsByName, isEmpty);
+          expect(result.percentageByName, isEmpty);
+          expect(result.sharesByName, isEmpty);
+        }
+      },
+    );
   });
 
   group('Parser outcome (parseConfidence, rejectReason, constraintFlags)', () {

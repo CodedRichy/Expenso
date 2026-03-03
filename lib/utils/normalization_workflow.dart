@@ -24,15 +24,15 @@ import '../services/groq_expense_parser_service.dart';
 const double _tolerance = 0.01;
 
 /// UI-only class for displaying and editing participant assignments.
-/// 
+///
 /// This is used in confirmation dialogs where users can:
 /// - See which names mapped to which members
 /// - Manually assign unresolved names to members
 /// - Edit amounts for exact splits
-/// 
+///
 /// This class should NEVER be used for balance computation.
 /// Convert to [NormalizedExpense] before any accounting operations.
-/// 
+///
 /// Note: [amount] is a double for UI display. It will be converted to
 /// [MoneyMinor] (integer) at the normalization boundary.
 class ParticipantSlot {
@@ -66,36 +66,30 @@ class ParticipantSlot {
 }
 
 /// UI-only class for displaying and editing payer contributions.
-/// 
+///
 /// Used in confirmation dialogs where users can:
 /// - See who paid how much
 /// - Add additional payers
 /// - Edit contribution amounts
-/// 
+///
 /// This class should NEVER be used for balance computation.
 /// Convert to [NormalizedExpense] before any accounting operations.
-/// 
+///
 /// Note: [amount] is a double for UI display. It will be converted to
 /// [MoneyMinor] (integer) at the normalization boundary.
 class PayerContributionSlot {
   final String? memberId;
   final double amount;
-  
-  const PayerContributionSlot({
-    this.memberId,
-    this.amount = 0,
-  });
-  
-  PayerContributionSlot copyWith({
-    String? memberId,
-    double? amount,
-  }) {
+
+  const PayerContributionSlot({this.memberId, this.amount = 0});
+
+  PayerContributionSlot copyWith({String? memberId, double? amount}) {
     return PayerContributionSlot(
       memberId: memberId ?? this.memberId,
       amount: amount ?? this.amount,
     );
   }
-  
+
   bool get isResolved => memberId != null && memberId!.isNotEmpty;
   bool get hasAmount => amount > 0;
   bool get isValid => isResolved && hasAmount;
@@ -110,7 +104,7 @@ class PayerValidationError extends PayerValidationResult {
   final String message;
   final double expected;
   final double actual;
-  
+
   PayerValidationError({
     required this.message,
     required this.expected,
@@ -119,7 +113,7 @@ class PayerValidationError extends PayerValidationResult {
 }
 
 /// Validates that payer contributions sum exactly to the total.
-/// 
+///
 /// Rules:
 /// - Sum must match total exactly (no tolerance)
 /// - All payers must have valid member IDs
@@ -135,7 +129,7 @@ PayerValidationResult validatePayerContributions({
       actual: 0,
     );
   }
-  
+
   for (final slot in payerSlots) {
     if (!slot.isResolved) {
       return PayerValidationError(
@@ -152,9 +146,9 @@ PayerValidationResult validatePayerContributions({
       );
     }
   }
-  
+
   final sum = payerSlots.fold(0.0, (acc, slot) => acc + slot.amount);
-  
+
   if ((sum - total).abs() > _tolerance) {
     return PayerValidationError(
       message: sum < total
@@ -164,7 +158,7 @@ PayerValidationResult validatePayerContributions({
       actual: sum,
     );
   }
-  
+
   return PayerValidationSuccess();
 }
 
@@ -178,7 +172,7 @@ class NormalizationSuccess extends NormalizationResult {
 }
 
 /// Normalization needs user confirmation before proceeding.
-/// 
+///
 /// This is a UI workflow state, not an accounting state.
 /// Contains [ParticipantSlot]s for the confirmation dialog.
 class NormalizationNeedsConfirmation extends NormalizationResult {
@@ -205,10 +199,11 @@ class NormalizationNeedsConfirmation extends NormalizationResult {
     required this.unresolvedNames,
     this.validationWarning,
   });
-  
+
   /// Primary payer ID for backward compatibility.
   /// Returns the first payer's ID or empty string if no payers.
-  String get payerId => payerSlots.isNotEmpty ? (payerSlots.first.memberId ?? '') : '';
+  String get payerId =>
+      payerSlots.isNotEmpty ? (payerSlots.first.memberId ?? '') : '';
 }
 
 /// Normalization failed with an unrecoverable error.
@@ -218,7 +213,7 @@ class NormalizationError extends NormalizationResult {
 }
 
 /// Context for resolving names to member IDs.
-/// 
+///
 /// This is a UI/workflow helper that uses current group membership
 /// and contact information to fuzzy-match names from parsed input.
 class NameResolutionContext {
@@ -226,7 +221,7 @@ class NameResolutionContext {
   final String currentUserId;
   final String currentUserName;
   final Map<String, List<String>>? contactNameToNormalizedPhones;
-  
+
   late final Map<String, String>? _phoneToContactName;
   late final List<Member> _activeMembers;
 
@@ -237,7 +232,7 @@ class NameResolutionContext {
     this.contactNameToNormalizedPhones,
   }) {
     _activeMembers = members.where((m) => !m.id.startsWith('p_')).toList();
-    
+
     if (contactNameToNormalizedPhones != null) {
       _phoneToContactName = {};
       for (final entry in contactNameToNormalizedPhones!.entries) {
@@ -269,10 +264,16 @@ class NameResolutionContext {
     if (n.isEmpty) return (id: null, isGuessed: false);
 
     if (n == 'me' || n == 'i' || n == 'you') {
-      return (id: currentUserId.isNotEmpty ? currentUserId : null, isGuessed: false);
+      return (
+        id: currentUserId.isNotEmpty ? currentUserId : null,
+        isGuessed: false,
+      );
     }
     if (currentUserName.isNotEmpty && currentUserName.toLowerCase() == n) {
-      return (id: currentUserId.isNotEmpty ? currentUserId : null, isGuessed: false);
+      return (
+        id: currentUserId.isNotEmpty ? currentUserId : null,
+        isGuessed: false,
+      );
     }
 
     String? exactMatch;
@@ -288,8 +289,13 @@ class NameResolutionContext {
         similarMatchIds.add(m.id);
       }
 
-      final contactLower = _phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) {
+      final contactLower =
+          _phoneToContactName?[_normalizePhoneForMatch(m.phone)]
+              ?.trim()
+              .toLowerCase();
+      if (contactLower != null &&
+          contactLower.isNotEmpty &&
+          _nameSimilar(n, contactLower)) {
         if (contactLower == n) {
           exactMatch = m.id;
           break;
@@ -299,7 +305,8 @@ class NameResolutionContext {
     }
 
     if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (similarMatchIds.length == 1) return (id: similarMatchIds.single, isGuessed: true);
+    if (similarMatchIds.length == 1)
+      return (id: similarMatchIds.single, isGuessed: true);
     return (id: null, isGuessed: false);
   }
 
@@ -309,9 +316,16 @@ class NameResolutionContext {
     final ids = <String>{};
     for (final m in candidates) {
       final displayLower = getMemberDisplayName(m.id).trim().toLowerCase();
-      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) ids.add(m.id);
-      final contactLower = _phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) ids.add(m.id);
+      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower))
+        ids.add(m.id);
+      final contactLower =
+          _phoneToContactName?[_normalizePhoneForMatch(m.phone)]
+              ?.trim()
+              .toLowerCase();
+      if (contactLower != null &&
+          contactLower.isNotEmpty &&
+          _nameSimilar(n, contactLower))
+        ids.add(m.id);
     }
     return ids;
   }
@@ -319,8 +333,10 @@ class NameResolutionContext {
 
 bool _nameSimilar(String parsedLower, String otherLower) {
   if (parsedLower == otherLower) return true;
-  if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower)) return true;
-  if (otherLower.startsWith(parsedLower) || parsedLower.startsWith(otherLower)) return true;
+  if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower))
+    return true;
+  if (otherLower.startsWith(parsedLower) || parsedLower.startsWith(otherLower))
+    return true;
   return false;
 }
 
@@ -330,7 +346,7 @@ String _normalizePhoneForMatch(String phone) {
 }
 
 /// Main entry point for normalizing a parsed expense.
-/// 
+///
 /// This function bridges parsing (names) and accounting (IDs).
 /// It returns one of:
 /// - [NormalizationSuccess]: Ready for accounting
@@ -457,18 +473,18 @@ NormalizationResult normalizeExpense({
 }
 
 /// Converts resolved ParticipantSlots and PayerContributionSlots to a NormalizedExpense.
-/// 
+///
 /// This is the bridge from UI workflow (doubles) to accounting model (integers).
 /// All slots must have resolved memberIds before calling this.
-/// 
+///
 /// ## Multi-Payer Support
 /// When multiple payers are provided, each payer's contribution is converted
 /// to integer minor units. The sum of all contributions must equal the total.
-/// 
+///
 /// ## Remainder Handling
 /// When splitting amounts, integer division may produce a remainder.
 /// The remainder is assigned to the first payer (deterministic, documented).
-/// 
+///
 /// Example: 100.00 INR split among 3 people
 /// - Total minor units: 10000 paise
 /// - Base share: 10000 ÷ 3 = 3333 paise each
@@ -487,7 +503,7 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
   List<String>? excludedIds,
 }) {
   final totalMinor = MoneyConversion.parseToMinor(amount, currencyCode);
-  
+
   final payerContributions = _buildPayerContributions(
     payerSlots: payerSlots,
     totalMinor: totalMinor.amountMinor,
@@ -503,7 +519,9 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
       totalMinor: totalMinor.amountMinor,
       currencyCode: currencyCode,
       allMemberIds: allMemberIds,
-      excludedIds: excludedIds ?? slots.map((s) => s.memberId).whereType<String>().toList(),
+      excludedIds:
+          excludedIds ??
+          slots.map((s) => s.memberId).whereType<String>().toList(),
       payerId: primaryPayerId,
     );
   } else {
@@ -526,7 +544,7 @@ NormalizedExpense buildNormalizedExpenseFromSlots({
 }
 
 /// Converts payer slots to integer contributions.
-/// 
+///
 /// Rules:
 /// - Each slot's amount is converted to minor units
 /// - Any rounding remainder is assigned to the first payer
@@ -538,21 +556,27 @@ Map<String, MoneyMinor> _buildPayerContributions({
 }) {
   final contributions = <String, int>{};
   int allocated = 0;
-  
+
   for (final slot in payerSlots) {
     if (slot.memberId == null || slot.memberId!.isEmpty) continue;
     final minor = MoneyConversion.parseToMinor(slot.amount, currencyCode);
-    contributions[slot.memberId!] = (contributions[slot.memberId!] ?? 0) + minor.amountMinor;
+    contributions[slot.memberId!] =
+        (contributions[slot.memberId!] ?? 0) + minor.amountMinor;
     allocated += minor.amountMinor;
   }
-  
+
   final remainder = totalMinor - allocated;
-  if (remainder != 0 && payerSlots.isNotEmpty && payerSlots.first.memberId != null) {
+  if (remainder != 0 &&
+      payerSlots.isNotEmpty &&
+      payerSlots.first.memberId != null) {
     final firstPayerId = payerSlots.first.memberId!;
-    contributions[firstPayerId] = (contributions[firstPayerId] ?? 0) + remainder;
+    contributions[firstPayerId] =
+        (contributions[firstPayerId] ?? 0) + remainder;
   }
-  
-  return contributions.map((id, amt) => MapEntry(id, MoneyMinor(amt, currencyCode)));
+
+  return contributions.map(
+    (id, amt) => MapEntry(id, MoneyMinor(amt, currencyCode)),
+  );
 }
 
 /// Splits total among non-excluded members, assigning remainder to payer.
@@ -564,8 +588,10 @@ Map<String, MoneyMinor> _splitExclude({
   required String payerId,
 }) {
   final excludedSet = excludedIds.toSet();
-  final includedIds = allMemberIds.where((id) => !excludedSet.contains(id)).toList();
-  
+  final includedIds = allMemberIds
+      .where((id) => !excludedSet.contains(id))
+      .toList();
+
   if (includedIds.isEmpty) {
     return {payerId: MoneyMinor(totalMinor, currencyCode)};
   }
@@ -658,28 +684,33 @@ String _capitalizeSplitType(String splitType) {
   }
 }
 
-({List<ParticipantSlot> slots, List<String> unresolvedNames}) _buildExcludeSlots(
-  ParsedExpenseResult parsed,
-  NameResolutionContext ctx,
-) {
+({List<ParticipantSlot> slots, List<String> unresolvedNames})
+_buildExcludeSlots(ParsedExpenseResult parsed, NameResolutionContext ctx) {
   final slots = <ParticipantSlot>[];
   final unresolvedNames = <String>[];
 
   for (final name in parsed.excludedNames) {
     final resolved = ctx.resolveNameToId(name);
-    slots.add(ParticipantSlot(
-      name: name,
-      amount: 0,
-      memberId: resolved.id,
-      isGuessed: resolved.isGuessed,
-    ));
+    slots.add(
+      ParticipantSlot(
+        name: name,
+        amount: 0,
+        memberId: resolved.id,
+        isGuessed: resolved.isGuessed,
+      ),
+    );
     if (resolved.id == null) unresolvedNames.add(name);
   }
 
   return (slots: slots, unresolvedNames: unresolvedNames);
 }
 
-({List<ParticipantSlot> slots, List<String> unresolvedNames, String? validationWarning}) _buildExactSlots(
+({
+  List<ParticipantSlot> slots,
+  List<String> unresolvedNames,
+  String? validationWarning,
+})
+_buildExactSlots(
   ParsedExpenseResult parsed,
   NameResolutionContext ctx,
   String currentUserId,
@@ -689,12 +720,14 @@ String _capitalizeSplitType(String splitType) {
 
   for (final entry in parsed.exactAmountsByName.entries) {
     final resolved = ctx.resolveNameToId(entry.key);
-    slots.add(ParticipantSlot(
-      name: entry.key,
-      amount: entry.value,
-      memberId: resolved.id,
-      isGuessed: resolved.isGuessed,
-    ));
+    slots.add(
+      ParticipantSlot(
+        name: entry.key,
+        amount: entry.value,
+        memberId: resolved.id,
+        isGuessed: resolved.isGuessed,
+      ),
+    );
     if (resolved.id == null) unresolvedNames.add(entry.key);
   }
 
@@ -704,27 +737,41 @@ String _capitalizeSplitType(String splitType) {
   if ((assignedSum - parsed.amount).abs() > _tolerance) {
     if (assignedSum < parsed.amount) {
       final remainder = parsed.amount - assignedSum;
-      final existingCurrentUser = slots.where((s) => s.memberId == currentUserId).toList();
+      final existingCurrentUser = slots
+          .where((s) => s.memberId == currentUserId)
+          .toList();
       if (existingCurrentUser.isNotEmpty) {
         final idx = slots.indexOf(existingCurrentUser.first);
         slots[idx] = slots[idx].copyWith(amount: slots[idx].amount + remainder);
       } else {
-        slots.add(ParticipantSlot(
-          name: ctx.getMemberDisplayName(currentUserId),
-          amount: remainder,
-          memberId: currentUserId,
-          isGuessed: false,
-        ));
+        slots.add(
+          ParticipantSlot(
+            name: ctx.getMemberDisplayName(currentUserId),
+            amount: remainder,
+            memberId: currentUserId,
+            isGuessed: false,
+          ),
+        );
       }
     } else {
-      validationWarning = 'Exact amounts (${assignedSum.toStringAsFixed(2)}) exceed total (${parsed.amount.toStringAsFixed(2)})';
+      validationWarning =
+          'Exact amounts (${assignedSum.toStringAsFixed(2)}) exceed total (${parsed.amount.toStringAsFixed(2)})';
     }
   }
 
-  return (slots: slots, unresolvedNames: unresolvedNames, validationWarning: validationWarning);
+  return (
+    slots: slots,
+    unresolvedNames: unresolvedNames,
+    validationWarning: validationWarning,
+  );
 }
 
-({List<ParticipantSlot> slots, List<String> unresolvedNames, String? validationWarning}) _buildPercentageSlots(
+({
+  List<ParticipantSlot> slots,
+  List<String> unresolvedNames,
+  String? validationWarning,
+})
+_buildPercentageSlots(
   ParsedExpenseResult parsed,
   NameResolutionContext ctx,
   String currentUserId,
@@ -732,11 +779,15 @@ String _capitalizeSplitType(String splitType) {
   final slots = <ParticipantSlot>[];
   final unresolvedNames = <String>[];
 
-  final percentageSum = parsed.percentageByName.values.fold(0.0, (a, b) => a + b);
+  final percentageSum = parsed.percentageByName.values.fold(
+    0.0,
+    (a, b) => a + b,
+  );
   String? validationWarning;
 
   if ((percentageSum - 100.0).abs() > _tolerance) {
-    validationWarning = 'Percentages must sum to 100% (got ${percentageSum.toStringAsFixed(1)}%)';
+    validationWarning =
+        'Percentages must sum to 100% (got ${percentageSum.toStringAsFixed(1)}%)';
   }
 
   for (final entry in parsed.percentageByName.entries) {
@@ -759,18 +810,29 @@ String _capitalizeSplitType(String splitType) {
       if (memberId == null) unresolvedNames.add(name);
     }
 
-    slots.add(ParticipantSlot(
-      name: displayName,
-      amount: calculatedAmount,
-      memberId: memberId,
-      isGuessed: isGuessed,
-    ));
+    slots.add(
+      ParticipantSlot(
+        name: displayName,
+        amount: calculatedAmount,
+        memberId: memberId,
+        isGuessed: isGuessed,
+      ),
+    );
   }
 
-  return (slots: slots, unresolvedNames: unresolvedNames, validationWarning: validationWarning);
+  return (
+    slots: slots,
+    unresolvedNames: unresolvedNames,
+    validationWarning: validationWarning,
+  );
 }
 
-({List<ParticipantSlot> slots, List<String> unresolvedNames, String? validationWarning}) _buildSharesSlots(
+({
+  List<ParticipantSlot> slots,
+  List<String> unresolvedNames,
+  String? validationWarning,
+})
+_buildSharesSlots(
   ParsedExpenseResult parsed,
   NameResolutionContext ctx,
   String currentUserId,
@@ -783,7 +845,11 @@ String _capitalizeSplitType(String splitType) {
 
   if (totalShares <= 0) {
     validationWarning = 'Total shares must be greater than 0';
-    return (slots: slots, unresolvedNames: unresolvedNames, validationWarning: validationWarning);
+    return (
+      slots: slots,
+      unresolvedNames: unresolvedNames,
+      validationWarning: validationWarning,
+    );
   }
 
   for (final entry in parsed.sharesByName.entries) {
@@ -806,15 +872,21 @@ String _capitalizeSplitType(String splitType) {
       if (memberId == null) unresolvedNames.add(name);
     }
 
-    slots.add(ParticipantSlot(
-      name: displayName,
-      amount: calculatedAmount,
-      memberId: memberId,
-      isGuessed: isGuessed,
-    ));
+    slots.add(
+      ParticipantSlot(
+        name: displayName,
+        amount: calculatedAmount,
+        memberId: memberId,
+        isGuessed: isGuessed,
+      ),
+    );
   }
 
-  return (slots: slots, unresolvedNames: unresolvedNames, validationWarning: validationWarning);
+  return (
+    slots: slots,
+    unresolvedNames: unresolvedNames,
+    validationWarning: validationWarning,
+  );
 }
 
 ({List<ParticipantSlot> slots, List<String> unresolvedNames}) _buildEvenSlots(
@@ -830,12 +902,14 @@ String _capitalizeSplitType(String splitType) {
   if (names.isEmpty) {
     final perShare = parsed.amount / ctx.activeMembers.length;
     for (final m in ctx.activeMembers) {
-      slots.add(ParticipantSlot(
-        name: ctx.getMemberDisplayName(m.id),
-        amount: perShare,
-        memberId: m.id,
-        isGuessed: false,
-      ));
+      slots.add(
+        ParticipantSlot(
+          name: ctx.getMemberDisplayName(m.id),
+          amount: perShare,
+          memberId: m.id,
+          isGuessed: false,
+        ),
+      );
     }
   } else {
     final seenIds = <String>{};
@@ -846,36 +920,45 @@ String _capitalizeSplitType(String splitType) {
       if (resolved.id != null && resolved.id!.isNotEmpty) {
         if (!seenIds.contains(resolved.id)) {
           seenIds.add(resolved.id!);
-          resolvedSlots.add(ParticipantSlot(
-            name: name,
-            amount: 0,
-            memberId: resolved.id,
-            isGuessed: resolved.isGuessed,
-          ));
+          resolvedSlots.add(
+            ParticipantSlot(
+              name: name,
+              amount: 0,
+              memberId: resolved.id,
+              isGuessed: resolved.isGuessed,
+            ),
+          );
         }
       } else {
-        resolvedSlots.add(ParticipantSlot(
-          name: name,
-          amount: 0,
-          memberId: null,
-          isGuessed: false,
-        ));
+        resolvedSlots.add(
+          ParticipantSlot(
+            name: name,
+            amount: 0,
+            memberId: null,
+            isGuessed: false,
+          ),
+        );
         unresolvedNames.add(name);
       }
     }
 
     if (!seenIds.contains(currentUserId)) {
       seenIds.add(currentUserId);
-      resolvedSlots.insert(0, ParticipantSlot(
-        name: ctx.getMemberDisplayName(currentUserId),
-        amount: 0,
-        memberId: currentUserId,
-        isGuessed: false,
-      ));
+      resolvedSlots.insert(
+        0,
+        ParticipantSlot(
+          name: ctx.getMemberDisplayName(currentUserId),
+          amount: 0,
+          memberId: currentUserId,
+          isGuessed: false,
+        ),
+      );
     }
 
     final splitCount = resolvedSlots.length;
-    final perShare = splitCount > 0 ? parsed.amount / splitCount : parsed.amount;
+    final perShare = splitCount > 0
+        ? parsed.amount / splitCount
+        : parsed.amount;
     for (final slot in resolvedSlots) {
       slots.add(slot.copyWith(amount: perShare));
     }
@@ -884,7 +967,10 @@ String _capitalizeSplitType(String splitType) {
   return (slots: slots, unresolvedNames: unresolvedNames);
 }
 
-void _resolveUnresolvedSlots(List<ParticipantSlot> slots, NameResolutionContext ctx) {
+void _resolveUnresolvedSlots(
+  List<ParticipantSlot> slots,
+  NameResolutionContext ctx,
+) {
   Set<String> assignedIds() =>
       slots.where((s) => s.isResolved).map((s) => s.memberId!).toSet();
 
@@ -900,7 +986,10 @@ void _resolveUnresolvedSlots(List<ParticipantSlot> slots, NameResolutionContext 
     for (var i = 0; i < slots.length; i++) {
       if (slots[i].isResolved) continue;
 
-      final matchIds = ctx.memberIdsMatchingName(slots[i].name, unassignedMembers);
+      final matchIds = ctx.memberIdsMatchingName(
+        slots[i].name,
+        unassignedMembers,
+      );
       if (matchIds.length == 1) {
         slots[i] = slots[i].copyWith(
           memberId: matchIds.single,

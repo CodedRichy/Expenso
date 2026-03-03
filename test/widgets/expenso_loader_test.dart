@@ -7,9 +7,7 @@ void main() {
     testWidgets('pumps and contains CustomPaint', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: Center(child: ExpensoLoader(size: 80)),
-          ),
+          home: Scaffold(body: Center(child: ExpensoLoader(size: 80))),
         ),
       );
       expect(find.byType(ExpensoLoader), findsOneWidget);
@@ -19,9 +17,7 @@ void main() {
     testWidgets('respects size parameter', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: Center(child: ExpensoLoader(size: 120)),
-          ),
+          home: Scaffold(body: Center(child: ExpensoLoader(size: 120))),
         ),
       );
       final loader = tester.widget<ExpensoLoader>(find.byType(ExpensoLoader));

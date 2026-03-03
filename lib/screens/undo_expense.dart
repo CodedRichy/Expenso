@@ -23,7 +23,9 @@ class UndoExpense extends StatelessWidget {
     final gid = groupId ?? repo.lastAddedGroupId;
     final desc = description ?? repo.lastAddedDescription ?? '';
     final amt = amount ?? repo.lastAddedAmount ?? 0.0;
-    final currencyCode = gid != null ? repo.getGroup(gid)?.currencyCode ?? 'INR' : 'INR';
+    final currencyCode = gid != null
+        ? repo.getGroup(gid)?.currencyCode ?? 'INR'
+        : 'INR';
 
     return Scaffold(
       backgroundColor: Colors.transparent,

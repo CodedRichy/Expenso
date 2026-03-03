@@ -68,14 +68,19 @@ extension PaymentAttemptStatusX on PaymentAttemptStatus {
 
   bool get isPending => this == PaymentAttemptStatus.initiated;
   bool get isConfirmedByPayer => this == PaymentAttemptStatus.confirmedByPayer;
-  bool get isConfirmedByReceiver => this == PaymentAttemptStatus.confirmedByReceiver;
+  bool get isConfirmedByReceiver =>
+      this == PaymentAttemptStatus.confirmedByReceiver;
   bool get isDisputed => this == PaymentAttemptStatus.disputed;
   bool get isCashPending => this == PaymentAttemptStatus.cashPending;
   bool get isCashConfirmed => this == PaymentAttemptStatus.cashConfirmed;
-  bool get isSettled => isConfirmedByPayer || isConfirmedByReceiver || isCashConfirmed;
+  bool get isSettled =>
+      isConfirmedByPayer || isConfirmedByReceiver || isCashConfirmed;
   bool get isFullyConfirmed => isConfirmedByReceiver || isCashConfirmed;
   bool get isAwaitingReceiverAction => isConfirmedByPayer || isCashPending;
-  bool get isInFlight => this == PaymentAttemptStatus.initiated || this == PaymentAttemptStatus.confirmedByPayer || this == PaymentAttemptStatus.cashPending;
+  bool get isInFlight =>
+      this == PaymentAttemptStatus.initiated ||
+      this == PaymentAttemptStatus.confirmedByPayer ||
+      this == PaymentAttemptStatus.cashPending;
 }
 
 class PaymentAttempt {
@@ -109,7 +114,8 @@ class PaymentAttempt {
     this.upiResponseCode,
   });
 
-  bool get hasUpiProof => upiTransactionId != null && upiTransactionId!.isNotEmpty;
+  bool get hasUpiProof =>
+      upiTransactionId != null && upiTransactionId!.isNotEmpty;
 
   String get routeKey => '${fromMemberId}_$toMemberId';
 

@@ -40,26 +40,30 @@ import 'package:app_links/app_links.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load local profile cache FIRST (instant, before any network)
   await Future.wait([
     UserProfileCache.instance.load(),
     LocaleService.instance.load(),
   ]);
   CycleRepository.instance.loadFromLocalCache();
-  
+
   try {
     await dotenv.load(fileName: '.env');
   } catch (e) {
     debugPrint('dotenv: .env not loaded (optional): $e');
   }
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     setFirebaseAuthAvailable(true);
     FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
     debugPrint("Firebase initialized.");
   } catch (e, st) {
-    debugPrint("Firebase not configured (run: dart run flutterfire configure): $e");
+    debugPrint(
+      "Firebase not configured (run: dart run flutterfire configure): $e",
+    );
     debugPrint("$st");
     setFirebaseAuthAvailable(false);
   }
@@ -68,21 +72,37 @@ void main() async {
 
 ThemeData _buildTheme(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
-  
+
   final primary = isDark ? AppColorsDark.primary : AppColors.primary;
   final surface = isDark ? AppColorsDark.surface : AppColors.surface;
   final background = isDark ? AppColorsDark.background : AppColors.background;
   final error = isDark ? AppColorsDark.error : AppColors.error;
-  final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
-  final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
-  final textTertiary = isDark ? AppColorsDark.textTertiary : AppColors.textTertiary;
-  final textDisabled = isDark ? AppColorsDark.textDisabled : AppColors.textDisabled;
+  final textPrimary = isDark
+      ? AppColorsDark.textPrimary
+      : AppColors.textPrimary;
+  final textSecondary = isDark
+      ? AppColorsDark.textSecondary
+      : AppColors.textSecondary;
+  final textTertiary = isDark
+      ? AppColorsDark.textTertiary
+      : AppColors.textTertiary;
+  final textDisabled = isDark
+      ? AppColorsDark.textDisabled
+      : AppColors.textDisabled;
   final border = isDark ? AppColorsDark.border : AppColors.border;
-  final borderInput = isDark ? AppColorsDark.borderInput : AppColors.borderInput;
-  final borderFocused = isDark ? AppColorsDark.borderFocused : AppColors.borderFocused;
+  final borderInput = isDark
+      ? AppColorsDark.borderInput
+      : AppColors.borderInput;
+  final borderFocused = isDark
+      ? AppColorsDark.borderFocused
+      : AppColors.borderFocused;
   final accent = isDark ? AppColorsDark.accent : AppColors.accent;
-  final disabledBg = isDark ? AppColorsDark.disabledBackground : AppColors.disabledBackground;
-  final disabledFg = isDark ? AppColorsDark.disabledForeground : AppColors.disabledForeground;
+  final disabledBg = isDark
+      ? AppColorsDark.disabledBackground
+      : AppColors.disabledBackground;
+  final disabledFg = isDark
+      ? AppColorsDark.disabledForeground
+      : AppColors.disabledForeground;
 
   return ThemeData(
     useMaterial3: true,
@@ -167,21 +187,29 @@ ThemeData _buildTheme(Brightness brightness) {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: isDark ? AppColorsDark.cardBorder : AppColors.cardBorder),
+        side: BorderSide(
+          color: isDark ? AppColorsDark.cardBorder : AppColors.cardBorder,
+        ),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: isDark ? AppColorsDark.cardGradientStart : AppColors.surface,
+      backgroundColor: isDark
+          ? AppColorsDark.cardGradientStart
+          : AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: isDark ? AppColorsDark.cardGradientStart : AppColors.surface,
+      backgroundColor: isDark
+          ? AppColorsDark.cardGradientStart
+          : AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: isDark ? AppColorsDark.cardGradientEnd : const Color(0xFF323232),
+      backgroundColor: isDark
+          ? AppColorsDark.cardGradientEnd
+          : const Color(0xFF323232),
       contentTextStyle: AppTypography.bodyPrimary.copyWith(color: Colors.white),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -195,7 +223,8 @@ ThemeData _buildTheme(Brightness brightness) {
   );
 }
 
-final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> globalNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -216,7 +245,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
-    
+
     // Check initial link if app was cold-started by a deep link
     try {
       final initialUri = await _appLinks.getInitialLink();
@@ -226,11 +255,14 @@ class _MyAppState extends State<MyApp> {
     }
 
     // Listen to links while app is running/backgrounded
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _handleLink(uri);
-    }, onError: (err) {
-      debugPrint('Error listening to app links: $err');
-    });
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (uri) {
+        _handleLink(uri);
+      },
+      onError: (err) {
+        debugPrint('Error listening to app links: $err');
+      },
+    );
   }
 
   void _handleLink(Uri uri) {
@@ -240,8 +272,10 @@ class _MyAppState extends State<MyApp> {
       if (uri.host == 'invite' || path.startsWith('invite/')) {
         // format: expenso://invite/groupId/token
         // If host is empty but path is invite/groupId/token, handle appropriately
-        final segments = uri.host == 'invite' ? uri.pathSegments : path.split('/').skip(1).toList();
-        
+        final segments = uri.host == 'invite'
+            ? uri.pathSegments
+            : path.split('/').skip(1).toList();
+
         if (segments.length == 2) {
           final groupId = segments[0];
           final token = segments[1];
@@ -250,7 +284,8 @@ class _MyAppState extends State<MyApp> {
             Future.delayed(const Duration(milliseconds: 500), () {
               globalNavigatorKey.currentState?.push(
                 MaterialPageRoute(
-                  builder: (context) => InviteResolverScreen(groupId: groupId, token: token),
+                  builder: (context) =>
+                      InviteResolverScreen(groupId: groupId, token: token),
                 ),
               );
             });
@@ -280,73 +315,84 @@ class _MyAppState extends State<MyApp> {
       ],
       initialRoute: '/',
       routes: {
-    '/': (context) => const RootScreen(),
-    '/groups': (context) => const GroupsList(),
-    '/create-group': (context) => const CreateGroup(),
-    '/invite-members': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return InviteMembers(group: group, groupName: group?.name ?? 'Group');
-    },
-    '/group-detail': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return GroupDetail(group: group);
-    },
-    '/expense-input': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return ExpenseInput(group: group);
-    },
-    '/undo-expense': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      return UndoExpense(
-        groupId: args?['groupId'] as String?,
-        expenseId: args?['expenseId'] as String?,
-        description: args?['description'] as String?,
-        amount: (args?['amount'] as num?)?.toDouble(),
-      );
-    },
-    '/edit-expense': (context) => const EditExpense(),
-    '/group-members': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return GroupMembers(group: group);
-    },
-    '/member-change': (context) => const MemberChange(),
-    '/settlement-confirmation': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      final group = args is Group ? args : (args is Map<String, dynamic> ? args['group'] as Group? : null);
-      return SettlementConfirmation(group: group);
-    },
-    '/payment-result': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      Group? group;
-      String status = 'success';
-      double? amount;
-      String? transactionId;
-      if (args is Group) {
-        group = args;
-      } else if (args is Map<String, dynamic>) {
-        group = args['group'] as Group?;
-        status = args['status'] as String? ?? status;
-        amount = (args['amount'] as num?)?.toDouble();
-        transactionId = args['transactionId'] as String?;
-      }
-      return PaymentResult(group: group, status: status, amount: amount, transactionId: transactionId);
-    },
-    '/cycle-settled': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return CycleSettled(group: group);
-    },
-    '/cycle-history': (context) {
-      final group = ModalRoute.of(context)?.settings.arguments as Group?;
-      return CycleHistory(group: group);
-    },
-    '/cycle-history-detail': (context) => const CycleHistoryDetail(),
-    '/empty-states': (context) => const EmptyStates(),
-    '/error-states': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      return ErrorStates(type: args?['type'] as String? ?? 'generic');
-    },
-    '/profile': (context) => const ProfileScreen(),
-    },
+        '/': (context) => const RootScreen(),
+        '/groups': (context) => const GroupsList(),
+        '/create-group': (context) => const CreateGroup(),
+        '/invite-members': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return InviteMembers(group: group, groupName: group?.name ?? 'Group');
+        },
+        '/group-detail': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return GroupDetail(group: group);
+        },
+        '/expense-input': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return ExpenseInput(group: group);
+        },
+        '/undo-expense': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          return UndoExpense(
+            groupId: args?['groupId'] as String?,
+            expenseId: args?['expenseId'] as String?,
+            description: args?['description'] as String?,
+            amount: (args?['amount'] as num?)?.toDouble(),
+          );
+        },
+        '/edit-expense': (context) => const EditExpense(),
+        '/group-members': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return GroupMembers(group: group);
+        },
+        '/member-change': (context) => const MemberChange(),
+        '/settlement-confirmation': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final group = args is Group
+              ? args
+              : (args is Map<String, dynamic> ? args['group'] as Group? : null);
+          return SettlementConfirmation(group: group);
+        },
+        '/payment-result': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          Group? group;
+          String status = 'success';
+          double? amount;
+          String? transactionId;
+          if (args is Group) {
+            group = args;
+          } else if (args is Map<String, dynamic>) {
+            group = args['group'] as Group?;
+            status = args['status'] as String? ?? status;
+            amount = (args['amount'] as num?)?.toDouble();
+            transactionId = args['transactionId'] as String?;
+          }
+          return PaymentResult(
+            group: group,
+            status: status,
+            amount: amount,
+            transactionId: transactionId,
+          );
+        },
+        '/cycle-settled': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return CycleSettled(group: group);
+        },
+        '/cycle-history': (context) {
+          final group = ModalRoute.of(context)?.settings.arguments as Group?;
+          return CycleHistory(group: group);
+        },
+        '/cycle-history-detail': (context) => const CycleHistoryDetail(),
+        '/empty-states': (context) => const EmptyStates(),
+        '/error-states': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          return ErrorStates(type: args?['type'] as String? ?? 'generic');
+        },
+        '/profile': (context) => const ProfileScreen(),
+      },
     );
   }
 }
@@ -376,7 +422,9 @@ class RootScreen extends StatelessWidget {
           final repo = CycleRepository.instance;
 
           if (user == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => repo.clearAuth());
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => repo.clearAuth(),
+            );
             return const PhoneAuth();
           }
 
@@ -396,7 +444,8 @@ class RootScreen extends StatelessWidget {
           return ListenableBuilder(
             listenable: repo,
             builder: (context, _) {
-              if (repo.currentUserName.isEmpty) return const OnboardingNameScreen();
+              if (repo.currentUserName.isEmpty)
+                return const OnboardingNameScreen();
               return const GroupsList();
             },
           );

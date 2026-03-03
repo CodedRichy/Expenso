@@ -19,14 +19,20 @@ class ProfileService {
   /// Throws [Exception] with a descriptive message on Firebase storage errors.
   Future<String?> uploadAvatar(String uid, File file) async {
     if (uid.isEmpty) return null;
-    final ref = FirebaseStorage.instance.ref().child('users').child(uid).child('avatar.jpg');
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('users')
+        .child(uid)
+        .child('avatar.jpg');
     try {
       await ref.putFile(file);
       final downloadUrl = await ref.getDownloadURL();
       await CycleRepository.instance.updateCurrentUserPhotoURL(downloadUrl);
       return downloadUrl;
     } on FirebaseException catch (e, st) {
-      debugPrint('ProfileService.uploadAvatar FirebaseException: ${e.code} ${e.message}');
+      debugPrint(
+        'ProfileService.uploadAvatar FirebaseException: ${e.code} ${e.message}',
+      );
       if (kDebugMode) debugPrint(st.toString());
       final message = _messageForStorageCode(e.code);
       throw Exception(message);
@@ -41,14 +47,20 @@ class ProfileService {
   /// On success updates CycleRepository. Throws [Exception] on Firebase errors.
   Future<String?> uploadAvatarBytes(String uid, List<int> bytes) async {
     if (uid.isEmpty) return null;
-    final ref = FirebaseStorage.instance.ref().child('users').child(uid).child('avatar.jpg');
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('users')
+        .child(uid)
+        .child('avatar.jpg');
     try {
       await ref.putData(Uint8List.fromList(bytes));
       final downloadUrl = await ref.getDownloadURL();
       await CycleRepository.instance.updateCurrentUserPhotoURL(downloadUrl);
       return downloadUrl;
     } on FirebaseException catch (e, st) {
-      debugPrint('ProfileService.uploadAvatarBytes FirebaseException: ${e.code} ${e.message}');
+      debugPrint(
+        'ProfileService.uploadAvatarBytes FirebaseException: ${e.code} ${e.message}',
+      );
       if (kDebugMode) debugPrint(st.toString());
       throw Exception(_messageForStorageCode(e.code));
     } catch (e, st) {

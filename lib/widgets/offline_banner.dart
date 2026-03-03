@@ -7,11 +7,7 @@ class OfflineBanner extends StatelessWidget {
   final String? customMessage;
   final VoidCallback? onRetry;
 
-  const OfflineBanner({
-    super.key,
-    this.customMessage,
-    this.onRetry,
-  });
+  const OfflineBanner({super.key, this.customMessage, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +26,7 @@ class OfflineBanner extends StatelessWidget {
             bottom: false,
             child: Row(
               children: [
-                Icon(
-                  Icons.cloud_off,
-                  size: 18,
-                  color: AppColors.warning,
-                ),
+                Icon(Icons.cloud_off, size: 18, color: AppColors.warning),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -121,23 +113,15 @@ class OfflineDisabledButton extends StatelessWidget {
       listenable: ConnectivityService.instance,
       builder: (context, _) {
         final isOffline = ConnectivityService.instance.isOffline;
-        
+
         if (isOffline) {
           return Tooltip(
             message: disabledTooltip,
-            child: ElevatedButton(
-              onPressed: null,
-              style: style,
-              child: child,
-            ),
+            child: ElevatedButton(onPressed: null, style: style, child: child),
           );
         }
 
-        return ElevatedButton(
-          onPressed: onPressed,
-          style: style,
-          child: child,
-        );
+        return ElevatedButton(onPressed: onPressed, style: style, child: child);
       },
     );
   }
@@ -165,7 +149,7 @@ class OfflineDisabledIconButton extends StatelessWidget {
       listenable: ConnectivityService.instance,
       builder: (context, _) {
         final isOffline = ConnectivityService.instance.isOffline;
-        
+
         return Tooltip(
           message: isOffline ? disabledTooltip : '',
           child: IconButton(

@@ -175,13 +175,26 @@ class SettlementEvent {
     if (minutes < 60) return '${minutes}m ago';
     if (hours < 24) return '${hours}h ago';
     if (days < 7) return '${days}d ago';
-    
+
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return '${_monthName(date.month)} ${date.day}';
   }
 
   static String _monthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 }

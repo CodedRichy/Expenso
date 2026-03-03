@@ -22,11 +22,7 @@ Future<String> _encrypt(List<int> keyBytes, String plaintext) async {
     secretKey: key,
     nonce: nonce,
   );
-  return _encodeCiphertext(
-    nonce,
-    secretBox.cipherText,
-    secretBox.mac.bytes,
-  );
+  return _encodeCiphertext(nonce, secretBox.cipherText, secretBox.mac.bytes);
 }
 
 Future<String> _decrypt(List<int> keyBytes, String ciphertext) async {
@@ -56,7 +52,7 @@ void main() {
     test('encrypt produces prefixed ciphertext', () async {
       const plaintext = 'Hello, World!';
       final encrypted = await _encrypt(testKey, plaintext);
-      
+
       expect(encrypted.startsWith(_prefix), isTrue);
       expect(_isEncrypted(encrypted), isTrue);
       expect(encrypted.length > _prefix.length + 28, isTrue);
@@ -66,7 +62,7 @@ void main() {
       const plaintext = 'Hello, World!';
       final encrypted = await _encrypt(testKey, plaintext);
       final decrypted = await _decrypt(testKey, encrypted);
-      
+
       expect(decrypted, equals(plaintext));
     });
 
@@ -91,29 +87,32 @@ void main() {
     test('decrypt returns original if not encrypted', () async {
       const plaintext = 'Not encrypted text';
       final result = await _decrypt(testKey, plaintext);
-      
+
       expect(result, equals(plaintext));
     });
 
-    test('different encryptions of same text produce different ciphertexts', () async {
-      const plaintext = 'Same text';
-      final encrypted1 = await _encrypt(testKey, plaintext);
-      final encrypted2 = await _encrypt(testKey, plaintext);
-      
-      expect(encrypted1, isNot(equals(encrypted2)));
-      
-      final decrypted1 = await _decrypt(testKey, encrypted1);
-      final decrypted2 = await _decrypt(testKey, encrypted2);
-      expect(decrypted1, equals(plaintext));
-      expect(decrypted2, equals(plaintext));
-    });
+    test(
+      'different encryptions of same text produce different ciphertexts',
+      () async {
+        const plaintext = 'Same text';
+        final encrypted1 = await _encrypt(testKey, plaintext);
+        final encrypted2 = await _encrypt(testKey, plaintext);
+
+        expect(encrypted1, isNot(equals(encrypted2)));
+
+        final decrypted1 = await _decrypt(testKey, encrypted1);
+        final decrypted2 = await _decrypt(testKey, encrypted2);
+        expect(decrypted1, equals(plaintext));
+        expect(decrypted2, equals(plaintext));
+      },
+    );
 
     test('wrong key fails to decrypt', () async {
       const plaintext = 'Secret data';
       final encrypted = await _encrypt(testKey, plaintext);
-      
+
       final wrongKey = List.generate(32, (i) => 255 - i);
-      
+
       expect(
         () async => await _decrypt(wrongKey, encrypted),
         throwsA(anything),
@@ -124,7 +123,7 @@ void main() {
       final key32Bytes = List.generate(32, (i) => i);
       final base64Key = base64.encode(key32Bytes);
       final decoded = _decodeKey(base64Key);
-      
+
       expect(decoded, equals(key32Bytes));
       expect(decoded.length, equals(32));
     });
@@ -136,12 +135,12 @@ void main() {
         'participantIds': ['user1', 'user2'],
         'splits': {'user1': 75.25, 'user2': 75.25},
       };
-      
+
       final jsonStr = jsonEncode(originalMap);
       final encrypted = await _encrypt(testKey, jsonStr);
       final decrypted = await _decrypt(testKey, encrypted);
       final restoredMap = jsonDecode(decrypted);
-      
+
       expect(restoredMap, equals(originalMap));
     });
 
@@ -149,7 +148,7 @@ void main() {
       final largeText = 'A' * 10000;
       final encrypted = await _encrypt(testKey, largeText);
       final decrypted = await _decrypt(testKey, encrypted);
-      
+
       expect(decrypted, equals(largeText));
     });
   });

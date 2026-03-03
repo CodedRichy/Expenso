@@ -64,12 +64,14 @@ class _SplashScreenState extends State<SplashScreen>
           context,
           PageRouteBuilder(
             settings: const RouteSettings(name: '/'),
-            pageBuilder: (context, animation, secondaryAnimation) => const RootScreen(),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const RootScreen(),
             transitionDuration: const Duration(milliseconds: 300),
             opaque: true,
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
           ),
         );
       },
@@ -96,8 +98,7 @@ class _SplashBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state =
-        context.findAncestorStateOfType<_SplashScreenState>()!;
+    final state = context.findAncestorStateOfType<_SplashScreenState>()!;
 
     return Center(
       child: state._showLoader

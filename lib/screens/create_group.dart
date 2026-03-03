@@ -23,7 +23,15 @@ class _CreateGroupState extends State<CreateGroup> {
   int settlementDay = 0; // 0 = Sunday for weekly, 1-28 for monthly
 
   String getPreviewText() {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     if (rhythm == 'weekly') {
       return 'This group settles every ${days[settlementDay]}.';
     }
@@ -84,7 +92,8 @@ class _CreateGroupState extends State<CreateGroup> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => InviteMembers(group: groupToPass, groupName: groupToPass.name),
+            builder: (_) =>
+                InviteMembers(group: groupToPass, groupName: groupToPass.name),
           ),
         );
       });
@@ -92,7 +101,9 @@ class _CreateGroupState extends State<CreateGroup> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not create group. Check your connection and try again.'),
+          content: Text(
+            'Could not create group. Check your connection and try again.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -121,19 +132,19 @@ class _CreateGroupState extends State<CreateGroup> {
                     button: true,
                     child: TapScale(
                       child: IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.chevron_left, size: 24),
-                      color: context.colorTextPrimary,
-                      padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft,
-                      constraints: const BoxConstraints(),
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(32, 32),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.chevron_left, size: 24),
+                        color: context.colorTextPrimary,
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerLeft,
+                        constraints: const BoxConstraints(),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(32, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
-                    ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -185,9 +196,24 @@ class _CreateGroupState extends State<CreateGroup> {
                           ),
                           child: Column(
                             children: [
-                              _buildRhythmOption('weekly', 'Weekly', true, false),
-                              _buildRhythmOption('monthly', 'Monthly', false, false),
-                              _buildRhythmOption('trip', 'Trip-based', false, true),
+                              _buildRhythmOption(
+                                'weekly',
+                                'Weekly',
+                                true,
+                                false,
+                              ),
+                              _buildRhythmOption(
+                                'monthly',
+                                'Monthly',
+                                false,
+                                false,
+                              ),
+                              _buildRhythmOption(
+                                'trip',
+                                'Trip-based',
+                                false,
+                                true,
+                              ),
                             ],
                           ),
                         ),
@@ -199,17 +225,24 @@ class _CreateGroupState extends State<CreateGroup> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            rhythm == 'weekly' ? 'SETTLEMENT DAY' : 'SETTLEMENT DATE',
+                            rhythm == 'weekly'
+                                ? 'SETTLEMENT DAY'
+                                : 'SETTLEMENT DATE',
                             style: context.sectionLabel.copyWith(
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: context.colorSurface,
-                              border: Border.all(color: context.colorBorderInput),
+                              border: Border.all(
+                                color: context.colorBorderInput,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -217,7 +250,9 @@ class _CreateGroupState extends State<CreateGroup> {
                                 value: settlementDay,
                                 isExpanded: true,
                                 style: context.input.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                                 items: rhythm == 'weekly'
                                     ? _buildWeeklyOptions()
@@ -243,7 +278,10 @@ class _CreateGroupState extends State<CreateGroup> {
                         border: Border.all(color: context.colorBorder),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(getPreviewText(), style: context.bodySecondary),
+                      child: Text(
+                        getPreviewText(),
+                        style: context.bodySecondary,
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -253,7 +291,9 @@ class _CreateGroupState extends State<CreateGroup> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
+                border: Border(
+                  top: BorderSide(color: context.colorBorder, width: 1),
+                ),
               ),
               child: Semantics(
                 label: 'Create group',
@@ -269,7 +309,10 @@ class _CreateGroupState extends State<CreateGroup> {
                       elevation: 0,
                       minimumSize: const Size(double.infinity, 0),
                     ),
-                    child: const Text('Create Group', style: AppTypography.button),
+                    child: const Text(
+                      'Create Group',
+                      style: AppTypography.button,
+                    ),
                   ),
                 ),
               ),
@@ -280,7 +323,12 @@ class _CreateGroupState extends State<CreateGroup> {
     );
   }
 
-  Widget _buildRhythmOption(String value, String label, bool isFirst, bool isLast) {
+  Widget _buildRhythmOption(
+    String value,
+    String label,
+    bool isFirst,
+    bool isLast,
+  ) {
     final isSelected = rhythm == value;
     return TapScale(
       scaleDown: 0.99,
@@ -319,7 +367,9 @@ class _CreateGroupState extends State<CreateGroup> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? context.colorPrimary : context.colorBorderInput,
+                    color: isSelected
+                        ? context.colorPrimary
+                        : context.colorBorderInput,
                     width: 2,
                   ),
                 ),
@@ -344,26 +394,28 @@ class _CreateGroupState extends State<CreateGroup> {
   }
 
   List<DropdownMenuItem<int>> _buildWeeklyOptions() {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     return List.generate(
       days.length,
-      (index) => DropdownMenuItem(
-        value: index,
-        child: Text(days[index]),
-      ),
+      (index) => DropdownMenuItem(value: index, child: Text(days[index])),
     );
   }
 
   List<DropdownMenuItem<int>> _buildMonthlyOptions() {
-    return List.generate(
-      28,
-      (index) {
-        final day = index + 1;
-        return DropdownMenuItem(
-          value: index,
-          child: Text('$day${_getOrdinalSuffix(day)}'),
-        );
-      },
-    );
+    return List.generate(28, (index) {
+      final day = index + 1;
+      return DropdownMenuItem(
+        value: index,
+        child: Text('$day${_getOrdinalSuffix(day)}'),
+      );
+    });
   }
 }

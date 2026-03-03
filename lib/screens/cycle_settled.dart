@@ -18,7 +18,9 @@ class CycleSettled extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final resolvedGroup = group ?? RouteArgs.getGroup(context);
     if (resolvedGroup == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     return Scaffold(
@@ -51,10 +53,7 @@ class CycleSettled extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    resolvedGroup.name,
-                    style: context.screenTitle,
-                  ),
+                  Text(resolvedGroup.name, style: context.screenTitle),
                 ],
               ),
             ),
@@ -62,91 +61,110 @@ class CycleSettled extends StatelessWidget {
               child: Center(
                 child: FadeIn(
                   child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
-                  child: SizedBox(
-                    width: 320,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'This cycle is settled',
-                          textAlign: TextAlign.center,
-                          style: context.amountLG,
-                        ),
-                        const SizedBox(height: 12),
-                        Semantics(
-                          label: '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
-                          child: Text(
-                            '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 96,
+                    ),
+                    child: SizedBox(
+                      width: 320,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'This cycle is settled',
                             textAlign: TextAlign.center,
-                            style: context.bodyPrimary.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: context.amountLG,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'All balances cleared. The next cycle has begun.',
-                          textAlign: TextAlign.center,
-                          style: context.bodySecondary,
-                        ),
-                        const SizedBox(height: 48),
-                        Column(
-                          children: [
-                            Semantics(
-                              label: 'Continue to group',
-                              button: true,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    '/group-detail',
-                                    (route) => route.isFirst,
-                                    arguments: resolvedGroup,
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  elevation: 0,
-                                  minimumSize: const Size(double.infinity, 0),
-                                ),
-                                child: Text(
-                                  'Continue',
-                                  style: AppTypography.button,
-                                ),
+                          const SizedBox(height: 12),
+                          Semantics(
+                            label:
+                                '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
+                            child: Text(
+                              '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
+                              textAlign: TextAlign.center,
+                              style: context.bodyPrimary.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Semantics(
-                              label: 'View settlement history',
-                              button: true,
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/cycle-history', arguments: resolvedGroup);
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
-                                  foregroundColor: theme.colorScheme.onSurface,
-                                  side: BorderSide(color: theme.dividerColor),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'All balances cleared. The next cycle has begun.',
+                            textAlign: TextAlign.center,
+                            style: context.bodySecondary,
+                          ),
+                          const SizedBox(height: 48),
+                          Column(
+                            children: [
+                              Semantics(
+                                label: 'Continue to group',
+                                button: true,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      '/group-detail',
+                                      (route) => route.isFirst,
+                                      arguments: resolvedGroup,
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                    minimumSize: const Size(double.infinity, 0),
                                   ),
-                                  minimumSize: const Size(double.infinity, 0),
-                                ),
-                                child: Text(
-                                  'View History',
-                                  style: AppTypography.button,
+                                  child: Text(
+                                    'Continue',
+                                    style: AppTypography.button,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(height: 12),
+                              Semantics(
+                                label: 'View settlement history',
+                                button: true,
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/cycle-history',
+                                      arguments: resolvedGroup,
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: isDark
+                                        ? theme
+                                              .colorScheme
+                                              .surfaceContainerHighest
+                                        : context.colorSurface,
+                                    foregroundColor:
+                                        theme.colorScheme.onSurface,
+                                    side: BorderSide(color: theme.dividerColor),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    minimumSize: const Size(double.infinity, 0),
+                                  ),
+                                  child: Text(
+                                    'View History',
+                                    style: AppTypography.button,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 ),
               ),
             ),

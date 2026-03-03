@@ -21,7 +21,11 @@ void main() {
         ),
       ];
 
-      final negated = negateDeltas(original, 'compensation_1', DateTime(2025, 1, 2));
+      final negated = negateDeltas(
+        original,
+        'compensation_1',
+        DateTime(2025, 1, 2),
+      );
 
       expect(negated.length, 2);
       expect(negated[0].deltaMinor, -15000);
@@ -68,7 +72,11 @@ void main() {
         ),
       ];
 
-      final negated = negateDeltas(original, 'new_compensation_id', DateTime.now());
+      final negated = negateDeltas(
+        original,
+        'new_compensation_id',
+        DateTime.now(),
+      );
 
       expect(negated[0].expenseId, 'new_compensation_id');
     });
@@ -76,7 +84,7 @@ void main() {
     test('uses new timestamp', () {
       final originalTime = DateTime(2025, 1, 1);
       final newTime = DateTime(2025, 6, 15);
-      
+
       final original = [
         LedgerDelta(
           memberId: 'u1',
@@ -115,7 +123,7 @@ void main() {
 
       final negated = negateDeltas(original, 'comp', DateTime.now());
       final all = [...original, ...negated];
-      
+
       final net = <String, int>{};
       for (final d in all) {
         net[d.memberId] = (net[d.memberId] ?? 0) + d.deltaMinor;
@@ -184,25 +192,55 @@ void main() {
       expect(net['u1'], 20000);
       expect(net['u2'], -10000);
       expect(net['u3'], -10000);
-      
+
       final totalSum = net.values.fold(0, (a, b) => a + b);
       expect(totalSum, 0, reason: 'Total balance must remain zero');
     });
 
     test('multiple edits chain correctly', () {
       final e1Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final e2Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(20000, 'INR'),
+          expenseId: 'e2',
+          timestamp: DateTime(2025, 1, 2),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-20000, 'INR'),
+          expenseId: 'e2',
+          timestamp: DateTime(2025, 1, 2),
+        ),
       ];
 
       final e3Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(30000, 'INR'), expenseId: 'e3', timestamp: DateTime(2025, 1, 3)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-30000, 'INR'), expenseId: 'e3', timestamp: DateTime(2025, 1, 3)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(30000, 'INR'),
+          expenseId: 'e3',
+          timestamp: DateTime(2025, 1, 3),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-30000, 'INR'),
+          expenseId: 'e3',
+          timestamp: DateTime(2025, 1, 3),
+        ),
       ];
 
       final edit1 = generateEditDeltas(
@@ -230,9 +268,24 @@ void main() {
   group('generateDeleteDeltas', () {
     test('deleting an expense fully negates its effect', () {
       final originalDeltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(50000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-25000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u3', delta: MoneyMinor(-25000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(50000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-25000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u3',
+          delta: MoneyMinor(-25000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final deleteDeltas = generateDeleteDeltas(
@@ -251,13 +304,33 @@ void main() {
 
     test('deletion does not affect other expenses', () {
       final e1Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final e2Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(20000, 'INR'),
+          expenseId: 'e2',
+          timestamp: DateTime(2025, 1, 2),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-20000, 'INR'),
+          expenseId: 'e2',
+          timestamp: DateTime(2025, 1, 2),
+        ),
       ];
 
       final deleteE1 = generateDeleteDeltas(
@@ -277,21 +350,33 @@ void main() {
   group('Historical replay determinism', () {
     test('replay of historical expenses is deterministic', () {
       final expenses = [
-        (id: 'e1', amount: 30000, payerId: 'u1', splits: {'u1': 15000, 'u2': 15000}),
-        (id: 'e2', amount: 20000, payerId: 'u2', splits: {'u1': 10000, 'u2': 10000}),
+        (
+          id: 'e1',
+          amount: 30000,
+          payerId: 'u1',
+          splits: {'u1': 15000, 'u2': 15000},
+        ),
+        (
+          id: 'e2',
+          amount: 20000,
+          payerId: 'u2',
+          splits: {'u1': 10000, 'u2': 10000},
+        ),
       ];
 
       List<LedgerDelta> generateDeltas() {
         final allDeltas = <LedgerDelta>[];
         for (final e in expenses) {
-          allDeltas.addAll(expenseToLedgerDeltas(
-            expenseId: e.id,
-            amountMinor: e.amount,
-            payerId: e.payerId,
-            splitAmountsByIdMinor: e.splits,
-            currencyCode: 'INR',
-            timestamp: DateTime(2025, 1, 1),
-          ));
+          allDeltas.addAll(
+            expenseToLedgerDeltas(
+              expenseId: e.id,
+              amountMinor: e.amount,
+              payerId: e.payerId,
+              splitAmountsByIdMinor: e.splits,
+              currencyCode: 'INR',
+              timestamp: DateTime(2025, 1, 1),
+            ),
+          );
         }
         return allDeltas;
       }
@@ -307,15 +392,35 @@ void main() {
 
     test('edit history can be replayed to reconstruct any point in time', () {
       final e1Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final edit1Deltas = generateEditDeltas(
         originalDeltas: e1Deltas,
         newDeltas: [
-          LedgerDelta(memberId: 'u1', delta: MoneyMinor(20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
-          LedgerDelta(memberId: 'u2', delta: MoneyMinor(-20000, 'INR'), expenseId: 'e2', timestamp: DateTime(2025, 1, 2)),
+          LedgerDelta(
+            memberId: 'u1',
+            delta: MoneyMinor(20000, 'INR'),
+            expenseId: 'e2',
+            timestamp: DateTime(2025, 1, 2),
+          ),
+          LedgerDelta(
+            memberId: 'u2',
+            delta: MoneyMinor(-20000, 'INR'),
+            expenseId: 'e2',
+            timestamp: DateTime(2025, 1, 2),
+          ),
         ],
         compensationExpenseId: 'e2',
         timestamp: DateTime(2025, 1, 2),
@@ -324,7 +429,10 @@ void main() {
       final beforeEdit = computeNetBalancesFromAllDeltas(e1Deltas, 'INR');
       expect(beforeEdit['u1'], 10000);
 
-      final afterEdit = computeNetBalancesFromAllDeltas([...e1Deltas, ...edit1Deltas], 'INR');
+      final afterEdit = computeNetBalancesFromAllDeltas([
+        ...e1Deltas,
+        ...edit1Deltas,
+      ], 'INR');
       expect(afterEdit['u1'], 20000);
     });
   });
@@ -332,9 +440,24 @@ void main() {
   group('Ledger invariants', () {
     test('all deltas sum to zero after any operation', () {
       final original = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(30000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-15000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
-        LedgerDelta(memberId: 'u3', delta: MoneyMinor(-15000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(30000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u3',
+          delta: MoneyMinor(-15000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
       ];
 
       final sumOriginal = original.fold(0, (a, d) => a + d.deltaMinor);
@@ -347,8 +470,18 @@ void main() {
       final editDeltas = generateEditDeltas(
         originalDeltas: original,
         newDeltas: [
-          LedgerDelta(memberId: 'u1', delta: MoneyMinor(40000, 'INR'), expenseId: 'e2', timestamp: DateTime.now()),
-          LedgerDelta(memberId: 'u2', delta: MoneyMinor(-40000, 'INR'), expenseId: 'e2', timestamp: DateTime.now()),
+          LedgerDelta(
+            memberId: 'u1',
+            delta: MoneyMinor(40000, 'INR'),
+            expenseId: 'e2',
+            timestamp: DateTime.now(),
+          ),
+          LedgerDelta(
+            memberId: 'u2',
+            delta: MoneyMinor(-40000, 'INR'),
+            expenseId: 'e2',
+            timestamp: DateTime.now(),
+          ),
         ],
         compensationExpenseId: 'e2',
         timestamp: DateTime.now(),
@@ -359,15 +492,35 @@ void main() {
 
     test('net balances across all members sum to zero', () {
       final deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(100000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-30000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
-        LedgerDelta(memberId: 'u3', delta: MoneyMinor(-40000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
-        LedgerDelta(memberId: 'u4', delta: MoneyMinor(-30000, 'INR'), expenseId: 'e1', timestamp: DateTime.now()),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(100000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-30000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u3',
+          delta: MoneyMinor(-40000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
+        LedgerDelta(
+          memberId: 'u4',
+          delta: MoneyMinor(-30000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime.now(),
+        ),
       ];
 
       final net = computeNetBalancesFromAllDeltas(deltas, 'INR');
       final totalSum = net.values.fold(0, (a, b) => a + b);
-      
+
       expect(totalSum, 0, reason: 'Total balances must always sum to zero');
     });
   });
@@ -375,7 +528,12 @@ void main() {
   group('Audit trail preservation', () {
     test('original deltas remain unchanged after negation', () {
       final original = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(10000, 'INR'), expenseId: 'e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(10000, 'INR'),
+          expenseId: 'e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final originalDeltaMinor = original[0].deltaMinor;
@@ -383,21 +541,45 @@ void main() {
 
       negateDeltas(original, 'comp', DateTime(2025, 1, 2));
 
-      expect(original[0].deltaMinor, originalDeltaMinor, reason: 'Original must not be mutated');
+      expect(
+        original[0].deltaMinor,
+        originalDeltaMinor,
+        reason: 'Original must not be mutated',
+      );
       expect(original[0].expenseId, originalExpenseId);
     });
 
     test('expense IDs are preserved for audit', () {
       final e1Deltas = [
-        LedgerDelta(memberId: 'u1', delta: MoneyMinor(10000, 'INR'), expenseId: 'original_e1', timestamp: DateTime(2025, 1, 1)),
-        LedgerDelta(memberId: 'u2', delta: MoneyMinor(-10000, 'INR'), expenseId: 'original_e1', timestamp: DateTime(2025, 1, 1)),
+        LedgerDelta(
+          memberId: 'u1',
+          delta: MoneyMinor(10000, 'INR'),
+          expenseId: 'original_e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
+        LedgerDelta(
+          memberId: 'u2',
+          delta: MoneyMinor(-10000, 'INR'),
+          expenseId: 'original_e1',
+          timestamp: DateTime(2025, 1, 1),
+        ),
       ];
 
       final edit = generateEditDeltas(
         originalDeltas: e1Deltas,
         newDeltas: [
-          LedgerDelta(memberId: 'u1', delta: MoneyMinor(20000, 'INR'), expenseId: 'edited_e1', timestamp: DateTime(2025, 1, 2)),
-          LedgerDelta(memberId: 'u2', delta: MoneyMinor(-20000, 'INR'), expenseId: 'edited_e1', timestamp: DateTime(2025, 1, 2)),
+          LedgerDelta(
+            memberId: 'u1',
+            delta: MoneyMinor(20000, 'INR'),
+            expenseId: 'edited_e1',
+            timestamp: DateTime(2025, 1, 2),
+          ),
+          LedgerDelta(
+            memberId: 'u2',
+            delta: MoneyMinor(-20000, 'INR'),
+            expenseId: 'edited_e1',
+            timestamp: DateTime(2025, 1, 2),
+          ),
         ],
         compensationExpenseId: 'edited_e1',
         timestamp: DateTime(2025, 1, 2),
@@ -414,7 +596,7 @@ void main() {
   group('ExpenseRevision model', () {
     test('original expense has null replacesExpenseId', () {
       const revision = ExpenseRevision(expenseId: 'e1');
-      
+
       expect(revision.isOriginal, true);
       expect(revision.isRevision, false);
       expect(revision.replacesExpenseId, isNull);
@@ -425,7 +607,7 @@ void main() {
         expenseId: 'e2',
         replacesExpenseId: 'e1',
       );
-      
+
       expect(revision.isOriginal, false);
       expect(revision.isRevision, true);
       expect(revision.replacesExpenseId, 'e1');
@@ -434,9 +616,7 @@ void main() {
 
   group('ExpenseLifecycleState derivation', () {
     test('new expense is active', () {
-      final revisions = [
-        const ExpenseRevision(expenseId: 'e1'),
-      ];
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
       final deletedIds = <String>{};
 
       final state = deriveExpenseState(
@@ -449,9 +629,7 @@ void main() {
     });
 
     test('deleted expense is deleted', () {
-      final revisions = [
-        const ExpenseRevision(expenseId: 'e1'),
-      ];
+      final revisions = [const ExpenseRevision(expenseId: 'e1')];
       final deletedIds = {'e1'};
 
       final state = deriveExpenseState(
@@ -504,15 +682,27 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        deriveExpenseState(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        deriveExpenseState(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         ExpenseLifecycleState.superseded,
       );
       expect(
-        deriveExpenseState(expenseId: 'e2', revisions: revisions, deletedExpenseIds: deletedIds),
+        deriveExpenseState(
+          expenseId: 'e2',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         ExpenseLifecycleState.superseded,
       );
       expect(
-        deriveExpenseState(expenseId: 'e3', revisions: revisions, deletedExpenseIds: deletedIds),
+        deriveExpenseState(
+          expenseId: 'e3',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         ExpenseLifecycleState.active,
       );
     });
@@ -524,7 +714,11 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         returnsNormally,
       );
     });
@@ -534,7 +728,11 @@ void main() {
       final deletedIds = {'e1'};
 
       expect(
-        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
       );
     });
@@ -547,7 +745,11 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
       );
     });
@@ -557,7 +759,11 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardDelete(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         returnsNormally,
       );
     });
@@ -567,7 +773,11 @@ void main() {
       final deletedIds = {'e1'};
 
       expect(
-        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardDelete(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
       );
     });
@@ -580,7 +790,11 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        () => guardDelete(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardDelete(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
       );
     });
@@ -590,7 +804,11 @@ void main() {
       final deletedIds = {'e1'};
 
       try {
-        guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds);
+        guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        );
         fail('Should have thrown');
       } on ExpenseLifecycleError catch (e) {
         expect(e.expenseId, 'e1');
@@ -607,7 +825,11 @@ void main() {
       final deletedIds = {'e1'};
 
       expect(
-        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
         reason: 'Editing a deleted expense must be prevented',
       );
@@ -621,13 +843,21 @@ void main() {
       final deletedIds = <String>{};
 
       expect(
-        () => guardEdit(expenseId: 'e1', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e1',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         throwsA(isA<ExpenseLifecycleError>()),
         reason: 'Must edit the latest revision, not the original',
       );
 
       expect(
-        () => guardEdit(expenseId: 'e2', revisions: revisions, deletedExpenseIds: deletedIds),
+        () => guardEdit(
+          expenseId: 'e2',
+          revisions: revisions,
+          deletedExpenseIds: deletedIds,
+        ),
         returnsNormally,
         reason: 'Latest revision can be edited',
       );

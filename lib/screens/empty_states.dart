@@ -5,7 +5,8 @@ import '../widgets/fade_in.dart';
 import '../widgets/tap_scale.dart';
 
 class EmptyStates extends StatelessWidget {
-  final String type; // 'no-groups', 'no-expenses', 'new-cycle', 'no-expenses-new-cycle', 'zero-waste-cycle'
+  final String
+  type; // 'no-groups', 'no-expenses', 'new-cycle', 'no-expenses-new-cycle', 'zero-waste-cycle'
   final VoidCallback? onActionPressed;
   final bool wrapInScaffold;
   final bool forDarkCard;
@@ -40,37 +41,48 @@ class EmptyStates extends StatelessWidget {
               child: Center(
                 child: FadeIn(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 96,
+                    ),
                     child: SizedBox(
                       width: 280,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'No groups yet',
-                          textAlign: TextAlign.center,
-                          style: context.listItemTitle,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Create a group to start tracking shared expenses with automatic settlement cycles.',
-                          textAlign: TextAlign.center,
-                          style: context.bodySecondary,
-                        ),
-                        const SizedBox(height: 32),
-                        TapScale(
-                          child: ElevatedButton(
-                            onPressed: onActionPressed ?? () => Navigator.pushNamed(context, '/create-group'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 0),
-                            ),
-                            child: const Text('Create Group', style: AppTypography.button),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'No groups yet',
+                            textAlign: TextAlign.center,
+                            style: context.listItemTitle,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          Text(
+                            'Create a group to start tracking shared expenses with automatic settlement cycles.',
+                            textAlign: TextAlign.center,
+                            style: context.bodySecondary,
+                          ),
+                          const SizedBox(height: 32),
+                          TapScale(
+                            child: ElevatedButton(
+                              onPressed:
+                                  onActionPressed ??
+                                  () => Navigator.pushNamed(
+                                    context,
+                                    '/create-group',
+                                  ),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 0),
+                              ),
+                              child: const Text(
+                                'Create Group',
+                                style: AppTypography.button,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 ),
               ),
             ),
@@ -78,15 +90,13 @@ class EmptyStates extends StatelessWidget {
         ),
       );
       if (!wrapInScaffold) return content;
-      return Scaffold(
-        body: content,
-      );
+      return Scaffold(body: content);
     }
 
     if (type == 'no-expenses') {
       return Center(
-          child: FadeIn(
-            child: Padding(
+        child: FadeIn(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -96,7 +106,9 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'No expenses yet',
                     textAlign: TextAlign.center,
-                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -107,15 +119,15 @@ class EmptyStates extends StatelessWidget {
                 ],
               ),
             ),
-            ),
           ),
-        );
+        ),
+      );
     }
 
     if (type == 'new-cycle') {
       return Center(
-          child: FadeIn(
-            child: Padding(
+        child: FadeIn(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -125,7 +137,9 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'New cycle started',
                     textAlign: TextAlign.center,
-                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -136,15 +150,15 @@ class EmptyStates extends StatelessWidget {
                 ],
               ),
             ),
-            ),
           ),
-        );
+        ),
+      );
     }
 
     if (type == 'no-expenses-new-cycle') {
       return Center(
-          child: FadeIn(
-            child: Padding(
+        child: FadeIn(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
             child: SizedBox(
               width: 280,
@@ -154,7 +168,9 @@ class EmptyStates extends StatelessWidget {
                   Text(
                     'No expenses yet',
                     textAlign: TextAlign.center,
-                    style: context.bodyPrimary.copyWith(fontWeight: FontWeight.w500),
+                    style: context.bodyPrimary.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -165,17 +181,17 @@ class EmptyStates extends StatelessWidget {
                 ],
               ),
             ),
-            ),
           ),
-        );
+        ),
+      );
     }
 
     if (type == 'zero-waste-cycle') {
-      final titleColor = forDarkCard 
-          ? Colors.white.withValues(alpha: 0.95) 
+      final titleColor = forDarkCard
+          ? Colors.white.withValues(alpha: 0.95)
           : Theme.of(context).colorScheme.onSurface;
-      final bodyColor = forDarkCard 
-          ? Colors.white.withValues(alpha: 0.75) 
+      final bodyColor = forDarkCard
+          ? Colors.white.withValues(alpha: 0.75)
           : Theme.of(context).colorScheme.onSurfaceVariant;
       return FadeIn(
         child: Column(

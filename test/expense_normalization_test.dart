@@ -125,7 +125,10 @@ void main() {
           total: MoneyMinor(30000, 'INR'),
           description: 'Dinner',
           payerContributionsByMemberId: {'u1': MoneyMinor(20000, 'INR')},
-          participantSharesByMemberId: {'u1': MoneyMinor(15000, 'INR'), 'u2': MoneyMinor(15000, 'INR')},
+          participantSharesByMemberId: {
+            'u1': MoneyMinor(15000, 'INR'),
+            'u2': MoneyMinor(15000, 'INR'),
+          },
         ),
         throwsA(isA<NormalizedExpenseError>()),
       );
@@ -137,7 +140,10 @@ void main() {
           total: MoneyMinor(30000, 'INR'),
           description: 'Dinner',
           payerContributionsByMemberId: {'u1': MoneyMinor(30000, 'INR')},
-          participantSharesByMemberId: {'u1': MoneyMinor(10000, 'INR'), 'u2': MoneyMinor(10000, 'INR')},
+          participantSharesByMemberId: {
+            'u1': MoneyMinor(10000, 'INR'),
+            'u2': MoneyMinor(10000, 'INR'),
+          },
         ),
         throwsA(isA<NormalizedExpenseError>()),
       );
@@ -149,7 +155,10 @@ void main() {
           total: MoneyMinor(30000, 'INR'),
           description: 'Dinner',
           payerContributionsByMemberId: {'u1': MoneyMinor(30000, 'USD')},
-          participantSharesByMemberId: {'u1': MoneyMinor(15000, 'INR'), 'u2': MoneyMinor(15000, 'INR')},
+          participantSharesByMemberId: {
+            'u1': MoneyMinor(15000, 'INR'),
+            'u2': MoneyMinor(15000, 'INR'),
+          },
         ),
         throwsA(isA<NormalizedExpenseError>()),
       );
@@ -161,7 +170,10 @@ void main() {
           total: MoneyMinor(30000, 'INR'),
           description: 'Dinner',
           payerContributionsByMemberId: {'p_pending': MoneyMinor(30000, 'INR')},
-          participantSharesByMemberId: {'u1': MoneyMinor(15000, 'INR'), 'u2': MoneyMinor(15000, 'INR')},
+          participantSharesByMemberId: {
+            'u1': MoneyMinor(15000, 'INR'),
+            'u2': MoneyMinor(15000, 'INR'),
+          },
         ),
         throwsA(isA<NormalizedExpenseError>()),
       );
@@ -172,7 +184,10 @@ void main() {
         total: MoneyMinor(30000, 'INR'),
         description: '',
         payerContributionsByMemberId: {'u1': MoneyMinor(30000, 'INR')},
-        participantSharesByMemberId: {'u1': MoneyMinor(15000, 'INR'), 'u2': MoneyMinor(15000, 'INR')},
+        participantSharesByMemberId: {
+          'u1': MoneyMinor(15000, 'INR'),
+          'u2': MoneyMinor(15000, 'INR'),
+        },
       );
       expect(expense.description, '');
     });
@@ -205,7 +220,7 @@ void main() {
 
       final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
       final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
-      
+
       expect(sum, 0);
     });
 
@@ -354,9 +369,11 @@ void main() {
 
       expect(expense.amountMinor, 30000);
       expect(expense.participantSharesByMemberId.length, 3);
-      
-      final totalShares = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+
+      final totalShares = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(totalShares, 30000);
     });
 
@@ -407,8 +424,10 @@ void main() {
       final success = result as NormalizationSuccess;
       final expense = success.expense;
 
-      final totalShares = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+      final totalShares = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(totalShares, 50000);
     });
 
@@ -473,8 +492,10 @@ void main() {
         currencyCode: 'INR',
       );
 
-      final totalShares = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+      final totalShares = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(totalShares, 100);
     });
 
@@ -495,8 +516,10 @@ void main() {
         currencyCode: 'JPY',
       );
 
-      final totalShares = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+      final totalShares = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(totalShares, 100);
     });
 
@@ -506,7 +529,9 @@ void main() {
         description: 'Test',
         category: '',
         date: 'Today',
-        payerSlots: [const PayerContributionSlot(memberId: 'u1', amount: 1.000)],
+        payerSlots: [
+          const PayerContributionSlot(memberId: 'u1', amount: 1.000),
+        ],
         slots: [
           ParticipantSlot(name: 'Alice', amount: 0.333, memberId: 'u1'),
           ParticipantSlot(name: 'Bob', amount: 0.333, memberId: 'u2'),
@@ -517,8 +542,10 @@ void main() {
         currencyCode: 'KWD',
       );
 
-      final totalShares = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+      final totalShares = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(totalShares, 1000);
     });
   });
@@ -559,31 +586,34 @@ void main() {
       expect(expense.primaryPayerId, 'user-123');
     });
 
-    test('expenseToLedgerDeltas is deterministic (same input = same output)', () {
-      final deltas1 = expenseToLedgerDeltas(
-        expenseId: 'e1',
-        amountMinor: 30000,
-        payerId: 'u1',
-        splitAmountsByIdMinor: {'u1': 10000, 'u2': 20000},
-        currencyCode: 'INR',
-        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
-      );
+    test(
+      'expenseToLedgerDeltas is deterministic (same input = same output)',
+      () {
+        final deltas1 = expenseToLedgerDeltas(
+          expenseId: 'e1',
+          amountMinor: 30000,
+          payerId: 'u1',
+          splitAmountsByIdMinor: {'u1': 10000, 'u2': 20000},
+          currencyCode: 'INR',
+          timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+        );
 
-      final deltas2 = expenseToLedgerDeltas(
-        expenseId: 'e1',
-        amountMinor: 30000,
-        payerId: 'u1',
-        splitAmountsByIdMinor: {'u1': 10000, 'u2': 20000},
-        currencyCode: 'INR',
-        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
-      );
+        final deltas2 = expenseToLedgerDeltas(
+          expenseId: 'e1',
+          amountMinor: 30000,
+          payerId: 'u1',
+          splitAmountsByIdMinor: {'u1': 10000, 'u2': 20000},
+          currencyCode: 'INR',
+          timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+        );
 
-      expect(deltas1.length, deltas2.length);
-      for (var i = 0; i < deltas1.length; i++) {
-        expect(deltas1[i].memberId, deltas2[i].memberId);
-        expect(deltas1[i].deltaMinor, deltas2[i].deltaMinor);
-      }
-    });
+        expect(deltas1.length, deltas2.length);
+        for (var i = 0; i < deltas1.length; i++) {
+          expect(deltas1[i].memberId, deltas2[i].memberId);
+          expect(deltas1[i].deltaMinor, deltas2[i].deltaMinor);
+        }
+      },
+    );
 
     test('LedgerDelta contains no names', () {
       final expense = NormalizedExpense(
@@ -651,7 +681,7 @@ void main() {
 
       final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
       final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
-      
+
       expect(sum, 0);
     });
   });
@@ -670,7 +700,8 @@ void main() {
         expenseId: storedData['expenseId'] as String,
         amountMinor: storedData['amountMinor'] as int,
         payerId: storedData['payerId'] as String,
-        splitAmountsByIdMinor: storedData['splitAmountsByIdMinor'] as Map<String, int>,
+        splitAmountsByIdMinor:
+            storedData['splitAmountsByIdMinor'] as Map<String, int>,
         currencyCode: storedData['currencyCode'] as String,
         timestamp: DateTime.now(),
       );
@@ -679,7 +710,8 @@ void main() {
         expenseId: storedData['expenseId'] as String,
         amountMinor: storedData['amountMinor'] as int,
         payerId: storedData['payerId'] as String,
-        splitAmountsByIdMinor: storedData['splitAmountsByIdMinor'] as Map<String, int>,
+        splitAmountsByIdMinor:
+            storedData['splitAmountsByIdMinor'] as Map<String, int>,
         currencyCode: storedData['currencyCode'] as String,
         timestamp: DateTime.now(),
       );
@@ -703,7 +735,8 @@ void main() {
         expenseId: storedData['expenseId'] as String,
         amountMinor: storedData['amountMinor'] as int,
         payerId: storedData['payerId'] as String,
-        splitAmountsByIdMinor: storedData['splitAmountsByIdMinor'] as Map<String, int>,
+        splitAmountsByIdMinor:
+            storedData['splitAmountsByIdMinor'] as Map<String, int>,
         currencyCode: storedData['currencyCode'] as String,
         timestamp: DateTime.now(),
       );
@@ -726,7 +759,8 @@ void main() {
         expenseId: storedData['expenseId'] as String,
         amountMinor: storedData['amountMinor'] as int,
         payerId: storedData['payerId'] as String,
-        splitAmountsByIdMinor: storedData['splitAmountsByIdMinor'] as Map<String, int>,
+        splitAmountsByIdMinor:
+            storedData['splitAmountsByIdMinor'] as Map<String, int>,
         currencyCode: storedData['currencyCode'] as String,
         timestamp: DateTime.now(),
       );
@@ -803,11 +837,8 @@ void main() {
 
   group('Multi-payer support', () {
     test('PayerContributionSlot validation: empty slots rejected', () {
-      final result = validatePayerContributions(
-        total: 300.0,
-        payerSlots: [],
-      );
-      
+      final result = validatePayerContributions(total: 300.0, payerSlots: []);
+
       expect(result, isA<PayerValidationError>());
       final error = result as PayerValidationError;
       expect(error.message, contains('At least one payer'));
@@ -820,7 +851,7 @@ void main() {
           const PayerContributionSlot(memberId: null, amount: 300.0),
         ],
       );
-      
+
       expect(result, isA<PayerValidationError>());
       final error = result as PayerValidationError;
       expect(error.message, contains('must be selected'));
@@ -829,11 +860,9 @@ void main() {
     test('PayerContributionSlot validation: zero amount rejected', () {
       final result = validatePayerContributions(
         total: 300.0,
-        payerSlots: [
-          const PayerContributionSlot(memberId: 'u1', amount: 0),
-        ],
+        payerSlots: [const PayerContributionSlot(memberId: 'u1', amount: 0)],
       );
-      
+
       expect(result, isA<PayerValidationError>());
       final error = result as PayerValidationError;
       expect(error.message, contains('must be positive'));
@@ -847,7 +876,7 @@ void main() {
           const PayerContributionSlot(memberId: 'u2', amount: 100.0),
         ],
       );
-      
+
       expect(result, isA<PayerValidationError>());
       final error = result as PayerValidationError;
       expect(error.message, contains('less than total'));
@@ -863,7 +892,7 @@ void main() {
           const PayerContributionSlot(memberId: 'u2', amount: 200.0),
         ],
       );
-      
+
       expect(result, isA<PayerValidationError>());
       final error = result as PayerValidationError;
       expect(error.message, contains('exceed total'));
@@ -877,7 +906,7 @@ void main() {
           const PayerContributionSlot(memberId: 'u2', amount: 150.0),
         ],
       );
-      
+
       expect(result, isA<PayerValidationSuccess>());
     });
 
@@ -905,9 +934,11 @@ void main() {
       expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 20000);
       expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 10000);
       expect(expense.participantSharesByMemberId.length, 3);
-      
-      final payerSum = expense.payerContributionsByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+
+      final payerSum = expense.payerContributionsByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(payerSum, expense.total.amountMinor);
     });
 
@@ -958,11 +989,15 @@ void main() {
         currencyCode: 'INR',
       );
 
-      final payerSum = expense.payerContributionsByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
-      final participantSum = expense.participantSharesByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
-      
+      final payerSum = expense.payerContributionsByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
+      final participantSum = expense.participantSharesByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
+
       expect(payerSum, expense.total.amountMinor);
       expect(participantSum, expense.total.amountMinor);
     });
@@ -989,9 +1024,11 @@ void main() {
 
       expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 60000);
       expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 40000);
-      
-      final payerSum = expense.payerContributionsByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+
+      final payerSum = expense.payerContributionsByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(payerSum, expense.total.amountMinor);
     });
 
@@ -1017,7 +1054,7 @@ void main() {
 
       final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
       final sum = deltas.fold(0, (acc, d) => acc + d.deltaMinor);
-      
+
       expect(sum, 0, reason: 'Multi-payer deltas must sum to zero');
     });
 
@@ -1041,10 +1078,16 @@ void main() {
         currencyCode: 'INR',
       );
 
-      expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 20000,
-          reason: 'u1 paid 200 = 20000 paise');
-      expect(expense.payerContributionsByMemberId['u2']!.amountMinor, 10000,
-          reason: 'u2 paid 100 = 10000 paise');
+      expect(
+        expense.payerContributionsByMemberId['u1']!.amountMinor,
+        20000,
+        reason: 'u1 paid 200 = 20000 paise',
+      );
+      expect(
+        expense.payerContributionsByMemberId['u2']!.amountMinor,
+        10000,
+        reason: 'u2 paid 100 = 10000 paise',
+      );
     });
 
     test('Multi-payer: net deltas are correct', () {
@@ -1069,10 +1112,22 @@ void main() {
 
       final deltas = toLedgerDeltas(expense, 'e1', DateTime.now());
       final deltaMap = {for (var d in deltas) d.memberId: d.deltaMinor};
-      
-      expect(deltaMap['u1'], 10000, reason: 'u1: paid 200, owes 100 → net +100 = +10000');
-      expect(deltaMap.containsKey('u2'), false, reason: 'u2: paid 100, owes 100 → net 0 (no delta created)');
-      expect(deltaMap['u3'], -10000, reason: 'u3: paid 0, owes 100 → net -100 = -10000');
+
+      expect(
+        deltaMap['u1'],
+        10000,
+        reason: 'u1: paid 200, owes 100 → net +100 = +10000',
+      );
+      expect(
+        deltaMap.containsKey('u2'),
+        false,
+        reason: 'u2: paid 100, owes 100 → net 0 (no delta created)',
+      );
+      expect(
+        deltaMap['u3'],
+        -10000,
+        reason: 'u3: paid 0, owes 100 → net -100 = -10000',
+      );
     });
 
     test('NormalizationNeedsConfirmation includes payerSlots', () {
@@ -1102,23 +1157,26 @@ void main() {
       }
     });
 
-    test('NormalizationNeedsConfirmation backward compatibility: payerId getter', () {
-      final confirmation = NormalizationNeedsConfirmation(
-        amount: 300.0,
-        description: 'Test',
-        category: 'Test',
-        date: 'Today',
-        splitType: 'Even',
-        currencyCode: 'INR',
-        slots: [],
-        payerSlots: [
-          const PayerContributionSlot(memberId: 'u1', amount: 300.0),
-        ],
-        unresolvedNames: [],
-      );
+    test(
+      'NormalizationNeedsConfirmation backward compatibility: payerId getter',
+      () {
+        final confirmation = NormalizationNeedsConfirmation(
+          amount: 300.0,
+          description: 'Test',
+          category: 'Test',
+          date: 'Today',
+          splitType: 'Even',
+          currencyCode: 'INR',
+          slots: [],
+          payerSlots: [
+            const PayerContributionSlot(memberId: 'u1', amount: 300.0),
+          ],
+          unresolvedNames: [],
+        );
 
-      expect(confirmation.payerId, 'u1');
-    });
+        expect(confirmation.payerId, 'u1');
+      },
+    );
 
     test('Rounding remainder assigned to first payer', () {
       final expense = buildNormalizedExpenseFromSlots(
@@ -1139,8 +1197,10 @@ void main() {
         currencyCode: 'INR',
       );
 
-      final payerSum = expense.payerContributionsByMemberId.values
-          .fold(0, (sum, m) => sum + m.amountMinor);
+      final payerSum = expense.payerContributionsByMemberId.values.fold(
+        0,
+        (sum, m) => sum + m.amountMinor,
+      );
       expect(payerSum, expense.total.amountMinor);
       expect(expense.payerContributionsByMemberId['u1']!.amountMinor, 5001);
     });

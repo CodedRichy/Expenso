@@ -38,11 +38,21 @@ void main(List<String> args) async {
 
   final userInput = args.isEmpty ? 'Dinner 500' : args[0];
   final memberListStr = args.length > 1
-      ? args[1].split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).join(", ")
+      ? args[1]
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .join(", ")
       : 'Rishi, Prasi, Alex, Sam, Jordan';
   final memberList = ' $memberListStr';
-  final members = memberListStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-  final currentUser = args.length > 2 ? args[2].trim() : (members.isNotEmpty ? members.first : null);
+  final members = memberListStr
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  final currentUser = args.length > 2
+      ? args[2].trim()
+      : (members.isNotEmpty ? members.first : null);
 
   stdout.writeln('Input: "$userInput"');
   stdout.writeln('Members:$memberList');
@@ -61,20 +71,31 @@ void main(List<String> args) async {
   final outcome = result.parseConfidence == 'reject'
       ? 'REJECT'
       : result.parseConfidence == 'constrained'
-          ? 'CONSTRAINED'
-          : 'CONFIDENT';
+      ? 'CONSTRAINED'
+      : 'CONFIDENT';
   stdout.writeln('Outcome: $outcome');
-  if (result.constraintFlags.isNotEmpty) stdout.writeln('  constraintFlags: ${result.constraintFlags}');
+  if (result.constraintFlags.isNotEmpty)
+    stdout.writeln('  constraintFlags: ${result.constraintFlags}');
   if (result.notes.isNotEmpty) stdout.writeln('  notes: ${result.notes}');
-  stdout.writeln('Parsed: amount=${result.amount} description="${result.description}" category="${result.category}" splitType=${result.splitType} participants=${result.participantNames} payer=${result.payerName}');
-  if (result.excludedNames.isNotEmpty) stdout.writeln('  excluded: ${result.excludedNames}');
-  if (result.exactAmountsByName.isNotEmpty) stdout.writeln('  exactAmounts: ${result.exactAmountsByName}');
-  if (result.percentageByName.isNotEmpty) stdout.writeln('  percentageAmounts: ${result.percentageByName}');
-  if (result.sharesByName.isNotEmpty) stdout.writeln('  sharesAmounts: ${result.sharesByName}');
+  stdout.writeln(
+    'Parsed: amount=${result.amount} description="${result.description}" category="${result.category}" splitType=${result.splitType} participants=${result.participantNames} payer=${result.payerName}',
+  );
+  if (result.excludedNames.isNotEmpty)
+    stdout.writeln('  excluded: ${result.excludedNames}');
+  if (result.exactAmountsByName.isNotEmpty)
+    stdout.writeln('  exactAmounts: ${result.exactAmountsByName}');
+  if (result.percentageByName.isNotEmpty)
+    stdout.writeln('  percentageAmounts: ${result.percentageByName}');
+  if (result.sharesByName.isNotEmpty)
+    stdout.writeln('  sharesAmounts: ${result.sharesByName}');
   if (result.parseConfidence == 'reject') {
-    if (result.rejectReason != null) stdout.writeln('  rejectReason: ${result.rejectReason}');
-    stdout.writeln('(Needs clarification — no questions; do not write to ledger)');
-  } else if (result.needsClarification && result.clarificationQuestion != null) {
+    if (result.rejectReason != null)
+      stdout.writeln('  rejectReason: ${result.rejectReason}');
+    stdout.writeln(
+      '(Needs clarification — no questions; do not write to ledger)',
+    );
+  } else if (result.needsClarification &&
+      result.clarificationQuestion != null) {
     stdout.writeln('NEEDS CLARIFICATION: ${result.clarificationQuestion}');
   }
   stdout.writeln('OK');
@@ -84,7 +105,10 @@ void main(List<String> args) async {
 String? _findGap(ParsedExpenseResult result) {
   const tolerance = 0.01;
   if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
-    final sum = result.exactAmountsByName.values.fold<double>(0, (a, b) => a + b);
+    final sum = result.exactAmountsByName.values.fold<double>(
+      0,
+      (a, b) => a + b,
+    );
     if ((sum - result.amount).abs() > tolerance) {
       return 'Exact split: amounts sum to $sum but total is ${result.amount}.';
     }
@@ -106,7 +130,8 @@ void _recordRun({
   required String? error,
 }) {
   final now = DateTime.now().toUtc();
-  final ts = '${now.toIso8601String().replaceFirst('T', ' ').substring(0, 19)}Z';
+  final ts =
+      '${now.toIso8601String().replaceFirst('T', ' ').substring(0, 19)}Z';
   final buf = StringBuffer();
   buf.writeln('');
   buf.writeln('---');
@@ -128,11 +153,14 @@ void _recordRun({
     buf.writeln('  percentageAmounts: ${result.percentageByName}');
     buf.writeln('  sharesAmounts: ${result.sharesByName}');
     buf.writeln('  parseConfidence: ${result.parseConfidence}');
-    if (result.constraintFlags.isNotEmpty) buf.writeln('  constraintFlags: ${result.constraintFlags}');
+    if (result.constraintFlags.isNotEmpty)
+      buf.writeln('  constraintFlags: ${result.constraintFlags}');
     if (result.notes.isNotEmpty) buf.writeln('  notes: ${result.notes}');
-    if (result.rejectReason != null) buf.writeln('  rejectReason: ${result.rejectReason}');
+    if (result.rejectReason != null)
+      buf.writeln('  rejectReason: ${result.rejectReason}');
     if (result.needsClarification) buf.writeln('  needsClarification: true');
-    if (result.clarificationQuestion != null) buf.writeln('  clarificationQuestion: "${result.clarificationQuestion}"');
+    if (result.clarificationQuestion != null)
+      buf.writeln('  clarificationQuestion: "${result.clarificationQuestion}"');
   }
   try {
     final file = File(_logPath);
@@ -155,7 +183,9 @@ Future<void> _runBatch(String apiKey, String path) async {
   const memberListStr = 'Rishi, Prasi, Alex, Sam, Jordan';
   const currentUser = 'Rishi';
   var rateLimited = 0;
-  stdout.writeln('Stress run: ${lines.length} inputs from $path (${_minIntervalSeconds}s between requests)');
+  stdout.writeln(
+    'Stress run: ${lines.length} inputs from $path (${_minIntervalSeconds}s between requests)',
+  );
   stdout.writeln('---');
   for (var i = 0; i < lines.length; i++) {
     final input = lines[i];
@@ -165,11 +195,19 @@ Future<void> _runBatch(String apiKey, String path) async {
       rateLimited++;
       stdout.writeln('[${i + 1}/${lines.length}] $preview ... rate-limited');
     } else {
-      final status = run.error != null ? 'ERROR: ${run.error}' : (run.result!.parseConfidence == 'reject' ? 'REJECT' : run.result!.parseConfidence == 'constrained' ? 'CONSTRAINED' : 'CONFIDENT');
+      final status = run.error != null
+          ? 'ERROR: ${run.error}'
+          : (run.result!.parseConfidence == 'reject'
+                ? 'REJECT'
+                : run.result!.parseConfidence == 'constrained'
+                ? 'CONSTRAINED'
+                : 'CONFIDENT');
       stdout.writeln('[${i + 1}/${lines.length}] $preview ... $status');
     }
   }
-  stdout.writeln('Done. ${rateLimited > 0 ? '$rateLimited rate-limited. ' : ''}Runs recorded to $_logPath');
+  stdout.writeln(
+    'Done. ${rateLimited > 0 ? '$rateLimited rate-limited. ' : ''}Runs recorded to $_logPath',
+  );
 }
 
 Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
@@ -180,7 +218,11 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
 ) async {
   final memberList = ' $memberListStr';
   final recentExamples = _loadRecentExamplesFromLog(_maxRecentExamples);
-  final systemPrompt = _buildSystemPrompt(memberList, currentUser, recentExamples);
+  final systemPrompt = _buildSystemPrompt(
+    memberList,
+    currentUser,
+    recentExamples,
+  );
   final body = {
     'model': _model,
     'messages': [
@@ -194,7 +236,9 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   http.Response response = await _post(apiKey, body);
   _markRequestDone();
   while (response.statusCode == 429 || response.statusCode >= 500) {
-    stderr.writeln('Transient error (HTTP ${response.statusCode}). Waiting to retry...');
+    stderr.writeln(
+      'Transient error (HTTP ${response.statusCode}). Waiting to retry...',
+    );
     final waitSeconds = _retryAfterSeconds(response);
     await Future<void>.delayed(Duration(seconds: waitSeconds));
     response = await _post(apiKey, body);
@@ -202,13 +246,31 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   }
   if (response.statusCode != 200) {
     if (response.statusCode != 429) {
-      _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'API ${response.statusCode}');
+      _recordRun(
+        userInput: userInput,
+        members: memberListStr,
+        rawJson: null,
+        result: null,
+        error: 'API ${response.statusCode}',
+      );
     }
-    return (result: null, rawJson: null, error: response.statusCode == 429 ? '429 rate limit' : 'API ${response.statusCode}');
+    return (
+      result: null,
+      rawJson: null,
+      error: response.statusCode == 429
+          ? '429 rate limit'
+          : 'API ${response.statusCode}',
+    );
   }
   final map = jsonDecode(response.body) as Map<String, dynamic>?;
   if (map == null) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Invalid API response');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: null,
+      result: null,
+      error: 'Invalid API response',
+    );
     return (result: null, rawJson: null, error: 'Invalid API response');
   }
   final choices = map['choices'] as List?;
@@ -217,7 +279,13 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   final content = message is Map<String, dynamic> ? message['content'] : null;
   String raw = (content is String) ? content.trim() : '';
   if (raw.isEmpty) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'Empty content from API');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: null,
+      result: null,
+      error: 'Empty content from API',
+    );
     return (result: null, rawJson: null, error: 'Empty content from API');
   }
   raw = raw.replaceAll('\uFEFF', '');
@@ -225,24 +293,48 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
   raw = _fixCommonJsonIssues(raw);
   final decoded = _tryDecodeJson(raw);
   if (decoded == null) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: null, error: 'Failed to decode JSON');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: raw,
+      result: null,
+      error: 'Failed to decode JSON',
+    );
     return (result: null, rawJson: raw, error: 'Failed to decode JSON');
   }
   ParsedExpenseResult result;
   try {
     result = ParsedExpenseResult.fromJson(decoded);
   } catch (e) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: null, result: null, error: 'fromJson: $e');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: null,
+      result: null,
+      error: 'fromJson: $e',
+    );
     return (result: null, rawJson: null, error: 'fromJson: $e');
   }
   final validationError = _validateResult(result);
   if (validationError != null) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'Validation: $validationError');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: raw,
+      result: result,
+      error: 'Validation: $validationError',
+    );
     return (result: result, rawJson: raw, error: validationError);
   }
   final gap = result.parseConfidence == 'confident' ? _findGap(result) : null;
   if (gap != null) {
-    _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: 'GAP: $gap');
+    _recordRun(
+      userInput: userInput,
+      members: memberListStr,
+      rawJson: raw,
+      result: result,
+      error: 'GAP: $gap',
+    );
     return (result: result, rawJson: raw, error: gap);
   }
   if (result.description.trim().isEmpty) {
@@ -265,7 +357,13 @@ Future<({ParsedExpenseResult? result, String? rawJson, String? error})> _runOne(
       rejectReason: result.rejectReason,
     );
   }
-  _recordRun(userInput: userInput, members: memberListStr, rawJson: raw, result: result, error: null);
+  _recordRun(
+    userInput: userInput,
+    members: memberListStr,
+    rawJson: raw,
+    result: result,
+    error: null,
+  );
   return (result: result, rawJson: raw, error: null);
 }
 
@@ -316,7 +414,11 @@ Map<String, String> _loadEnv() {
   return out;
 }
 
-String _buildSystemPrompt(String memberList, [String? currentUserName, List<({String input, String json})> recentExamples = const []]) {
+String _buildSystemPrompt(
+  String memberList, [
+  String? currentUserName,
+  List<({String input, String json})> recentExamples = const [],
+]) {
   final currentUser = currentUserName ?? '(not set)';
   return '''
 You are a high-precision financial parsing engine. Convert the user's message into exactly ONE JSON expense object. 
@@ -380,18 +482,21 @@ Return ONLY JSON.''';
 }
 
 String? _validateResult(ParsedExpenseResult result) {
-  if (result.amount.isNaN || result.amount.isInfinite) return 'Amount must be a valid number.';
-  
+  if (result.amount.isNaN || result.amount.isInfinite)
+    return 'Amount must be a valid number.';
+
   // Demote confidence if history or unresolved splits are mentioned
-  if (result.parseConfidence == 'confident' && 
-     (result.splitType == 'unresolved' || result.constraintFlags.contains('history'))) {
+  if (result.parseConfidence == 'confident' &&
+      (result.splitType == 'unresolved' ||
+          result.constraintFlags.contains('history'))) {
     return 'Validation: Confident parse cannot have splitType unresolved or history flags.';
   }
 
   // Force reject for settlements to prevent ledger pollution
-  if (result.description.toLowerCase().contains('debt') || 
+  if (result.description.toLowerCase().contains('debt') ||
       result.description.toLowerCase().contains('settle')) {
-    if (result.parseConfidence != 'reject') return 'Validation: Settlements must be REJECTED.';
+    if (result.parseConfidence != 'reject')
+      return 'Validation: Settlements must be REJECTED.';
   }
 
   return null;
@@ -399,11 +504,15 @@ String? _validateResult(ParsedExpenseResult result) {
 
 String _extractJson(String raw) {
   raw = raw.trim();
-  final codeBlockMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
+  final codeBlockMatch = RegExp(
+    r'```(?:json)?\s*([\s\S]*?)```',
+    caseSensitive: false,
+  ).firstMatch(raw);
   if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
   final start = raw.indexOf('{');
   final end = raw.lastIndexOf('}');
-  if (start != -1 && end != -1 && end > start) raw = raw.substring(start, end + 1);
+  if (start != -1 && end != -1 && end > start)
+    raw = raw.substring(start, end + 1);
   return raw.trim();
 }
 
@@ -459,7 +568,9 @@ Future<void> _throttleForRateLimit() async {
 
 void _markRequestDone() {
   try {
-    File(_lastRequestStampPath).writeAsStringSync(DateTime.now().millisecondsSinceEpoch.toString());
+    File(
+      _lastRequestStampPath,
+    ).writeAsStringSync(DateTime.now().millisecondsSinceEpoch.toString());
   } catch (_) {}
 }
 
@@ -475,7 +586,10 @@ int _retryAfterSeconds(http.Response response) {
 Future<http.Response> _post(String apiKey, Map<String, dynamic> body) {
   return http.post(
     Uri.parse(_baseUrl),
-    headers: {'Authorization': 'Bearer $apiKey', 'Content-Type': 'application/json'},
+    headers: {
+      'Authorization': 'Bearer $apiKey',
+      'Content-Type': 'application/json',
+    },
     body: jsonEncode(body),
   );
 }
@@ -515,38 +629,41 @@ class ParsedExpenseResult {
     List<String>? constraintFlags,
     List<String>? notes,
     this.rejectReason,
-  })  : participantNames = participantNames ?? [],
-        constraintFlags = constraintFlags ?? [],
-        excludedNames = excludedNames ?? [],
-        exactAmountsByName = exactAmountsByName ?? {},
-        percentageByName = percentageByName ?? {},
-        sharesByName = sharesByName ?? {},
-        notes = notes ?? [];
+  }) : participantNames = participantNames ?? [],
+       constraintFlags = constraintFlags ?? [],
+       excludedNames = excludedNames ?? [],
+       exactAmountsByName = exactAmountsByName ?? {},
+       percentageByName = percentageByName ?? {},
+       sharesByName = sharesByName ?? {},
+       notes = notes ?? [];
 
   static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
     final amountRaw = json['amount'] ?? json['amt'];
     final amount = (amountRaw is num)
         ? (amountRaw).toDouble()
         : double.tryParse(amountRaw?.toString() ?? '') ?? 0.0;
-    final desc = ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
+    final desc =
+        ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
     final category = (json['category'] as String?)?.trim() ?? '';
     final split = (json['splitType'] as String?)?.trim().toLowerCase();
     final st = split == 'exact'
         ? 'exact'
         : split == 'exclude'
-            ? 'exclude'
-            : split == 'percentage'
-                ? 'percentage'
-                : split == 'shares'
-                    ? 'shares'
-                    : split == 'unresolved'
-                        ? 'unresolved'
-                        : 'even';
-    final parts = json['participants'] ?? json['participant'] ?? json['members'];
+        ? 'exclude'
+        : split == 'percentage'
+        ? 'percentage'
+        : split == 'shares'
+        ? 'shares'
+        : split == 'unresolved'
+        ? 'unresolved'
+        : 'even';
+    final parts =
+        json['participants'] ?? json['participant'] ?? json['members'];
     List<String> names = [];
     if (parts is List) {
       for (final p in parts) {
-        if (p != null && p.toString().trim().isNotEmpty) names.add(p.toString().trim());
+        if (p != null && p.toString().trim().isNotEmpty)
+          names.add(p.toString().trim());
       }
     } else if (parts != null && parts.toString().trim().isNotEmpty) {
       names.add(parts.toString().trim());
@@ -556,7 +673,8 @@ class ParsedExpenseResult {
     List<String> excludedList = [];
     if (excluded is List) {
       for (final e in excluded) {
-        if (e != null && e.toString().trim().isNotEmpty) excludedList.add(e.toString().trim());
+        if (e != null && e.toString().trim().isNotEmpty)
+          excludedList.add(e.toString().trim());
       }
     }
     final exactRaw = json['exactAmounts'];
@@ -566,48 +684,66 @@ class ParsedExpenseResult {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null) exactMap[name] = numVal;
       }
     }
-    final pctRaw = json['percentageAmounts'] ?? json['percentageByPerson'] ?? json['percentages'];
+    final pctRaw =
+        json['percentageAmounts'] ??
+        json['percentageByPerson'] ??
+        json['percentages'];
     Map<String, double> pctMap = {};
     if (pctRaw is Map) {
       for (final entry in pctRaw.entries) {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null) pctMap[name] = numVal;
       }
     }
-    final sharesRaw = json['sharesAmounts'] ?? json['sharesByPerson'] ?? json['shares'];
+    final sharesRaw =
+        json['sharesAmounts'] ?? json['sharesByPerson'] ?? json['shares'];
     Map<String, double> sharesMap = {};
     if (sharesRaw is Map) {
       for (final entry in sharesRaw.entries) {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null && numVal > 0) sharesMap[name] = numVal;
       }
     }
     final needClar = json['needsClarification'] == true;
     final q = (json['clarificationQuestion'] as String?)?.trim();
-    final confidence = (json['parseConfidence'] as String?)?.trim().toLowerCase();
-    final pc = confidence == 'reject' ? 'reject' : confidence == 'constrained' ? 'constrained' : 'confident';
+    final confidence = (json['parseConfidence'] as String?)
+        ?.trim()
+        .toLowerCase();
+    final pc = confidence == 'reject'
+        ? 'reject'
+        : confidence == 'constrained'
+        ? 'constrained'
+        : 'confident';
     List<String> flags = [];
     final flagsRaw = json['constraintFlags'];
     if (flagsRaw is List) {
       for (final f in flagsRaw) {
-        if (f != null && f.toString().trim().isNotEmpty) flags.add(f.toString().trim());
+        if (f != null && f.toString().trim().isNotEmpty)
+          flags.add(f.toString().trim());
       }
     }
     List<String> notesList = [];
     final notesRaw = json['notes'];
     if (notesRaw is List) {
       for (final n in notesRaw) {
-        if (n != null && n.toString().trim().isNotEmpty) notesList.add(n.toString().trim());
+        if (n != null && n.toString().trim().isNotEmpty)
+          notesList.add(n.toString().trim());
       }
     }
     final rejectReason = (json['rejectReason'] as String?)?.trim();
@@ -627,7 +763,9 @@ class ParsedExpenseResult {
       parseConfidence: pc,
       constraintFlags: flags,
       notes: notesList.isNotEmpty ? notesList : null,
-      rejectReason: rejectReason != null && rejectReason.isNotEmpty ? rejectReason : null,
+      rejectReason: rejectReason != null && rejectReason.isNotEmpty
+          ? rejectReason
+          : null,
     );
   }
 }

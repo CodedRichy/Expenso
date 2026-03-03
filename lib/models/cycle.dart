@@ -1,10 +1,6 @@
 import 'models.dart';
 
-enum CycleStatus {
-  active,
-  settling,
-  closed,
-}
+enum CycleStatus { active, settling, closed }
 
 class Cycle {
   final String id;

@@ -9,11 +9,7 @@ class Debt {
   final String toId;
   final MoneyMinor amount;
 
-  const Debt({
-    required this.fromId,
-    required this.toId,
-    required this.amount,
-  });
+  const Debt({required this.fromId, required this.toId, required this.amount});
 
   int get amountMinor => amount.amountMinor;
 
@@ -21,7 +17,7 @@ class Debt {
 }
 
 /// A payment instruction: [fromMemberId] pays [toMemberId] [amount].
-/// 
+///
 /// Used by [SettlementEngine.computePaymentRoutes] to output the minimal
 /// set of payments needed to settle all balances.
 class PaymentRoute {
@@ -49,7 +45,8 @@ class PaymentRoute {
           currencyCode == other.currencyCode;
 
   @override
-  int get hashCode => Object.hash(fromMemberId, toMemberId, amountMinor, currencyCode);
+  int get hashCode =>
+      Object.hash(fromMemberId, toMemberId, amountMinor, currencyCode);
 
   @override
   String toString() =>
@@ -57,7 +54,7 @@ class PaymentRoute {
 }
 
 /// Computes who owes whom from expenses and members.
-/// 
+///
 /// All accounting uses integer arithmetic only - no floating-point.
 /// Net balance = Total Paid - Total Owed per member (by id); then matches debtors to creditors.
 ///
@@ -65,7 +62,7 @@ class PaymentRoute {
 /// Before deploying, Firestore must be verified to contain no expenses with
 /// empty or invalid paidById. If such data exists, it must be backfilled or
 /// quarantined. This is a deployment responsibility, not app logic.
-/// 
+///
 /// Invariant I7: An expense with no valid payer produces no credit.
 /// - Empty paidById: skipped entirely (no deltas)
 /// - Pending member paidById (p_ prefix): skipped entirely
@@ -74,17 +71,17 @@ class SettlementEngine {
   SettlementEngine._();
 
   /// Computes net balances from a list of ledger deltas (integer-based).
-  /// 
+  ///
   /// This is the canonical, pure computation path.
   /// Positive = owed to member (credit), negative = member owes (debt).
-  /// 
+  ///
   /// Asserts that all deltas have the same currency.
   static Map<String, int> computeNetBalancesFromDeltas(
     List<LedgerDelta> deltas,
     String currencyCode,
   ) {
     final Map<String, int> net = {};
-    
+
     for (final delta in deltas) {
       if (delta.memberId.isEmpty || delta.memberId.startsWith('p_')) continue;
       if (delta.currencyCode != currencyCode) {
@@ -94,12 +91,12 @@ class SettlementEngine {
       }
       net[delta.memberId] = (net[delta.memberId] ?? 0) + delta.deltaMinor;
     }
-    
+
     return Map.unmodifiable(net);
   }
 
   /// Computes debts from a list of ledger deltas (integer-based).
-  /// 
+  ///
   /// Uses the greedy algorithm to minimize number of transactions.
   /// No tolerance logic - exact integer arithmetic.
   static List<Debt> computeDebtsFromDeltas(
@@ -115,8 +112,13 @@ class SettlementEngine {
   /// When the expense has [amountMinor] and [splitAmountsByIdMinor] (from Firestore
   /// write-path bridge), uses the integer path. Otherwise uses the legacy double adapter.
   /// Skips the expense if splitAmountsById is missing/empty or sum does not match amount (within 0.01).
-  static List<LedgerDelta> expenseToDeltas(Expense expense, {String currencyCode = 'INR'}) {
-    if (expense.amount <= 0 || expense.amount.isNaN || expense.amount.isInfinite) {
+  static List<LedgerDelta> expenseToDeltas(
+    Expense expense, {
+    String currencyCode = 'INR',
+  }) {
+    if (expense.amount <= 0 ||
+        expense.amount.isNaN ||
+        expense.amount.isInfinite) {
       return [];
     }
 
@@ -127,17 +129,26 @@ class SettlementEngine {
 
     final splits = expense.splitAmountsById;
     if (splits == null || splits.isEmpty) {
-      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has no splitAmountsById, skipping');
+      if (kDebugMode)
+        debugPrint(
+          'SettlementEngine: expense ${expense.id} has no splitAmountsById, skipping',
+        );
       return [];
     }
     final sum = splits.values.fold<double>(0, (a, b) => a + b);
     if (sum.isNaN || sum.isInfinite) {
-      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping');
+      if (kDebugMode)
+        debugPrint(
+          'SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping',
+        );
       return [];
     }
     final diff = (sum - expense.amount).abs();
     if (diff > 0.01) {
-      if (kDebugMode) debugPrint('SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping');
+      if (kDebugMode)
+        debugPrint(
+          'SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping',
+        );
       return [];
     }
 
@@ -173,7 +184,10 @@ class SettlementEngine {
   }
 
   /// Converts a list of Expenses to LedgerDeltas.
-  static List<LedgerDelta> expensesToDeltas(List<Expense> expenses, {String currencyCode = 'INR'}) {
+  static List<LedgerDelta> expensesToDeltas(
+    List<Expense> expenses, {
+    String currencyCode = 'INR',
+  }) {
     final deltas = <LedgerDelta>[];
     for (final expense in expenses) {
       deltas.addAll(expenseToDeltas(expense, currencyCode: currencyCode));
@@ -183,41 +197,51 @@ class SettlementEngine {
 
   /// Returns net balance per member id in minor units.
   /// Positive = owed to them (credit), negative = they owe (debt).
-  /// 
+  ///
   /// This method converts from legacy double-based expenses to integer-based balances.
   static Map<String, int> computeNetBalances(
     List<Expense> expenses,
-    List<Member> members,
-    {String currencyCode = 'INR'}
-  ) {
+    List<Member> members, {
+    String currencyCode = 'INR',
+  }) {
     final deltas = expensesToDeltas(expenses, currencyCode: currencyCode);
-    
-    final ids = members.where((m) => !m.id.startsWith('p_')).map((m) => m.id).toSet();
+
+    final ids = members
+        .where((m) => !m.id.startsWith('p_'))
+        .map((m) => m.id)
+        .toSet();
     final Map<String, int> net = {};
     for (final id in ids) {
       net[id] = 0;
     }
-    
+
     for (final delta in deltas) {
       if (ids.contains(delta.memberId)) {
         net[delta.memberId] = (net[delta.memberId] ?? 0) + delta.deltaMinor;
       }
     }
-    
+
     return Map.unmodifiable(net);
   }
 
   /// Returns a list of [Debt] (fromId, toId, amount in minor units).
   static List<Debt> computeDebts(
     List<Expense> expenses,
-    List<Member> members,
-    {String currencyCode = 'INR'}
-  ) {
-    final net = computeNetBalances(expenses, members, currencyCode: currencyCode);
+    List<Member> members, {
+    String currencyCode = 'INR',
+  }) {
+    final net = computeNetBalances(
+      expenses,
+      members,
+      currencyCode: currencyCode,
+    );
     return _computeDebtsFromNetBalances(net, currencyCode);
   }
 
-  static List<Debt> _computeDebtsFromNetBalances(Map<String, int> net, String currencyCode) {
+  static List<Debt> _computeDebtsFromNetBalances(
+    Map<String, int> net,
+    String currencyCode,
+  ) {
     final debtors = net.entries
         .where((e) => e.value < 0)
         .map((e) => _BalanceEntry(e.key, -e.value))
@@ -234,13 +258,17 @@ class SettlementEngine {
     while (d < debtors.length && c < creditors.length) {
       final debtor = debtors[d];
       final creditor = creditors[c];
-      final amount = debtor.amount < creditor.amount ? debtor.amount : creditor.amount;
+      final amount = debtor.amount < creditor.amount
+          ? debtor.amount
+          : creditor.amount;
       if (amount <= 0) break;
-      result.add(Debt(
-        fromId: debtor.id,
-        toId: creditor.id,
-        amount: MoneyMinor(amount, currencyCode),
-      ));
+      result.add(
+        Debt(
+          fromId: debtor.id,
+          toId: creditor.id,
+          amount: MoneyMinor(amount, currencyCode),
+        ),
+      );
       debtor.amount -= amount;
       creditor.amount -= amount;
       if (debtor.amount <= 0) d++;
@@ -250,14 +278,14 @@ class SettlementEngine {
   }
 
   /// Computes minimal payment routes from net balances using a greedy algorithm.
-  /// 
+  ///
   /// Takes a map of member IDs to net balances (positive = credit, negative = debt)
   /// and returns the minimal set of payment instructions to settle all balances.
-  /// 
+  ///
   /// The greedy algorithm sorts debtors and creditors by amount (descending),
   /// then repeatedly matches the largest debtor to the largest creditor.
   /// This produces at most n-1 transactions for n members with non-zero balances.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final netBalances = {'alice': 10000, 'bob': -6000, 'carol': -4000}; // minor units
@@ -286,17 +314,19 @@ class SettlementEngine {
     while (d < debtors.length && c < creditors.length) {
       final debtor = debtors[d];
       final creditor = creditors[c];
-      final transferAmount = debtor.amount < creditor.amount 
-          ? debtor.amount 
+      final transferAmount = debtor.amount < creditor.amount
+          ? debtor.amount
           : creditor.amount;
 
       if (transferAmount <= 0) break;
 
-      routes.add(PaymentRoute(
-        fromMemberId: debtor.id,
-        toMemberId: creditor.id,
-        amount: MoneyMinor(transferAmount, currencyCode),
-      ));
+      routes.add(
+        PaymentRoute(
+          fromMemberId: debtor.id,
+          toMemberId: creditor.id,
+          amount: MoneyMinor(transferAmount, currencyCode),
+        ),
+      );
 
       debtor.amount -= transferAmount;
       creditor.amount -= transferAmount;
@@ -309,7 +339,7 @@ class SettlementEngine {
   }
 
   /// Returns only the payments that a specific member needs to make.
-  /// 
+  ///
   /// Filters [routes] to include only those where [memberId] is the payer
   /// (fromMemberId). Use this to show each user only their outgoing payments.
   static List<PaymentRoute> getPaymentsForMember(
@@ -320,7 +350,7 @@ class SettlementEngine {
   }
 
   /// Returns payments that a specific member will receive.
-  /// 
+  ///
   /// Filters [routes] to include only those where [memberId] is the recipient
   /// (toMemberId). Use this to show incoming payments.
   static List<PaymentRoute> getPaymentsToMember(
@@ -338,31 +368,42 @@ class SettlementEngine {
   /// Deferred migration to integer amounts: see docs/internal/V4_TESTING_ISSUES.md G4.
   static Map<String, double> computeNetBalancesAsDouble(
     List<Expense> expenses,
-    List<Member> members,
-    {String currencyCode = 'INR'}
-  ) {
-    final netMinor = computeNetBalances(expenses, members, currencyCode: currencyCode);
+    List<Member> members, {
+    String currencyCode = 'INR',
+  }) {
+    final netMinor = computeNetBalances(
+      expenses,
+      members,
+      currencyCode: currencyCode,
+    );
     return Map.fromEntries(
-      netMinor.entries.map((e) => MapEntry(
-        e.key,
-        MoneyConversion.minorToDisplay(e.value, currencyCode),
-      )),
+      netMinor.entries.map(
+        (e) => MapEntry(
+          e.key,
+          MoneyConversion.minorToDisplay(e.value, currencyCode),
+        ),
+      ),
     );
   }
 
   /// Legacy: Returns debts with double amounts (for UI compatibility).
   /// Deferred migration to integer amounts: see docs/internal/V4_TESTING_ISSUES.md G4.
-  static List<({String fromId, String toId, double amount})> computeDebtsAsDouble(
+  static List<({String fromId, String toId, double amount})>
+  computeDebtsAsDouble(
     List<Expense> expenses,
-    List<Member> members,
-    {String currencyCode = 'INR'}
-  ) {
+    List<Member> members, {
+    String currencyCode = 'INR',
+  }) {
     final debts = computeDebts(expenses, members, currencyCode: currencyCode);
-    return debts.map((d) => (
-      fromId: d.fromId,
-      toId: d.toId,
-      amount: MoneyConversion.minorToDisplay(d.amountMinor, currencyCode),
-    )).toList();
+    return debts
+        .map(
+          (d) => (
+            fromId: d.fromId,
+            toId: d.toId,
+            amount: MoneyConversion.minorToDisplay(d.amountMinor, currencyCode),
+          ),
+        )
+        .toList();
   }
 
   // ============================================================
@@ -370,19 +411,19 @@ class SettlementEngine {
   // ============================================================
 
   /// Computes optimized payment routes from global net balances.
-  /// 
+  ///
   /// This is the "God Mode" feature: given net balances aggregated across
   /// all groups (keyed by phone number in E.164 format), computes the
   /// minimum number of transactions to settle all debts.
-  /// 
+  ///
   /// Example: If across all groups:
   /// - Alice is owed ₹500 by Bob
   /// - Bob is owed ₹500 by Carol
   /// Instead of 2 transactions, suggest: Carol pays Alice ₹500 directly.
-  /// 
+  ///
   /// Input: Map of phone (E.164) -> net balance in minor units
   /// (positive = owed to them, negative = they owe)
-  /// 
+  ///
   /// Output: List of optimized payment routes (fromPhone, toPhone, amount)
   static List<OptimizedRoute> computeOptimizedGlobalRoutes(
     Map<String, int> globalNetBalances,
@@ -412,12 +453,14 @@ class SettlementEngine {
 
       if (transferAmount <= 0) break;
 
-      routes.add(OptimizedRoute(
-        fromPhone: debtor.id,
-        toPhone: creditor.id,
-        amountMinor: transferAmount,
-        currencyCode: currencyCode,
-      ));
+      routes.add(
+        OptimizedRoute(
+          fromPhone: debtor.id,
+          toPhone: creditor.id,
+          amountMinor: transferAmount,
+          currencyCode: currencyCode,
+        ),
+      );
 
       debtor.amount -= transferAmount;
       creditor.amount -= transferAmount;
@@ -430,7 +473,7 @@ class SettlementEngine {
   }
 
   /// Compares original per-group routes vs optimized global routes.
-  /// 
+  ///
   /// Returns (originalCount, optimizedCount, savingsCount)
   static (int, int, int) compareOptimization(
     int originalRouteCount,
@@ -440,7 +483,6 @@ class SettlementEngine {
     final savings = originalRouteCount - optimizedCount;
     return (originalRouteCount, optimizedCount, savings > 0 ? savings : 0);
   }
-
 }
 
 /// An optimized payment route for cross-group settlement.

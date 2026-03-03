@@ -77,8 +77,13 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                 delay: const Duration(milliseconds: 200),
                 child: TapScale(
                   child: ElevatedButton(
-                    onPressed: _nameController.text.trim().isNotEmpty ? handleGetStarted : null,
-                    child: const Text('Get Started', style: AppTypography.button),
+                    onPressed: _nameController.text.trim().isNotEmpty
+                        ? handleGetStarted
+                        : null,
+                    child: const Text(
+                      'Get Started',
+                      style: AppTypography.button,
+                    ),
                   ),
                 ),
               ),

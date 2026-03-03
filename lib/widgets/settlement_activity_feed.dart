@@ -20,7 +20,9 @@ class SettlementActivityTapToExpand extends StatelessWidget {
         final events = snapshot.data ?? [];
         if (events.isEmpty) return const SizedBox.shrink();
 
-        final pendingCount = CycleRepository.instance.getPendingSettlementCount(groupId);
+        final pendingCount = CycleRepository.instance.getPendingSettlementCount(
+          groupId,
+        );
         final displayEvents = events.take(_previewCount).toList();
 
         return Material(
@@ -39,7 +41,9 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                   builder: (ctx, scrollController) => Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -48,7 +52,10 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                           width: 36,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -59,29 +66,37 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                               Text(
                                 'Activity',
                                 style: context.listItemTitle.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               const Spacer(),
-                              if (pendingCount > 0) _PendingBadge(count: pendingCount),
+                              if (pendingCount > 0)
+                                _PendingBadge(count: pendingCount),
                             ],
                           ),
                         ),
                         const Divider(height: 1),
                         Expanded(
                           child: StreamBuilder<List<SettlementEvent>>(
-                            stream: CycleRepository.instance.settlementEventsStream(groupId),
+                            stream: CycleRepository.instance
+                                .settlementEventsStream(groupId),
                             builder: (context, snapshot) {
                               final list = snapshot.data ?? [];
                               if (list.isEmpty) {
-                                return const Center(child: Text('No activity yet'));
+                                return const Center(
+                                  child: Text('No activity yet'),
+                                );
                               }
                               return ListView.separated(
                                 controller: scrollController,
                                 padding: const EdgeInsets.only(bottom: 24),
                                 itemCount: list.length,
-                                separatorBuilder: (_, index) => const Divider(height: 1, indent: 48),
-                                itemBuilder: (context, index) => _EventRow(event: list[index]),
+                                separatorBuilder: (_, index) =>
+                                    const Divider(height: 1, indent: 48),
+                                itemBuilder: (context, index) =>
+                                    _EventRow(event: list[index]),
                               );
                             },
                           ),
@@ -115,11 +130,14 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                         Text(
                           'Activity',
                           style: context.listItemTitle.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const Spacer(),
-                        if (pendingCount > 0) _PendingBadge(count: pendingCount),
+                        if (pendingCount > 0)
+                          _PendingBadge(count: pendingCount),
                         const SizedBox(width: 4),
                         Icon(
                           Icons.expand_less,
@@ -135,8 +153,10 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,
                     itemCount: displayEvents.length,
-                    separatorBuilder: (_, index) => const Divider(height: 1, indent: 48),
-                    itemBuilder: (context, index) => _EventRow(event: displayEvents[index]),
+                    separatorBuilder: (_, index) =>
+                        const Divider(height: 1, indent: 48),
+                    itemBuilder: (context, index) =>
+                        _EventRow(event: displayEvents[index]),
                   ),
                   if (events.length > _previewCount)
                     Padding(
@@ -147,14 +167,18 @@ class SettlementActivityTapToExpand extends StatelessWidget {
                           Text(
                             'Tap to see all',
                             style: context.caption.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(width: 4),
                           Icon(
                             Icons.expand_less,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -185,13 +209,15 @@ class SettlementActivityFeed extends StatelessWidget {
       stream: CycleRepository.instance.settlementEventsStream(groupId),
       builder: (context, snapshot) {
         final events = snapshot.data ?? [];
-        
+
         if (events.isEmpty) {
           return const SizedBox.shrink();
         }
 
         final displayEvents = events.take(maxItems).toList();
-        final pendingCount = CycleRepository.instance.getPendingSettlementCount(groupId);
+        final pendingCount = CycleRepository.instance.getPendingSettlementCount(
+          groupId,
+        );
 
         return Container(
           decoration: BoxDecoration(
@@ -219,8 +245,7 @@ class SettlementActivityFeed extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    if (pendingCount > 0)
-                      _PendingBadge(count: pendingCount),
+                    if (pendingCount > 0) _PendingBadge(count: pendingCount),
                   ],
                 ),
               ),
@@ -230,7 +255,8 @@ class SettlementActivityFeed extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 itemCount: displayEvents.length,
-                separatorBuilder: (context, index) => const Divider(height: 1, indent: 48),
+                separatorBuilder: (context, index) =>
+                    const Divider(height: 1, indent: 48),
                 itemBuilder: (context, index) {
                   return _EventRow(event: displayEvents[index]);
                 },
@@ -257,10 +283,7 @@ class _EventRow extends StatelessWidget {
           _EventIcon(type: event.type),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              event.displayMessage,
-              style: context.bodyPrimary,
-            ),
+            child: Text(event.displayMessage, style: context.bodyPrimary),
           ),
           Text(
             event.relativeTime,
@@ -282,18 +305,54 @@ class _EventIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (IconData icon, Color color) = switch (type) {
-      SettlementEventType.cycleSettlementStarted => (Icons.flag_outlined, context.colorAccent),
-      SettlementEventType.paymentInitiated => (Icons.send_outlined, context.colorWarning),
-      SettlementEventType.paymentPending => (Icons.hourglass_empty, context.colorWarning),
-      SettlementEventType.paymentConfirmedByPayer => (Icons.check_circle_outline, context.colorAccent),
-      SettlementEventType.paymentConfirmedByReceiver => (Icons.verified_outlined, context.colorSuccess),
-      SettlementEventType.paymentFailed => (Icons.cancel_outlined, context.colorError),
-      SettlementEventType.paymentDisputed => (Icons.error_outline, context.colorError),
-      SettlementEventType.cashConfirmationRequested => (Icons.payments_outlined, context.colorWarning),
-      SettlementEventType.cashConfirmed => (Icons.payments, context.colorSuccess),
-      SettlementEventType.cycleFullySettled => (Icons.celebration_outlined, context.colorSuccess),
-      SettlementEventType.cycleArchived => (Icons.inventory_2_outlined, context.colorTextSecondary),
-      SettlementEventType.pendingReminder => (Icons.schedule, context.colorWarning),
+      SettlementEventType.cycleSettlementStarted => (
+        Icons.flag_outlined,
+        context.colorAccent,
+      ),
+      SettlementEventType.paymentInitiated => (
+        Icons.send_outlined,
+        context.colorWarning,
+      ),
+      SettlementEventType.paymentPending => (
+        Icons.hourglass_empty,
+        context.colorWarning,
+      ),
+      SettlementEventType.paymentConfirmedByPayer => (
+        Icons.check_circle_outline,
+        context.colorAccent,
+      ),
+      SettlementEventType.paymentConfirmedByReceiver => (
+        Icons.verified_outlined,
+        context.colorSuccess,
+      ),
+      SettlementEventType.paymentFailed => (
+        Icons.cancel_outlined,
+        context.colorError,
+      ),
+      SettlementEventType.paymentDisputed => (
+        Icons.error_outline,
+        context.colorError,
+      ),
+      SettlementEventType.cashConfirmationRequested => (
+        Icons.payments_outlined,
+        context.colorWarning,
+      ),
+      SettlementEventType.cashConfirmed => (
+        Icons.payments,
+        context.colorSuccess,
+      ),
+      SettlementEventType.cycleFullySettled => (
+        Icons.celebration_outlined,
+        context.colorSuccess,
+      ),
+      SettlementEventType.cycleArchived => (
+        Icons.inventory_2_outlined,
+        context.colorTextSecondary,
+      ),
+      SettlementEventType.pendingReminder => (
+        Icons.schedule,
+        context.colorWarning,
+      ),
     };
 
     return Container(
@@ -346,7 +405,9 @@ class SettlementActivitySummary extends StatelessWidget {
         if (events.isEmpty) return const SizedBox.shrink();
 
         final latestEvent = events.first;
-        final pendingCount = CycleRepository.instance.getPendingSettlementCount(groupId);
+        final pendingCount = CycleRepository.instance.getPendingSettlementCount(
+          groupId,
+        );
 
         return Container(
           padding: const EdgeInsets.all(12),
@@ -372,7 +433,9 @@ class SettlementActivitySummary extends StatelessWidget {
                         child: Text(
                           '$pendingCount member${pendingCount == 1 ? '' : 's'} pending settlement',
                           style: context.caption.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),

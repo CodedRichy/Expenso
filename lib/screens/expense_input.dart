@@ -15,19 +15,13 @@ class ParsedExpense {
   final String description;
   final double amount;
 
-  ParsedExpense({
-    required this.description,
-    required this.amount,
-  });
+  ParsedExpense({required this.description, required this.amount});
 }
 
 class ExpenseInput extends StatefulWidget {
   final Group? group;
 
-  const ExpenseInput({
-    super.key,
-    this.group,
-  });
+  const ExpenseInput({super.key, this.group});
 
   @override
   State<ExpenseInput> createState() => _ExpenseInputState();
@@ -49,7 +43,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
   ParsedExpense? parseExpense(String text) {
     final amountPart = RegExp(r'[\d,]+').firstMatch(text);
     final amountStr = amountPart?.group(0)?.replaceAll(',', '') ?? '';
-    final amount = amountStr.isNotEmpty ? (double.tryParse(amountStr) ?? 0.0) : 0.0;
+    final amount = amountStr.isNotEmpty
+        ? (double.tryParse(amountStr) ?? 0.0)
+        : 0.0;
     if (amount <= 0) return null;
 
     final withIndex = text.toLowerCase().indexOf('with');
@@ -57,10 +53,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
         ? text.substring(0, withIndex).replaceAll(RegExp(r'\d+'), '').trim()
         : text.replaceAll(RegExp(r'\d+'), '').trim();
 
-    return ParsedExpense(
-      description: description,
-      amount: amount,
-    );
+    return ParsedExpense(description: description, amount: amount);
   }
 
   // ─── Semantic completeness ────────────────────────────────────────────────
@@ -91,7 +84,11 @@ class _ExpenseInputState extends State<ExpenseInput> {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return;
     final parsed = parseExpense(input);
-    if (parsed == null || parsed.amount <= 0 || parsed.amount.isNaN || parsed.amount.isInfinite) return;
+    if (parsed == null ||
+        parsed.amount <= 0 ||
+        parsed.amount.isNaN ||
+        parsed.amount.isInfinite)
+      return;
 
     // Delegate semantic completeness to domain rule (mirrors _fallbackParse logic).
     if (_isSemanticallIncomplete(parsed.description)) {
@@ -134,7 +131,11 @@ class _ExpenseInputState extends State<ExpenseInput> {
           final repo = CycleRepository.instance;
           final List<String> participantIds = selectedMemberIds.isNotEmpty
               ? selectedMemberIds.toList()
-              : repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).map((m) => m.id).toList();
+              : repo
+                    .getMembersForGroup(group.id)
+                    .where((m) => !m.id.startsWith('p_'))
+                    .map((m) => m.id)
+                    .toList();
           if (participantIds.isEmpty) participantIds.add(repo.currentUserId);
           final expense = Expense(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -153,7 +154,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
             selectedMemberIds.clear();
             _paidById = repo.currentUserId;
           });
-          Navigator.pop(context, {'groupId': group.id, 'expenseId': expense.id});
+          Navigator.pop(context, {
+            'groupId': group.id,
+            'expenseId': expense.id,
+          });
           return;
         } on ArgumentError catch (e) {
           if (!mounted) return;
@@ -204,7 +208,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
   /// As user types, if any word in the input matches a member's display name, auto-add that member to Who's Involved.
   void _syncSelectedMembersFromInput(Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_'));
+    final members = repo
+        .getMembersForGroup(group.id)
+        .where((m) => !m.id.startsWith('p_'));
     if (members.isEmpty) return;
     final words = input
         .split(RegExp(r'[\s,]+'))
@@ -215,7 +221,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
       final displayName = repo.getMemberDisplayNameById(member.id);
       if (displayName.isEmpty || displayName == 'Unknown') continue;
       final nameLower = displayName.trim().toLowerCase();
-      final matches = words.contains(nameLower) || input.toLowerCase().contains(nameLower);
+      final matches =
+          words.contains(nameLower) || input.toLowerCase().contains(nameLower);
       if (matches) {
         selectedMemberIds.add(member.id);
       }
@@ -224,7 +231,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   Widget _buildWhoPaid(BuildContext context, Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo
+        .getMembersForGroup(group.id)
+        .where((m) => !m.id.startsWith('p_'))
+        .toList();
     if (members.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Column(
@@ -251,7 +261,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   ? ElevatedButton(
                       onPressed: () => setState(() => _paidById = member.id),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -260,7 +273,10 @@ class _ExpenseInputState extends State<ExpenseInput> {
                   : OutlinedButton(
                       onPressed: () => setState(() => _paidById = member.id),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -275,10 +291,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   Widget _buildWhoIsInvolved(BuildContext context, Group group) {
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(group.id).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo
+        .getMembersForGroup(group.id)
+        .where((m) => !m.id.startsWith('p_'))
+        .toList();
     if (members.isEmpty) return const SizedBox.shrink();
     final allIds = members.map((m) => m.id).toSet();
-    final allSelected = allIds.isNotEmpty && selectedMemberIds.containsAll(allIds);
+    final allSelected =
+        allIds.isNotEmpty && selectedMemberIds.containsAll(allIds);
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +425,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
   Widget build(BuildContext context) {
     final group = widget.group ?? RouteArgs.getGroup(context);
     if (group == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
 
@@ -430,164 +452,171 @@ class _ExpenseInputState extends State<ExpenseInput> {
 
   Widget _buildConfirmScaffold(ThemeData theme, bool isDark, Group group) {
     return GradientScaffold(
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.screenPaddingH,
-                  AppSpacing.screenHeaderPaddingTop,
-                  AppSpacing.screenPaddingH,
-                  AppSpacing.space3xl,
-                ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.screenHeaderPaddingTop,
+                AppSpacing.screenPaddingH,
+                AppSpacing.space3xl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TapScale(
+                    child: IconButton(
+                      onPressed: handleEdit,
+                      icon: const Icon(Icons.chevron_left, size: 24),
+                      color: theme.colorScheme.onSurface,
+                      padding: EdgeInsets.zero,
+                      alignment: Alignment.centerLeft,
+                      constraints: const BoxConstraints(),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Confirm Expense',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TapScale(
-                      child: IconButton(
-                        onPressed: handleEdit,
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: theme.colorScheme.onSurface,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
                     Text(
-                      'Confirm Expense',
+                      formatMoneyFromMajor(
+                        parsedData!.amount,
+                        group.currencyCode,
+                      ),
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 52,
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
-                        letterSpacing: -0.5,
+                        letterSpacing: -1.2,
+                        height: 1.1,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      parsedData!.description,
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    if (_paidById != null && _paidById!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Paid by ${CycleRepository.instance.getMemberDisplayNameById(_paidById!)}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    if (selectedMemberIds.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: selectedMemberIds.map((id) {
+                          final displayName = CycleRepository.instance
+                              .getMemberDisplayNameById(id);
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : context.colorBorder,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        formatMoneyFromMajor(parsedData!.amount, group.currencyCode),
-                        style: TextStyle(
-                          fontSize: 52,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: -1.2,
-                          height: 1.1,
+            ),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: theme.dividerColor, width: 1),
+                ),
+              ),
+              child: Column(
+                children: [
+                  TapScale(
+                    child: ElevatedButton(
+                      onPressed:
+                          (_paidById != null &&
+                              _paidById!.isNotEmpty &&
+                              parsedData != null &&
+                              parsedData!.amount > 0)
+                          ? handleConfirm
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        parsedData!.description,
+                      child: Text('Confirm', style: AppTypography.button),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TapScale(
+                    child: TextButton(
+                      onPressed: handleEdit,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        'Edit',
                         style: TextStyle(
                           fontSize: 17,
-                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                      if (_paidById != null && _paidById!.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Paid by ${CycleRepository.instance.getMemberDisplayNameById(_paidById!)}',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                      if (selectedMemberIds.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: selectedMemberIds.map((id) {
-                            final displayName = CycleRepository.instance.getMemberDisplayNameById(id);
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorBorder,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: theme.dividerColor,
-                      width: 1,
                     ),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    TapScale(
-                      child: ElevatedButton(
-                        onPressed: (_paidById != null &&
-                                _paidById!.isNotEmpty &&
-                                parsedData != null &&
-                                parsedData!.amount > 0)
-                            ? handleConfirm
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                          minimumSize: const Size(double.infinity, 0),
-                        ),
-                        child: Text('Confirm', style: AppTypography.button),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TapScale(
-                      child: TextButton(
-                        onPressed: handleEdit,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Text(
-                          'Edit',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildInputScaffold(ThemeData theme, bool isDark, Group group) {
@@ -634,10 +663,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(
-                    color: theme.dividerColor,
-                    width: 1,
-                  ),
+                  bottom: BorderSide(color: theme.dividerColor, width: 1),
                 ),
               ),
               child: Column(
@@ -686,7 +712,8 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         final group = RouteArgs.getGroup(context);
                         setState(() {
                           input = value;
-                          if (group != null) _syncSelectedMembersFromInput(group);
+                          if (group != null)
+                            _syncSelectedMembersFromInput(group);
                         });
                       },
                       onSubmitted: (_) => handleSubmit(),
@@ -696,7 +723,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         filled: true,
-                                fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : context.colorSurface,
+                        fillColor: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : context.colorSurface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: theme.dividerColor),
@@ -707,9 +736,14 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: theme.colorScheme.primary),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                       ),
                       style: TextStyle(
                         fontSize: 17,
@@ -727,17 +761,17 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       child: TapScale(
                         child: ElevatedButton(
                           onPressed: _canSubmit ? handleSubmit : null,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 0),
                           ),
-                          elevation: 0,
-                          minimumSize: const Size(double.infinity, 0),
+                          child: Text('Submit', style: AppTypography.button),
                         ),
-                        child: Text('Submit', style: AppTypography.button),
                       ),
-                    ),
                     ),
                     const SizedBox(height: 16),
                     Text(

@@ -1,30 +1,30 @@
 import 'currency.dart';
 
 /// Immutable value object representing money in minor units (e.g., paise, cents).
-/// 
+///
 /// This is the core type for all accounting math. Using integers eliminates
 /// floating-point errors that can occur with currency calculations.
-/// 
+///
 /// ## Design Principles
 /// - **Integer-only:** [amountMinor] is already scaled (no decimals)
 /// - **Currency-aware:** Carries [currencyCode] for validation
 /// - **Immutable:** Cannot be modified after creation
 /// - **No formatting:** Display logic lives outside this class
-/// 
+///
 /// ## Examples
 /// ```dart
 /// // 100.50 INR = 10050 paise
 /// final price = MoneyMinor(10050, 'INR');
-/// 
+///
 /// // 1000 JPY (no minor units)
 /// final yenPrice = MoneyMinor(1000, 'JPY');
-/// 
+///
 /// // 1.500 KWD = 1500 fils
 /// final dinarPrice = MoneyMinor(1500, 'KWD');
 /// ```
 class MoneyMinor {
   /// Amount in minor units (paise, cents, fils, etc.)
-  /// 
+  ///
   /// For currencies with no minor units (JPY, KRW), this equals the major unit amount.
   final int amountMinor;
 
@@ -85,16 +85,16 @@ class MoneyMinor {
 }
 
 /// Utility functions for converting between display values and MoneyMinor.
-/// 
+///
 /// These live outside the core MoneyMinor class to keep accounting logic
 /// separate from parsing/formatting concerns.
 class MoneyConversion {
   MoneyConversion._();
 
   /// Converts a display amount (double) to MoneyMinor.
-  /// 
+  ///
   /// Rounding is performed using half-up rounding.
-  /// 
+  ///
   /// Examples:
   /// - parseToMinor(100.50, 'INR') → MoneyMinor(10050, 'INR')
   /// - parseToMinor(1000, 'JPY') → MoneyMinor(1000, 'JPY')
@@ -107,9 +107,9 @@ class MoneyConversion {
   }
 
   /// Converts MoneyMinor to a display amount (double).
-  /// 
+  ///
   /// Use this only for display purposes, never for accounting math.
-  /// 
+  ///
   /// Examples:
   /// - toDisplay(MoneyMinor(10050, 'INR')) → 100.50
   /// - toDisplay(MoneyMinor(1000, 'JPY')) → 1000.0
@@ -137,11 +137,11 @@ class MoneyConversion {
 }
 
 /// Splits a total amount among participants, handling remainder deterministically.
-/// 
+///
 /// ## Remainder Strategy
 /// The remainder (due to integer division) is assigned to the first participant
 /// in the list. This is deterministic and documented.
-/// 
+///
 /// ## Example
 /// Splitting 100 paise among 3 people:
 /// - Base share: 100 ÷ 3 = 33 paise each
@@ -151,7 +151,7 @@ class MoneySplitter {
   MoneySplitter._();
 
   /// Splits a total amount evenly among participants.
-  /// 
+  ///
   /// Returns a map of participant ID to their share in minor units.
   /// The remainder is assigned to the first participant (deterministic).
   static Map<String, int> splitEvenly({
@@ -176,9 +176,9 @@ class MoneySplitter {
   }
 
   /// Distributes a total amount according to weights (shares/percentages).
-  /// 
+  ///
   /// The remainder is assigned to the participant with the largest weight.
-  /// 
+  ///
   /// [weights] is a map of participant ID to their relative weight.
   /// All weights must be non-negative, and at least one must be positive.
   static Map<String, int> splitByWeights({
@@ -216,7 +216,7 @@ class MoneySplitter {
   }
 
   /// Assigns exact amounts, validating that they sum to the total.
-  /// 
+  ///
   /// Returns the amounts as-is if they sum exactly to [totalMinor].
   /// Throws if the sum doesn't match.
   static Map<String, int> assignExact({

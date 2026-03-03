@@ -6,7 +6,9 @@ import 'package:expenso/main.dart' as app;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('app launches and shows MaterialApp', (WidgetTester tester) async {
+  testWidgets('app launches and shows MaterialApp', (
+    WidgetTester tester,
+  ) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 8));
     expect(find.byType(MaterialApp), findsOneWidget);

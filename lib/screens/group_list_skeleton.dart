@@ -31,9 +31,9 @@ class GroupListSkeleton extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH, // 24
-                AppSpacing.spaceXl,        // 16
-                AppSpacing.spaceXl,        // 16
-                AppSpacing.space4xl,       // 32
+                AppSpacing.spaceXl, // 16
+                AppSpacing.spaceXl, // 16
+                AppSpacing.space4xl, // 32
               ),
               child: Row(
                 children: [
@@ -46,9 +46,7 @@ class GroupListSkeleton extends StatelessWidget {
             ),
           ),
           // ── Card list ────────────────────────────────────────────────────
-          Expanded(
-            child: _SkeletonCardList(),
-          ),
+          Expanded(child: _SkeletonCardList()),
         ],
       ),
     );

@@ -11,10 +11,12 @@ class SettlementProgressIndicator extends StatefulWidget {
   const SettlementProgressIndicator({super.key, required this.groupId});
 
   @override
-  State<SettlementProgressIndicator> createState() => _SettlementProgressIndicatorState();
+  State<SettlementProgressIndicator> createState() =>
+      _SettlementProgressIndicatorState();
 }
 
-class _SettlementProgressIndicatorState extends State<SettlementProgressIndicator> {
+class _SettlementProgressIndicatorState
+    extends State<SettlementProgressIndicator> {
   bool _loaded = false;
 
   @override
@@ -39,8 +41,10 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
       listenable: CycleRepository.instance,
       builder: (context, _) {
         final progress = _computeProgress();
-        final memberStatus = CycleRepository.instance.getMemberSettlementStatus(widget.groupId);
-        
+        final memberStatus = CycleRepository.instance.getMemberSettlementStatus(
+          widget.groupId,
+        );
+
         if (progress == null) return const SizedBox.shrink();
 
         final (settled, total) = progress;
@@ -48,17 +52,21 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
 
         final fraction = total > 0 ? settled / total : 0.0;
         final allSettled = settled == total;
-        
+
         final (membersSettled, membersTotal, _) = memberStatus;
         final pendingMembers = membersTotal - membersSettled;
 
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: allSettled ? context.colorSuccessBackground : context.colorSurface,
+            color: allSettled
+                ? context.colorSuccessBackground
+                : context.colorSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: allSettled ? context.colorSuccess.withValues(alpha: 0.3) : context.colorBorder,
+              color: allSettled
+                  ? context.colorSuccess.withValues(alpha: 0.3)
+                  : context.colorBorder,
             ),
           ),
           child: Column(
@@ -69,7 +77,9 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                   Icon(
                     allSettled ? Icons.check_circle : Icons.group,
                     size: 18,
-                    color: allSettled ? context.colorSuccess : context.colorTextSecondary,
+                    color: allSettled
+                        ? context.colorSuccess
+                        : context.colorTextSecondary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -78,14 +88,19 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
                           ? 'All members settled'
                           : '$membersSettled of $membersTotal members settled',
                       style: context.bodyPrimary.copyWith(
-                        color: allSettled ? context.colorSuccess : Theme.of(context).colorScheme.onSurface,
+                        color: allSettled
+                            ? context.colorSuccess
+                            : Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   if (!allSettled && pendingMembers > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: context.colorWarningBackground,
                         borderRadius: BorderRadius.circular(4),
@@ -136,7 +151,10 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
 
     if (members.isEmpty) return null;
 
-    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members);
+    final netBalances = SettlementEngine.computeNetBalances(
+      cycle.expenses,
+      members,
+    );
     final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
 
     if (routes.isEmpty) return null;
@@ -146,7 +164,9 @@ class _SettlementProgressIndicatorState extends State<SettlementProgressIndicato
     int settled = 0;
     for (final route in routes) {
       final attempt = attempts.firstWhere(
-        (a) => a.fromMemberId == route.fromMemberId && a.toMemberId == route.toMemberId,
+        (a) =>
+            a.fromMemberId == route.fromMemberId &&
+            a.toMemberId == route.toMemberId,
         orElse: () => PaymentAttempt(
           id: '',
           groupId: '',

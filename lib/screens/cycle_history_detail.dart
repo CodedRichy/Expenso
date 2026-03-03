@@ -15,21 +15,28 @@ class CycleHistoryDetail extends StatelessWidget {
     final theme = Theme.of(context);
     final args = RouteArgs.getMap(context);
     if (args == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     final cycleData = args['cycle'];
     final groupName = args['groupName'] as String?;
     final currencyCode = args['currencyCode'] as String? ?? 'INR';
     if (cycleData is! Cycle || groupName == null || groupName.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     final cycle = cycleData;
     final startDate = cycle.startDate ?? '–';
     final endDate = cycle.endDate ?? '–';
     final cycleDate = '$startDate – $endDate';
-    final settledAmount = cycle.expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+    final settledAmount = cycle.expenses.fold<double>(
+      0.0,
+      (sum, e) => sum + e.amount,
+    );
     final listExpenses = cycle.expenses;
 
     return Scaffold(
@@ -96,10 +103,7 @@ class CycleHistoryDetail extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(
-                      color: theme.dividerColor,
-                      width: 1,
-                    ),
+                    bottom: BorderSide(color: theme.dividerColor, width: 1),
                   ),
                 ),
                 child: Column(
@@ -158,27 +162,36 @@ class CycleHistoryDetail extends StatelessWidget {
                             delay: Duration(milliseconds: 300 + index * 50),
                             child: TapScale(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 14,
+                                ),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     top: index > 0
-                                        ? BorderSide(color: theme.dividerColor, width: 1)
+                                        ? BorderSide(
+                                            color: theme.dividerColor,
+                                            width: 1,
+                                          )
                                         : BorderSide.none,
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             expense.description,
                                             style: TextStyle(
                                               fontSize: 17,
-                                              color: theme.colorScheme.onSurface,
+                                              color:
+                                                  theme.colorScheme.onSurface,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
@@ -186,7 +199,9 @@ class CycleHistoryDetail extends StatelessWidget {
                                             expense.displayDate,
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: theme.colorScheme.onSurfaceVariant,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                             ),
                                           ),
                                         ],
@@ -194,7 +209,10 @@ class CycleHistoryDetail extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 16),
                                     Text(
-                                      formatMoneyFromMajor(expense.amount, currencyCode),
+                                      formatMoneyFromMajor(
+                                        expense.amount,
+                                        currencyCode,
+                                      ),
                                       style: TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w600,

@@ -110,7 +110,12 @@ class IdentityService extends ChangeNotifier {
     }
   }
 
-  void registerFromMember(Member member, String groupId, {String? photoURL, String? upiId}) {
+  void registerFromMember(
+    Member member,
+    String groupId, {
+    String? photoURL,
+    String? upiId,
+  }) {
     if (member.phone.isEmpty) return;
     registerMember(
       phone: member.phone,

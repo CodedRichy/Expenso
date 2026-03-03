@@ -355,7 +355,10 @@ void main() {
           splitAmountsById: {'u1': 150, 'u2': 150},
         ),
       ];
-      final net = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
+      final net = SettlementEngine.computeNetBalancesAsDouble(
+        expenses,
+        members,
+      );
       expect(net['u1'], 150.0);
       expect(net['u2'], -150.0);
     });
@@ -427,26 +430,41 @@ void main() {
       ];
 
       final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['u1'], 0, reason: 'Empty paidById expense must not affect balances');
-      expect(net['u2'], 0, reason: 'Empty paidById expense must not affect balances');
+      expect(
+        net['u1'],
+        0,
+        reason: 'Empty paidById expense must not affect balances',
+      );
+      expect(
+        net['u2'],
+        0,
+        reason: 'Empty paidById expense must not affect balances',
+      );
     });
 
-    test('unknown paidById (not in members) does not affect member balances', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 300,
-          paidById: 'unknown_user',
-          participantIds: ['u1', 'u2'],
-          splitAmountsById: {'u1': 150, 'u2': 150},
-        ),
-      ];
+    test(
+      'unknown paidById (not in members) does not affect member balances',
+      () {
+        final expenses = [
+          expense(
+            id: 'e1',
+            amount: 300,
+            paidById: 'unknown_user',
+            participantIds: ['u1', 'u2'],
+            splitAmountsById: {'u1': 150, 'u2': 150},
+          ),
+        ];
 
-      final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net['u1'], -15000, reason: 'u1 still debited for their share');
-      expect(net['u2'], -15000, reason: 'u2 still debited for their share');
-      expect(net.containsKey('unknown_user'), false, reason: 'Unknown payer not in balances');
-    });
+        final net = SettlementEngine.computeNetBalances(expenses, members);
+        expect(net['u1'], -15000, reason: 'u1 still debited for their share');
+        expect(net['u2'], -15000, reason: 'u2 still debited for their share');
+        expect(
+          net.containsKey('unknown_user'),
+          false,
+          reason: 'Unknown payer not in balances',
+        );
+      },
+    );
 
     test('pending member paidById (p_ prefix) produces no deltas', () {
       final exp = expense(
@@ -458,7 +476,11 @@ void main() {
       );
 
       final deltas = SettlementEngine.expenseToDeltas(exp);
-      expect(deltas, isEmpty, reason: 'Pending member payer must yield no deltas');
+      expect(
+        deltas,
+        isEmpty,
+        reason: 'Pending member payer must yield no deltas',
+      );
     });
   });
 
@@ -561,17 +583,16 @@ void main() {
       final deltas = SettlementEngine.expenseToDeltas(exp);
       expect(deltas, isNotEmpty);
       final sum = deltas.fold<int>(0, (s, d) => s + d.deltaMinor);
-      expect(sum.abs(), lessThanOrEqualTo(1), reason: 'Rounding to minor units may yield ±1');
+      expect(
+        sum.abs(),
+        lessThanOrEqualTo(1),
+        reason: 'Rounding to minor units may yield ±1',
+      );
     });
 
     test('invalid expense skipped: other expenses still contribute to net', () {
       final expenses = [
-        expense(
-          id: 'e1',
-          amount: 100,
-          paidById: 'u1',
-          splitAmountsById: null,
-        ),
+        expense(id: 'e1', amount: 100, paidById: 'u1', splitAmountsById: null),
         expense(
           id: 'e2',
           amount: 200,
@@ -626,8 +647,14 @@ void main() {
       final deltas1 = SettlementEngine.expensesToDeltas(historicalExpenses);
       final deltas2 = SettlementEngine.expensesToDeltas(historicalExpenses);
 
-      final net1 = SettlementEngine.computeNetBalancesFromDeltas(deltas1, 'INR');
-      final net2 = SettlementEngine.computeNetBalancesFromDeltas(deltas2, 'INR');
+      final net1 = SettlementEngine.computeNetBalancesFromDeltas(
+        deltas1,
+        'INR',
+      );
+      final net2 = SettlementEngine.computeNetBalancesFromDeltas(
+        deltas2,
+        'INR',
+      );
 
       expect(net1, equals(net2), reason: 'Replay must be deterministic');
     });
@@ -667,8 +694,14 @@ void main() {
       final fullMembers = [memberRishi, memberRockey];
       final reducedMembers = [memberRishi];
 
-      final netFull = SettlementEngine.computeNetBalances(expenses, fullMembers);
-      final netReduced = SettlementEngine.computeNetBalances(expenses, reducedMembers);
+      final netFull = SettlementEngine.computeNetBalances(
+        expenses,
+        fullMembers,
+      );
+      final netReduced = SettlementEngine.computeNetBalances(
+        expenses,
+        reducedMembers,
+      );
 
       expect(netFull['u1'], 15000);
       expect(netReduced['u1'], isNotNull, reason: 'u1 balance must be present');
@@ -693,7 +726,10 @@ void main() {
       ];
 
       final net = SettlementEngine.computeNetBalances(validExpenses, members);
-      final netDouble = SettlementEngine.computeNetBalancesAsDouble(validExpenses, members);
+      final netDouble = SettlementEngine.computeNetBalancesAsDouble(
+        validExpenses,
+        members,
+      );
 
       expect(net['u1'], 35000);
       expect(net['u2'], -35000);
@@ -704,11 +740,7 @@ void main() {
 
   group('SettlementEngine.computePaymentRoutes (debt minimization)', () {
     test('3 members: one creditor, two debtors - minimizes to 2 payments', () {
-      final netBalances = {
-        'alice': 10000,
-        'bob': -6000,
-        'carol': -4000,
-      };
+      final netBalances = {'alice': 10000, 'bob': -6000, 'carol': -4000};
 
       final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
 
@@ -724,7 +756,10 @@ void main() {
       expect(bobPayments[0].amountMinor, 6000);
       expect(bobPayments[0].toMemberId, 'alice');
 
-      final carolPayments = SettlementEngine.getPaymentsForMember('carol', routes);
+      final carolPayments = SettlementEngine.getPaymentsForMember(
+        'carol',
+        routes,
+      );
       expect(carolPayments.length, 1);
       expect(carolPayments[0].amountMinor, 4000);
       expect(carolPayments[0].toMemberId, 'alice');
@@ -773,9 +808,9 @@ void main() {
         netAfterRoutes[entry.key] = entry.value;
       }
       for (final route in routes) {
-        netAfterRoutes[route.fromMemberId] = 
+        netAfterRoutes[route.fromMemberId] =
             (netAfterRoutes[route.fromMemberId] ?? 0) + route.amountMinor;
-        netAfterRoutes[route.toMemberId] = 
+        netAfterRoutes[route.toMemberId] =
             (netAfterRoutes[route.toMemberId] ?? 0) - route.amountMinor;
       }
 
@@ -785,21 +820,14 @@ void main() {
     });
 
     test('all members balanced - no payments needed', () {
-      final netBalances = {
-        'alice': 0,
-        'bob': 0,
-        'carol': 0,
-      };
+      final netBalances = {'alice': 0, 'bob': 0, 'carol': 0};
 
       final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
       expect(routes, isEmpty);
     });
 
     test('two members - single payment', () {
-      final netBalances = {
-        'alice': 5000,
-        'bob': -5000,
-      };
+      final netBalances = {'alice': 5000, 'bob': -5000};
 
       final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
 
@@ -810,15 +838,14 @@ void main() {
     });
 
     test('getPaymentsForMember returns only outgoing payments', () {
-      final netBalances = {
-        'alice': 10000,
-        'bob': -6000,
-        'carol': -4000,
-      };
+      final netBalances = {'alice': 10000, 'bob': -6000, 'carol': -4000};
 
       final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
 
-      final alicePayments = SettlementEngine.getPaymentsForMember('alice', routes);
+      final alicePayments = SettlementEngine.getPaymentsForMember(
+        'alice',
+        routes,
+      );
       expect(alicePayments, isEmpty);
 
       final bobPayments = SettlementEngine.getPaymentsForMember('bob', routes);
@@ -827,15 +854,14 @@ void main() {
     });
 
     test('getPaymentsToMember returns only incoming payments', () {
-      final netBalances = {
-        'alice': 10000,
-        'bob': -6000,
-        'carol': -4000,
-      };
+      final netBalances = {'alice': 10000, 'bob': -6000, 'carol': -4000};
 
       final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
 
-      final aliceReceives = SettlementEngine.getPaymentsToMember('alice', routes);
+      final aliceReceives = SettlementEngine.getPaymentsToMember(
+        'alice',
+        routes,
+      );
       expect(aliceReceives.length, 2);
       expect(aliceReceives.every((r) => r.toMemberId == 'alice'), true);
 
@@ -884,9 +910,9 @@ void main() {
 
       final Map<String, int> verification = Map.from(netBalances);
       for (final route in routes) {
-        verification[route.fromMemberId] = 
+        verification[route.fromMemberId] =
             verification[route.fromMemberId]! + route.amountMinor;
-        verification[route.toMemberId] = 
+        verification[route.toMemberId] =
             verification[route.toMemberId]! - route.amountMinor;
       }
 
@@ -894,7 +920,10 @@ void main() {
         expect(entry.value, 0, reason: '${entry.key} should be settled');
       }
 
-      final carlPayments = SettlementEngine.getPaymentsForMember('carl', routes);
+      final carlPayments = SettlementEngine.getPaymentsForMember(
+        'carl',
+        routes,
+      );
       expect(carlPayments.isNotEmpty, true);
       final carlTotal = carlPayments.fold(0, (sum, r) => sum + r.amountMinor);
       expect(carlTotal, 12000);
@@ -902,22 +931,25 @@ void main() {
   });
 
   group('G9: Payer/participant not in list and large amounts', () {
-    test('participant not in member list: only known members appear in net', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 300,
-          paidById: 'u1',
-          participantIds: ['u1', 'u2', 'u3_unknown'],
-          splitAmountsById: {'u1': 100, 'u2': 100, 'u3_unknown': 100},
-        ),
-      ];
+    test(
+      'participant not in member list: only known members appear in net',
+      () {
+        final expenses = [
+          expense(
+            id: 'e1',
+            amount: 300,
+            paidById: 'u1',
+            participantIds: ['u1', 'u2', 'u3_unknown'],
+            splitAmountsById: {'u1': 100, 'u2': 100, 'u3_unknown': 100},
+          ),
+        ];
 
-      final net = SettlementEngine.computeNetBalances(expenses, members);
-      expect(net.containsKey('u3_unknown'), false);
-      expect(net['u1'], 20000);
-      expect(net['u2'], -10000);
-    });
+        final net = SettlementEngine.computeNetBalances(expenses, members);
+        expect(net.containsKey('u3_unknown'), false);
+        expect(net['u1'], 20000);
+        expect(net['u2'], -10000);
+      },
+    );
 
     test('very large amount (1e9 minor units) computes without overflow', () {
       const int largeMinor = 100000000000;
@@ -956,35 +988,38 @@ void main() {
   });
 
   group('Balance-after-settlements contract (mirrors CycleRepository)', () {
-    test('net from expenses then apply confirmed payment yields remaining = net/100', () {
-      final expenses = [
-        expense(
-          id: 'e1',
-          amount: 300,
-          paidById: 'u1',
-          participantIds: ['u1', 'u2'],
-          splitAmountsById: {'u1': 150, 'u2': 150},
-        ),
-      ];
-      Map<String, int> net = Map<String, int>.from(
-        SettlementEngine.computeNetBalances(expenses, members),
-      );
-      expect(net['u1'], 15000);
-      expect(net['u2'], -15000);
+    test(
+      'net from expenses then apply confirmed payment yields remaining = net/100',
+      () {
+        final expenses = [
+          expense(
+            id: 'e1',
+            amount: 300,
+            paidById: 'u1',
+            participantIds: ['u1', 'u2'],
+            splitAmountsById: {'u1': 150, 'u2': 150},
+          ),
+        ];
+        Map<String, int> net = Map<String, int>.from(
+          SettlementEngine.computeNetBalances(expenses, members),
+        );
+        expect(net['u1'], 15000);
+        expect(net['u2'], -15000);
 
-      final confirmedPaymentMinor = 15000;
-      net['u2'] = (net['u2'] ?? 0) + confirmedPaymentMinor;
-      net['u1'] = (net['u1'] ?? 0) - confirmedPaymentMinor;
+        final confirmedPaymentMinor = 15000;
+        net['u2'] = (net['u2'] ?? 0) + confirmedPaymentMinor;
+        net['u1'] = (net['u1'] ?? 0) - confirmedPaymentMinor;
 
-      expect(net['u1'], 0);
-      expect(net['u2'], 0);
-      expect((net['u1']! + net['u2']!), 0);
+        expect(net['u1'], 0);
+        expect(net['u2'], 0);
+        expect((net['u1']! + net['u2']!), 0);
 
-      final remainingU1 = (net['u1'] ?? 0) / 100.0;
-      final remainingU2 = (net['u2'] ?? 0) / 100.0;
-      expect(remainingU1, 0.0);
-      expect(remainingU2, 0.0);
-    });
+        final remainingU1 = (net['u1'] ?? 0) / 100.0;
+        final remainingU2 = (net['u2'] ?? 0) / 100.0;
+        expect(remainingU1, 0.0);
+        expect(remainingU2, 0.0);
+      },
+    );
 
     test('multiple confirmed payments apply correctly', () {
       final expenses = [

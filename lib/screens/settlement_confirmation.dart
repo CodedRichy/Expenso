@@ -37,7 +37,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     if (_group != null) {
       _loadPaymentAttempts();
     } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
     }
   }
 
@@ -60,8 +62,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
     return allRoutes.where((r) => r.toMemberId == repo.currentUserId).toList();
   }
-
-
 
   Future<void> _handleMarkAsPaid(
     PaymentRoute route, {
@@ -212,14 +212,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     final theme = Theme.of(context);
     final myPaymentRoutes = _getMyPaymentRoutes(group.id);
     final receivingRoutes = _getReceivingRoutes(group.id);
-    
+
     final pendingConfirmations = receivingRoutes.where((r) {
       final status = _getAttemptStatus(r);
-      return status == PaymentAttemptStatus.cashPending || 
-             status == PaymentAttemptStatus.confirmedByPayer;
+      return status == PaymentAttemptStatus.cashPending ||
+          status == PaymentAttemptStatus.confirmedByPayer;
     }).toList();
-    
-    final myTotalDue = myPaymentRoutes.fold<int>(0, (s, r) => s + r.amountMinor);
+
+    final myTotalDue = myPaymentRoutes.fold<int>(
+      0,
+      (s, r) => s + r.amountMinor,
+    );
     final hasUpiDues = myTotalDue > 0;
 
     return GradientScaffold(
@@ -269,7 +272,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             Expanded(
               child: _loading
                   ? Padding(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenPaddingH,
+                      ),
                       child: Column(
                         children: const [
                           SkeletonPaymentCard(),
@@ -283,7 +288,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       builder: (context, _) {
                         if (!hasUpiDues && pendingConfirmations.isEmpty) {
                           return Padding(
-                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.screenPaddingH,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -297,16 +304,21 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                           size: 64,
                                           color: context.colorSuccess,
                                         ),
-                                        const SizedBox(height: AppSpacing.spaceXl),
+                                        const SizedBox(
+                                          height: AppSpacing.spaceXl,
+                                        ),
                                         Semantics(
-                                          label: "You're all settled. You have no payments to make this cycle.",
+                                          label:
+                                              "You're all settled. You have no payments to make this cycle.",
                                           child: Text(
                                             'You\'re all settled!',
                                             style: context.screenTitle,
                                             textAlign: TextAlign.center,
                                           ),
                                         ),
-                                        const SizedBox(height: AppSpacing.spaceMd),
+                                        const SizedBox(
+                                          height: AppSpacing.spaceMd,
+                                        ),
                                         Text(
                                           'You have no payments to make this cycle.',
                                           style: context.bodySecondary,
@@ -316,7 +328,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                     ),
                                   ),
                                 ),
-                                SettlementActivityFeed(groupId: group.id, maxItems: 10),
+                                SettlementActivityFeed(
+                                  groupId: group.id,
+                                  maxItems: 10,
+                                ),
                                 const SizedBox(height: AppSpacing.space4xl),
                                 _buildBackButton(context),
                               ],
@@ -334,7 +349,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 if (pendingConfirmations.isNotEmpty) ...[
-                                  _buildPendingConfirmations(repo, pendingConfirmations),
+                                  _buildPendingConfirmations(
+                                    repo,
+                                    pendingConfirmations,
+                                  ),
                                   const SizedBox(height: AppSpacing.space4xl),
                                 ],
                                 _buildUpiSection(
@@ -344,7 +362,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                   myPaymentRoutes,
                                   hasUpiDues,
                                   myTotalDue,
-                                  pendingIncomingCount: pendingConfirmations.length,
+                                  pendingIncomingCount:
+                                      pendingConfirmations.length,
                                 ),
                               ],
                             ),
@@ -359,7 +378,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     );
   }
 
-  Widget _buildPendingConfirmations(CycleRepository repo, List<PaymentRoute> routes) {
+  Widget _buildPendingConfirmations(
+    CycleRepository repo,
+    List<PaymentRoute> routes,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,11 +390,17 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           decoration: BoxDecoration(
             color: context.colorAccentBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.colorAccent.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: context.colorAccent.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.account_balance_wallet, color: context.colorAccent, size: 24),
+              Icon(
+                Icons.account_balance_wallet,
+                color: context.colorAccent,
+                size: 24,
+              ),
               const SizedBox(width: AppSpacing.spaceMd),
               Expanded(
                 child: Column(
@@ -404,57 +432,62 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           final payerName = repo.getMemberDisplayNameById(route.fromMemberId);
           final status = _getAttemptStatus(route);
           final isCash = status == PaymentAttemptStatus.cashPending;
-          final amountStr = formatMoneyWithCurrency(route.amountMinor, route.currencyCode);
+          final amountStr = formatMoneyWithCurrency(
+            route.amountMinor,
+            route.currencyCode,
+          );
           return StaggeredListItem(
             index: index,
             child: Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
-            padding: const EdgeInsets.all(AppSpacing.cardPadding),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isCash 
-                        ? context.colorWarningBackground 
-                        : context.colorAccentBackground,
-                    shape: BoxShape.circle,
+              margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isCash
+                          ? context.colorWarningBackground
+                          : context.colorAccentBackground,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isCash ? Icons.payments : Icons.phone_android,
+                      size: 20,
+                      color: isCash
+                          ? context.colorWarning
+                          : context.colorAccent,
+                    ),
                   ),
-                  child: Icon(
-                    isCash ? Icons.payments : Icons.phone_android,
-                    size: 20,
-                    color: isCash ? context.colorWarning : context.colorAccent,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.spaceMd),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        payerName,
-                        style: context.bodyPrimary.copyWith(
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: AppSpacing.spaceMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          payerName,
+                          style: context.bodyPrimary.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$amountStr ${isCash ? 'cash' : 'UPI'} payment',
-                        style: context.bodySecondary,
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          '$amountStr ${isCash ? 'cash' : 'UPI'} payment',
+                          style: context.bodySecondary,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                   TapScale(
                     child: ElevatedButton(
-                      onPressed: () => isCash 
-                          ? _handleConfirmCashReceived(route) 
+                      onPressed: () => isCash
+                          ? _handleConfirmCashReceived(route)
                           : _handleConfirmUpiReceived(route),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: context.colorSuccess,
@@ -471,10 +504,10 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       child: const Text('Confirm'),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
+          );
         }),
       ],
     );
@@ -490,7 +523,8 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       route.toMemberId,
     );
 
-    if (attempt != null && attempt.status == PaymentAttemptStatus.confirmedByPayer) {
+    if (attempt != null &&
+        attempt.status == PaymentAttemptStatus.confirmedByPayer) {
       await repo.markPaymentConfirmedByReceiver(_group!.id, attempt.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -551,14 +585,19 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       );
     }
 
-    final confirmedRoutes = myRoutes.where((r) => _getAttemptStatus(r).isSettled).length;
+    final confirmedRoutes = myRoutes
+        .where((r) => _getAttemptStatus(r).isSettled)
+        .length;
     final allConfirmed = confirmedRoutes == myRoutes.length;
 
     final pendingTotal = myRoutes
         .where((r) => !_getAttemptStatus(r).isSettled)
         .fold<int>(0, (s, r) => s + r.amountMinor);
 
-    final totalDisplay = formatMoneyWithCurrency(pendingTotal, _group?.currencyCode ?? 'INR');
+    final totalDisplay = formatMoneyWithCurrency(
+      pendingTotal,
+      _group?.currencyCode ?? 'INR',
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,11 +606,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           child: Column(
             children: [
               if (allConfirmed) ...[
-                Icon(
-                  Icons.check_circle,
-                  size: 48,
-                  color: context.colorSuccess,
-                ),
+                Icon(Icons.check_circle, size: 48, color: context.colorSuccess),
                 const SizedBox(height: AppSpacing.spaceLg),
                 Text(
                   'All payments marked!',
@@ -634,7 +669,11 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               attemptStatus: status,
               upiTransactionId: attempt?.upiTransactionId,
               onMarkAsPaid: ({String? transactionId, String? responseCode}) =>
-                  _handleMarkAsPaid(route, transactionId: transactionId, responseCode: responseCode),
+                  _handleMarkAsPaid(
+                    route,
+                    transactionId: transactionId,
+                    responseCode: responseCode,
+                  ),
               onPaidViaCash: () => _handlePaidViaCash(route),
               isReceiver: false,
             ),
@@ -647,7 +686,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             decoration: BoxDecoration(
               color: context.colorWarningBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.colorWarning.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: context.colorWarning.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -682,7 +723,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           onPressed: () => Navigator.pop(context),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             minimumSize: const Size(double.infinity, 0),
             elevation: 0,
           ),

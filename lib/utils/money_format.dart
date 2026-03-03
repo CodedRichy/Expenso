@@ -11,7 +11,11 @@ String formatMoney(int amountMinor) {
 
 /// Formats [amount] (major units, e.g. 100.50) using the symbol for [currencyCode].
 /// [locale] overrides device locale for number format (e.g. en_IN, en_US).
-String formatMoneyFromMajor(double amount, String currencyCode, [String? locale]) {
+String formatMoneyFromMajor(
+  double amount,
+  String currencyCode, [
+  String? locale,
+]) {
   final minor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
   return formatMoneyWithCurrency(minor, currencyCode, locale);
 }
@@ -19,7 +23,11 @@ String formatMoneyFromMajor(double amount, String currencyCode, [String? locale]
 /// Formats [amountMinor] using the symbol for [currencyCode].
 /// Uses device locale for thousands/decimal separators when available (e.g. EU uses space, comma).
 /// [locale] overrides device locale when provided (e.g. from BuildContext).
-String formatMoneyWithCurrency(int amountMinor, String currencyCode, [String? locale]) {
+String formatMoneyWithCurrency(
+  int amountMinor,
+  String currencyCode, [
+  String? locale,
+]) {
   final display = MoneyConversion.minorToDisplay(amountMinor, currencyCode);
   final scale = CurrencyRegistry.minorUnitScale(currencyCode);
   final symbol = CurrencyRegistry.symbol(currencyCode);

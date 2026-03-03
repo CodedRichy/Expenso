@@ -40,9 +40,8 @@ extension ThemedTypography on BuildContext {
   TextStyle get amountSM => AppTypography.amountSM.copyWith(
     color: Theme.of(this).colorScheme.onSurface,
   );
-  TextStyle get input => AppTypography.input.copyWith(
-    color: Theme.of(this).colorScheme.onSurface,
-  );
+  TextStyle get input =>
+      AppTypography.input.copyWith(color: Theme.of(this).colorScheme.onSurface);
 }
 
 abstract final class AppTypography {
@@ -91,10 +90,7 @@ abstract final class AppTypography {
   );
 
   // Amount Display - Small (inline amounts)
-  static const amountSM = TextStyle(
-    fontSize: 17,
-    fontWeight: FontWeight.w600,
-  );
+  static const amountSM = TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
 
   // AppBar Title
   static const appBarTitle = TextStyle(
@@ -118,44 +114,26 @@ abstract final class AppTypography {
   );
 
   // Body Primary
-  static const bodyPrimary = TextStyle(
-    fontSize: 17,
-  );
+  static const bodyPrimary = TextStyle(fontSize: 17);
 
   // Body Secondary
-  static const bodySecondary = TextStyle(
-    fontSize: 15,
-    height: 1.5,
-  );
+  static const bodySecondary = TextStyle(fontSize: 15, height: 1.5);
 
   // Button Text
-  static const button = TextStyle(
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-  );
+  static const button = TextStyle(fontSize: 17, fontWeight: FontWeight.w500);
 
   // Caption
-  static const caption = TextStyle(
-    fontSize: 14,
-  );
+  static const caption = TextStyle(fontSize: 14);
 
   // Caption Small
-  static const captionSmall = TextStyle(
-    fontSize: 12,
-  );
+  static const captionSmall = TextStyle(fontSize: 12);
 
   // Input Text
-  static const input = TextStyle(
-    fontSize: 17,
-  );
+  static const input = TextStyle(fontSize: 17);
 
   // Hint Text
-  static const hint = TextStyle(
-    fontSize: 17,
-  );
+  static const hint = TextStyle(fontSize: 17);
 
   // Error Text
-  static const errorText = TextStyle(
-    fontSize: 13,
-  );
+  static const errorText = TextStyle(fontSize: 13);
 }

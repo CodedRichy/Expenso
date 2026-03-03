@@ -67,13 +67,13 @@ class ParsedExpenseResult {
     this.rejectReason,
     this.needsClarification = false,
     this.clarificationQuestion,
-  })  : participantNames = participantNames ?? [],
-        excludedNames = excludedNames ?? [],
-        exactAmountsByName = exactAmountsByName ?? {},
-        percentageByName = percentageByName ?? {},
-        sharesByName = sharesByName ?? {},
-        constraintFlags = constraintFlags ?? [],
-        notes = notes ?? [];
+  }) : participantNames = participantNames ?? [],
+       excludedNames = excludedNames ?? [],
+       exactAmountsByName = exactAmountsByName ?? {},
+       percentageByName = percentageByName ?? {},
+       sharesByName = sharesByName ?? {},
+       constraintFlags = constraintFlags ?? [],
+       notes = notes ?? [];
 
   static ParsedExpenseResult fromJson(Map<String, dynamic> json) {
     final amountRaw = json['amount'] ?? json['amt'];
@@ -81,21 +81,23 @@ class ParsedExpenseResult {
         ? (amountRaw).toDouble()
         : double.tryParse(amountRaw?.toString() ?? '') ?? 0.0;
     final currencyCode = (json['currencyCode'] as String?)?.trim();
-    final desc = ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
+    final desc =
+        ((json['description'] ?? json['desc']) as String?)?.trim() ?? '';
     final category = (json['category'] as String?)?.trim() ?? '';
     final split = (json['splitType'] as String?)?.trim().toLowerCase();
     final st = split == 'exact'
         ? 'exact'
         : split == 'exclude'
-            ? 'exclude'
-            : split == 'percentage'
-                ? 'percentage'
-                : split == 'shares'
-                    ? 'shares'
-                    : split == 'unresolved'
-                        ? 'unresolved'
-                        : 'even';
-    final parts = json['participants'] ?? json['participant'] ?? json['members'];
+        ? 'exclude'
+        : split == 'percentage'
+        ? 'percentage'
+        : split == 'shares'
+        ? 'shares'
+        : split == 'unresolved'
+        ? 'unresolved'
+        : 'even';
+    final parts =
+        json['participants'] ?? json['participant'] ?? json['members'];
     List<String> names = [];
     if (parts is List) {
       for (final p in parts) {
@@ -123,50 +125,64 @@ class ParsedExpenseResult {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null) exactMap[name] = numVal;
       }
     }
-    final pctRaw = json['percentageAmounts'] ?? json['percentageByPerson'] ?? json['percentages'];
+    final pctRaw =
+        json['percentageAmounts'] ??
+        json['percentageByPerson'] ??
+        json['percentages'];
     Map<String, double> pctMap = {};
     if (pctRaw is Map) {
       for (final entry in pctRaw.entries) {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null) pctMap[name] = numVal;
       }
     }
-    final sharesRaw = json['sharesAmounts'] ?? json['sharesByPerson'] ?? json['shares'];
+    final sharesRaw =
+        json['sharesAmounts'] ?? json['sharesByPerson'] ?? json['shares'];
     Map<String, double> sharesMap = {};
     if (sharesRaw is Map) {
       for (final entry in sharesRaw.entries) {
         final name = entry.key.toString().trim();
         if (name.isEmpty) continue;
         final v = entry.value;
-        final numVal = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        final numVal = v is num
+            ? v.toDouble()
+            : double.tryParse(v?.toString() ?? '');
         if (numVal != null && numVal > 0) sharesMap[name] = numVal;
       }
     }
-    final confidence = (json['parseConfidence'] as String?)?.trim().toLowerCase();
+    final confidence = (json['parseConfidence'] as String?)
+        ?.trim()
+        .toLowerCase();
     final pc = confidence == 'reject'
         ? 'reject'
         : confidence == 'constrained'
-            ? 'constrained'
-            : 'confident';
+        ? 'constrained'
+        : 'confident';
     List<String> flags = [];
     final flagsRaw = json['constraintFlags'];
     if (flagsRaw is List) {
       for (final f in flagsRaw) {
-        if (f != null && f.toString().trim().isNotEmpty) flags.add(f.toString().trim());
+        if (f != null && f.toString().trim().isNotEmpty)
+          flags.add(f.toString().trim());
       }
     }
     List<String> notesList = [];
     final notesRaw = json['notes'];
     if (notesRaw is List) {
       for (final n in notesRaw) {
-        if (n != null && n.toString().trim().isNotEmpty) notesList.add(n.toString().trim());
+        if (n != null && n.toString().trim().isNotEmpty)
+          notesList.add(n.toString().trim());
       }
     }
     final needClar = json['needsClarification'] == true;
@@ -174,7 +190,9 @@ class ParsedExpenseResult {
     final rejectReasonStr = (json['rejectReason'] as String?)?.trim();
     return ParsedExpenseResult(
       amount: amount,
-      currencyCode: currencyCode != null && currencyCode.isNotEmpty ? currencyCode : null,
+      currencyCode: currencyCode != null && currencyCode.isNotEmpty
+          ? currencyCode
+          : null,
       description: desc,
       category: category,
       splitType: st,
@@ -187,7 +205,9 @@ class ParsedExpenseResult {
       parseConfidence: pc,
       constraintFlags: flags.isNotEmpty ? flags : null,
       notes: notesList.isNotEmpty ? notesList : null,
-      rejectReason: rejectReasonStr != null && rejectReasonStr.isNotEmpty ? rejectReasonStr : null,
+      rejectReason: rejectReasonStr != null && rejectReasonStr.isNotEmpty
+          ? rejectReasonStr
+          : null,
       needsClarification: needClar,
       clarificationQuestion: (needClar && q != null && q.isNotEmpty) ? q : null,
     );
@@ -203,7 +223,8 @@ class ParsedExpenseResult {
       'splitType': splitType,
       'participants': participantNames,
     };
-    if (currencyCode != null && currencyCode!.isNotEmpty) m['currencyCode'] = currencyCode;
+    if (currencyCode != null && currencyCode!.isNotEmpty)
+      m['currencyCode'] = currencyCode;
     if (payerName != null && payerName!.isNotEmpty) m['payer'] = payerName;
     if (excludedNames.isNotEmpty) m['excluded'] = excludedNames;
     if (exactAmountsByName.isNotEmpty) m['exactAmounts'] = exactAmountsByName;
@@ -213,7 +234,8 @@ class ParsedExpenseResult {
     if (notes.isNotEmpty) m['notes'] = notes;
     if (needsClarification) m['needsClarification'] = true;
     if (rejectReason != null) m['rejectReason'] = rejectReason;
-    if (clarificationQuestion != null) m['clarificationQuestion'] = clarificationQuestion;
+    if (clarificationQuestion != null)
+      m['clarificationQuestion'] = clarificationQuestion;
     return m;
   }
 }
@@ -251,7 +273,10 @@ class GroqExpenseParserService {
   }
 
   /// Call after the user confirms a Magic Bar expense so the next parse can use it as a few-shot example (like the CLI's parser_runs.log).
-  static void recordSuccessfulParse(String userInput, ParsedExpenseResult result) {
+  static void recordSuccessfulParse(
+    String userInput,
+    ParsedExpenseResult result,
+  ) {
     final trimmed = userInput.trim();
     if (trimmed.isEmpty) return;
     try {
@@ -261,24 +286,32 @@ class GroqExpenseParserService {
         _recentExamples.removeAt(0);
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('GroqExpenseParserService: failed to cache recent example: $e');
+      if (kDebugMode)
+        debugPrint(
+          'GroqExpenseParserService: failed to cache recent example: $e',
+        );
     }
   }
 
   /// Returns an error message if [result] is invalid; null if valid.
   /// Aligned with CLI (tool/parser_cli.dart): demote confident+unresolved/history; settlements must be rejected.
   /// Hard-rejects mismatches if [expectedCurrencyCode] is provided and [result.currencyCode] differs.
-  static String? validateResult(ParsedExpenseResult result, {String? expectedCurrencyCode}) {
+  static String? validateResult(
+    ParsedExpenseResult result, {
+    String? expectedCurrencyCode,
+  }) {
     if (result.amount.isNaN || result.amount.isInfinite) {
       return 'Amount must be a valid number.';
     }
     if (expectedCurrencyCode != null && result.currencyCode != null) {
-      if (result.currencyCode!.toUpperCase() != expectedCurrencyCode.toUpperCase()) {
+      if (result.currencyCode!.toUpperCase() !=
+          expectedCurrencyCode.toUpperCase()) {
         return 'This group strictly operates in $expectedCurrencyCode. Please enter amounts in $expectedCurrencyCode.';
       }
     }
     if (result.parseConfidence == 'confident' &&
-        (result.splitType == 'unresolved' || result.constraintFlags.contains('history'))) {
+        (result.splitType == 'unresolved' ||
+            result.constraintFlags.contains('history'))) {
       return 'Validation: Confident parse cannot have splitType unresolved or history flags.';
     }
     final descLower = result.description.toLowerCase();
@@ -294,13 +327,20 @@ class GroqExpenseParserService {
   static String? _findGap(ParsedExpenseResult result) {
     const tolerance = 0.01;
     if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
-      final sum = result.exactAmountsByName.values.fold<double>(0, (a, b) => a + b);
+      final sum = result.exactAmountsByName.values.fold<double>(
+        0,
+        (a, b) => a + b,
+      );
       if ((sum - result.amount).abs() > tolerance) {
         return 'Exact split: amounts sum to $sum but total is ${result.amount}.';
       }
     }
-    if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
-      final sum = result.percentageByName.values.fold<double>(0, (a, b) => a + b);
+    if (result.splitType == 'percentage' &&
+        result.percentageByName.isNotEmpty) {
+      final sum = result.percentageByName.values.fold<double>(
+        0,
+        (a, b) => a + b,
+      );
       if ((sum - 100).abs() > tolerance) {
         return 'Percentage split: sum is $sum, should be 100.';
       }
@@ -308,7 +348,8 @@ class GroqExpenseParserService {
     return null;
   }
 
-  static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
+  static const String _baseUrl =
+      'https://api.groq.com/openai/v1/chat/completions';
   // Model aligned with CLI parser (tool/parser_cli.dart) for consistent behavior.
   static const String _model = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
@@ -325,7 +366,9 @@ class GroqExpenseParserService {
     String? currentUserName,
     List<({String input, String json})> recentExamples = const [],
   ]) {
-    final currentUser = currentUserName?.trim().isNotEmpty == true ? currentUserName!.trim() : '(not set)';
+    final currentUser = currentUserName?.trim().isNotEmpty == true
+        ? currentUserName!.trim()
+        : '(not set)';
     final recentSection = recentExamples.isNotEmpty
         ? '\n--- RECENT EXAMPLES (from your confirmed expenses) ---\n${recentExamples.map((e) => '"${e.input.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}" -> ${e.json}').join('\n')}\n\n'
         : '';
@@ -522,7 +565,11 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         ? ' (no members listed)'
         : ' ${groupMemberNames.join(", ")}';
     final recent = List<({String input, String json})>.from(_recentExamples);
-    final systemPrompt = _buildSystemPrompt(memberList, currentUserDisplayName?.trim(), recent);
+    final systemPrompt = _buildSystemPrompt(
+      memberList,
+      currentUserDisplayName?.trim(),
+      recent,
+    );
     final normalizedInput = expandNumberWordsInText(userInput.trim());
 
     final body = {
@@ -550,110 +597,147 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           if (response.statusCode == 429) {
             final wait2 = (wait1 * 2).clamp(2, 60);
             await Future<void>.delayed(Duration(seconds: wait2));
-            debugPrint('Groq API rate limit (429) after backoff: ${response.body}');
-            throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
+            debugPrint(
+              'Groq API rate limit (429) after backoff: ${response.body}',
+            );
+            throw GroqRateLimitException(
+              'Rate limit exceeded. Try again in a moment.',
+            );
           }
         }
 
-      if (response.statusCode != 200) {
-        debugPrint('Groq API error: ${response.statusCode} ${response.body}');
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception('AI request failed. Try again or use a clearer format like "Dinner 500".');
-      }
-
-      final map = jsonDecode(response.body) as Map<String, dynamic>?;
-      if (map == null) {
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception('Invalid response from AI.');
-      }
-
-      final choices = map['choices'] as List?;
-      final first = choices?.isNotEmpty == true ? choices!.first : null;
-      final message = first is Map<String, dynamic> ? first['message'] : null;
-      final content = message is Map<String, dynamic> ? message['content'] : null;
-      String raw = (content is String) ? content.trim() : '';
-
-      if (raw.isEmpty) {
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception('No content from AI.');
-      }
-
-      raw = raw.replaceAll('\uFEFF', ''); // BOM
-      raw = _extractJson(raw);
-      raw = _fixCommonJsonIssues(raw);
-
-      Map<String, dynamic>? decoded = _tryDecodeJson(raw);
-      if (decoded == null) {
-        if (kDebugMode) {
-          final preview = raw.length > 400 ? '${raw.substring(0, 400)}...' : raw;
-          debugPrint('Groq parse failed (JSON decode). Raw response: $preview');
+        if (response.statusCode != 200) {
+          debugPrint('Groq API error: ${response.statusCode} ${response.body}');
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception(
+            'AI request failed. Try again or use a clearer format like "Dinner 500".',
+          );
         }
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
-      }
 
-      ParsedExpenseResult result;
-      try {
-        result = ParsedExpenseResult.fromJson(decoded);
-      } catch (e, st) {
-        if (kDebugMode) {
-          debugPrint('Groq parse failed (fromJson). Decoded: $decoded');
-          debugPrint('Error: $e');
-          debugPrint(st.toString());
+        final map = jsonDecode(response.body) as Map<String, dynamic>?;
+        if (map == null) {
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception('Invalid response from AI.');
         }
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception('Couldn\'t parse that. Try a clearer format like "Dinner 500".');
-      }
 
-      if (result.parseConfidence == 'reject') {
-        final msg = result.rejectReason?.trim().isNotEmpty == true
-            ? result.rejectReason!
-            : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".';
-        throw GroqParserRejectException(msg);
-      }
+        final choices = map['choices'] as List?;
+        final first = choices?.isNotEmpty == true ? choices!.first : null;
+        final message = first is Map<String, dynamic> ? first['message'] : null;
+        final content = message is Map<String, dynamic>
+            ? message['content']
+            : null;
+        String raw = (content is String) ? content.trim() : '';
 
-      final validationError = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
-      if (validationError != null) {
-        throw GroqParserRejectException(validationError);
-      }
+        if (raw.isEmpty) {
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception('No content from AI.');
+        }
 
-      String? gap;
-      if (result.parseConfidence == 'confident') {
-        gap = _findGap(result);
-      }
-      if (gap != null) {
-        final fallback = _fallbackParse(userInput, expectedCurrencyCode: expectedCurrencyCode);
-        if (fallback != null) return fallback;
-        throw Exception(gap);
-      }
+        raw = raw.replaceAll('\uFEFF', ''); // BOM
+        raw = _extractJson(raw);
+        raw = _fixCommonJsonIssues(raw);
 
-      final desc = result.description.trim();
-      if (desc.isEmpty) {
-        result = ParsedExpenseResult(
-          amount: result.amount,
-          currencyCode: result.currencyCode,
-          description: 'Expense',
-          category: result.category,
-          splitType: result.splitType,
-          participantNames: result.participantNames,
-          payerName: result.payerName,
-          excludedNames: result.excludedNames,
-          exactAmountsByName: result.exactAmountsByName,
-          percentageByName: result.percentageByName,
-          sharesByName: result.sharesByName,
-          parseConfidence: result.parseConfidence,
-          constraintFlags: result.constraintFlags,
-          notes: result.notes,
-          rejectReason: result.rejectReason,
-          needsClarification: result.needsClarification,
-          clarificationQuestion: result.clarificationQuestion,
+        Map<String, dynamic>? decoded = _tryDecodeJson(raw);
+        if (decoded == null) {
+          if (kDebugMode) {
+            final preview = raw.length > 400
+                ? '${raw.substring(0, 400)}...'
+                : raw;
+            debugPrint(
+              'Groq parse failed (JSON decode). Raw response: $preview',
+            );
+          }
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception(
+            'Couldn\'t parse that. Try a clearer format like "Dinner 500".',
+          );
+        }
+
+        ParsedExpenseResult result;
+        try {
+          result = ParsedExpenseResult.fromJson(decoded);
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('Groq parse failed (fromJson). Decoded: $decoded');
+            debugPrint('Error: $e');
+            debugPrint(st.toString());
+          }
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception(
+            'Couldn\'t parse that. Try a clearer format like "Dinner 500".',
+          );
+        }
+
+        if (result.parseConfidence == 'reject') {
+          final msg = result.rejectReason?.trim().isNotEmpty == true
+              ? result.rejectReason!
+              : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".';
+          throw GroqParserRejectException(msg);
+        }
+
+        final validationError = validateResult(
+          result,
+          expectedCurrencyCode: expectedCurrencyCode,
         );
-      }
+        if (validationError != null) {
+          throw GroqParserRejectException(validationError);
+        }
+
+        String? gap;
+        if (result.parseConfidence == 'confident') {
+          gap = _findGap(result);
+        }
+        if (gap != null) {
+          final fallback = _fallbackParse(
+            userInput,
+            expectedCurrencyCode: expectedCurrencyCode,
+          );
+          if (fallback != null) return fallback;
+          throw Exception(gap);
+        }
+
+        final desc = result.description.trim();
+        if (desc.isEmpty) {
+          result = ParsedExpenseResult(
+            amount: result.amount,
+            currencyCode: result.currencyCode,
+            description: 'Expense',
+            category: result.category,
+            splitType: result.splitType,
+            participantNames: result.participantNames,
+            payerName: result.payerName,
+            excludedNames: result.excludedNames,
+            exactAmountsByName: result.exactAmountsByName,
+            percentageByName: result.percentageByName,
+            sharesByName: result.sharesByName,
+            parseConfidence: result.parseConfidence,
+            constraintFlags: result.constraintFlags,
+            notes: result.notes,
+            rejectReason: result.rejectReason,
+            needsClarification: result.needsClarification,
+            clarificationQuestion: result.clarificationQuestion,
+          );
+        }
         return result;
       } finally {
         _inFlight = false;
@@ -684,7 +768,8 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     List<String> groupMemberNames = const [],
   }) {
     final amount = _extractAmountFromText(userInput);
-    if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite) return null;
+    if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite)
+      return null;
     final trimmed = userInput.trim();
 
     String? currencyCode;
@@ -724,7 +809,8 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         r'\b(paid|bought|covered|for|with|spent|got|took|owe|owes|had|lent|gave|dinner|lunch|breakfast|coffee|uber|cab|rent|groceries|movie|bill|ticket|petrol|hotel|flight)\b',
         caseSensitive: false,
       ).hasMatch(trimmed);
-      if (isMemberNameOnly || (!hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 2)) {
+      if (isMemberNameOnly ||
+          (!hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 2)) {
         // Return constrained with clarification — never commit.
         final result = ParsedExpenseResult(
           amount: amount,
@@ -739,7 +825,10 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           clarificationQuestion:
               'What was this expense for? Try something like "Dinner $amount with ${nonNumeric.isNotEmpty ? nonNumeric : 'them'}".',
         );
-        final err = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
+        final err = validateResult(
+          result,
+          expectedCurrencyCode: expectedCurrencyCode,
+        );
         if (err != null) throw GroqParserRejectException(err);
         return result;
       }
@@ -756,7 +845,10 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       constraintFlags: ['fallbackExtraction'],
     );
 
-    final err = validateResult(result, expectedCurrencyCode: expectedCurrencyCode);
+    final err = validateResult(
+      result,
+      expectedCurrencyCode: expectedCurrencyCode,
+    );
     if (err != null) throw GroqParserRejectException(err);
 
     return result;
@@ -820,7 +912,8 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       final value = jsonDecode(normalized);
       if (value is Map<String, dynamic>) return value;
     } catch (e) {
-      if (kDebugMode) debugPrint('GroqExpenseParserService: strict JSON decode failed: $e');
+      if (kDebugMode)
+        debugPrint('GroqExpenseParserService: strict JSON decode failed: $e');
     }
     try {
       final value = jsonDecode(normalized.replaceAll("'", '"'));
@@ -834,7 +927,8 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       final value = jsonDecode(fixed);
       if (value is Map<String, dynamic>) return value;
     } catch (e) {
-      if (kDebugMode) debugPrint('GroqExpenseParserService: relaxed JSON decode failed: $e');
+      if (kDebugMode)
+        debugPrint('GroqExpenseParserService: relaxed JSON decode failed: $e');
     }
     return null;
   }
@@ -842,7 +936,10 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
   /// Extracts a JSON object from raw text (handles markdown, leading/trailing text).
   static String _extractJson(String raw) {
     raw = raw.trim();
-    final codeBlockMatch = RegExp(r'```(?:json)?\s*([\s\S]*?)```', caseSensitive: false).firstMatch(raw);
+    final codeBlockMatch = RegExp(
+      r'```(?:json)?\s*([\s\S]*?)```',
+      caseSensitive: false,
+    ).firstMatch(raw);
     if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
     final start = raw.indexOf('{');
     final end = raw.lastIndexOf('}');

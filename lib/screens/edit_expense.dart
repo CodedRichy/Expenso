@@ -33,11 +33,28 @@ class _EditExpenseState extends State<EditExpense> {
     final expenseDate = DateTime.fromMillisecondsSinceEpoch(_selectedTimestamp);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final expenseDay = DateTime(expenseDate.year, expenseDate.month, expenseDate.day);
+    final expenseDay = DateTime(
+      expenseDate.year,
+      expenseDate.month,
+      expenseDate.day,
+    );
     final diff = today.difference(expenseDay).inDays;
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final month = months[expenseDate.month - 1];
     if (expenseDate.year == now.year) return '$month ${expenseDate.day}';
     return '$month ${expenseDate.day}, ${expenseDate.year}';
@@ -71,7 +88,9 @@ class _EditExpenseState extends State<EditExpense> {
                   if (label == 'Today') {
                     _selectedTimestamp = today.millisecondsSinceEpoch;
                   } else if (label == 'Yesterday') {
-                    _selectedTimestamp = today.subtract(const Duration(days: 1)).millisecondsSinceEpoch;
+                    _selectedTimestamp = today
+                        .subtract(const Duration(days: 1))
+                        .millisecondsSinceEpoch;
                   }
                 });
               }
@@ -79,7 +98,11 @@ class _EditExpenseState extends State<EditExpense> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+            color: isSelected
+                ? theme.colorScheme.primary
+                : (isDark
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : Colors.white),
             border: Border.all(color: theme.dividerColor),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -87,7 +110,9 @@ class _EditExpenseState extends State<EditExpense> {
             label,
             style: TextStyle(
               fontSize: 15,
-              color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+              color: isSelected
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurface,
             ),
           ),
         ),
@@ -116,7 +141,10 @@ class _EditExpenseState extends State<EditExpense> {
 
     final expenseId = args['expenseId'] as String?;
     final groupId = args['groupId'] as String?;
-    if (groupId == null || expenseId == null || expenseId.isEmpty || groupId.isEmpty) {
+    if (groupId == null ||
+        expenseId == null ||
+        expenseId.isEmpty ||
+        groupId.isEmpty) {
       setState(() => _expenseNotFound = true);
       return;
     }
@@ -132,8 +160,11 @@ class _EditExpenseState extends State<EditExpense> {
     _expenseId = expenseId;
     _expense = expense;
     final parsedTimestamp = int.tryParse(expense.date);
-    _selectedTimestamp = parsedTimestamp ?? DateTime.now().millisecondsSinceEpoch;
-    _selectedPayerId = expense.paidById.isNotEmpty ? expense.paidById : repo.currentUserId;
+    _selectedTimestamp =
+        parsedTimestamp ?? DateTime.now().millisecondsSinceEpoch;
+    _selectedPayerId = expense.paidById.isNotEmpty
+        ? expense.paidById
+        : repo.currentUserId;
     _canEdit = repo.canMutateExpense(groupId, expenseId, repo.currentUserId);
     descriptionController.text = expense.description;
     amountController.text = expense.amount.toStringAsFixed(0);
@@ -194,7 +225,9 @@ class _EditExpenseState extends State<EditExpense> {
         existing.splitAmountsById!.isNotEmpty &&
         amount != existing.amount) {
       final ratio = amount / existing.amount;
-      updatedSplits = existing.splitAmountsById!.map((k, v) => MapEntry(k, v * ratio));
+      updatedSplits = existing.splitAmountsById!.map(
+        (k, v) => MapEntry(k, v * ratio),
+      );
     }
 
     try {
@@ -220,10 +253,7 @@ class _EditExpenseState extends State<EditExpense> {
       );
     } on StateError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(e.message), behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -246,10 +276,7 @@ class _EditExpenseState extends State<EditExpense> {
       Navigator.pop(context);
     } on StateError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(e.message), behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -291,8 +318,12 @@ class _EditExpenseState extends State<EditExpense> {
                           icon: const Icon(Icons.delete_outline, size: 20),
                           label: const Text('Delete Expense'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                            side: BorderSide(color: Theme.of(context).dividerColor),
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                            side: BorderSide(
+                              color: Theme.of(context).dividerColor,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -343,7 +374,10 @@ class _EditExpenseState extends State<EditExpense> {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 96,
+                  ),
                   child: SizedBox(
                     width: 280,
                     child: Column(
@@ -381,7 +415,9 @@ class _EditExpenseState extends State<EditExpense> {
                             child: ElevatedButton(
                               onPressed: () => Navigator.pop(context),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -465,7 +501,9 @@ class _EditExpenseState extends State<EditExpense> {
           readOnly: readOnly,
           decoration: InputDecoration(
             filled: true,
-            fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+            fillColor: isDark
+                ? theme.colorScheme.surfaceContainerHighest
+                : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: theme.dividerColor),
@@ -478,12 +516,12 @@ class _EditExpenseState extends State<EditExpense> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: theme.colorScheme.primary),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
-          style: TextStyle(
-            fontSize: 17,
-            color: theme.colorScheme.onSurface,
-          ),
+          style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
         ),
       ],
     );
@@ -513,7 +551,9 @@ class _EditExpenseState extends State<EditExpense> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.white,
                 border: Border.all(color: theme.dividerColor),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -531,12 +571,12 @@ class _EditExpenseState extends State<EditExpense> {
                 controller: amountController,
                 readOnly: readOnly,
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+                  fillColor: isDark
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: theme.dividerColor),
@@ -549,7 +589,10 @@ class _EditExpenseState extends State<EditExpense> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: theme.colorScheme.primary),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                 ),
                 style: TextStyle(
                   fontSize: 17,
@@ -591,9 +634,16 @@ class _EditExpenseState extends State<EditExpense> {
                 child: GestureDetector(
                   onTap: _pickDate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: isCustomDate ? theme.colorScheme.primary : (isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white),
+                      color: isCustomDate
+                          ? theme.colorScheme.primary
+                          : (isDark
+                                ? theme.colorScheme.surfaceContainerHighest
+                                : Colors.white),
                       border: Border.all(color: theme.dividerColor),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -603,13 +653,18 @@ class _EditExpenseState extends State<EditExpense> {
                         Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: isCustomDate ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                          color: isCustomDate
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                         if (isCustomDate) ...[
                           const SizedBox(width: 6),
                           Text(
                             _selectedDateDisplay,
-                            style: TextStyle(fontSize: 15, color: theme.colorScheme.onPrimary),
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: theme.colorScheme.onPrimary,
+                            ),
                           ),
                         ],
                       ],
@@ -623,13 +678,18 @@ class _EditExpenseState extends State<EditExpense> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+              color: isDark
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : Colors.white,
               border: Border.all(color: theme.dividerColor),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               _selectedDateDisplay,
-              style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
+              style: TextStyle(
+                fontSize: 17,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
       ],
@@ -640,7 +700,10 @@ class _EditExpenseState extends State<EditExpense> {
   Widget _buildPayerField(bool canEdit) {
     if (_groupId == null) return const SizedBox.shrink();
     final repo = CycleRepository.instance;
-    final members = repo.getMembersForGroup(_groupId!).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo
+        .getMembersForGroup(_groupId!)
+        .where((m) => !m.id.startsWith('p_'))
+        .toList();
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,18 +727,28 @@ class _EditExpenseState extends State<EditExpense> {
             return TapScale(
               child: isSelected
                   ? ElevatedButton(
-                      onPressed: canEdit ? () => setState(() => _selectedPayerId = member.id) : null,
+                      onPressed: canEdit
+                          ? () => setState(() => _selectedPayerId = member.id)
+                          : null,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(displayName, style: AppTypography.button),
                     )
                   : OutlinedButton(
-                      onPressed: canEdit ? () => setState(() => _selectedPayerId = member.id) : null,
+                      onPressed: canEdit
+                          ? () => setState(() => _selectedPayerId = member.id)
+                          : null,
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -695,11 +768,25 @@ class _EditExpenseState extends State<EditExpense> {
         ? (repo.getGroup(_groupId!)?.currencyCode ?? 'INR')
         : 'INR';
     final theme = Theme.of(context);
-    final isExact = expense.splitAmountsById != null && expense.splitAmountsById!.isNotEmpty;
-    final splitLabel = expense.splitType.isNotEmpty ? expense.splitType : (isExact ? 'Exact' : 'Even');
+    final isExact =
+        expense.splitAmountsById != null &&
+        expense.splitAmountsById!.isNotEmpty;
+    final splitLabel = expense.splitType.isNotEmpty
+        ? expense.splitType
+        : (isExact ? 'Exact' : 'Even');
     final participants = isExact
         ? expense.splitAmountsById!.entries.toList()
-        : expense.participantIds.map((id) => MapEntry(id, expense.amount / (expense.participantIds.isEmpty ? 1 : expense.participantIds.length))).toList();
+        : expense.participantIds
+              .map(
+                (id) => MapEntry(
+                  id,
+                  expense.amount /
+                      (expense.participantIds.isEmpty
+                          ? 1
+                          : expense.participantIds.length),
+                ),
+              )
+              .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,7 +803,11 @@ class _EditExpenseState extends State<EditExpense> {
         const SizedBox(height: 6),
         Text(
           splitLabel,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
@@ -739,11 +830,18 @@ class _EditExpenseState extends State<EditExpense> {
               children: [
                 Text(
                   name,
-                  style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 Text(
                   formatMoneyFromMajor(amt, currencyCode),
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -759,30 +857,22 @@ class _EditExpenseState extends State<EditExpense> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: theme.dividerColor,
-            width: 1,
-          ),
-        ),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
       ),
       child: ElevatedButton(
-        onPressed: descriptionController.text.trim().isNotEmpty && amountController.text.isNotEmpty
+        onPressed:
+            descriptionController.text.trim().isNotEmpty &&
+                amountController.text.isNotEmpty
             ? handleSave
             : null,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 0,
         ),
         child: const Text(
           'Save Changes',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
         ),
       ),
     );

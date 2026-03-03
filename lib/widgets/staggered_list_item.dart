@@ -20,7 +20,8 @@ class StaggeredListItem extends StatefulWidget {
   State<StaggeredListItem> createState() => _StaggeredListItemState();
 }
 
-class _StaggeredListItemState extends State<StaggeredListItem> with SingleTickerProviderStateMixin {
+class _StaggeredListItemState extends State<StaggeredListItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _offset;
@@ -32,9 +33,10 @@ class _StaggeredListItemState extends State<StaggeredListItem> with SingleTicker
       vsync: this,
       duration: Duration(milliseconds: widget.durationMs),
     );
-    _opacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _offset = Tween<Offset>(
       begin: const Offset(0, 0.03),
       end: Offset.zero,
@@ -60,10 +62,7 @@ class _StaggeredListItemState extends State<StaggeredListItem> with SingleTicker
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacity,
-      child: SlideTransition(
-        position: _offset,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _offset, child: widget.child),
     );
   }
 }

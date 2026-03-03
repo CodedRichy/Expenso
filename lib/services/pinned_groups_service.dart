@@ -41,7 +41,8 @@ class PinnedGroupsService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_key, _ids);
     } catch (e) {
-      if (kDebugMode) debugPrint('PinnedGroupsService: save pinned ids failed: $e');
+      if (kDebugMode)
+        debugPrint('PinnedGroupsService: save pinned ids failed: $e');
     }
     notifyListeners();
   }

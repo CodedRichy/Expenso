@@ -15,22 +15,18 @@ import '../widgets/gradient_scaffold.dart';
 import '../widgets/tap_scale.dart';
 import '../services/firestore_service.dart';
 
-
 class InviteMembers extends StatefulWidget {
   final Group? group;
   final String groupName;
 
-  const InviteMembers({
-    super.key,
-    this.group,
-    this.groupName = 'Group Name',
-  });
+  const InviteMembers({super.key, this.group, this.groupName = 'Group Name'});
 
   @override
   State<InviteMembers> createState() => _InviteMembersState();
 }
 
-class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserver {
+class _InviteMembersState extends State<InviteMembers>
+    with WidgetsBindingObserver {
   String phone = '';
   String name = '';
   bool linkCopied = false;
@@ -80,14 +76,15 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
     setState(() {
       _contactsPermissionChecked = true;
       _contactsPermissionGranted = status.isGranted;
-      if (status.isDenied || status.isPermanentlyDenied) _contactsDenialSeen = true;
+      if (status.isDenied || status.isPermanentlyDenied)
+        _contactsDenialSeen = true;
       if (status.isGranted) _loadContacts();
     });
   }
 
   Future<void> _requestContactsAndLoad() async {
     final status = await Permission.contacts.status;
-    
+
     if (status.isGranted) {
       setState(() {
         _contactsPermissionGranted = true;
@@ -95,15 +92,15 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
       });
       return;
     }
-    
+
     if (status.isPermanentlyDenied) {
       await openAppSettings();
       return;
     }
-    
+
     final result = await Permission.contacts.request();
     if (!mounted) return;
-    
+
     if (result.isGranted) {
       setState(() {
         _contactsPermissionGranted = true;
@@ -117,7 +114,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
 
   Future<void> _loadContacts() async {
     try {
-      final contacts = await fc.FlutterContacts.getContacts(withProperties: true);
+      final contacts = await fc.FlutterContacts.getContacts(
+        withProperties: true,
+      );
       if (!mounted) return;
       setState(() => _allContacts = contacts);
     } catch (e, st) {
@@ -136,17 +135,22 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
   List<fc.Contact> _getFilteredContacts(Set<String> existingPhones) {
     final nameLower = name.trim().toLowerCase();
     final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
-    
+
     return _allContacts.where((c) {
       if (c.phones.isEmpty) return false;
       for (final p in c.phones) {
         if (existingPhones.contains(_normalizePhone(p.number))) return false;
       }
       if (nameLower.isEmpty && phoneDigits.isEmpty) return true;
-      if (nameLower.isNotEmpty && c.displayName.toLowerCase().contains(nameLower)) return true;
+      if (nameLower.isNotEmpty &&
+          c.displayName.toLowerCase().contains(nameLower))
+        return true;
       for (final p in c.phones) {
         final numDigits = p.number.replaceAll(RegExp(r'\D'), '');
-        if (phoneDigits.isNotEmpty && (numDigits.contains(phoneDigits) || phoneDigits.contains(numDigits))) return true;
+        if (phoneDigits.isNotEmpty &&
+            (numDigits.contains(phoneDigits) ||
+                phoneDigits.contains(numDigits)))
+          return true;
       }
       return false;
     }).toList();
@@ -277,7 +281,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     final groupArg = widget.group ?? RouteArgs.getGroup(context);
     if (groupArg == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
       final theme = Theme.of(context);
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -290,13 +296,17 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
               children: [
                 Text(
                   'Group not found',
-                  style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onSurface),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Go back and try again.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -322,7 +332,8 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
           existingPhones.add(_normalizePhone(m.phone));
         }
         for (final id in groupArg.memberIds) {
-          if (id.startsWith('p_')) existingPhones.add(_normalizePhone(id.substring(2)));
+          if (id.startsWith('p_'))
+            existingPhones.add(_normalizePhone(id.substring(2)));
         }
         final filteredContacts = _getFilteredContacts(existingPhones);
         return GradientScaffold(
@@ -343,19 +354,19 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                       Semantics(
                         label: 'Back',
                         button: true,
-                         child: TapScale(
-                        child: IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.chevron_left, size: 24),
-                          color: Theme.of(context).colorScheme.onSurface,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          style: IconButton.styleFrom(
-                            minimumSize: const Size(32, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        child: TapScale(
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.chevron_left, size: 24),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(32, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ),
-                      ),
                       ),
                       const SizedBox(height: 20),
                       Text(displayGroupName, style: context.screenTitle),
@@ -377,11 +388,14 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (groupArg.inviteLinkEnabled && groupArg.inviteLinkToken != null) ...[
+                            if (groupArg.inviteLinkEnabled &&
+                                groupArg.inviteLinkToken != null) ...[
                               Text('SHARE LINK', style: context.sectionLabel),
                               const SizedBox(height: 12),
                               Semantics(
-                                label: linkCopied ? 'Link copied' : 'Copy invite link',
+                                label: linkCopied
+                                    ? 'Link copied'
+                                    : 'Copy invite link',
                                 button: true,
                                 child: TapScale(
                                   child: InkWell(
@@ -391,30 +405,41 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
                                         color: context.colorSurface,
-                                        border: Border.all(color: context.colorBorder),
+                                        border: Border.all(
+                                          color: context.colorBorder,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Row(
                                             children: [
                                               Icon(
                                                 Icons.link,
                                                 size: 20,
-                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
                                               ),
                                               const SizedBox(width: 12),
                                               Text(
-                                                linkCopied ? 'Link copied' : 'Copy invite link',
+                                                linkCopied
+                                                    ? 'Link copied'
+                                                    : 'Copy invite link',
                                                 style: context.bodyPrimary,
                                               ),
                                             ],
                                           ),
                                           Icon(
-                                            linkCopied ? Icons.check : Icons.content_copy,
+                                            linkCopied
+                                                ? Icons.check
+                                                : Icons.content_copy,
                                             size: 20,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                         ],
                                       ),
@@ -427,16 +452,30 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton.icon(
-                                    onPressed: _isRevokingLink ? null : () => _revokeLink(groupArg),
+                                    onPressed: _isRevokingLink
+                                        ? null
+                                        : () => _revokeLink(groupArg),
                                     icon: _isRevokingLink
-                                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                      : const Icon(Icons.refresh, size: 16),
-                                    label: const Text('Revoke & Regenerate Link'),
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.refresh, size: 16),
+                                    label: const Text(
+                                      'Revoke & Regenerate Link',
+                                    ),
                                     style: TextButton.styleFrom(
                                       foregroundColor: context.colorError,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                 ),
@@ -447,13 +486,23 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
-                                  onPressed: _isGeneratingLink ? null : () => _generateLink(groupArg),
+                                  onPressed: _isGeneratingLink
+                                      ? null
+                                      : () => _generateLink(groupArg),
                                   icon: _isGeneratingLink
-                                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
                                       : const Icon(Icons.add_link),
                                   label: const Text('Generate Invite Link'),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -473,7 +522,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               }),
                               decoration: InputDecoration(
                                 hintText: 'Name (optional)',
-                                helperText: (_contactsPermissionGranted && name.trim().isNotEmpty)
+                                helperText:
+                                    (_contactsPermissionGranted &&
+                                        name.trim().isNotEmpty)
                                     ? 'Suggestions from contacts appear below'
                                     : null,
                                 helperMaxLines: 1,
@@ -481,22 +532,33 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               style: context.input,
                             ),
                             const SizedBox(height: 12),
-                            if (!_contactsPermissionGranted && _contactsPermissionChecked && !_contactsDenialSeen) ...[
+                            if (!_contactsPermissionGranted &&
+                                _contactsPermissionChecked &&
+                                !_contactsDenialSeen) ...[
                               const SizedBox(height: 8),
                               Text(
                                 'Contacts access was denied. You can still add members by entering a number below.',
-                                style: context.bodySecondary.copyWith(height: 1.4),
+                                style: context.bodySecondary.copyWith(
+                                  height: 1.4,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextButton.icon(
                                 onPressed: _requestContactsAndLoad,
-                                icon: Icon(Icons.contacts_outlined, size: 18, color: context.colorPrimary),
+                                icon: Icon(
+                                  Icons.contacts_outlined,
+                                  size: 18,
+                                  color: context.colorPrimary,
+                                ),
                                 label: const Text('Access Contacts'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: context.colorPrimary,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -508,30 +570,52 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                 SizedBox(
                                   height: 56,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: context.colorSurface,
-                                      border: Border.all(color: context.colorBorderInput),
+                                      border: Border.all(
+                                        color: context.colorBorderInput,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     alignment: Alignment.center,
                                     child: PopupMenuButton<String>(
-                                      onSelected: (code) => setState(() => _selectedCountryCode = code),
+                                      onSelected: (code) => setState(
+                                        () => _selectedCountryCode = code,
+                                      ),
                                       offset: const Offset(0, 48),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      itemBuilder: (context) => countryCodesWithCurrency.map((c) => PopupMenuItem<String>(
-                                        value: c.dialCode,
-                                        child: Text(
-                                          '${c.dialCode} ${c.countryCode}',
-                                          style: context.input,
-                                        ),
-                                      )).toList(),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      itemBuilder: (context) =>
+                                          countryCodesWithCurrency
+                                              .map(
+                                                (c) => PopupMenuItem<String>(
+                                                  value: c.dialCode,
+                                                  child: Text(
+                                                    '${c.dialCode} ${c.countryCode}',
+                                                    style: context.input,
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(_selectedCountryCode, style: context.input),
+                                          Text(
+                                            _selectedCountryCode,
+                                            style: context.input,
+                                          ),
                                           const SizedBox(width: 4),
-                                          Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          Icon(
+                                            Icons.arrow_drop_down,
+                                            size: 20,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -542,23 +626,26 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                   child: SizedBox(
                                     height: 56,
                                     child: TextField(
-                                    focusNode: _phoneFocusNode,
-                                    keyboardType: TextInputType.phone,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(10),
-                                    ],
-                                    onChanged: (value) => setState(() {
-                                      phone = value;
-                                      _contactSuggestionsDismissed = false;
-                                    }),
-                                    onSubmitted: (_) => handleAddMember(),
-                                    decoration: const InputDecoration(
-                                      hintText: 'Phone number',
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                      focusNode: _phoneFocusNode,
+                                      keyboardType: TextInputType.phone,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        LengthLimitingTextInputFormatter(10),
+                                      ],
+                                      onChanged: (value) => setState(() {
+                                        phone = value;
+                                        _contactSuggestionsDismissed = false;
+                                      }),
+                                      onSubmitted: (_) => handleAddMember(),
+                                      decoration: const InputDecoration(
+                                        hintText: 'Phone number',
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 18,
+                                        ),
+                                      ),
+                                      style: context.input,
                                     ),
-                                    style: context.input,
-                                  ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -567,33 +654,52 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                   button: true,
                                   child: TapScale(
                                     child: ElevatedButton(
-                                      onPressed: phone.length == 10 ? handleAddMember : null,
+                                      onPressed: phone.length == 10
+                                          ? handleAddMember
+                                          : null,
                                       style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                        ),
                                         minimumSize: const Size(0, 56),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         elevation: 0,
                                       ),
-                                      child: const Text('Add', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                      child: const Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            if (_contactsPermissionGranted && !_contactSuggestionsDismissed) ...[
+                            if (_contactsPermissionGranted &&
+                                !_contactSuggestionsDismissed) ...[
                               const SizedBox(height: 16),
                               Text(
-                                name.trim().isNotEmpty ? 'SUGGESTIONS FROM CONTACTS' : 'FROM YOUR CONTACTS',
+                                name.trim().isNotEmpty
+                                    ? 'SUGGESTIONS FROM CONTACTS'
+                                    : 'FROM YOUR CONTACTS',
                                 style: context.sectionLabel,
                               ),
                               const SizedBox(height: 12),
                               Container(
-                                constraints: const BoxConstraints(maxHeight: 280),
+                                constraints: const BoxConstraints(
+                                  maxHeight: 280,
+                                ),
                                 decoration: BoxDecoration(
                                   color: context.colorSurface,
-                                  border: Border.all(color: context.colorBorder),
+                                  border: Border.all(
+                                    color: context.colorBorder,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: filteredContacts.isEmpty
@@ -602,9 +708,10 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                         child: Text(
                                           _allContacts.isEmpty
                                               ? 'Loading contacts...'
-                                              : (name.trim().isNotEmpty || phone.isNotEmpty)
-                                                  ? 'No matching contacts'
-                                                  : 'All contacts already added',
+                                              : (name.trim().isNotEmpty ||
+                                                    phone.isNotEmpty)
+                                              ? 'No matching contacts'
+                                              : 'All contacts already added',
                                           style: context.bodySecondary,
                                         ),
                                       )
@@ -614,39 +721,74 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                         itemCount: filteredContacts.length,
                                         itemBuilder: (context, index) {
                                           final c = filteredContacts[index];
-                                          final primaryPhone = c.phones.isNotEmpty
-                                              ? _normalizePhone(c.phones.first.number)
+                                          final primaryPhone =
+                                              c.phones.isNotEmpty
+                                              ? _normalizePhone(
+                                                  c.phones.first.number,
+                                                )
                                               : '';
-                                          final phoneDisplay = primaryPhone.length == 10
+                                          final phoneDisplay =
+                                              primaryPhone.length == 10
                                               ? '$_selectedCountryCode $primaryPhone'
                                               : c.phones.isNotEmpty
-                                                  ? c.phones.first.number
-                                                  : '';
+                                              ? c.phones.first.number
+                                              : '';
                                           return TapScale(
                                             scaleDown: 0.99,
                                             child: InkWell(
-                                              onTap: () => _onContactSelected(c),
+                                              onTap: () =>
+                                                  _onContactSelected(c),
                                               child: Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 12,
+                                                    ),
                                                 child: Row(
                                                   children: [
                                                     CircleAvatar(
                                                       radius: 20,
-                                                      backgroundColor: context.colorPrimary,
+                                                      backgroundColor:
+                                                          context.colorPrimary,
                                                       child: Text(
-                                                        c.displayName.isNotEmpty ? c.displayName[0].toUpperCase() : '',
-                                                        style: context.bodyPrimary.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+                                                        c.displayName.isNotEmpty
+                                                            ? c.displayName[0]
+                                                                  .toUpperCase()
+                                                            : '',
+                                                        style: context
+                                                            .bodyPrimary
+                                                            .copyWith(
+                                                              color:
+                                                                  Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .onPrimary,
+                                                            ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 16),
                                                     Expanded(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
-                                                          Text(c.displayName, style: context.listItemTitle),
-                                                          if (phoneDisplay.isNotEmpty) ...[
-                                                            const SizedBox(height: 2),
-                                                            Text(phoneDisplay, style: context.bodySecondary),
+                                                          Text(
+                                                            c.displayName,
+                                                            style: context
+                                                                .listItemTitle,
+                                                          ),
+                                                          if (phoneDisplay
+                                                              .isNotEmpty) ...[
+                                                            const SizedBox(
+                                                              height: 2,
+                                                            ),
+                                                            Text(
+                                                              phoneDisplay,
+                                                              style: context
+                                                                  .bodySecondary,
+                                                            ),
                                                           ],
                                                         ],
                                                       ),
@@ -654,7 +796,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                                                     Icon(
                                                       Icons.person_add_outlined,
                                                       size: 20,
-                                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
                                                     ),
                                                   ],
                                                 ),
@@ -674,7 +818,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
+                    border: Border(
+                      top: BorderSide(color: context.colorBorder, width: 1),
+                    ),
                   ),
                   child: Semantics(
                     label: 'Done',
@@ -690,7 +836,9 @@ class _InviteMembersState extends State<InviteMembers> with WidgetsBindingObserv
                               arguments: updatedGroup,
                             );
                           } else {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst);
                           }
                         },
                         style: ElevatedButton.styleFrom(

@@ -54,15 +54,21 @@ class UpiPaymentService {
     );
 
     // Sanitize payee name — alphanumeric + spaces, max 30 chars.
-    String sanitizedName = payeeName.replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '').trim();
-    if (sanitizedName.length > 30) sanitizedName = sanitizedName.substring(0, 30).trim();
+    String sanitizedName = payeeName
+        .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '')
+        .trim();
+    if (sanitizedName.length > 30)
+      sanitizedName = sanitizedName.substring(0, 30).trim();
 
     // Sanitize note — alphanumeric + spaces, max 50 chars.
-    String note = 'Expenso $groupName Cycle'.replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '').trim();
+    String note = 'Expenso $groupName Cycle'
+        .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '')
+        .trim();
     if (note.length > 50) note = note.substring(0, 50).trim();
 
     // Fresh tr per call to avoid PSP duplicate detection.
-    String finalRef = transactionRef ?? 'EX${DateTime.now().millisecondsSinceEpoch}';
+    String finalRef =
+        transactionRef ?? 'EX${DateTime.now().millisecondsSinceEpoch}';
     finalRef = finalRef.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
     if (finalRef.length > 35) finalRef = finalRef.substring(0, 35);
 

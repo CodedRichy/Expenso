@@ -59,14 +59,19 @@ class DeleteGroup extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 96,
+                  ),
                   child: SizedBox(
                     width: 320,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          groupName.isEmpty ? 'Delete group' : 'Delete "$groupName"',
+                          groupName.isEmpty
+                              ? 'Delete group'
+                              : 'Delete "$groupName"',
                           textAlign: TextAlign.center,
                           style: context.subheader,
                         ),
@@ -87,9 +92,7 @@ class DeleteGroup extends StatelessWidget {
                           Text(
                             'This will permanently delete the group and all expense history.',
                             textAlign: TextAlign.center,
-                            style: context.bodySecondary.copyWith(
-                              height: 1.5,
-                            ),
+                            style: context.bodySecondary.copyWith(height: 1.5),
                           ),
                         const SizedBox(height: 48),
                         Column(
@@ -101,7 +104,10 @@ class DeleteGroup extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: Text('Delete Group', style: Theme.of(context).textTheme.labelLarge),
+                              child: Text(
+                                'Delete Group',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             OutlinedButton(
@@ -111,7 +117,10 @@ class DeleteGroup extends StatelessWidget {
                               style: OutlinedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 0),
                               ),
-                              child: Text('Cancel', style: Theme.of(context).textTheme.labelLarge),
+                              child: Text(
+                                'Cancel',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
                             ),
                           ],
                         ),

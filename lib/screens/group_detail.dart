@@ -32,7 +32,7 @@ import '../widgets/tap_scale.dart';
 class _StyledDescription {
   final String main;
   final String? suffix;
-  
+
   _StyledDescription(this.main, this.suffix);
 }
 
@@ -43,35 +43,37 @@ _StyledDescription _buildViewerRelativeDescription({
   final baseDesc = expense.description;
   final currentUserId = repo.currentUserId;
   final participantIds = expense.participantIds;
-  
-  final otherParticipants = participantIds.where((id) => id != currentUserId).toList();
-  
+
+  final otherParticipants = participantIds
+      .where((id) => id != currentUserId)
+      .toList();
+
   final withPattern = RegExp(r'\s*[-–—]\s*with\s+.+$', caseSensitive: false);
   final cleanDesc = baseDesc.replaceAll(withPattern, '').trim();
-  
+
   if (otherParticipants.isEmpty) {
     return _StyledDescription(cleanDesc, null);
   }
-  
+
   final otherCount = otherParticipants.length;
-  
+
   if (otherCount >= 4) {
     return _StyledDescription(cleanDesc, 'with $otherCount others');
   }
-  
+
   final withNames = otherParticipants
       .map((id) => repo.getMemberDisplayNameById(id))
       .toList();
-  
+
   final descLower = cleanDesc.toLowerCase();
   final namesNotInDesc = withNames
       .where((n) => !descLower.contains(n.toLowerCase()))
       .toList();
-  
+
   if (namesNotInDesc.isEmpty) {
     return _StyledDescription(cleanDesc, null);
   }
-  
+
   return _StyledDescription(cleanDesc, 'with ${namesNotInDesc.join(', ')}');
 }
 
@@ -119,10 +121,7 @@ void _showUndoExpenseOverlay(
 class GroupDetail extends StatefulWidget {
   final Group? group;
 
-  const GroupDetail({
-    super.key,
-    this.group,
-  });
+  const GroupDetail({super.key, this.group});
 
   @override
   State<GroupDetail> createState() => _GroupDetailState();
@@ -137,7 +136,9 @@ class _GroupDetailState extends State<GroupDetail> {
     final routeGroup = RouteArgs.getGroup(context);
     final resolvedGroup = routeGroup ?? widget.group;
     if (resolvedGroup == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.maybePop(context));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.maybePop(context),
+      );
       return const Scaffold(body: SizedBox.shrink());
     }
     final groupId = resolvedGroup.id;
@@ -159,358 +160,482 @@ class _GroupDetailState extends State<GroupDetail> {
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
           });
-          return const Scaffold(
-            body: Center(child: ExpensoLoader()),
-          );
+          return const Scaffold(body: Center(child: ExpensoLoader()));
         }
         final activeCycle = repo.getActiveCycle(groupId);
         final expenses = repo.getExpenses(activeCycle.id);
         final systemMessages = repo.getSystemMessages(groupId);
         final isPassive = activeCycle.status == CycleStatus.settling;
-        final isSettled = activeCycle.status == CycleStatus.closed || defaultGroup.status == 'settled';
+        final isSettled =
+            activeCycle.status == CycleStatus.closed ||
+            defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
         final theme = Theme.of(context);
 
         return GradientScaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            OfflineBanner(
-              onRetry: () => ConnectivityService.instance.checkNow(),
-            ),
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _StickyHeaderDelegate(
-                      height: 52,
-                      backgroundColor: theme.brightness == Brightness.dark
-                          ? AppColorsDark.backgroundGradientStart
-                          : AppColors.background,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            TapScale(
-                              child: IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.chevron_left, size: 24),
-                                color: theme.colorScheme.onSurface,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(32, 32),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                defaultGroup.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                            ),
-                            TapScale(
-                              child: IconButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/group-members',
-                                    arguments: defaultGroup,
-                                  );
-                                },
-                                icon: const Icon(Icons.people_outline, size: 24),
-                                color: theme.colorScheme.onSurface,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(32, 32),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                      child: _DecisionClarityCard(
-                        repo: repo,
-                        groupId: groupId,
-                        groupName: defaultGroup.name,
-                        expenses: expenses,
-                        isSettled: isSettled,
-                        isPassive: isPassive,
-                      ),
-                    ),
-                  ),
-                  if (isPassive)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: SettlementProgressIndicator(groupId: groupId),
-                      ),
-                    ),
-                  if (!isSettled)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: SettlementActivityTapToExpand(groupId: groupId),
-                      ),
-                    ),
-                  if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive))
-                    SliverToBoxAdapter(
-                      child: Builder(
-                        builder: (context) {
-                          final fullySettled = isPassive && repo.isFullySettled(groupId);
-                          final isCreator = repo.isCurrentUserCreator(groupId);
-
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              mainAxisSize: MainAxisSize.min,
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                OfflineBanner(
+                  onRetry: () => ConnectivityService.instance.checkNow(),
+                ),
+                Expanded(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _StickyHeaderDelegate(
+                          height: 52,
+                          backgroundColor: theme.brightness == Brightness.dark
+                              ? AppColorsDark.backgroundGradientStart
+                              : AppColors.background,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TapScale(
-                                  child: ElevatedButton(
+                                  child: IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: const Icon(
+                                      Icons.chevron_left,
+                                      size: 24,
+                                    ),
+                                    color: theme.colorScheme.onSurface,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size(32, 32),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    defaultGroup.name,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ),
+                                TapScale(
+                                  child: IconButton(
                                     onPressed: () {
                                       Navigator.pushNamed(
                                         context,
-                                        '/settlement-confirmation',
-                                        arguments: {'group': defaultGroup, 'method': 'upi'},
+                                        '/group-members',
+                                        arguments: defaultGroup,
                                       );
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      elevation: 0,
-                                      minimumSize: const Size(double.infinity, 0),
+                                    icon: const Icon(
+                                      Icons.people_outline,
+                                      size: 24,
                                     ),
-                                    child: const Text('Settlement', style: AppTypography.button),
+                                    color: theme.colorScheme.onSurface,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size(32, 32),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
                                   ),
                                 ),
-                                if (isCreator) ...[
-                                  const SizedBox(height: 10),
-                                  TapScale(
-                                    child: ElevatedButton(
-                                    onPressed: () async {
-                                      if (isPassive) {
-                                        final confirmed = await showDialog<bool>(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            title: const Text('Start new cycle?'),
-                                            content: Text(
-                                              fullySettled
-                                                  ? 'All payments are complete. Ready to start a fresh cycle.'
-                                                  : 'This will archive current expenses and start a fresh cycle.',
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                          child: _DecisionClarityCard(
+                            repo: repo,
+                            groupId: groupId,
+                            groupName: defaultGroup.name,
+                            expenses: expenses,
+                            isSettled: isSettled,
+                            isPassive: isPassive,
+                          ),
+                        ),
+                      ),
+                      if (isPassive)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                            child: SettlementProgressIndicator(
+                              groupId: groupId,
+                            ),
+                          ),
+                        ),
+                      if (!isSettled)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                            child: SettlementActivityTapToExpand(
+                              groupId: groupId,
+                            ),
+                          ),
+                        ),
+                      if (!isSettled &&
+                          (repo.getGroupPendingAmount(groupId) > 0 ||
+                              isPassive))
+                        SliverToBoxAdapter(
+                          child: Builder(
+                            builder: (context) {
+                              final fullySettled =
+                                  isPassive && repo.isFullySettled(groupId);
+                              final isCreator = repo.isCurrentUserCreator(
+                                groupId,
+                              );
+
+                              return Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  0,
+                                  24,
+                                  8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TapScale(
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/settlement-confirmation',
+                                            arguments: {
+                                              'group': defaultGroup,
+                                              'method': 'upi',
+                                            },
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(ctx, false),
-                                                child: const Text('Cancel'),
+                                          ),
+                                          elevation: 0,
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            0,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Settlement',
+                                          style: AppTypography.button,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isCreator) ...[
+                                      const SizedBox(height: 10),
+                                      TapScale(
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            if (isPassive) {
+                                              final confirmed = await showDialog<bool>(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: const Text(
+                                                    'Start new cycle?',
+                                                  ),
+                                                  content: Text(
+                                                    fullySettled
+                                                        ? 'All payments are complete. Ready to start a fresh cycle.'
+                                                        : 'This will archive current expenses and start a fresh cycle.',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                            ctx,
+                                                            false,
+                                                          ),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                            ctx,
+                                                            true,
+                                                          ),
+                                                      child: const Text(
+                                                        'Confirm',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                              if (confirmed != true ||
+                                                  !context.mounted)
+                                                return;
+                                            } else {
+                                              _showSettleConfirmDialog(
+                                                context,
+                                                repo,
+                                                groupId,
+                                              );
+                                              return;
+                                            }
+                                            if (ConnectivityService
+                                                .instance
+                                                .isOffline) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Cannot start new cycle while offline',
+                                                    ),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                  ),
+                                                );
+                                              }
+                                              return;
+                                            }
+                                            try {
+                                              await repo.archiveAndRestart(
+                                                groupId,
+                                              );
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'New cycle started.',
+                                                    ),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}',
+                                                    ),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            elevation: 0,
+                                            minimumSize: const Size(
+                                              double.infinity,
+                                              0,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isPassive
+                                                ? (fullySettled
+                                                      ? 'Start New Cycle ✓'
+                                                      : 'Start New Cycle')
+                                                : 'Close cycle',
+                                            style: AppTypography.button,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ...(hasExpenses
+                          ? <Widget>[
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  16,
+                                  24,
+                                  16,
+                                ),
+                                sliver: SliverToBoxAdapter(
+                                  child: Text(
+                                    'EXPENSE LOG',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final expense = expenses[index];
+                                  return StaggeredListItem(
+                                    index: index,
+                                    child: TapScale(
+                                      scaleDown: 0.99,
+                                      child: InkWell(
+                                        onTap: isPassive
+                                            ? null
+                                            : () {
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  '/edit-expense',
+                                                  arguments: {
+                                                    'expenseId': expense.id,
+                                                    'groupId': defaultGroup.id,
+                                                  },
+                                                );
+                                              },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border(
+                                              top: index > 0
+                                                  ? BorderSide(
+                                                      color: Theme.of(
+                                                        context,
+                                                      ).dividerColor,
+                                                      width: 1,
+                                                    )
+                                                  : BorderSide.none,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final desc =
+                                                            _buildViewerRelativeDescription(
+                                                              expense: expense,
+                                                              repo: repo,
+                                                            );
+                                                        return Text.rich(
+                                                          TextSpan(
+                                                            children: [
+                                                              TextSpan(
+                                                                text: desc.main,
+                                                                style: TextStyle(
+                                                                  fontSize: 17,
+                                                                  color: Theme.of(
+                                                                    context,
+                                                                  ).colorScheme.onSurface,
+                                                                ),
+                                                              ),
+                                                              if (desc.suffix !=
+                                                                  null) ...[
+                                                                const TextSpan(
+                                                                  text: '  ',
+                                                                ),
+                                                                TextSpan(
+                                                                  text: desc
+                                                                      .suffix,
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.onSurfaceVariant,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      expense.displayDate,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(ctx, true),
-                                                child: const Text('Confirm'),
+                                              const SizedBox(width: 16),
+                                              Text(
+                                                formatMoneyFromMajor(
+                                                  expense.amount,
+                                                  defaultGroup.currencyCode,
+                                                  LocaleService
+                                                      .instance
+                                                      .localeCode,
+                                                ),
+                                                style: TextStyle(
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
+                                                ),
                                               ),
                                             ],
                                           ),
-                                        );
-                                        if (confirmed != true || !context.mounted) return;
-                                      } else {
-                                        _showSettleConfirmDialog(context, repo, groupId);
-                                        return;
-                                      }
-                                      if (ConnectivityService.instance.isOffline) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Cannot start new cycle while offline'),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                        return;
-                                      }
-                                      try {
-                                        await repo.archiveAndRestart(groupId);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('New cycle started.'),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                      style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
                                         ),
-                                        elevation: 0,
-                                        minimumSize: const Size(double.infinity, 0),
-                                      ),
-                                      child: Text(
-                                        isPassive
-                                            ? (fullySettled ? 'Start New Cycle ✓' : 'Start New Cycle')
-                                            : 'Close cycle',
-                                        style: AppTypography.button,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ...(hasExpenses
-                      ? <Widget>[
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                            sliver: SliverToBoxAdapter(
-                              child: Text(
-                                'EXPENSE LOG',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  letterSpacing: 0.3,
-                                ),
+                                  );
+                                }, childCount: expenses.length),
                               ),
-                            ),
-                          ),
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final expense = expenses[index];
-                                return StaggeredListItem(
-                                  index: index,
-                                  child: TapScale(
-                                    scaleDown: 0.99,
-                                    child: InkWell(
-                                    onTap: isPassive
-                                        ? null
-                                        : () {
-                                            Navigator.pushNamed(
-                                              context,
-                                              '/edit-expense',
-                                              arguments: {
-                                                'expenseId': expense.id,
-                                                'groupId': defaultGroup.id,
-                                              },
-                                            );
-                                          },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          top: index > 0
-                                              ? BorderSide(color: Theme.of(context).dividerColor, width: 1)
-                                              : BorderSide.none,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Builder(
-                                                  builder: (context) {
-                                                    final desc = _buildViewerRelativeDescription(
-                                                      expense: expense,
-                                                      repo: repo,
-                                                    );
-                                                    return Text.rich(
-                                                      TextSpan(
-                                                        children: [
-                                                          TextSpan(
-                                                            text: desc.main,
-                                                            style: TextStyle(
-                                                              fontSize: 17,
-                                                              color: Theme.of(context).colorScheme.onSurface,
-                                                            ),
-                                                          ),
-                                                          if (desc.suffix != null) ...[
-                                                            const TextSpan(text: '  '),
-                                                            TextSpan(
-                                                              text: desc.suffix,
-                                                              style: TextStyle(
-                                                                fontSize: 14,
-                                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  expense.displayDate,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Text(
-                                            formatMoneyFromMajor(expense.amount, defaultGroup.currencyCode, LocaleService.instance.localeCode),
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(context).colorScheme.onSurface,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  ),
-                                );
-                              },
-                              childCount: expenses.length,
-                            ),
-                          ),
-                            SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
                                   final msg = systemMessages[index];
                                   String text;
                                   switch (msg.type) {
@@ -518,26 +643,33 @@ class _GroupDetailState extends State<GroupDetail> {
                                       text = '${msg.userName} joined the group';
                                       break;
                                     case 'declined':
-                                      text = '${msg.userName} declined the invitation';
+                                      text =
+                                          '${msg.userName} declined the invitation';
                                       break;
                                     case 'left':
                                       text = '${msg.userName} left the group';
                                       break;
                                     case 'created':
-                                      text = '${msg.userName} created the group';
+                                      text =
+                                          '${msg.userName} created the group';
                                       break;
                                     default:
                                       text = '${msg.userName} ${msg.type}';
                                   }
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
                                     child: Row(
                                       children: [
                                         Container(
                                           width: 6,
                                           height: 6,
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -547,7 +679,9 @@ class _GroupDetailState extends State<GroupDetail> {
                                             text,
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
                                               fontStyle: FontStyle.italic,
                                             ),
                                           ),
@@ -556,37 +690,43 @@ class _GroupDetailState extends State<GroupDetail> {
                                           msg.date,
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
                                     ),
                                   );
-                                },
-                                childCount: systemMessages.length,
+                                }, childCount: systemMessages.length),
                               ),
-                            ),
-                        ]
-                      : [
-                          SliverToBoxAdapter(
-                            child: EmptyStates(type: 'no-expenses-new-cycle'),
-                          ),
-                        ]),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
-              ),
+                            ]
+                          : [
+                              SliverToBoxAdapter(
+                                child: EmptyStates(
+                                  type: 'no-expenses-new-cycle',
+                                ),
+                              ),
+                            ]),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    ],
+                  ),
+                ),
+                if (!isSettled && !isPassive)
+                  _SmartBarSection(group: defaultGroup),
+              ],
             ),
-            if (!isSettled && !isPassive)
-              _SmartBarSection(group: defaultGroup),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }
 
-  void _showSettleConfirmDialog(BuildContext context, CycleRepository repo, String groupId) {
+  void _showSettleConfirmDialog(
+    BuildContext context,
+    CycleRepository repo,
+    String groupId,
+  ) {
     final theme = Theme.of(context);
     final instructions = repo.getSettlementInstructions(groupId);
     showDialog(
@@ -606,7 +746,9 @@ class _GroupDetailState extends State<GroupDetail> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                instructions.isEmpty ? 'No balances to settle.' : 'The following will close this cycle:',
+                instructions.isEmpty
+                    ? 'No balances to settle.'
+                    : 'The following will close this cycle:',
                 style: TextStyle(
                   fontSize: 15,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -670,7 +812,9 @@ class _GroupDetailState extends State<GroupDetail> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Could not settle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}'),
+                      content: Text(
+                        'Could not settle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}',
+                      ),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -710,22 +854,32 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      height: height,
-      color: backgroundColor,
-      child: child,
-    );
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(height: height, color: backgroundColor, child: child);
   }
 
   @override
   bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) =>
-      oldDelegate.height != height || oldDelegate.backgroundColor != backgroundColor;
+      oldDelegate.height != height ||
+      oldDelegate.backgroundColor != backgroundColor;
 }
 
 String _formatAmount(double value, String currencyCode) {
-  if (value.isNaN || value.isInfinite) return formatMoneyFromMajor(0, currencyCode, LocaleService.instance.localeCode);
-  return formatMoneyFromMajor(value, currencyCode, LocaleService.instance.localeCode);
+  if (value.isNaN || value.isInfinite)
+    return formatMoneyFromMajor(
+      0,
+      currencyCode,
+      LocaleService.instance.localeCode,
+    );
+  return formatMoneyFromMajor(
+    value,
+    currencyCode,
+    LocaleService.instance.localeCode,
+  );
 }
 
 class _DecisionClarityCard extends StatelessWidget {
@@ -751,12 +905,24 @@ class _DecisionClarityCard extends StatelessWidget {
     final members = repo.getMembersForGroup(groupId);
     final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final netMinor = repo.getNetBalancesAfterSettlementsMinor(groupId);
-    final routes = SettlementEngine.computePaymentRoutes(netMinor, currencyCode);
+    final routes = SettlementEngine.computePaymentRoutes(
+      netMinor,
+      currencyCode,
+    );
     final debts = routes
-        .map((r) => Debt(fromId: r.fromMemberId, toId: r.toMemberId, amount: r.amount))
+        .map(
+          (r) => Debt(
+            fromId: r.fromMemberId,
+            toId: r.toMemberId,
+            amount: r.amount,
+          ),
+        )
         .toList();
     final myId = repo.currentUserId;
-    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
+    final netBalances = SettlementEngine.computeNetBalancesAsDouble(
+      expenses,
+      members,
+    );
     double myNet = netBalances[myId] ?? 0.0;
     if (myNet.isNaN || myNet.isInfinite) myNet = 0.0;
     final myRemaining = repo.getRemainingBalance(groupId, myId);
@@ -785,7 +951,10 @@ class _DecisionClarityCard extends StatelessWidget {
     final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
     final members = repo.getMembersForGroup(groupId);
-    final netBalances = SettlementEngine.computeNetBalancesAsDouble(expenses, members);
+    final netBalances = SettlementEngine.computeNetBalancesAsDouble(
+      expenses,
+      members,
+    );
     final myId = repo.currentUserId;
 
     double youPaid = 0.0;
@@ -811,62 +980,69 @@ class _DecisionClarityCard extends StatelessWidget {
     final semanticsLabel = isEmpty
         ? 'Balance summary. Zero-waste cycle. Add expenses to see totals.'
         : 'Balance summary. Cycle total ${_formatAmount(cycleTotal, currencyCode)}. '
-            'You paid ${_formatAmount(youPaid, currencyCode)}. '
-            '${isBalanceClear ? "All clear." : isCredit ? "You are owed ${_formatAmount(myRemaining.abs(), currencyCode)}." : "You owe ${_formatAmount(myRemaining.abs(), currencyCode)}."}';
+              'You paid ${_formatAmount(youPaid, currencyCode)}. '
+              '${isBalanceClear
+                  ? "All clear."
+                  : isCredit
+                  ? "You are owed ${_formatAmount(myRemaining.abs(), currencyCode)}."
+                  : "You owe ${_formatAmount(myRemaining.abs(), currencyCode)}."}';
 
     return Semantics(
       label: semanticsLabel,
       button: !isEmpty,
       child: GestureDetector(
-      onTap: isEmpty ? null : () => _showSettlementDetails(context),
-      child: TapScale(
-        scaleDown: 0.98,
-        child: Opacity(
-          opacity: isMuted ? 0.6 : 1.0,
-          child: Container(
-          constraints: const BoxConstraints(minHeight: _minHeight),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: context.colorPrimary.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
+        onTap: isEmpty ? null : () => _showSettlementDetails(context),
+        child: TapScale(
+          scaleDown: 0.98,
+          child: Opacity(
+            opacity: isMuted ? 0.6 : 1.0,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: _minHeight),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.colorPrimary.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.colorGradientStart,
+                    context.colorGradientEnd,
+                  ],
+                ),
               ),
-            ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [context.colorGradientStart, context.colorGradientEnd],
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.space2xl),
-              child: isEmpty
-                  ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                  : _buildContent(
-                      context,
-                      currencyCode: currencyCode,
-                      cycleTotal: cycleTotal,
-                      youPaid: youPaid,
-                      settledPaid: settledPaid,
-                      myNet: myNet,
-                      myRemaining: myRemaining,
-                      hasPaymentProgress: hasPaymentProgress,
-                      isCredit: isCredit,
-                      isDebt: isDebt,
-                      isBalanceClear: isBalanceClear,
-                      isMuted: isMuted,
-                    ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.space2xl),
+                  child: isEmpty
+                      ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                      : _buildContent(
+                          context,
+                          currencyCode: currencyCode,
+                          cycleTotal: cycleTotal,
+                          youPaid: youPaid,
+                          settledPaid: settledPaid,
+                          myNet: myNet,
+                          myRemaining: myRemaining,
+                          hasPaymentProgress: hasPaymentProgress,
+                          isCredit: isCredit,
+                          isDebt: isDebt,
+                          isBalanceClear: isBalanceClear,
+                          isMuted: isMuted,
+                        ),
+                ),
+              ),
             ),
           ),
         ),
       ),
-      ),
-    ),
-  );
+    );
   }
 
   Widget _buildContent(
@@ -883,18 +1059,20 @@ class _DecisionClarityCard extends StatelessWidget {
     required bool isBalanceClear,
     required bool isMuted,
   }) {
-    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
+    final onDark = Theme.of(context).brightness == Brightness.dark
+        ? context.colorPrimary
+        : context.colorSurface;
     final statusColor = isBalanceClear
         ? onDark.withValues(alpha: 0.7)
         : isCredit
-            ? context.colorSuccessLight
-            : context.colorDebtRed;
+        ? context.colorSuccessLight
+        : context.colorDebtRed;
 
     final statusText = isMuted
         ? 'Cycle settled — pending restart'
         : isBalanceClear
-            ? 'All clear'
-            : '${isCredit ? '+' : '-'}${_formatAmount(myRemaining.abs(), currencyCode)}';
+        ? 'All clear'
+        : '${isCredit ? '+' : '-'}${_formatAmount(myRemaining.abs(), currencyCode)}';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1006,9 +1184,13 @@ class _SettlementDetailsSheet extends StatelessWidget {
     final isCredit = myRemaining > 0;
     final isDebt = myRemaining < 0;
     final isBalanceClear = myRemaining.abs() < 0.01;
-    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
+    final onDark = Theme.of(context).brightness == Brightness.dark
+        ? context.colorPrimary
+        : context.colorSurface;
 
-    final myDebts = debts.where((d) => d.fromId == myId || d.toId == myId).toList();
+    final myDebts = debts
+        .where((d) => d.fromId == myId || d.toId == myId)
+        .toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -1038,28 +1220,50 @@ class _SettlementDetailsSheet extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.spaceXl),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPaddingH,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Settlement details', style: context.screenTitle.copyWith(color: onDark)),
+                  Text(
+                    'Settlement details',
+                    style: context.screenTitle.copyWith(color: onDark),
+                  ),
                   SizedBox(height: AppSpacing.spaceXs),
-                  Text(groupName, style: context.bodySecondary.copyWith(color: onDark.withValues(alpha: 0.7))),
+                  Text(
+                    groupName,
+                    style: context.bodySecondary.copyWith(
+                      color: onDark.withValues(alpha: 0.7),
+                    ),
+                  ),
                 ],
               ),
             ),
             SizedBox(height: AppSpacing.sectionGap),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-              child: _buildYourPosition(context, isCredit, isDebt, isBalanceClear, currencyCode),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPaddingH,
+              ),
+              child: _buildYourPosition(
+                context,
+                isCredit,
+                isDebt,
+                isBalanceClear,
+                currencyCode,
+              ),
             ),
             SizedBox(height: AppSpacing.sectionGap),
             if (myDebts.isEmpty || isBalanceClear)
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPaddingH,
+                ),
                 child: Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.space4xl),
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppSpacing.space4xl,
+                    ),
                     child: Text(
                       'All settled 🎉',
                       style: context.subheader.copyWith(color: onDark),
@@ -1076,7 +1280,13 @@ class _SettlementDetailsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildYourPosition(BuildContext context, bool isCredit, bool isDebt, bool isBalanceClear, String currencyCode) {
+  Widget _buildYourPosition(
+    BuildContext context,
+    bool isCredit,
+    bool isDebt,
+    bool isBalanceClear,
+    String currencyCode,
+  ) {
     if (isBalanceClear) {
       return Container(
         padding: EdgeInsets.all(AppSpacing.cardPadding),
@@ -1086,7 +1296,11 @@ class _SettlementDetailsSheet extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle_outline, color: context.colorSuccess, size: 28),
+            Icon(
+              Icons.check_circle_outline,
+              color: context.colorSuccess,
+              size: 28,
+            ),
             SizedBox(width: AppSpacing.spaceLg),
             Expanded(
               child: Text(
@@ -1106,34 +1320,41 @@ class _SettlementDetailsSheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: isCredit ? context.colorSuccessBackground : context.colorErrorBackground,
+        color: isCredit
+            ? context.colorSuccessBackground
+            : context.colorErrorBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(color: color),
-          ),
+          Text(label, style: AppTypography.caption.copyWith(color: color)),
           SizedBox(height: AppSpacing.spaceXs),
-          Text(
-            amount,
-            style: AppTypography.amountLG.copyWith(color: color),
-          ),
+          Text(amount, style: AppTypography.amountLG.copyWith(color: color)),
         ],
       ),
     );
   }
 
-  Widget _buildDebtsList(BuildContext context, List<Debt> myDebts, String currencyCode) {
-    final onDark = Theme.of(context).brightness == Brightness.dark ? context.colorPrimary : context.colorSurface;
+  Widget _buildDebtsList(
+    BuildContext context,
+    List<Debt> myDebts,
+    String currencyCode,
+  ) {
+    final onDark = Theme.of(context).brightness == Brightness.dark
+        ? context.colorPrimary
+        : context.colorSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-          child: Text('BREAKDOWN', style: AppTypography.sectionLabel.copyWith(color: onDark.withValues(alpha: 0.7))),
+          child: Text(
+            'BREAKDOWN',
+            style: AppTypography.sectionLabel.copyWith(
+              color: onDark.withValues(alpha: 0.7),
+            ),
+          ),
         ),
         SizedBox(height: AppSpacing.spaceLg),
         ...myDebts.map((debt) {
@@ -1142,12 +1363,13 @@ class _SettlementDetailsSheet extends StatelessWidget {
           final otherName = repo.getMemberDisplayNameById(otherId);
           final photoUrl = repo.getMemberPhotoURL(otherId);
           final direction = iOwe ? 'Pay' : 'Receive';
-          final directionColor = iOwe ? context.colorError : context.colorSuccess;
+          final directionColor = iOwe
+              ? context.colorError
+              : context.colorSuccess;
           final amountDisplay = MoneyConversion.toDisplay(debt.amount);
 
-          final showPendingBadge = isPassive && 
-              !iOwe && 
-              !repo.isMemberSettled(groupId, otherId);
+          final showPendingBadge =
+              isPassive && !iOwe && !repo.isMemberSettled(groupId, otherId);
 
           return Container(
             padding: EdgeInsets.symmetric(
@@ -1156,12 +1378,19 @@ class _SettlementDetailsSheet extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: onDark.withValues(alpha: 0.15), width: 1),
+                bottom: BorderSide(
+                  color: onDark.withValues(alpha: 0.15),
+                  width: 1,
+                ),
               ),
             ),
             child: Row(
               children: [
-                MemberAvatar(displayName: otherName, photoURL: photoUrl, size: 44),
+                MemberAvatar(
+                  displayName: otherName,
+                  photoURL: photoUrl,
+                  size: 44,
+                ),
                 SizedBox(width: AppSpacing.spaceLg),
                 Expanded(
                   child: Column(
@@ -1169,11 +1398,19 @@ class _SettlementDetailsSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(otherName, style: AppTypography.listItemTitle.copyWith(color: onDark)),
+                          Text(
+                            otherName,
+                            style: AppTypography.listItemTitle.copyWith(
+                              color: onDark,
+                            ),
+                          ),
                           if (showPendingBadge) ...[
                             SizedBox(width: AppSpacing.spaceSm),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: context.colorWarningBackground,
                                 borderRadius: BorderRadius.circular(4),
@@ -1203,7 +1440,7 @@ class _SettlementDetailsSheet extends StatelessWidget {
                 ),
                 Text(
                   _formatAmount(amountDisplay, currencyCode),
-                      style: AppTypography.amountSM.copyWith(color: directionColor),
+                  style: AppTypography.amountSM.copyWith(color: directionColor),
                 ),
               ],
             ),
@@ -1341,8 +1578,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
   static bool _nameSimilar(String parsedLower, String otherLower) {
     if (parsedLower == otherLower) return true;
-    if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower)) return true;
-    if (otherLower.startsWith(parsedLower) || parsedLower.startsWith(otherLower)) return true;
+    if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower))
+      return true;
+    if (otherLower.startsWith(parsedLower) ||
+        parsedLower.startsWith(otherLower))
+      return true;
     return false;
   }
 
@@ -1356,7 +1596,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   }) {
     final n = name.trim().toLowerCase();
     if (n.isEmpty) return null;
-    final pendingMembers = repo.getMembersForGroup(groupId).where((m) => m.id.startsWith('p_')).toList();
+    final pendingMembers = repo
+        .getMembersForGroup(groupId)
+        .where((m) => m.id.startsWith('p_'))
+        .toList();
     if (pendingMembers.isEmpty) return null;
 
     Map<String, String>? phoneToContactName;
@@ -1370,12 +1613,19 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     }
 
     for (final m in pendingMembers) {
-      final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+      final displayLower = repo
+          .getMemberDisplayNameById(m.id)
+          .trim()
+          .toLowerCase();
       if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
         return repo.getMemberDisplayNameById(m.id);
       }
-      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) {
+      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]
+          ?.trim()
+          .toLowerCase();
+      if (contactLower != null &&
+          contactLower.isNotEmpty &&
+          _nameSimilar(n, contactLower)) {
         return phoneToContactName![_normalizePhoneForMatch(m.phone)];
       }
     }
@@ -1392,10 +1642,14 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   }) {
     final n = name.trim().toLowerCase();
     if (n.isEmpty) return (id: null, isGuessed: false);
-    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo
+        .getMembersForGroup(groupId)
+        .where((m) => !m.id.startsWith('p_'))
+        .toList();
     final currentName = repo.currentUserName;
     final currentId = repo.currentUserId;
-    if (n == 'you' || (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
+    if (n == 'you' ||
+        (currentName.isNotEmpty && currentName.toLowerCase() == n)) {
       return (id: currentId.isNotEmpty ? currentId : null, isGuessed: false);
     }
 
@@ -1412,7 +1666,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     String? exactMatch;
     final similarMatchIds = <String>{};
     for (final m in members) {
-      final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
+      final displayLower = repo
+          .getMemberDisplayNameById(m.id)
+          .trim()
+          .toLowerCase();
       if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
         if (displayLower == n) {
           exactMatch = m.id;
@@ -1421,8 +1678,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         similarMatchIds.add(m.id);
       }
       if (exactMatch != null) break;
-      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-      if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) {
+      final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]
+          ?.trim()
+          .toLowerCase();
+      if (contactLower != null &&
+          contactLower.isNotEmpty &&
+          _nameSimilar(n, contactLower)) {
         if (contactLower == n) {
           exactMatch = m.id;
           break;
@@ -1431,7 +1692,8 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       }
     }
     if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (similarMatchIds.length == 1) return (id: similarMatchIds.single, isGuessed: true);
+    if (similarMatchIds.length == 1)
+      return (id: similarMatchIds.single, isGuessed: true);
     return (id: null, isGuessed: false);
   }
 
@@ -1453,8 +1715,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       }
     }
 
-    Set<String> assignedIds() =>
-        slots.where((s) => s.id != null && s.id!.isNotEmpty).map((s) => s.id!).toSet();
+    Set<String> assignedIds() => slots
+        .where((s) => s.id != null && s.id!.isNotEmpty)
+        .map((s) => s.id!)
+        .toSet();
     List<Member> unassigned(Set<String> assigned) =>
         members.where((m) => !assigned.contains(m.id)).toList();
 
@@ -1463,10 +1727,20 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       if (n.isEmpty) return {};
       final ids = <String>{};
       for (final m in candidates) {
-        final displayLower = repo.getMemberDisplayNameById(m.id).trim().toLowerCase();
-        if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) ids.add(m.id);
-        final contactLower = phoneToContactName?[_normalizePhoneForMatch(m.phone)]?.trim().toLowerCase();
-        if (contactLower != null && contactLower.isNotEmpty && _nameSimilar(n, contactLower)) ids.add(m.id);
+        final displayLower = repo
+            .getMemberDisplayNameById(m.id)
+            .trim()
+            .toLowerCase();
+        if (displayLower.isNotEmpty && _nameSimilar(n, displayLower))
+          ids.add(m.id);
+        final contactLower =
+            phoneToContactName?[_normalizePhoneForMatch(m.phone)]
+                ?.trim()
+                .toLowerCase();
+        if (contactLower != null &&
+            contactLower.isNotEmpty &&
+            _nameSimilar(n, contactLower))
+          ids.add(m.id);
       }
       return ids;
     }
@@ -1478,7 +1752,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       final unassignedMembers = unassigned(assigned);
       for (var i = 0; i < slots.length; i++) {
         if (slots[i].id != null && slots[i].id!.isNotEmpty) continue;
-        final matchIds = memberIdsMatchingName(slots[i].name, unassignedMembers);
+        final matchIds = memberIdsMatchingName(
+          slots[i].name,
+          unassignedMembers,
+        );
         if (matchIds.length == 1) {
           slots[i] = _ParticipantSlot(
             name: slots[i].name,
@@ -1506,28 +1783,34 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       if (!mounted) return;
       final memberNames = members.map((m) {
         final name = repo.getMemberDisplayNameById(m.id);
-        final looksLikePhone = name.isEmpty ||
+        final looksLikePhone =
+            name.isEmpty ||
             RegExp(r'\+|\d{8,}').hasMatch(name.replaceAll(RegExp(r'\s'), ''));
         if (looksLikePhone && _phoneToContactName != null) {
           final norm = _normalizePhoneForMatch(m.phone);
           final contactName = _phoneToContactName![norm];
-          if (contactName != null && contactName.trim().isNotEmpty) return contactName;
+          if (contactName != null && contactName.trim().isNotEmpty)
+            return contactName;
         }
         return name;
       }).toList();
       final result = await GroqExpenseParserService.parse(
         userInput: input,
         groupMemberNames: memberNames,
-        currentUserDisplayName: repo.currentUserName.isEmpty ? null : repo.currentUserName,
+        currentUserDisplayName: repo.currentUserName.isEmpty
+            ? null
+            : repo.currentUserName,
         expectedCurrencyCode: widget.group.currencyCode,
       );
       if (!mounted) return;
-      
+
       // Check if any participant is a pending member
       final pendingNames = <String>[];
       for (final pName in result.participantNames) {
         final pendingMatch = _findPendingMemberMatch(
-          repo, groupId, pName,
+          repo,
+          groupId,
+          pName,
           contactNameToNormalizedPhones: _contactNameToNormalizedPhones,
         );
         if (pendingMatch != null) pendingNames.add(pendingMatch);
@@ -1535,17 +1818,19 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       // Also check payer
       if (result.payerName != null && result.payerName!.trim().isNotEmpty) {
         final pendingMatch = _findPendingMemberMatch(
-          repo, groupId, result.payerName!,
+          repo,
+          groupId,
+          result.payerName!,
           contactNameToNormalizedPhones: _contactNameToNormalizedPhones,
         );
         if (pendingMatch != null) pendingNames.add(pendingMatch);
       }
-      
+
       if (pendingNames.isNotEmpty) {
         setState(() => _loading = false);
         final uniqueNames = pendingNames.toSet().toList();
-        final nameList = uniqueNames.length == 1 
-            ? uniqueNames.first 
+        final nameList = uniqueNames.length == 1
+            ? uniqueNames.first
             : '${uniqueNames.sublist(0, uniqueNames.length - 1).join(', ')} and ${uniqueNames.last}';
         if (!mounted) return;
         showDialog(
@@ -1565,7 +1850,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         );
         return;
       }
-      
+
       setState(() => _loading = false);
       _controller.clear();
       setState(() => _sendAllowed = false);
@@ -1591,8 +1876,12 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         return;
       }
 
-      _showConfirmationDialog(repo, result, magicBarInput: input, contactNameToNormalizedPhones: _contactNameToNormalizedPhones);
-
+      _showConfirmationDialog(
+        repo,
+        result,
+        magicBarInput: input,
+        contactNameToNormalizedPhones: _contactNameToNormalizedPhones,
+      );
     } on GroqRateLimitException catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -1611,7 +1900,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is Exception ? e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '') : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".'),
+          content: Text(
+            e is Exception
+                ? e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '')
+                : 'Couldn\'t parse that. Try a clearer format like "Dinner 500".',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1625,7 +1918,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     Map<String, List<String>>? contactNameToNormalizedPhones,
   }) async {
     final groupId = widget.group.id;
-    final members = repo.getMembersForGroup(groupId).where((m) => !m.id.startsWith('p_')).toList();
+    final members = repo
+        .getMembersForGroup(groupId)
+        .where((m) => !m.id.startsWith('p_'))
+        .toList();
     final allIds = members.map((m) => m.id).toList();
 
     String payerId = repo.currentUserId;
@@ -1642,14 +1938,14 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     final splitTypeCap = result.splitType == 'exact'
         ? 'Exact'
         : result.splitType == 'exclude'
-            ? 'Exclude'
-            : result.splitType == 'percentage'
-                ? 'Percentage'
-                : result.splitType == 'shares'
-                    ? 'Shares'
-                    : result.splitType == 'unresolved'
-                        ? 'Unresolved'
-                        : 'Even';
+        ? 'Exclude'
+        : result.splitType == 'percentage'
+        ? 'Percentage'
+        : result.splitType == 'shares'
+        ? 'Shares'
+        : result.splitType == 'unresolved'
+        ? 'Unresolved'
+        : 'Even';
 
     final List<_ParticipantSlot> slots = [];
     final bool isExclude = result.splitType == 'exclude';
@@ -1657,39 +1953,90 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     final contactMap = contactNameToNormalizedPhones;
     if (result.splitType == 'exclude' && result.excludedNames.isNotEmpty) {
       for (final name in result.excludedNames) {
-        final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
-        slots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
+        final r = _resolveOneNameToIdWithGuess(
+          repo,
+          groupId,
+          name,
+          contactNameToNormalizedPhones: contactMap,
+        );
+        slots.add(
+          _ParticipantSlot(
+            name: name,
+            amount: 0,
+            id: r.id,
+            isGuessed: r.isGuessed,
+          ),
+        );
       }
-    } else if (result.splitType == 'exact' && result.exactAmountsByName.isNotEmpty) {
+    } else if (result.splitType == 'exact' &&
+        result.exactAmountsByName.isNotEmpty) {
       for (final entry in result.exactAmountsByName.entries) {
-        final r = _resolveOneNameToIdWithGuess(repo, groupId, entry.key, contactNameToNormalizedPhones: contactMap);
-        slots.add(_ParticipantSlot(name: entry.key, amount: entry.value, id: r.id, isGuessed: r.isGuessed));
+        final r = _resolveOneNameToIdWithGuess(
+          repo,
+          groupId,
+          entry.key,
+          contactNameToNormalizedPhones: contactMap,
+        );
+        slots.add(
+          _ParticipantSlot(
+            name: entry.key,
+            amount: entry.value,
+            id: r.id,
+            isGuessed: r.isGuessed,
+          ),
+        );
       }
-    } else if (result.splitType == 'percentage' && result.percentageByName.isNotEmpty) {
+    } else if (result.splitType == 'percentage' &&
+        result.percentageByName.isNotEmpty) {
       for (final entry in result.percentageByName.entries) {
         final name = entry.key;
         final pct = entry.value;
         final amount = result.amount * (pct / 100);
         String? id;
         String displayName = name;
-        if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
+        if (name.trim().toLowerCase() == 'me' ||
+            name.trim().toLowerCase() == 'i') {
           id = repo.currentUserId;
           displayName = repo.getMemberDisplayNameById(id);
         } else {
-          final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+          final r = _resolveOneNameToIdWithGuess(
+            repo,
+            groupId,
+            name,
+            contactNameToNormalizedPhones: contactMap,
+          );
           id = r.id;
           displayName = name;
         }
-        slots.add(_ParticipantSlot(name: displayName, amount: amount, id: id, isGuessed: false));
+        slots.add(
+          _ParticipantSlot(
+            name: displayName,
+            amount: amount,
+            id: id,
+            isGuessed: false,
+          ),
+        );
       }
     } else if (result.splitType == 'unresolved') {
       for (final m in members) {
         final displayName = repo.getMemberDisplayNameById(m.id);
-        final perShare = members.isNotEmpty ? result.amount / members.length : result.amount;
-        slots.add(_ParticipantSlot(name: displayName, amount: perShare, id: m.id, isGuessed: false));
+        final perShare = members.isNotEmpty
+            ? result.amount / members.length
+            : result.amount;
+        slots.add(
+          _ParticipantSlot(
+            name: displayName,
+            amount: perShare,
+            id: m.id,
+            isGuessed: false,
+          ),
+        );
       }
     } else if (result.splitType == 'shares' && result.sharesByName.isNotEmpty) {
-      final totalShares = result.sharesByName.values.fold<double>(0.0, (a, b) => a + b);
+      final totalShares = result.sharesByName.values.fold<double>(
+        0.0,
+        (a, b) => a + b,
+      );
       if (totalShares > 0) {
         for (final entry in result.sharesByName.entries) {
           final name = entry.key;
@@ -1697,15 +2044,28 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           final amount = result.amount * (personShares / totalShares);
           String? id;
           String displayName = name;
-          if (name.trim().toLowerCase() == 'me' || name.trim().toLowerCase() == 'i') {
+          if (name.trim().toLowerCase() == 'me' ||
+              name.trim().toLowerCase() == 'i') {
             id = repo.currentUserId;
             displayName = repo.getMemberDisplayNameById(id);
           } else {
-            final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+            final r = _resolveOneNameToIdWithGuess(
+              repo,
+              groupId,
+              name,
+              contactNameToNormalizedPhones: contactMap,
+            );
             id = r.id;
             displayName = name;
           }
-          slots.add(_ParticipantSlot(name: displayName, amount: amount, id: id, isGuessed: false));
+          slots.add(
+            _ParticipantSlot(
+              name: displayName,
+              amount: amount,
+              id: id,
+              isGuessed: false,
+            ),
+          );
         }
       }
     } else {
@@ -1713,39 +2073,79 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       if (names.isEmpty) {
         for (final m in members) {
           final displayName = repo.getMemberDisplayNameById(m.id);
-          final perShare = members.isNotEmpty ? result.amount / members.length : result.amount;
-          slots.add(_ParticipantSlot(name: displayName, amount: perShare, id: m.id, isGuessed: false));
+          final perShare = members.isNotEmpty
+              ? result.amount / members.length
+              : result.amount;
+          slots.add(
+            _ParticipantSlot(
+              name: displayName,
+              amount: perShare,
+              id: m.id,
+              isGuessed: false,
+            ),
+          );
         }
       } else {
         final resolvedSlots = <_ParticipantSlot>[];
         final seenIds = <String>{};
-        
+
         for (final name in names) {
-          final r = _resolveOneNameToIdWithGuess(repo, groupId, name, contactNameToNormalizedPhones: contactMap);
+          final r = _resolveOneNameToIdWithGuess(
+            repo,
+            groupId,
+            name,
+            contactNameToNormalizedPhones: contactMap,
+          );
           if (r.id != null && r.id!.isNotEmpty) {
             if (!seenIds.contains(r.id)) {
               seenIds.add(r.id!);
-              resolvedSlots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
+              resolvedSlots.add(
+                _ParticipantSlot(
+                  name: name,
+                  amount: 0,
+                  id: r.id,
+                  isGuessed: r.isGuessed,
+                ),
+              );
             }
           } else {
-            resolvedSlots.add(_ParticipantSlot(name: name, amount: 0, id: r.id, isGuessed: r.isGuessed));
+            resolvedSlots.add(
+              _ParticipantSlot(
+                name: name,
+                amount: 0,
+                id: r.id,
+                isGuessed: r.isGuessed,
+              ),
+            );
           }
         }
-        
+
         if (!seenIds.contains(repo.currentUserId)) {
           seenIds.add(repo.currentUserId);
-          resolvedSlots.insert(0, _ParticipantSlot(
-            name: repo.getMemberDisplayNameById(repo.currentUserId),
-            amount: 0,
-            id: repo.currentUserId,
-            isGuessed: false,
-          ));
+          resolvedSlots.insert(
+            0,
+            _ParticipantSlot(
+              name: repo.getMemberDisplayNameById(repo.currentUserId),
+              amount: 0,
+              id: repo.currentUserId,
+              isGuessed: false,
+            ),
+          );
         }
-        
+
         final splitCount = resolvedSlots.length;
-        final perShare = splitCount > 0 ? result.amount / splitCount : result.amount;
+        final perShare = splitCount > 0
+            ? result.amount / splitCount
+            : result.amount;
         for (final slot in resolvedSlots) {
-          slots.add(_ParticipantSlot(name: slot.name, amount: perShare, id: slot.id, isGuessed: slot.isGuessed));
+          slots.add(
+            _ParticipantSlot(
+              name: slot.name,
+              amount: perShare,
+              id: slot.id,
+              isGuessed: slot.isGuessed,
+            ),
+          );
         }
       }
     }
@@ -1757,16 +2157,17 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         ? slots.fold<double>(0.0, (s, slot) => s + slot.amount)
         : 0.0;
     const tolerance = 0.01;
-    final percentageSum = result.splitType == 'percentage' && result.percentageByName.isNotEmpty
+    final percentageSum =
+        result.splitType == 'percentage' && result.percentageByName.isNotEmpty
         ? result.percentageByName.values.fold<double>(0.0, (a, b) => a + b)
         : 0.0;
     final exactValid = result.splitType == 'exact'
         ? (exactSum - result.amount).abs() <= tolerance
         : result.splitType == 'percentage'
-            ? (percentageSum - 100.0).abs() <= tolerance && slots.isNotEmpty
-            : result.splitType == 'shares'
-                ? slots.isNotEmpty
-                : true;
+        ? (percentageSum - 100.0).abs() <= tolerance && slots.isNotEmpty
+        : result.splitType == 'shares'
+        ? slots.isNotEmpty
+        : true;
 
     final undoResult = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -1784,10 +2185,19 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       ),
     );
     if (!mounted) return;
-    if (undoResult != null && undoResult['groupId'] != null && undoResult['expenseId'] != null) {
+    if (undoResult != null &&
+        undoResult['groupId'] != null &&
+        undoResult['expenseId'] != null) {
       final gid = undoResult['groupId'] as String;
       final eid = undoResult['expenseId'] as String;
-      _showUndoExpenseOverlay(context, groupId: gid, expenseId: eid, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(gid)?.currencyCode);
+      _showUndoExpenseOverlay(
+        context,
+        groupId: gid,
+        expenseId: eid,
+        description: repo.lastAddedDescription ?? '',
+        amount: repo.lastAddedAmount ?? 0.0,
+        currencyCode: repo.getGroup(gid)?.currencyCode,
+      );
     }
   }
 
@@ -1805,9 +2215,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: borderColor, width: 1),
-        ),
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1817,7 +2225,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: isDark ? 0.3 : 0.06),
+              color: theme.colorScheme.shadow.withValues(
+                alpha: isDark ? 0.3 : 0.06,
+              ),
               blurRadius: 12,
               offset: const Offset(0, 2),
             ),
@@ -1837,12 +2247,21 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   );
                   if (!context.mounted) return;
                   final map = result as Map<String, dynamic>?;
-                  if (map != null && map['groupId'] != null && map['expenseId'] != null) {
+                  if (map != null &&
+                      map['groupId'] != null &&
+                      map['expenseId'] != null) {
                     final repo = CycleRepository.instance;
                     final groupId = map['groupId'] as String;
                     final expenseId = map['expenseId'] as String;
                     if (!context.mounted) return;
-                    _showUndoExpenseOverlay(context, groupId: groupId, expenseId: expenseId, description: repo.lastAddedDescription ?? '', amount: repo.lastAddedAmount ?? 0.0, currencyCode: repo.getGroup(groupId)?.currencyCode);
+                    _showUndoExpenseOverlay(
+                      context,
+                      groupId: groupId,
+                      expenseId: expenseId,
+                      description: repo.lastAddedDescription ?? '',
+                      amount: repo.lastAddedAmount ?? 0.0,
+                      currencyCode: repo.getGroup(groupId)?.currencyCode,
+                    );
                   }
                 },
                 icon: Icon(
@@ -1866,10 +2285,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   hintText: _inCooldown
                       ? 'AI cooling down — use keyboard for manual entry'
                       : 'e.g. Dinner ${CurrencyRegistry.symbol(widget.group.currencyCode)}500 with Ash',
-                  hintStyle: TextStyle(
-                    color: hintColor,
-                    fontSize: 17,
-                  ),
+                  hintStyle: TextStyle(color: hintColor, fontSize: 17),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -1900,14 +2316,16 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
             else
               TapScale(
                 child: IconButton(
-                  onPressed: (_sendAllowed &&
+                  onPressed:
+                      (_sendAllowed &&
                           _controller.text.trim().isNotEmpty &&
                           !_inCooldown)
                       ? _submit
                       : null,
                   icon: Icon(
                     Icons.arrow_upward_rounded,
-                    color: (_sendAllowed &&
+                    color:
+                        (_sendAllowed &&
                             _controller.text.trim().isNotEmpty &&
                             !_inCooldown)
                         ? textColor
@@ -1916,7 +2334,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   ),
                   style: IconButton.styleFrom(
                     backgroundColor: buttonBgColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
@@ -1932,7 +2352,12 @@ class _ParticipantSlot {
   double amount;
   String? id;
   final bool isGuessed;
-  _ParticipantSlot({required this.name, required this.amount, this.id, this.isGuessed = false});
+  _ParticipantSlot({
+    required this.name,
+    required this.amount,
+    this.id,
+    this.isGuessed = false,
+  });
 }
 
 class _ExpenseConfirmDialog extends StatefulWidget {
@@ -1977,12 +2402,29 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   @override
   void initState() {
     super.initState();
-    slots = widget.initialSlots.map((s) => _ParticipantSlot(name: s.name, amount: s.amount, id: s.id, isGuessed: s.isGuessed)).toList();
-    _descriptionController = TextEditingController(text: widget.result.description);
-    _amountController = TextEditingController(text: _formatAmountForEdit(widget.result.amount));
+    slots = widget.initialSlots
+        .map(
+          (s) => _ParticipantSlot(
+            name: s.name,
+            amount: s.amount,
+            id: s.id,
+            isGuessed: s.isGuessed,
+          ),
+        )
+        .toList();
+    _descriptionController = TextEditingController(
+      text: widget.result.description,
+    );
+    _amountController = TextEditingController(
+      text: _formatAmountForEdit(widget.result.amount),
+    );
     _payerId = widget.payerId;
     if (widget.splitTypeCap == 'Exact') {
-      _amountControllers = List.generate(slots.length, (i) => TextEditingController(text: _formatAmountForEdit(slots[i].amount)));
+      _amountControllers = List.generate(
+        slots.length,
+        (i) =>
+            TextEditingController(text: _formatAmountForEdit(slots[i].amount)),
+      );
     }
   }
 
@@ -1998,7 +2440,8 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
 
   bool get _allResolved => slots.every((s) => s.id != null && s.id!.isNotEmpty);
 
-  double get _totalSplit => slots.fold<double>(0.0, (sum, slot) => sum + slot.amount);
+  double get _totalSplit =>
+      slots.fold<double>(0.0, (sum, slot) => sum + slot.amount);
 
   static const double _splitTolerance = 0.01;
 
@@ -2010,25 +2453,42 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   bool get _isReadyToConfirm {
     final amount = _editedAmount;
     final description = _descriptionController.text.trim();
-    final splitMatches = amount != null && (_totalSplit - amount).abs() < _splitTolerance;
-    return amount != null && amount > 0 && description.isNotEmpty && splitMatches && _allResolved;
+    final splitMatches =
+        amount != null && (_totalSplit - amount).abs() < _splitTolerance;
+    return amount != null &&
+        amount > 0 &&
+        description.isNotEmpty &&
+        splitMatches &&
+        _allResolved;
   }
 
   String? get _notReadyReason {
     final amount = _editedAmount;
     if (amount == null || amount <= 0) return 'Amount must be greater than 0.';
-    if (_descriptionController.text.trim().isEmpty) return 'Description is required.';
-    if ((_totalSplit - amount).abs() >= _splitTolerance) return 'Split doesn\'t match total.';
+    if (_descriptionController.text.trim().isEmpty)
+      return 'Description is required.';
+    if ((_totalSplit - amount).abs() >= _splitTolerance)
+      return 'Split doesn\'t match total.';
     if (!_allResolved) return 'Select a member for each slot.';
     return null;
   }
 
   void _redistributeEvenAmount() {
     final amount = _editedAmount;
-    if (amount == null || slots.isEmpty || widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') return;
+    if (amount == null ||
+        slots.isEmpty ||
+        widget.splitTypeCap == 'Exact' ||
+        widget.splitTypeCap == 'Percentage' ||
+        widget.splitTypeCap == 'Shares')
+      return;
     final perShare = amount / slots.length;
     for (var i = 0; i < slots.length; i++) {
-      slots[i] = _ParticipantSlot(name: slots[i].name, amount: perShare, id: slots[i].id, isGuessed: slots[i].isGuessed);
+      slots[i] = _ParticipantSlot(
+        name: slots[i].name,
+        amount: perShare,
+        id: slots[i].id,
+        isGuessed: slots[i].isGuessed,
+      );
     }
     setState(() {});
   }
@@ -2046,19 +2506,26 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Who paid?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ),
-            ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
-              final displayName = repo.getMemberDisplayNameById(m.id);
-              return ListTile(
-                title: Text(displayName),
-                onTap: () {
-                  setState(() => _payerId = m.id);
-                  Navigator.pop(ctx);
-                },
-              );
-            }),
+            ...repo
+                .getMembersForGroup(widget.groupId)
+                .where((m) => !m.id.startsWith('p_'))
+                .map((m) {
+                  final displayName = repo.getMemberDisplayNameById(m.id);
+                  return ListTile(
+                    title: Text(displayName),
+                    onTap: () {
+                      setState(() => _payerId = m.id);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                }),
           ],
         ),
       ),
@@ -2078,19 +2545,33 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Select member',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ),
-            ...repo.getMembersForGroup(widget.groupId).where((m) => !m.id.startsWith('p_')).map((m) {
-              final displayName = repo.getMemberDisplayNameById(m.id);
-              return ListTile(
-                title: Text(displayName),
-                onTap: () {
-                  setState(() => slots[slotIndex] = _ParticipantSlot(name: slots[slotIndex].name, amount: slots[slotIndex].amount, id: m.id, isGuessed: slots[slotIndex].isGuessed));
-                  Navigator.pop(ctx);
-                },
-              );
-            }),
+            ...repo
+                .getMembersForGroup(widget.groupId)
+                .where((m) => !m.id.startsWith('p_'))
+                .map((m) {
+                  final displayName = repo.getMemberDisplayNameById(m.id);
+                  return ListTile(
+                    title: Text(displayName),
+                    onTap: () {
+                      setState(
+                        () => slots[slotIndex] = _ParticipantSlot(
+                          name: slots[slotIndex].name,
+                          amount: slots[slotIndex].amount,
+                          id: m.id,
+                          isGuessed: slots[slotIndex].isGuessed,
+                        ),
+                      );
+                      Navigator.pop(ctx);
+                    },
+                  );
+                }),
           ],
         ),
       ),
@@ -2120,21 +2601,28 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     final description = _descriptionController.text.trim();
     final expenseId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    final persistSplitType = (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
+    final persistSplitType =
+        (widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')
         ? 'Exact'
         : widget.splitTypeCap == 'Unresolved'
-            ? 'Even'
-            : widget.splitTypeCap;
+        ? 'Even'
+        : widget.splitTypeCap;
 
     try {
-      final participantSlots = slots.map((s) => ParticipantSlot(
-        name: s.name,
-        amount: s.amount,
-        memberId: s.id,
-        isGuessed: s.isGuessed,
-      )).toList();
+      final participantSlots = slots
+          .map(
+            (s) => ParticipantSlot(
+              name: s.name,
+              amount: s.amount,
+              memberId: s.id,
+              isGuessed: s.isGuessed,
+            ),
+          )
+          .toList();
 
-      final payerSlots = [PayerContributionSlot(memberId: _payerId, amount: amount)];
+      final payerSlots = [
+        PayerContributionSlot(memberId: _payerId, amount: amount),
+      ];
 
       final normalized = buildNormalizedExpenseFromSlots(
         amount: amount,
@@ -2155,8 +2643,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         splitType: persistSplitType,
       );
 
-      if (widget.magicBarInput != null && widget.magicBarInput!.trim().isNotEmpty) {
-        GroqExpenseParserService.recordSuccessfulParse(widget.magicBarInput!.trim(), widget.result);
+      if (widget.magicBarInput != null &&
+          widget.magicBarInput!.trim().isNotEmpty) {
+        GroqExpenseParserService.recordSuccessfulParse(
+          widget.magicBarInput!.trim(),
+          widget.result,
+        );
       }
       if (!mounted) return;
       Navigator.pop(context, {'groupId': groupId, 'expenseId': expenseId});
@@ -2164,10 +2656,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       HapticFeedback.heavyImpact();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(e.message), behavior: SnackBarBehavior.floating),
       );
     } on ArgumentError catch (e) {
       HapticFeedback.heavyImpact();
@@ -2208,7 +2697,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
     final placeholderChipBgColor = context.colorDisabledBackground;
     final gradientStart = context.colorGradientStart;
     final gradientEnd = context.colorGradientEnd;
-    final gradientTextColor = Theme.of(context).brightness == Brightness.dark ? theme.colorScheme.onSurface : context.colorSurface;
+    final gradientTextColor = Theme.of(context).brightness == Brightness.dark
+        ? theme.colorScheme.onSurface
+        : context.colorSurface;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -2234,7 +2725,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -2254,7 +2747,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    formatMoneyFromMajor(_editedAmount ?? widget.result.amount, currencyCode),
+                    formatMoneyFromMajor(
+                      _editedAmount ?? widget.result.amount,
+                      currencyCode,
+                    ),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -2286,32 +2782,52 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                   children: [
                     Text(
                       'AMOUNT',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: labelColor,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: inputBgColor,
                             border: Border.all(color: borderColor),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(CurrencyRegistry.symbol(currencyCode), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: secondaryTextColor)),
+                          child: Text(
+                            CurrencyRegistry.symbol(currencyCode),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: secondaryTextColor,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextField(
                             controller: _amountController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             onChanged: (_) => _redistributeEvenAmount(),
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
                               fillColor: inputBgColor,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               hintText: '0',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -2323,10 +2839,17 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: textColor, width: 1.5),
+                                borderSide: BorderSide(
+                                  color: textColor,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
                           ),
                         ),
                       ],
@@ -2334,7 +2857,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     const SizedBox(height: 20),
                     Text(
                       'DESCRIPTION',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: labelColor,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -2344,7 +2872,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         isDense: true,
                         filled: true,
                         fillColor: inputBgColor,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         hintText: 'What was it for?',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -2363,19 +2894,33 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     ),
                     if (widget.result.category.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text(widget.result.category, style: TextStyle(fontSize: 14, color: secondaryTextColor)),
+                      Text(
+                        widget.result.category,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: secondaryTextColor,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 16),
                     Text(
                       'PAID BY',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: labelColor,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: _pickPayer,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: inputBgColor,
                           border: Border.all(color: borderColor),
@@ -2385,10 +2930,17 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                           children: [
                             Text(
                               repo.getMemberDisplayNameById(_payerId),
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: textColor),
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
                             ),
                             const Spacer(),
-                            Icon(Icons.arrow_drop_down, color: secondaryTextColor),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: secondaryTextColor,
+                            ),
                           ],
                         ),
                       ),
@@ -2398,75 +2950,116 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       'Split: ${widget.splitTypeCap}',
                       style: TextStyle(fontSize: 14, color: secondaryTextColor),
                     ),
-                    if (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares') ...[
+                    if (widget.splitTypeCap == 'Exact' ||
+                        widget.splitTypeCap == 'Percentage' ||
+                        widget.splitTypeCap == 'Shares') ...[
                       const SizedBox(height: 4),
                       Text(
                         'Total: ${formatMoneyFromMajor(_editedAmount ?? 0, currencyCode)} | Assigned: ${formatMoneyFromMajor(_totalSplit, currencyCode)}',
-                        style: TextStyle(fontSize: 13, color: secondaryTextColor),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: secondaryTextColor,
+                        ),
                       ),
                     ],
-                    if (_editedAmount != null && (_totalSplit - _editedAmount!).abs() >= _splitTolerance && (widget.splitTypeCap == 'Exact' || widget.splitTypeCap == 'Percentage' || widget.splitTypeCap == 'Shares')) ...[
+                    if (_editedAmount != null &&
+                        (_totalSplit - _editedAmount!).abs() >=
+                            _splitTolerance &&
+                        (widget.splitTypeCap == 'Exact' ||
+                            widget.splitTypeCap == 'Percentage' ||
+                            widget.splitTypeCap == 'Shares')) ...[
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: context.colorErrorBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Assigned total (${formatMoneyFromMajor(_totalSplit, currencyCode)}) must match amount (${formatMoneyFromMajor(_editedAmount!, currencyCode)}).',
-                          style: TextStyle(fontSize: 13, color: context.colorError),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.colorError,
+                          ),
                         ),
                       ),
                     ],
                     const SizedBox(height: 16),
                     Text(
                       'PEOPLE',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: labelColor, letterSpacing: 0.3),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: labelColor,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: List.generate(slots.length, (i) {
-                final slot = slots[i];
-                final isPlaceholder = slot.id == null || slot.id!.isEmpty;
-                final isGuessed = slot.isGuessed && !isPlaceholder;
-                final isExactEditable = widget.splitTypeCap == 'Exact' && _amountControllers != null && i < _amountControllers!.length;
-                final label = slot.id != null && slot.id!.isNotEmpty
-                    ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}  ${formatMoneyFromMajor(slot.amount, currencyCode)}'
-                    : 'Select Member  ${formatMoneyFromMajor(slot.amount, currencyCode)}';
+                        final slot = slots[i];
+                        final isPlaceholder =
+                            slot.id == null || slot.id!.isEmpty;
+                        final isGuessed = slot.isGuessed && !isPlaceholder;
+                        final isExactEditable =
+                            widget.splitTypeCap == 'Exact' &&
+                            _amountControllers != null &&
+                            i < _amountControllers!.length;
+                        final label = slot.id != null && slot.id!.isNotEmpty
+                            ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}  ${formatMoneyFromMajor(slot.amount, currencyCode)}'
+                            : 'Select Member  ${formatMoneyFromMajor(slot.amount, currencyCode)}';
                         return GestureDetector(
-                          onTap: isPlaceholder && !isExactEditable ? () => _pickMember(i) : null,
+                          onTap: isPlaceholder && !isExactEditable
+                              ? () => _pickMember(i)
+                              : null,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: isPlaceholder
                                   ? placeholderChipBgColor
                                   : isGuessed
-                                      ? const Color(0xFFFFF8E1)
-                                      : chipBgColor,
+                                  ? const Color(0xFFFFF8E1)
+                                  : chipBgColor,
                               borderRadius: BorderRadius.circular(8),
                               border: isPlaceholder
                                   ? Border.all(color: primaryColor, width: 1)
                                   : isGuessed
-                                      ? Border.all(color: const Color(0xFFF9A825), width: 1.5)
-                                      : null,
+                                  ? Border.all(
+                                      color: const Color(0xFFF9A825),
+                                      width: 1.5,
+                                    )
+                                  : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (isExactEditable) ...[
                                   GestureDetector(
-                                    onTap: isPlaceholder ? () => _pickMember(i) : null,
+                                    onTap: isPlaceholder
+                                        ? () => _pickMember(i)
+                                        : null,
                                     child: Text(
                                       slot.id != null && slot.id!.isNotEmpty
                                           ? '${repo.getMemberDisplayNameById(slot.id!)}${slot.isGuessed ? '?' : ''}'
                                           : 'Select Member',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: isPlaceholder ? primaryColor : (isGuessed ? const Color(0xFFE65100) : textColor),
-                                        fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                                        color: isPlaceholder
+                                            ? primaryColor
+                                            : (isGuessed
+                                                  ? const Color(0xFFE65100)
+                                                  : textColor),
+                                        fontStyle: isPlaceholder
+                                            ? FontStyle.italic
+                                            : FontStyle.normal,
                                       ),
                                     ),
                                   ),
@@ -2475,7 +3068,10 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                     width: 64,
                                     child: TextField(
                                       controller: _amountControllers![i],
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
                                       onChanged: (v) {
                                         final n = double.tryParse(v);
                                         slots[i].amount = n ?? 0;
@@ -2483,18 +3079,45 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                       },
                                       decoration: InputDecoration(
                                         isDense: true,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                        hintText: CurrencyRegistry.symbol(currencyCode),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                                        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colorError)),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 6,
+                                            ),
+                                        hintText: CurrencyRegistry.symbol(
+                                          currencyCode,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: context.colorError,
+                                          ),
+                                        ),
                                       ),
                                       style: const TextStyle(fontSize: 14),
                                     ),
                                   ),
                                   if (isPlaceholder) const SizedBox(width: 4),
-                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: primaryColor),
+                                  if (isPlaceholder)
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      size: 18,
+                                      color: primaryColor,
+                                    ),
                                   if (isGuessed) const SizedBox(width: 2),
-                                  if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                                  if (isGuessed)
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 14,
+                                      color: const Color(0xFFF9A825),
+                                    ),
                                 ] else ...[
                                   Text(
                                     label,
@@ -2503,15 +3126,27 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                       color: isPlaceholder
                                           ? primaryColor
                                           : isGuessed
-                                              ? const Color(0xFFE65100)
-                                              : textColor,
-                                      fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+                                          ? const Color(0xFFE65100)
+                                          : textColor,
+                                      fontStyle: isPlaceholder
+                                          ? FontStyle.italic
+                                          : FontStyle.normal,
                                     ),
                                   ),
                                   if (isPlaceholder) const SizedBox(width: 4),
-                                  if (isPlaceholder) Icon(Icons.arrow_drop_down, size: 18, color: primaryColor),
+                                  if (isPlaceholder)
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      size: 18,
+                                      color: primaryColor,
+                                    ),
                                   if (isGuessed) const SizedBox(width: 2),
-                                  if (isGuessed) Icon(Icons.info_outline, size: 14, color: const Color(0xFFF9A825)),
+                                  if (isGuessed)
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 14,
+                                      color: const Color(0xFFF9A825),
+                                    ),
                                 ],
                               ],
                             ),
@@ -2523,14 +3158,21 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       const SizedBox(height: 8),
                       Text(
                         'Highlighted names are best guesses — verify before confirming.',
-                        style: TextStyle(fontSize: 12, color: labelColor, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: labelColor,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
                     if (_notReadyReason != null) ...[
                       const SizedBox(height: 12),
                       Text(
                         _notReadyReason!,
-                        style: TextStyle(fontSize: 13, color: context.colorError),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.colorError,
+                        ),
                       ),
                     ],
                   ],
@@ -2541,7 +3183,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               decoration: BoxDecoration(
                 color: dialogBgColor,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(16),
+                ),
               ),
               child: Row(
                 children: [
@@ -2552,7 +3196,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         foregroundColor: secondaryTextColor,
                         side: BorderSide(color: borderColor),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -2563,7 +3209,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       onPressed: _isReadyToConfirm ? _onConfirm : null,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         elevation: 0,
                       ),
                       child: const Text('Confirm', style: AppTypography.button),

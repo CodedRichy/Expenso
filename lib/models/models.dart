@@ -7,9 +7,11 @@ class Group {
   final String creatorId;
   final List<String> memberIds;
   final String currencyCode;
+
   /// Random 16-char alphanumeric token for the invite link.
   /// Null if invite links have never been generated for this group.
   final String? inviteLinkToken;
+
   /// Whether invite links are currently active for this group.
   final bool inviteLinkEnabled;
 
@@ -27,11 +29,10 @@ class Group {
   }) : memberIds = memberIds ?? [];
 }
 
-
 class Member {
   final String id;
   final String phone; // primary identifier
-  final String name;  // optional display name
+  final String name; // optional display name
   /// Profile photo URL (Firebase Storage). Null for pending members or when not set.
   final String? photoURL;
 
@@ -50,12 +51,15 @@ class Expense {
   final String date;
   final List<String> participantIds;
   final String paidById;
+
   /// UID of the user who originally created this expense. Used for permission checks.
   final String createdById;
+
   /// Per-person share (member id -> amount). When non-null, balances use these; else equal split.
   final Map<String, double>? splitAmountsById;
   final String category;
   final String splitType;
+
   /// When set (from Firestore amountMinor/splitsMinor), settlement uses integer path.
   final int? amountMinor;
   final Map<String, int>? splitAmountsByIdMinor;
@@ -80,21 +84,38 @@ class Expense {
     if (timestamp == null) {
       return date;
     }
-    
+
     final expenseDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final expenseDay = DateTime(expenseDate.year, expenseDate.month, expenseDate.day);
-    
+    final expenseDay = DateTime(
+      expenseDate.year,
+      expenseDate.month,
+      expenseDate.day,
+    );
+
     final diff = today.difference(expenseDay).inDays;
-    
+
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
     if (diff < 7) return '$diff days ago';
-    
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final month = months[expenseDate.month - 1];
-    
+
     if (expenseDate.year == now.year) {
       return '$month ${expenseDate.day}';
     }
@@ -131,13 +152,16 @@ class GroupInvitation {
 /// A system message shown in the group activity feed (e.g. "Alice joined", "Bob deleted Dinner ₹500").
 class SystemMessage {
   final String id;
-  final String type; // 'joined', 'declined', 'left', 'created', 'expense_edited', 'expense_deleted'
+  final String
+  type; // 'joined', 'declined', 'left', 'created', 'expense_edited', 'expense_deleted'
   final String userId;
   final String userName;
   final String date;
   final int timestamp;
+
   /// Short detail string for audit entries (e.g. '"Dinner" → "Dinner + dessert", ₹500 → ₹600').
   final String detail;
+
   /// Display prefix (e.g. 'Rishi (admin) edited'). Falls back to type-based rendering if empty.
   final String prefix;
 

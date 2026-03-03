@@ -25,11 +25,7 @@ Future<String> _encrypt(List<int> keyBytes, String plaintext) async {
     secretKey: key,
     nonce: nonce,
   );
-  return _encodeCiphertext(
-    nonce,
-    secretBox.cipherText,
-    secretBox.mac.bytes,
-  );
+  return _encodeCiphertext(nonce, secretBox.cipherText, secretBox.mac.bytes);
 }
 
 Future<String> _decrypt(List<int> keyBytes, String ciphertext) async {
@@ -57,7 +53,9 @@ class DataEncryptionService {
 
   Future<void> ensureUserKey() async {
     if (_userKey != null) return;
-    final result = await FirebaseFunctions.instanceFor(region: region).httpsCallable('getUserEncryptionKey').call();
+    final result = await FirebaseFunctions.instanceFor(
+      region: region,
+    ).httpsCallable('getUserEncryptionKey').call();
     final key = result.data['key'] as String?;
     if (key == null || key.isEmpty) return;
     _userKey = _decodeKey(key);
@@ -65,7 +63,9 @@ class DataEncryptionService {
 
   Future<void> ensureGroupKey(String groupId) async {
     if (_groupKeys.containsKey(groupId)) return;
-    final result = await FirebaseFunctions.instanceFor(region: region).httpsCallable('getGroupEncryptionKey').call({'groupId': groupId});
+    final result = await FirebaseFunctions.instanceFor(
+      region: region,
+    ).httpsCallable('getGroupEncryptionKey').call({'groupId': groupId});
     final key = result.data['key'] as String?;
     if (key == null || key.isEmpty) return;
     _groupKeys[groupId] = _decodeKey(key);
@@ -80,15 +80,33 @@ class DataEncryptionService {
     _groupKeys.clear();
   }
 
-  static const _userFields = ['displayName', 'phoneNumber', 'photoURL', 'upiId'];
+  static const _userFields = [
+    'displayName',
+    'phoneNumber',
+    'photoURL',
+    'upiId',
+  ];
   static const _groupFields = ['groupName'];
   static const _expenseFields = [
-    'description', 'amount', 'amountMinor', 'splitsMinor', 'date', 'dateSortKey', 'payerId',
-    'participantIds', 'splits', 'splitType', 'category',
+    'description',
+    'amount',
+    'amountMinor',
+    'splitsMinor',
+    'date',
+    'dateSortKey',
+    'payerId',
+    'participantIds',
+    'splits',
+    'splitType',
+    'category',
   ];
   static const _settledMetaFields = ['startDate', 'endDate'];
 
-  Future<Map<String, dynamic>> _encryptMap(List<int>? key, Map<String, dynamic> data, List<String> fields) async {
+  Future<Map<String, dynamic>> _encryptMap(
+    List<int>? key,
+    Map<String, dynamic> data,
+    List<String> fields,
+  ) async {
     if (key == null) return data;
     final out = Map<String, dynamic>.from(data);
     for (final k in fields) {
@@ -106,7 +124,12 @@ class DataEncryptionService {
     return out;
   }
 
-  Future<Map<String, dynamic>> _decryptMap(List<int>? key, Map<String, dynamic> data, List<String> fields, dynamic Function(String, String) typeRestore) async {
+  Future<Map<String, dynamic>> _decryptMap(
+    List<int>? key,
+    Map<String, dynamic> data,
+    List<String> fields,
+    dynamic Function(String, String) typeRestore,
+  ) async {
     if (key == null) return _restoreTypes(data, fields, typeRestore);
     final out = Map<String, dynamic>.from(data);
     for (final k in fields) {
@@ -119,7 +142,11 @@ class DataEncryptionService {
     return _restoreTypes(out, fields, typeRestore);
   }
 
-  Map<String, dynamic> _restoreTypes(Map<String, dynamic> data, List<String> fields, dynamic Function(String, String) typeRestore) {
+  Map<String, dynamic> _restoreTypes(
+    Map<String, dynamic> data,
+    List<String> fields,
+    dynamic Function(String, String) typeRestore,
+  ) {
     final out = Map<String, dynamic>.from(data);
     for (final k in fields) {
       if (!out.containsKey(k)) continue;
@@ -141,27 +168,45 @@ class DataEncryptionService {
     if (k == 'participantIds') {
       try {
         final list = jsonDecode(v) as List?;
-        return list?.map((e) => e?.toString()).whereType<String>().toList() ?? [];
+        return list?.map((e) => e?.toString()).whereType<String>().toList() ??
+            [];
       } catch (e) {
-        if (kDebugMode) debugPrint('DataEncryptionService: participantIds restore failed: $e');
+        if (kDebugMode)
+          debugPrint(
+            'DataEncryptionService: participantIds restore failed: $e',
+          );
       }
     }
     if (k == 'splits') {
       try {
         final map = jsonDecode(v) as Map?;
         if (map == null) return null;
-        return map.map((a, b) => MapEntry(a.toString(), (b is num) ? b.toDouble() : double.tryParse(b?.toString() ?? '') ?? 0.0));
+        return map.map(
+          (a, b) => MapEntry(
+            a.toString(),
+            (b is num)
+                ? b.toDouble()
+                : double.tryParse(b?.toString() ?? '') ?? 0.0,
+          ),
+        );
       } catch (e) {
-        if (kDebugMode) debugPrint('DataEncryptionService: splits restore failed: $e');
+        if (kDebugMode)
+          debugPrint('DataEncryptionService: splits restore failed: $e');
       }
     }
     if (k == 'splitsMinor') {
       try {
         final map = jsonDecode(v) as Map?;
         if (map == null) return null;
-        return map.map((a, b) => MapEntry(a.toString(), (b is num) ? b.toInt() : int.tryParse(b?.toString() ?? '0') ?? 0));
+        return map.map(
+          (a, b) => MapEntry(
+            a.toString(),
+            (b is num) ? b.toInt() : int.tryParse(b?.toString() ?? '0') ?? 0,
+          ),
+        );
       } catch (e) {
-        if (kDebugMode) debugPrint('DataEncryptionService: splitsMinor restore failed: $e');
+        if (kDebugMode)
+          debugPrint('DataEncryptionService: splitsMinor restore failed: $e');
       }
     }
     return v;
@@ -170,22 +215,33 @@ class DataEncryptionService {
   Future<Map<String, dynamic>> encryptUserData(Map<String, dynamic> data) =>
       _encryptMap(_userKey, data, _userFields);
 
-  Future<Map<String, dynamic>?> decryptUserData(Map<String, dynamic>? data) async {
+  Future<Map<String, dynamic>?> decryptUserData(
+    Map<String, dynamic>? data,
+  ) async {
     if (data == null) return null;
     return _decryptMap(_userKey, data, _userFields, (_, v) => v);
   }
 
-  Future<Map<String, dynamic>> encryptGroupDataWithKey(String groupId, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> encryptGroupDataWithKey(
+    String groupId,
+    Map<String, dynamic> data,
+  ) async {
     final key = _groupKeys[groupId];
     return _encryptMap(key, data, _groupFields);
   }
 
-  Future<Map<String, dynamic>> decryptGroupData(Map<String, dynamic> data, String groupId) async {
+  Future<Map<String, dynamic>> decryptGroupData(
+    Map<String, dynamic> data,
+    String groupId,
+  ) async {
     final key = _groupKeys[groupId];
     return _decryptMap(key, data, _groupFields, _groupTypeRestore);
   }
 
-  Future<Map<String, dynamic>> encryptExpenseData(String groupId, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> encryptExpenseData(
+    String groupId,
+    Map<String, dynamic> data,
+  ) async {
     final key = _groupKeys[groupId];
     final out = Map<String, dynamic>.from(data);
     for (final k in _expenseFields) {
@@ -203,17 +259,26 @@ class DataEncryptionService {
     return out;
   }
 
-  Future<Map<String, dynamic>> decryptExpenseData(Map<String, dynamic> data, String groupId) async {
+  Future<Map<String, dynamic>> decryptExpenseData(
+    Map<String, dynamic> data,
+    String groupId,
+  ) async {
     final key = _groupKeys[groupId];
     return _decryptMap(key, data, _expenseFields, _expenseTypeRestore);
   }
 
-  Future<Map<String, dynamic>> encryptSettledMeta(String groupId, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> encryptSettledMeta(
+    String groupId,
+    Map<String, dynamic> data,
+  ) async {
     final key = _groupKeys[groupId];
     return _encryptMap(key, data, _settledMetaFields);
   }
 
-  Future<Map<String, dynamic>> decryptSettledMeta(Map<String, dynamic> data, String groupId) async {
+  Future<Map<String, dynamic>> decryptSettledMeta(
+    Map<String, dynamic> data,
+    String groupId,
+  ) async {
     final key = _groupKeys[groupId];
     return _decryptMap(key, data, _settledMetaFields, (_, v) => v);
   }

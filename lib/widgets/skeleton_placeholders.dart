@@ -43,10 +43,7 @@ class SkeletonCircle extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: skeletonColor,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: skeletonColor, shape: BoxShape.circle),
     );
   }
 }
@@ -142,9 +139,7 @@ class SkeletonGroupCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: context.colorBorder, width: 1),
-          ),
+          border: Border(top: BorderSide(color: context.colorBorder, width: 1)),
         ),
         child: Row(
           children: [
@@ -349,8 +344,6 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(itemCount, itemBuilder),
-    );
+    return Column(children: List.generate(itemCount, itemBuilder));
   }
 }
