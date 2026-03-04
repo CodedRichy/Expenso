@@ -665,14 +665,24 @@ class FirestoreService {
     required String endDate,
   }) async {
     final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    final currentRef = _firestore.collection(FirestorePaths.groupExpenses(groupId));
-    final settledMetaRef = _firestore.doc(FirestorePaths.groupSettledCycle(groupId, cycleId));
-    final settledExpensesRef = _firestore.collection(FirestorePaths.groupSettledCycleExpenses(groupId, cycleId));
-    final paymentAttemptsRef = _firestore.collection(FirestorePaths.groupPaymentAttempts(groupId));
+    final currentRef = _firestore.collection(
+      FirestorePaths.groupExpenses(groupId),
+    );
+    final settledMetaRef = _firestore.doc(
+      FirestorePaths.groupSettledCycle(groupId, cycleId),
+    );
+    final settledExpensesRef = _firestore.collection(
+      FirestorePaths.groupSettledCycleExpenses(groupId, cycleId),
+    );
+    final paymentAttemptsRef = _firestore.collection(
+      FirestorePaths.groupPaymentAttempts(groupId),
+    );
 
     // Get expenses and attempts first since we cannot run collection queries inside a transaction.
     final expensesSnap = await currentRef.get();
-    final attemptsSnap = await paymentAttemptsRef.where('cycleId', isEqualTo: cycleId).get();
+    final attemptsSnap = await paymentAttemptsRef
+        .where('cycleId', isEqualTo: cycleId)
+        .get();
 
     await _firestore.runTransaction((tx) async {
       // 1. Lock the group document and verify its state
@@ -680,10 +690,12 @@ class FirestoreService {
       if (!groupSnap.exists) {
         throw StateError("Group does not exist.");
       }
-      
+
       final data = groupSnap.data()!;
       if (data['activeCycleId'] != cycleId) {
-        throw StateError("Cycle ID mismatch. Group active cycle is ${data['activeCycleId']}");
+        throw StateError(
+          "Cycle ID mismatch. Group active cycle is ${data['activeCycleId']}",
+        );
       }
       if (data['cycleStatus'] != 'settling') {
         throw StateError("Cycle must be in 'settling' state to archive.");
@@ -692,12 +704,15 @@ class FirestoreService {
       // 2. Rotate cycle in group data
       Map<String, dynamic> groupUpdates = {
         'activeCycleId': newCycleId,
-        'cycleStatus': 'active'
+        'cycleStatus': 'active',
       };
 
       if (_encryption != null) {
         await _encryption!.ensureGroupKey(groupId);
-        groupUpdates = await _encryption!.encryptGroupDataWithKey(groupId, groupUpdates);
+        groupUpdates = await _encryption!.encryptGroupDataWithKey(
+          groupId,
+          groupUpdates,
+        );
       }
       tx.update(groupRef, groupUpdates);
 
@@ -805,12 +820,33 @@ class FirestoreService {
     final ref = _firestore
         .collection(FirestorePaths.groupPaymentAttempts(groupId))
         .doc(attemptId);
-    final data = <String, dynamic>{'status': status};
+
+    // We map the status to the field-level flags that the backend rules now expect.
+    // The rules explicitly deny direct writes to `status`.
+    final data = <String, dynamic>{};
+
+    if (status == 'confirmed_by_payer') {
+      data['confirmedByPayer'] = true;
+      data['paidVia'] = 'upi';
+    } else if (status == 'confirmed_by_receiver') {
+      data['confirmedByReceiver'] = true;
+    } else if (status == 'cash_pending') {
+      data['confirmedByPayer'] = true;
+      data['paidVia'] = 'cash';
+    } else if (status == 'cash_confirmed') {
+      data['confirmedByReceiver'] = true;
+    } else if (status == 'disputed') {
+      data['disputed'] = true;
+    }
+
     if (initiatedAt != null) data['initiatedAt'] = initiatedAt;
     if (confirmedAt != null) data['confirmedAt'] = confirmedAt;
     if (upiTransactionId != null) data['upiTransactionId'] = upiTransactionId;
     if (upiResponseCode != null) data['upiResponseCode'] = upiResponseCode;
-    await ref.update(data);
+
+    if (data.isNotEmpty) {
+      await ref.update(data);
+    }
   }
 
   /// Delete all payment attempts for a cycle (called when archiving).

@@ -91,7 +91,16 @@ class PaymentAttempt {
   final String toMemberId;
   final int amountMinor;
   final String currencyCode;
+
+  // New flags replacing direct status writes
+  final bool confirmedByPayer;
+  final bool confirmedByReceiver;
+  final bool disputed;
+  final String? paidVia;
+
+  // Status computed dynamically
   final PaymentAttemptStatus status;
+
   final int createdAt;
   final int? initiatedAt;
   final int? confirmedAt;
@@ -107,6 +116,10 @@ class PaymentAttempt {
     required this.amountMinor,
     required this.currencyCode,
     required this.status,
+    this.confirmedByPayer = false,
+    this.confirmedByReceiver = false,
+    this.disputed = false,
+    this.paidVia,
     required this.createdAt,
     this.initiatedAt,
     this.confirmedAt,
@@ -121,6 +134,10 @@ class PaymentAttempt {
 
   PaymentAttempt copyWith({
     PaymentAttemptStatus? status,
+    bool? confirmedByPayer,
+    bool? confirmedByReceiver,
+    bool? disputed,
+    String? paidVia,
     int? initiatedAt,
     int? confirmedAt,
     String? upiTransactionId,
@@ -135,6 +152,10 @@ class PaymentAttempt {
       amountMinor: amountMinor,
       currencyCode: currencyCode,
       status: status ?? this.status,
+      confirmedByPayer: confirmedByPayer ?? this.confirmedByPayer,
+      confirmedByReceiver: confirmedByReceiver ?? this.confirmedByReceiver,
+      disputed: disputed ?? this.disputed,
+      paidVia: paidVia ?? this.paidVia,
       createdAt: createdAt,
       initiatedAt: initiatedAt ?? this.initiatedAt,
       confirmedAt: confirmedAt ?? this.confirmedAt,
@@ -151,8 +172,11 @@ class PaymentAttempt {
       'toMemberId': toMemberId,
       'amountMinor': amountMinor,
       'currencyCode': currencyCode,
-      'status': status.firestoreValue,
       'createdAt': createdAt,
+      if (confirmedByPayer) 'confirmedByPayer': true,
+      if (confirmedByReceiver) 'confirmedByReceiver': true,
+      if (disputed) 'disputed': true,
+      if (paidVia != null) 'paidVia': paidVia,
       if (initiatedAt != null) 'initiatedAt': initiatedAt,
       if (confirmedAt != null) 'confirmedAt': confirmedAt,
       if (upiTransactionId != null) 'upiTransactionId': upiTransactionId,
@@ -161,6 +185,32 @@ class PaymentAttempt {
   }
 
   factory PaymentAttempt.fromFirestore(String id, Map<String, dynamic> data) {
+    final confirmedByPayer = data['confirmedByPayer'] as bool? ?? false;
+    final confirmedByReceiver = data['confirmedByReceiver'] as bool? ?? false;
+    final disputed = data['disputed'] as bool? ?? false;
+    final paidVia = data['paidVia'] as String?;
+
+    PaymentAttemptStatus status = PaymentAttemptStatus.notStarted;
+
+    // Server-side rules prioritize new flags. Older docs might still rely on status field momentarily if needed.
+    if (disputed || data['status'] == 'disputed') {
+      status = PaymentAttemptStatus.disputed;
+    } else if (confirmedByReceiver ||
+        data['status'] == 'confirmed_by_receiver' ||
+        data['status'] == 'cash_confirmed') {
+      status = (paidVia == 'cash' || data['status'] == 'cash_confirmed')
+          ? PaymentAttemptStatus.cashConfirmed
+          : PaymentAttemptStatus.confirmedByReceiver;
+    } else if (confirmedByPayer ||
+        data['status'] == 'confirmed_by_payer' ||
+        data['status'] == 'cash_pending') {
+      status = (paidVia == 'cash' || data['status'] == 'cash_pending')
+          ? PaymentAttemptStatus.cashPending
+          : PaymentAttemptStatus.confirmedByPayer;
+    } else if (data['initiatedAt'] != null || data['status'] == 'initiated') {
+      status = PaymentAttemptStatus.initiated;
+    }
+
     return PaymentAttempt(
       id: id,
       groupId: data['groupId'] as String? ?? '',
@@ -169,7 +219,11 @@ class PaymentAttempt {
       toMemberId: data['toMemberId'] as String? ?? '',
       amountMinor: data['amountMinor'] as int? ?? 0,
       currencyCode: data['currencyCode'] as String? ?? 'INR',
-      status: PaymentAttemptStatusX.fromFirestore(data['status'] as String?),
+      status: status,
+      confirmedByPayer: confirmedByPayer,
+      confirmedByReceiver: confirmedByReceiver,
+      disputed: disputed,
+      paidVia: paidVia,
       createdAt: data['createdAt'] as int? ?? 0,
       initiatedAt: data['initiatedAt'] as int?,
       confirmedAt: data['confirmedAt'] as int?,

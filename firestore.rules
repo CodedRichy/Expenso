@@ -30,7 +30,11 @@ service cloud.firestore {
       allow update: if request.auth != null
         && (
           (request.auth.uid == resource.data.creatorId
-           && request.resource.data.creatorId == resource.data.creatorId) // creator cannot change creatorId
+           && request.resource.data.creatorId == resource.data.creatorId
+           && request.resource.data.activeCycleId == resource.data.activeCycleId
+           && (request.resource.data.cycleStatus == resource.data.cycleStatus ||
+               (resource.data.cycleStatus == 'active' && request.resource.data.cycleStatus == 'settling'))
+          )
           ||
           (request.auth.uid != resource.data.creatorId
            && (request.auth.uid in resource.data.members || request.auth.token.phone_number in resource.data.pendingPhones)
@@ -56,14 +60,12 @@ service cloud.firestore {
 
     match /groups/{groupId}/settled_cycles/{cycleId} {
       allow read: if isGroupMember(groupId);
-      allow create: if request.auth != null && request.auth.uid == getGroupData(groupId).creatorId;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId}/expenses/{expenseId} {
       allow read: if isGroupMember(groupId);
-      allow create: if request.auth != null && request.auth.uid == getGroupData(groupId).creatorId;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /groups/{groupId}/system_messages/{messageId} {
@@ -84,15 +86,28 @@ service cloud.firestore {
 
     match /groups/{groupId}/payment_attempts/{attemptId} {
       allow read: if isGroupMember(groupId);
+      
       allow create: if isGroupMember(groupId)
         && getGroupData(groupId).cycleStatus == 'settling'
-        && request.resource.data.fromMemberId == request.auth.uid;
+        && request.resource.data.fromMemberId == request.auth.uid
+        && !('status' in request.resource.data)
+        && !('confirmedByPayer' in request.resource.data)
+        && !('confirmedByReceiver' in request.resource.data)
+        && !('disputed' in request.resource.data);
       
       allow update: if isGroupMember(groupId) && (
-        (request.auth.uid == resource.data.fromMemberId) || (request.auth.uid == resource.data.toMemberId)
-      );
-      // Detailed validation of from/to fields isn't strict in requirement other than monotonic, 
-      // but let's just assert payer/receiver only
+        (request.auth.uid == resource.data.fromMemberId && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmedByPayer', 'paidVia', 'upiTransactionId', 'upiResponseCode', 'initiatedAt', 'confirmedAt'])
+        ) || 
+        (request.auth.uid == resource.data.toMemberId && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmedByReceiver', 'disputed', 'confirmedAt'])
+        )
+      ) && 
+      request.resource.data.amountMinor == resource.data.amountMinor &&
+      request.resource.data.fromMemberId == resource.data.fromMemberId &&
+      request.resource.data.toMemberId == resource.data.toMemberId &&
+      request.resource.data.cycleId == resource.data.cycleId &&
+      !('status' in request.resource.data.diff(resource.data).affectedKeys());
       
       allow delete: if false;
     }

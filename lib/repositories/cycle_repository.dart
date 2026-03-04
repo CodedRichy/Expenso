@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/models.dart';
 import '../models/cycle.dart';
 import '../models/money_minor.dart';
@@ -2420,47 +2421,30 @@ class CycleRepository extends ChangeNotifier {
       throw StateError('Group data not loaded. Pull to refresh or try again.');
     }
 
-    final netBalances = getNetBalancesAfterSettlementsMinor(groupId);
-    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, getGroup(groupId)?.currencyCode ?? 'INR');
-    
-    for (final route in allRoutes) {
-      final attempt = getPaymentAttemptForRoute(groupId, route.fromMemberId, route.toMemberId);
-      final status = attempt?.status ?? PaymentAttemptStatus.notStarted;
-      if (!status.isSettled) {
-        throw StateError('All payments must be confirmed before closing the cycle.');
-      }
+    // Call Cloud Function to perform the settlement atomically
+    try {
+      final callable = FirebaseFunctions.instanceFor(
+        region: 'asia-south1',
+      ).httpsCallable('settleAndRestart');
+      final result = await callable.call({'groupId': groupId});
+
+      final newCycleId = result.data['newCycleId'] as String;
+
+      _groupMeta[groupId] = _GroupMeta(
+        activeCycleId: newCycleId,
+        cycleStatus: 'active',
+      );
+      _expensesByCycleId.remove(meta.activeCycleId);
+      _expensesByCycleId[newCycleId] = [];
+      _paymentAttemptsByGroup.remove(groupId);
+      _fullySettledEmitted.remove(groupId);
+      _refreshGroupAmounts();
+      _logSettlementEvent(groupId, SettlementEventType.cycleArchived);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Cloud Function settleAndRestart failed: $e');
+      throw StateError('Failed to settle and restart: $e');
     }
-
-    final now = DateTime.now();
-    final endStr = _formatDate(now);
-    final startStr = meta.activeCycleId.startsWith('c_')
-        ? _formatDate(
-            DateTime.fromMillisecondsSinceEpoch(
-              int.tryParse(meta.activeCycleId.substring(2)) ?? 0,
-            ),
-          )
-        : endStr;
-
-    final newCycleId = _nextCycleId();
-    await FirestoreService.instance.archiveCycleExpenses(
-      groupId,
-      meta.activeCycleId,
-      newCycleId,
-      startDate: startStr,
-      endDate: endStr,
-    );
-
-    _groupMeta[groupId] = _GroupMeta(
-      activeCycleId: newCycleId,
-      cycleStatus: 'active',
-    );
-    _expensesByCycleId.remove(meta.activeCycleId);
-    _expensesByCycleId[newCycleId] = [];
-    _paymentAttemptsByGroup.remove(groupId);
-    _fullySettledEmitted.remove(groupId);
-    _refreshGroupAmounts();
-    _logSettlementEvent(groupId, SettlementEventType.cycleArchived);
-    notifyListeners();
   }
 
   /// Returns all closed cycles for the group, newest first (from Firestore settled_cycles).

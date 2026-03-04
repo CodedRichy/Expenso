@@ -19,10 +19,10 @@ import '../utils/money_format.dart';
 import 'empty_states.dart';
 
 class GroupsList extends StatefulWidget {
-  const GroupsList({super.key};
+  const GroupsList({super.key});
 
   @override
-  State<GroupsList> createState() => _GroupsListState(;
+  State<GroupsList> createState() => _GroupsListState();
 }
 
 class _GroupsListState extends State<GroupsList> {
@@ -30,9 +30,9 @@ class _GroupsListState extends State<GroupsList> {
 
   @override
   void initState() {
-    super.initState(;
-    PinnedGroupsService.instance.load(;
-    _startLoadingTimeout(;
+    super.initState();
+    PinnedGroupsService.instance.load();
+    _startLoadingTimeout();
   }
 
   void _startLoadingTimeout() {
@@ -40,9 +40,9 @@ class _GroupsListState extends State<GroupsList> {
       if (!mounted) return;
       final repo = CycleRepository.instance;
       if (repo.groupsLoading && repo.groups.isEmpty) {
-        setState(() => _showSlowLoadingHint = true;
+        setState(() => _showSlowLoadingHint = true);
       }
-    };
+    });
   }
 
   Widget _buildInvitationsSection(BuildContext context, CycleRepository repo) {
@@ -55,10 +55,10 @@ class _GroupsListState extends State<GroupsList> {
         itemCount: invitations.length,
         itemBuilder: (context, index) {
           final invitation = invitations[index];
-          return _buildInvitationCard(context, invitation, repo, index;
+          return _buildInvitationCard(context, invitation, repo, index);
         },
       ),
-    ;
+    );
   }
 
   // Track which invitations have already animated
@@ -80,9 +80,9 @@ class _GroupsListState extends State<GroupsList> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onDarkGradient = isDark ? context.colorPrimary : context.colorSurface;
 
-    final alreadyAnimated = _animatedInvitations.contains(invitation.groupId;
+    final alreadyAnimated = _animatedInvitations.contains(invitation.groupId);
     if (!alreadyAnimated) {
-      _animatedInvitations.add(invitation.groupId;
+      _animatedInvitations.add(invitation.groupId);
     }
 
     final card = TapScale(
@@ -154,7 +154,7 @@ class _GroupsListState extends State<GroupsList> {
           ),
         ),
       ),
-    ;
+    );
 
     if (alreadyAnimated) {
       return card;
@@ -166,10 +166,10 @@ class _GroupsListState extends State<GroupsList> {
       duration: Duration(milliseconds: 200 + (index * 40)),
       curve: Curves.easeOut,
       builder: (context, value, child) {
-        return Opacity(opacity: value, child: child;
+        return Opacity(opacity: value, child: child);
       },
       child: card,
-    ;
+    );
   }
 
   void _showInvitationSheet(
@@ -234,7 +234,7 @@ class _GroupsListState extends State<GroupsList> {
                       ),
                     ),
                   ),
-                ;
+                );
               },
             ),
             const SizedBox(height: 20),
@@ -269,9 +269,9 @@ class _GroupsListState extends State<GroupsList> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      Navigator.pop(ctx;
+                      Navigator.pop(ctx);
                       try {
-                        await repo.declineInvitation(invitation.groupId;
+                        await repo.declineInvitation(invitation.groupId);
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -281,7 +281,7 @@ class _GroupsListState extends State<GroupsList> {
                               ),
                               behavior: SnackBarBehavior.floating,
                             ),
-                          ;
+                          );
                         }
                       }
                     },
@@ -306,16 +306,16 @@ class _GroupsListState extends State<GroupsList> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      Navigator.pop(ctx;
+                      Navigator.pop(ctx);
                       try {
-                        await repo.acceptInvitation(invitation.groupId;
+                        await repo.acceptInvitation(invitation.groupId);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Joined ${invitation.groupName}'),
                               behavior: SnackBarBehavior.floating,
                             ),
-                          ;
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -326,7 +326,7 @@ class _GroupsListState extends State<GroupsList> {
                               ),
                               behavior: SnackBarBehavior.floating,
                             ),
-                          ;
+                          );
                         }
                       }
                     },
@@ -352,18 +352,18 @@ class _GroupsListState extends State<GroupsList> {
           ],
         ),
       ),
-    ;
+    );
   }
 
   /// Sort groups: pinned first (in pin order), then unpinned in repo order.
   List<Group> _sortedGroups(List<Group> groups, List<String> pinnedIds) {
-    final pinnedSet = pinnedIds.toSet(;
+    final pinnedSet = pinnedIds.toSet();
     final pinned = <Group>[];
     for (final id in pinnedIds) {
-      final match = groups.where((g) => g.id == id).toList(;
-      if (match.isNotEmpty) pinned.add(match.first;
+      final match = groups.where((g) => g.id == id).toList();
+      if (match.isNotEmpty) pinned.add(match.first);
     }
-    final unpinned = groups.where((g) => !pinnedSet.contains(g.id)).toList(;
+    final unpinned = groups.where((g) => !pinnedSet.contains(g.id)).toList();
     return [...pinned, ...unpinned];
   }
 
@@ -374,7 +374,7 @@ class _GroupsListState extends State<GroupsList> {
           content: Text('Cannot delete group while offline'),
           behavior: SnackBarBehavior.floating,
         ),
-      ;
+      );
       return;
     }
     final repo = CycleRepository.instance;
@@ -400,19 +400,19 @@ class _GroupsListState extends State<GroupsList> {
           ),
         ],
       ),
-    ;
+    );
     if (confirmed != true || !context.mounted) return;
-    final wasPinned = PinnedGroupsService.instance.isPinned(group.id;
+    final wasPinned = PinnedGroupsService.instance.isPinned(group.id);
     try {
-      await repo.deleteGroup(group.id;
+      await repo.deleteGroup(group.id);
       if (context.mounted) {
-        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id;
+        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Group deleted'),
             behavior: SnackBarBehavior.floating,
           ),
-        ;
+        );
       }
     } catch (e) {
       if (!context.mounted) return;
@@ -421,13 +421,13 @@ class _GroupsListState extends State<GroupsList> {
       // repository confirmed idempotent removal. Show success, not an error.
       final groupStillExists = repo.getGroup(group.id) != null;
       if (!groupStillExists) {
-        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id;
+        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Group deleted'),
             behavior: SnackBarBehavior.floating,
           ),
-        ;
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -436,7 +436,7 @@ class _GroupsListState extends State<GroupsList> {
             ),
             behavior: SnackBarBehavior.floating,
           ),
-        ;
+        );
       }
     }
   }
@@ -449,7 +449,7 @@ class _GroupsListState extends State<GroupsList> {
     return ListenableBuilder(
       listenable: Listenable.merge([repo, pinService]),
       builder: (context, _) {
-        final groups = _sortedGroups(repo.groups, pinService.pinnedIds;
+        final groups = _sortedGroups(repo.groups, pinService.pinnedIds);
         final loading = repo.groupsLoading && groups.isEmpty;
         if (repo.streamError != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -457,9 +457,9 @@ class _GroupsListState extends State<GroupsList> {
             if (CycleRepository.instance.streamError == null) return;
             Navigator.of(
               context,
-            ).pushNamed('/error-states', arguments: {'type': 'network'};
-            CycleRepository.instance.clearStreamError(;
-          };
+            ).pushNamed('/error-states', arguments: {'type': 'network'});
+            CycleRepository.instance.clearStreamError();
+          });
         }
         return GradientScaffold(
           floatingActionButton:
@@ -487,8 +487,8 @@ class _GroupsListState extends State<GroupsList> {
             children: [
               OfflineBanner(
                 onRetry: () {
-                  ConnectivityService.instance.checkNow(;
-                  CycleRepository.instance.restartListening(;
+                  ConnectivityService.instance.checkNow();
+                  CycleRepository.instance.restartListening();
                 },
               ),
               Expanded(
@@ -557,14 +557,14 @@ class _GroupsListState extends State<GroupsList> {
                                   itemCount: groups.length,
                                   itemBuilder: (context, index) {
                                     final group = groups[index];
-                                    
-                                    
-                                    
-                                      
-                                    ;
-                                    
-                                      
-                                    ;
+                                    final isSettled = group.status == 'settled';
+                                    final isClosing = group.status == 'closing';
+                                    final isPinned = pinService.isPinned(
+                                      group.id,
+                                    );
+                                    final isCreator = repo.isCurrentUserCreator(
+                                      group.id,
+                                    );
 
                                     return StaggeredListItem(
                                       index: index,
@@ -576,7 +576,7 @@ class _GroupsListState extends State<GroupsList> {
                                           children: [
                                             SlidableAction(
                                               onPressed: (_) async {
-                                                HapticFeedback.lightImpact(;
+                                                HapticFeedback.lightImpact();
                                                 if (!isPinned &&
                                                     !pinService.canPinMore) {
                                                   if (context.mounted) {
@@ -591,13 +591,13 @@ class _GroupsListState extends State<GroupsList> {
                                                             SnackBarBehavior
                                                                 .floating,
                                                       ),
-                                                    ;
+                                                    );
                                                   }
                                                   return;
                                                 }
                                                 await pinService.togglePin(
-                                                  
-                                                ;
+                                                  group.id,
+                                                );
                                               },
                                               backgroundColor:
                                                   context.colorWarning,
@@ -617,11 +617,11 @@ class _GroupsListState extends State<GroupsList> {
                                                 children: [
                                                   SlidableAction(
                                                     onPressed: (_) {
-                                                      HapticFeedback.lightImpact(;
+                                                      HapticFeedback.lightImpact();
                                                       _confirmDeleteGroup(
                                                         context,
                                                         group,
-                                                      ;
+                                                      );
                                                     },
                                                     backgroundColor:
                                                         context.colorError,
@@ -641,7 +641,7 @@ class _GroupsListState extends State<GroupsList> {
                                                 context,
                                                 '/group-detail',
                                                 arguments: group,
-                                              ;
+                                              );
                                             },
                                             child: Opacity(
                                               opacity: isSettled ? 0.5 : 1.0,
@@ -690,7 +690,7 @@ class _GroupsListState extends State<GroupsList> {
                                                                 Text(
                                                                   formatMoneyFromMajor(
                                                                     repo.getGroupPendingAmount(
-                                                                      
+                                                                      group.id,
                                                                     ),
                                                                     group
                                                                         .currencyCode,
@@ -778,7 +778,7 @@ class _GroupsListState extends State<GroupsList> {
                                           ),
                                         ),
                                       ),
-                                    ;
+                                    );
                                   },
                                 ),
                               ),
@@ -789,16 +789,16 @@ class _GroupsListState extends State<GroupsList> {
               ),
             ],
           ),
-        ;
+        );
       },
-    ;
+    );
   }
 }
 
 class _BoundedGroupsLoading extends StatelessWidget {
   final bool showSlowHint;
 
-  const _BoundedGroupsLoading({this.showSlowHint = false};
+  const _BoundedGroupsLoading({this.showSlowHint = false});
 
   @override
   Widget build(BuildContext context) {
@@ -867,8 +867,8 @@ class _BoundedGroupsLoading extends StatelessWidget {
                     const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () {
-                        ConnectivityService.instance.checkNow(;
-                        CycleRepository.instance.restartListening(;
+                        ConnectivityService.instance.checkNow();
+                        CycleRepository.instance.restartListening();
                       },
                       child: Text(
                         'Retry',
@@ -902,6 +902,6 @@ class _BoundedGroupsLoading extends StatelessWidget {
           ),
         ],
       ),
-    ;
+    );
   }
 }
