@@ -2419,6 +2419,18 @@ class CycleRepository extends ChangeNotifier {
     if (meta == null) {
       throw StateError('Group data not loaded. Pull to refresh or try again.');
     }
+
+    final netBalances = getNetBalancesAfterSettlementsMinor(groupId);
+    final allRoutes = SettlementEngine.computePaymentRoutes(netBalances, getGroup(groupId)?.currencyCode ?? 'INR');
+    
+    for (final route in allRoutes) {
+      final attempt = getPaymentAttemptForRoute(groupId, route.fromMemberId, route.toMemberId);
+      final status = attempt?.status ?? PaymentAttemptStatus.notStarted;
+      if (!status.isSettled) {
+        throw StateError('All payments must be confirmed before closing the cycle.');
+      }
+    }
+
     final now = DateTime.now();
     final endStr = _formatDate(now);
     final startStr = meta.activeCycleId.startsWith('c_')
@@ -2428,17 +2440,16 @@ class CycleRepository extends ChangeNotifier {
             ),
           )
         : endStr;
+
+    final newCycleId = _nextCycleId();
     await FirestoreService.instance.archiveCycleExpenses(
       groupId,
       meta.activeCycleId,
+      newCycleId,
       startDate: startStr,
       endDate: endStr,
     );
-    final newCycleId = _nextCycleId();
-    await FirestoreService.instance.updateGroup(groupId, {
-      'activeCycleId': newCycleId,
-      'cycleStatus': 'active',
-    });
+
     _groupMeta[groupId] = _GroupMeta(
       activeCycleId: newCycleId,
       cycleStatus: 'active',

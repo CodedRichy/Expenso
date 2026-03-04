@@ -656,32 +656,65 @@ class FirestoreService {
     return da.compareTo(db);
   }
 
-  /// Write a settled cycle doc and copy current-cycle expenses into it; then clear current expenses.
-  /// [cycleId] = group's current activeCycleId. Caller must set group's new activeCycleId and cycleStatus after.
+  /// Runs a transaction to atomically archive expenses and rotate the active cycle ID, protecting against race conditions.
   Future<void> archiveCycleExpenses(
     String groupId,
-    String cycleId, {
+    String cycleId,
+    String newCycleId, {
     required String startDate,
     required String endDate,
   }) async {
-    final batch = _firestore.batch();
-    final currentRef = _firestore.collection(
-      FirestorePaths.groupExpenses(groupId),
-    );
-    final settledMetaRef = _firestore.doc(
-      FirestorePaths.groupSettledCycle(groupId, cycleId),
-    );
-    final settledExpensesRef = _firestore.collection(
-      FirestorePaths.groupSettledCycleExpenses(groupId, cycleId),
-    );
+    final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
+    final currentRef = _firestore.collection(FirestorePaths.groupExpenses(groupId));
+    final settledMetaRef = _firestore.doc(FirestorePaths.groupSettledCycle(groupId, cycleId));
+    final settledExpensesRef = _firestore.collection(FirestorePaths.groupSettledCycleExpenses(groupId, cycleId));
+    final paymentAttemptsRef = _firestore.collection(FirestorePaths.groupPaymentAttempts(groupId));
 
-    final snap = await currentRef.get();
-    batch.set(settledMetaRef, {'startDate': startDate, 'endDate': endDate});
-    for (final doc in snap.docs) {
-      batch.set(settledExpensesRef.doc(doc.id), doc.data());
-      batch.delete(doc.reference);
-    }
-    await batch.commit();
+    // Get expenses and attempts first since we cannot run collection queries inside a transaction.
+    final expensesSnap = await currentRef.get();
+    final attemptsSnap = await paymentAttemptsRef.where('cycleId', isEqualTo: cycleId).get();
+
+    await _firestore.runTransaction((tx) async {
+      // 1. Lock the group document and verify its state
+      final groupSnap = await tx.get(groupRef);
+      if (!groupSnap.exists) {
+        throw StateError("Group does not exist.");
+      }
+      
+      final data = groupSnap.data()!;
+      if (data['activeCycleId'] != cycleId) {
+        throw StateError("Cycle ID mismatch. Group active cycle is ${data['activeCycleId']}");
+      }
+      if (data['cycleStatus'] != 'settling') {
+        throw StateError("Cycle must be in 'settling' state to archive.");
+      }
+
+      // 2. Rotate cycle in group data
+      Map<String, dynamic> groupUpdates = {
+        'activeCycleId': newCycleId,
+        'cycleStatus': 'active'
+      };
+
+      if (_encryption != null) {
+        await _encryption!.ensureGroupKey(groupId);
+        groupUpdates = await _encryption!.encryptGroupDataWithKey(groupId, groupUpdates);
+      }
+      tx.update(groupRef, groupUpdates);
+
+      // 3. Write settled cycle meta
+      tx.set(settledMetaRef, {'startDate': startDate, 'endDate': endDate});
+
+      // 4. Move expenses
+      for (final doc in expensesSnap.docs) {
+        tx.set(settledExpensesRef.doc(doc.id), doc.data());
+        tx.delete(doc.reference);
+      }
+
+      // 5. Clear payment attempts
+      for (final doc in attemptsSnap.docs) {
+        tx.delete(doc.reference);
+      }
+    });
   }
 
   /// List settled cycle docs for a group (for history). Ordered by endDate descending.

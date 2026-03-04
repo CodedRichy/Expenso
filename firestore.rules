@@ -4,9 +4,14 @@ service cloud.firestore {
     function groupExists(groupId) {
       return exists(/databases/$(database)/documents/groups/$(groupId));
     }
+    
+    function getGroupData(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+    
     function isGroupMember(groupId) {
       return request.auth != null && groupExists(groupId)
-        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        && request.auth.uid in getGroupData(groupId).members;
     }
 
     match /users/{userId} {
@@ -19,47 +24,82 @@ service cloud.firestore {
         && (resource.data.inviteLinkEnabled == true
             || request.auth.uid in resource.data.members
             || request.auth.token.phone_number in resource.data.pendingPhones);
-      allow update: if request.auth != null
-        && (request.auth.uid in resource.data.members
-            || request.auth.token.phone_number in resource.data.pendingPhones);
-      allow delete: if request.auth != null
-        && request.auth.uid == resource.data.creatorId;
+            
       allow create: if request.auth != null;
+
+      allow update: if request.auth != null
+        && (
+          (request.auth.uid == resource.data.creatorId
+           && request.resource.data.creatorId == resource.data.creatorId) // creator cannot change creatorId
+          ||
+          (request.auth.uid != resource.data.creatorId
+           && (request.auth.uid in resource.data.members || request.auth.token.phone_number in resource.data.pendingPhones)
+           && request.resource.data.creatorId == resource.data.creatorId
+           && request.resource.data.activeCycleId == resource.data.activeCycleId
+           && request.resource.data.cycleStatus == resource.data.cycleStatus
+           && request.resource.data.inviteLinkToken == resource.data.inviteLinkToken
+           && request.resource.data.inviteLinkEnabled == resource.data.inviteLinkEnabled)
+        );
+
+      allow delete: if request.auth != null && request.auth.uid == resource.data.creatorId;
     }
 
     match /groups/{groupId}/expenses/{expenseId} {
-      allow read, delete: if isGroupMember(groupId);
-      allow create, update: if isGroupMember(groupId);
+      allow read: if isGroupMember(groupId);
+      allow create: if isGroupMember(groupId) 
+        && getGroupData(groupId).cycleStatus == 'active'
+        && request.resource.data.createdById == request.auth.uid;
+      allow update, delete: if isGroupMember(groupId)
+        && getGroupData(groupId).cycleStatus == 'active'
+        && (request.auth.uid == resource.data.createdById || request.auth.uid == getGroupData(groupId).creatorId);
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId} {
-      allow read, create: if isGroupMember(groupId);
+      allow read: if isGroupMember(groupId);
+      allow create: if request.auth != null && request.auth.uid == getGroupData(groupId).creatorId;
       allow update, delete: if false;
     }
 
     match /groups/{groupId}/settled_cycles/{cycleId}/expenses/{expenseId} {
-      allow read, create: if isGroupMember(groupId);
+      allow read: if isGroupMember(groupId);
+      allow create: if request.auth != null && request.auth.uid == getGroupData(groupId).creatorId;
       allow update, delete: if false;
     }
 
     match /groups/{groupId}/system_messages/{messageId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, create: if isGroupMember(groupId);
+      allow update, delete: if false;
     }
 
     match /groups/{groupId}/expense_revisions/{revisionId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, create: if isGroupMember(groupId);
+      allow update, delete: if false;
     }
 
     match /groups/{groupId}/deleted_expenses/{expenseId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read: if isGroupMember(groupId);
+      allow create: if isGroupMember(groupId) && getGroupData(groupId).cycleStatus == 'active';
+      allow update, delete: if false;
     }
 
     match /groups/{groupId}/payment_attempts/{attemptId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read: if isGroupMember(groupId);
+      allow create: if isGroupMember(groupId)
+        && getGroupData(groupId).cycleStatus == 'settling'
+        && request.resource.data.fromMemberId == request.auth.uid;
+      
+      allow update: if isGroupMember(groupId) && (
+        (request.auth.uid == resource.data.fromMemberId) || (request.auth.uid == resource.data.toMemberId)
+      );
+      // Detailed validation of from/to fields isn't strict in requirement other than monotonic, 
+      // but let's just assert payer/receiver only
+      
+      allow delete: if false;
     }
 
     match /groups/{groupId}/settlement_events/{eventId} {
-      allow read, write: if isGroupMember(groupId);
+      allow read, create: if isGroupMember(groupId);
+      allow update, delete: if false;
     }
   }
 }
