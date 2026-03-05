@@ -176,8 +176,8 @@ If these paths fail, the user may see generic or incorrect behavior with no indi
 **Area:** Security / invariants  
 **Summary:** STABILIZATION §4.3: "Closed cycles are read-only — ⚠️ Assumed but not enforced. Firestore rules may not prevent writes to settled_cycles." Current `firestore.rules` allow create, update, delete on `groups/{groupId}/settled_cycles/{cycleId}` and its expenses for any group member. There is no rule that makes archived cycles immutable.  
 **Status:** Addressed  
-**Notes:** Updated `firestore.rules`: `settled_cycles` and `settled_cycles/{cycleId}/expenses` now allow **read** and **create** only; **update** and **delete** are denied (`allow update, delete: if false`). Archive flow still works (create); no one can modify or delete archived cycle data after creation.  
-**Ref:** `firestore.rules`, `docs/STABILIZATION.md` §4.3 invariant #8.
+**Notes:** Updated `firestore.rules`: `settled_cycles` and `settled_cycles/{cycleId}/expenses` now allow **read** only; **create**, **update**, and **delete** are denied (`allow create, update, delete: if false`). Archive flow is now handled securely server-side via the `settleAndRestart` Cloud Function; no client can modify, create, or delete archived cycle data.  
+**Ref:** `firestore.rules`, `docs/STABILIZATION.md` §4.3 invariant #8, `functions/index.js`.
 
 ---
 

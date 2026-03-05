@@ -139,13 +139,13 @@ Expenso is a Flutter mobile application for tracking shared expenses within smal
 14. (When creator confirms Close cycle) Firestore updated: `cycleStatus: 'settling'`
 15. UI shows settling state, expense editing disabled
 16. Creator taps "Start New Cycle" → `archiveAndRestart(groupId)` called
-17. `FirestoreService.archiveCycleExpenses()`:
+17. `archiveAndRestart(groupId)` delegates to Cloud Function `settleAndRestart(groupId)`:
+    - Atomically checks pending payments and zero-sum balances
     - Copies all expense docs to `settled_cycles/{cycleId}/expenses`
     - Deletes expense docs from current location
-    - Creates cycle metadata doc
-18. Payment attempts for archived cycle can be deleted via `deletePaymentAttemptsForCycle()`
-19. Group updated: `activeCycleId: new_id`, `cycleStatus: 'active'`
-20. New empty cycle begins
+    - Deletes payment attempts for the cycle
+    - Rotates `activeCycleId` and resets `cycleStatus: 'active'`
+18. New empty cycle begins
 
 ### State Locations
 
@@ -199,7 +199,7 @@ Parsed intents move through the following states. This is the backbone for produ
 | 1 | **Expense amounts must be positive and finite** | ✅ Enforced by code (`validateExpenseAmount`, `SettlementEngine` skips invalid) |
 | 2 | **Every expense must have a non-empty description** | ✅ Enforced by code (`validateExpenseDescription`) |
 | 3 | **Split amounts must sum to expense amount** | ✅ Enforced at read. SettlementEngine skips expenses with missing/empty splits or sum not within 0.01 of amount. See G3 in docs/internal/V4_TESTING_ISSUES.md. |
-| 4 | **Only the group creator can settle/archive a cycle** | ✅ Enforced by code (`isCreator` check in `settleAndRestartCycle`, `archiveAndRestart`) |
+| 4 | **Only the group creator can settle/archive a cycle** | ✅ Enforced by code (`isCreator` check in `settleAndRestartCycle`, and strongly enforced by Cloud Function `settleAndRestart(groupId)`) |
 | 5 | **Only the group creator can delete a group** | ✅ Enforced by code (`canDeleteGroup` check) |
 | 6 | **A user can only be in `members[]` OR `pendingMembers[]`, not both** | ⚠️ Assumed. Transactions handle promotion, but no explicit check on read. |
 | 7 | **Net balances must sum to zero across all members** | ✅ Enforced by design (SettlementEngine computes balanced debits/credits) |
