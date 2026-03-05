@@ -171,10 +171,11 @@ class DataEncryptionService {
         return list?.map((e) => e?.toString()).whereType<String>().toList() ??
             [];
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint(
             'DataEncryptionService: participantIds restore failed: $e',
           );
+        }
       }
     }
     if (k == 'splits') {
@@ -190,8 +191,9 @@ class DataEncryptionService {
           ),
         );
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('DataEncryptionService: splits restore failed: $e');
+        }
       }
     }
     if (k == 'splitsMinor') {
@@ -205,8 +207,9 @@ class DataEncryptionService {
           ),
         );
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('DataEncryptionService: splitsMinor restore failed: $e');
+        }
       }
     }
     return v;

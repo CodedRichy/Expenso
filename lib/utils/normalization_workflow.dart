@@ -305,8 +305,9 @@ class NameResolutionContext {
     }
 
     if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (similarMatchIds.length == 1)
+    if (similarMatchIds.length == 1) {
       return (id: similarMatchIds.single, isGuessed: true);
+    }
     return (id: null, isGuessed: false);
   }
 
@@ -316,16 +317,18 @@ class NameResolutionContext {
     final ids = <String>{};
     for (final m in candidates) {
       final displayLower = getMemberDisplayName(m.id).trim().toLowerCase();
-      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower))
+      if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
         ids.add(m.id);
+      }
       final contactLower =
           _phoneToContactName?[_normalizePhoneForMatch(m.phone)]
               ?.trim()
               .toLowerCase();
       if (contactLower != null &&
           contactLower.isNotEmpty &&
-          _nameSimilar(n, contactLower))
+          _nameSimilar(n, contactLower)) {
         ids.add(m.id);
+      }
     }
     return ids;
   }
@@ -333,10 +336,13 @@ class NameResolutionContext {
 
 bool _nameSimilar(String parsedLower, String otherLower) {
   if (parsedLower == otherLower) return true;
-  if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower))
+  if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower)) {
     return true;
-  if (otherLower.startsWith(parsedLower) || parsedLower.startsWith(otherLower))
+  }
+  if (otherLower.startsWith(parsedLower) ||
+      parsedLower.startsWith(otherLower)) {
     return true;
+  }
   return false;
 }
 

@@ -57,8 +57,9 @@ class UpiPaymentService {
     String sanitizedName = payeeName
         .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '')
         .trim();
-    if (sanitizedName.length > 30)
+    if (sanitizedName.length > 30) {
       sanitizedName = sanitizedName.substring(0, 30).trim();
+    }
 
     // Sanitize note — alphanumeric + spaces, max 50 chars.
     String note = 'Expenso $groupName Cycle'

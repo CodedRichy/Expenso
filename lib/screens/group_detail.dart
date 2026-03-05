@@ -384,8 +384,9 @@ class _GroupDetailState extends State<GroupDetail> {
                                                 ),
                                               );
                                               if (confirmed != true ||
-                                                  !context.mounted)
+                                                  !context.mounted) {
                                                 return;
+                                              }
                                             } else {
                                               _showSettleConfirmDialog(
                                                 context,
@@ -869,12 +870,13 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 String _formatAmount(double value, String currencyCode) {
-  if (value.isNaN || value.isInfinite)
+  if (value.isNaN || value.isInfinite) {
     return formatMoneyFromMajor(
       0,
       currencyCode,
       LocaleService.instance.localeCode,
     );
+  }
   return formatMoneyFromMajor(
     value,
     currencyCode,
@@ -1578,11 +1580,13 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
   static bool _nameSimilar(String parsedLower, String otherLower) {
     if (parsedLower == otherLower) return true;
-    if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower))
+    if (otherLower.contains(parsedLower) || parsedLower.contains(otherLower)) {
       return true;
+    }
     if (otherLower.startsWith(parsedLower) ||
-        parsedLower.startsWith(otherLower))
+        parsedLower.startsWith(otherLower)) {
       return true;
+    }
     return false;
   }
 
@@ -1692,8 +1696,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
       }
     }
     if (exactMatch != null) return (id: exactMatch, isGuessed: false);
-    if (similarMatchIds.length == 1)
+    if (similarMatchIds.length == 1) {
       return (id: similarMatchIds.single, isGuessed: true);
+    }
     return (id: null, isGuessed: false);
   }
 
@@ -1731,16 +1736,18 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
             .getMemberDisplayNameById(m.id)
             .trim()
             .toLowerCase();
-        if (displayLower.isNotEmpty && _nameSimilar(n, displayLower))
+        if (displayLower.isNotEmpty && _nameSimilar(n, displayLower)) {
           ids.add(m.id);
+        }
         final contactLower =
             phoneToContactName?[_normalizePhoneForMatch(m.phone)]
                 ?.trim()
                 .toLowerCase();
         if (contactLower != null &&
             contactLower.isNotEmpty &&
-            _nameSimilar(n, contactLower))
+            _nameSimilar(n, contactLower)) {
           ids.add(m.id);
+        }
       }
       return ids;
     }
@@ -1789,8 +1796,9 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
         if (looksLikePhone && _phoneToContactName != null) {
           final norm = _normalizePhoneForMatch(m.phone);
           final contactName = _phoneToContactName![norm];
-          if (contactName != null && contactName.trim().isNotEmpty)
+          if (contactName != null && contactName.trim().isNotEmpty) {
             return contactName;
+          }
         }
         return name;
       }).toList();
@@ -2465,10 +2473,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
   String? get _notReadyReason {
     final amount = _editedAmount;
     if (amount == null || amount <= 0) return 'Amount must be greater than 0.';
-    if (_descriptionController.text.trim().isEmpty)
+    if (_descriptionController.text.trim().isEmpty) {
       return 'Description is required.';
-    if ((_totalSplit - amount).abs() >= _splitTolerance)
+    }
+    if ((_totalSplit - amount).abs() >= _splitTolerance) {
       return 'Split doesn\'t match total.';
+    }
     if (!_allResolved) return 'Select a member for each slot.';
     return null;
   }
@@ -2479,8 +2489,9 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         slots.isEmpty ||
         widget.splitTypeCap == 'Exact' ||
         widget.splitTypeCap == 'Percentage' ||
-        widget.splitTypeCap == 'Shares')
+        widget.splitTypeCap == 'Shares') {
       return;
+    }
     final perShare = amount / slots.length;
     for (var i = 0; i < slots.length; i++) {
       slots[i] = _ParticipantSlot(

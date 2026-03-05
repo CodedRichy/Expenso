@@ -173,16 +173,18 @@ class ParsedExpenseResult {
     final flagsRaw = json['constraintFlags'];
     if (flagsRaw is List) {
       for (final f in flagsRaw) {
-        if (f != null && f.toString().trim().isNotEmpty)
+        if (f != null && f.toString().trim().isNotEmpty) {
           flags.add(f.toString().trim());
+        }
       }
     }
     List<String> notesList = [];
     final notesRaw = json['notes'];
     if (notesRaw is List) {
       for (final n in notesRaw) {
-        if (n != null && n.toString().trim().isNotEmpty)
+        if (n != null && n.toString().trim().isNotEmpty) {
           notesList.add(n.toString().trim());
+        }
       }
     }
     final needClar = json['needsClarification'] == true;
@@ -223,9 +225,12 @@ class ParsedExpenseResult {
       'splitType': splitType,
       'participants': participantNames,
     };
-    if (currencyCode != null && currencyCode!.isNotEmpty)
+    if (currencyCode != null && currencyCode!.isNotEmpty) {
       m['currencyCode'] = currencyCode;
-    if (payerName != null && payerName!.isNotEmpty) m['payer'] = payerName;
+    }
+    if (payerName != null && payerName!.isNotEmpty) {
+      m['payer'] = payerName;
+    }
     if (excludedNames.isNotEmpty) m['excluded'] = excludedNames;
     if (exactAmountsByName.isNotEmpty) m['exactAmounts'] = exactAmountsByName;
     if (percentageByName.isNotEmpty) m['percentageAmounts'] = percentageByName;
@@ -234,8 +239,9 @@ class ParsedExpenseResult {
     if (notes.isNotEmpty) m['notes'] = notes;
     if (needsClarification) m['needsClarification'] = true;
     if (rejectReason != null) m['rejectReason'] = rejectReason;
-    if (clarificationQuestion != null)
+    if (clarificationQuestion != null) {
       m['clarificationQuestion'] = clarificationQuestion;
+    }
     return m;
   }
 }
@@ -286,10 +292,11 @@ class GroqExpenseParserService {
         _recentExamples.removeAt(0);
       }
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
           'GroqExpenseParserService: failed to cache recent example: $e',
         );
+      }
     }
   }
 
@@ -768,8 +775,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     List<String> groupMemberNames = const [],
   }) {
     final amount = _extractAmountFromText(userInput);
-    if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite)
+    if (amount == null || amount <= 0 || amount.isNaN || amount.isInfinite) {
       return null;
+    }
     final trimmed = userInput.trim();
 
     String? currencyCode;
@@ -912,8 +920,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       final value = jsonDecode(normalized);
       if (value is Map<String, dynamic>) return value;
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('GroqExpenseParserService: strict JSON decode failed: $e');
+      }
     }
     try {
       final value = jsonDecode(normalized.replaceAll("'", '"'));
@@ -927,8 +936,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       final value = jsonDecode(fixed);
       if (value is Map<String, dynamic>) return value;
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('GroqExpenseParserService: relaxed JSON decode failed: $e');
+      }
     }
     return null;
   }

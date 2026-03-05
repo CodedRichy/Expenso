@@ -76,9 +76,12 @@ class _InviteMembersState extends State<InviteMembers>
     setState(() {
       _contactsPermissionChecked = true;
       _contactsPermissionGranted = status.isGranted;
-      if (status.isDenied || status.isPermanentlyDenied)
+      if (status.isDenied || status.isPermanentlyDenied) {
         _contactsDenialSeen = true;
-      if (status.isGranted) _loadContacts();
+      }
+      if (status.isGranted) {
+        _loadContacts();
+      }
     });
   }
 
@@ -143,14 +146,16 @@ class _InviteMembersState extends State<InviteMembers>
       }
       if (nameLower.isEmpty && phoneDigits.isEmpty) return true;
       if (nameLower.isNotEmpty &&
-          c.displayName.toLowerCase().contains(nameLower))
+          c.displayName.toLowerCase().contains(nameLower)) {
         return true;
+      }
       for (final p in c.phones) {
         final numDigits = p.number.replaceAll(RegExp(r'\D'), '');
         if (phoneDigits.isNotEmpty &&
             (numDigits.contains(phoneDigits) ||
-                phoneDigits.contains(numDigits)))
+                phoneDigits.contains(numDigits))) {
           return true;
+        }
       }
       return false;
     }).toList();
@@ -332,8 +337,9 @@ class _InviteMembersState extends State<InviteMembers>
           existingPhones.add(_normalizePhone(m.phone));
         }
         for (final id in groupArg.memberIds) {
-          if (id.startsWith('p_'))
+          if (id.startsWith('p_')) {
             existingPhones.add(_normalizePhone(id.substring(2)));
+          }
         }
         final filteredContacts = _getFilteredContacts(existingPhones);
         return GradientScaffold(

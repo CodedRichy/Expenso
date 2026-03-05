@@ -131,8 +131,9 @@ class CycleRepository extends ChangeNotifier {
   }) {
     _currentUserPhone = phone;
     _currentUserName = name.trim();
-    if (authUserId != null && authUserId.isNotEmpty)
+    if (authUserId != null && authUserId.isNotEmpty) {
       _currentUserId = authUserId;
+    }
     if (_currentUserId.isNotEmpty) {
       if (currencyCode != null && currencyCode.isNotEmpty) {
         _userCache[_currentUserId] ??= <String, dynamic>{};
@@ -188,8 +189,9 @@ class CycleRepository extends ChangeNotifier {
   }) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
-    if (displayName != null && displayName.isNotEmpty)
+    if (displayName != null && displayName.isNotEmpty) {
       _currentUserName = displayName.trim();
+    }
     final cached = UserProfileCache.instance.getCachedProfile();
     final usePhoto =
         (cached != null &&
@@ -1062,8 +1064,9 @@ class CycleRepository extends ChangeNotifier {
 
   String getMemberDisplayNameById(String uid) {
     if (uid.isEmpty) return '';
-    if (uid == _currentUserId)
+    if (uid == _currentUserId) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
+    }
     final m = _membersById[uid];
     if (m != null) {
       // Check IdentityService for unified cross-group name
@@ -1117,17 +1120,20 @@ class CycleRepository extends ChangeNotifier {
 
   static String _formatPhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 11 && digits.startsWith('91'))
+    if (digits.length == 11 && digits.startsWith('91')) {
       return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
-    if (digits.length == 10)
+    }
+    if (digits.length == 10) {
       return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
+    }
     return phone;
   }
 
   static String _normalizePhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 11 && digits.startsWith('91'))
+    if (digits.length >= 11 && digits.startsWith('91')) {
       return digits.substring(digits.length - 10);
+    }
     if (digits.length >= 10) return digits.substring(digits.length - 10);
     return digits;
   }
@@ -1848,8 +1854,9 @@ class CycleRepository extends ChangeNotifier {
   /// Use for undo operations within the undo window only.
   void hardDeleteExpense(String groupId, String expenseId) {
     FirestoreService.instance.deleteExpense(groupId, expenseId);
-    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId)
+    if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) {
       _clearLastAdded();
+    }
   }
 
   /// Deletes the group from Firestore. Only the creator can delete.

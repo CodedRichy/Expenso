@@ -129,26 +129,29 @@ class SettlementEngine {
 
     final splits = expense.splitAmountsById;
     if (splits == null || splits.isEmpty) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
           'SettlementEngine: expense ${expense.id} has no splitAmountsById, skipping',
         );
+      }
       return [];
     }
     final sum = splits.values.fold<double>(0, (a, b) => a + b);
     if (sum.isNaN || sum.isInfinite) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
           'SettlementEngine: expense ${expense.id} has invalid split sum (NaN/Infinite), skipping',
         );
+      }
       return [];
     }
     final diff = (sum - expense.amount).abs();
     if (diff > 0.01) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
           'SettlementEngine: expense ${expense.id} split sum $sum != amount ${expense.amount}, skipping',
         );
+      }
       return [];
     }
 

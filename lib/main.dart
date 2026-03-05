@@ -462,8 +462,9 @@ class RootScreen extends StatelessWidget {
           return ListenableBuilder(
             listenable: repo,
             builder: (context, _) {
-              if (repo.currentUserName.isEmpty)
+              if (repo.currentUserName.isEmpty) {
                 return const OnboardingNameScreen();
+              }
               return const GroupsList();
             },
           );

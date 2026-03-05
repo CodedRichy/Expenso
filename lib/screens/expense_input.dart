@@ -87,8 +87,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
     if (parsed == null ||
         parsed.amount <= 0 ||
         parsed.amount.isNaN ||
-        parsed.amount.isInfinite)
+        parsed.amount.isInfinite) {
       return;
+    }
 
     // Delegate semantic completeness to domain rule (mirrors _fallbackParse logic).
     if (_isSemanticallIncomplete(parsed.description)) {
@@ -712,8 +713,9 @@ class _ExpenseInputState extends State<ExpenseInput> {
                         final group = RouteArgs.getGroup(context);
                         setState(() {
                           input = value;
-                          if (group != null)
+                          if (group != null) {
                             _syncSelectedMembersFromInput(group);
+                          }
                         });
                       },
                       onSubmitted: (_) => handleSubmit(),
