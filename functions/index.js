@@ -78,29 +78,16 @@ const settleAndRestart = onCall(
         db.collection('groups').doc(groupId).collection('expenses')
       );
 
-      const netBalances = computeNetBalances(expensesSnap.docs.map(d => d.data()));
+      // Due to End-to-End Encryption, the Server cannot read expense amounts/splits.
+      // Math validation is performed client-side securely prior to initiating settlement.
 
-      // Load all payment attempts for cycle
+      // Load all payment attempts for cycle to clear them
       const attemptsQuery = db
         .collection('groups')
         .doc(groupId)
         .collection('payment_attempts')
         .where('cycleId', '==', cycleId);
       const attemptsSnap = await transaction.get(attemptsQuery);
-      const attempts = attemptsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      const totalPending = applySettledAttempts(netBalances, attempts);
-      if (totalPending > 0) {
-        throw new HttpsError('failed-precondition', 'There are unpaid or disputed payment attempts.');
-      }
-
-      const zeroCheck = validateZeroSum(netBalances);
-      if (!zeroCheck.ok) {
-        throw new HttpsError(
-          'failed-precondition',
-          `Settlement math mismatch. Member ${zeroCheck.memberId} has unsettled balance of ${zeroCheck.balance}.`
-        );
-      }
 
       const now = new Date();
       const endStr = formatDate(now);
