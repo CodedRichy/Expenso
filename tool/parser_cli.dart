@@ -74,23 +74,29 @@ void main(List<String> args) async {
       ? 'CONSTRAINED'
       : 'CONFIDENT';
   stdout.writeln('Outcome: $outcome');
-  if (result.constraintFlags.isNotEmpty)
+  if (result.constraintFlags.isNotEmpty) {
     stdout.writeln('  constraintFlags: ${result.constraintFlags}');
+  }
   if (result.notes.isNotEmpty) stdout.writeln('  notes: ${result.notes}');
   stdout.writeln(
     'Parsed: amount=${result.amount} description="${result.description}" category="${result.category}" splitType=${result.splitType} participants=${result.participantNames} payer=${result.payerName}',
   );
-  if (result.excludedNames.isNotEmpty)
+  if (result.excludedNames.isNotEmpty) {
     stdout.writeln('  excluded: ${result.excludedNames}');
-  if (result.exactAmountsByName.isNotEmpty)
+  }
+  if (result.exactAmountsByName.isNotEmpty) {
     stdout.writeln('  exactAmounts: ${result.exactAmountsByName}');
-  if (result.percentageByName.isNotEmpty)
+  }
+  if (result.percentageByName.isNotEmpty) {
     stdout.writeln('  percentageAmounts: ${result.percentageByName}');
-  if (result.sharesByName.isNotEmpty)
+  }
+  if (result.sharesByName.isNotEmpty) {
     stdout.writeln('  sharesAmounts: ${result.sharesByName}');
+  }
   if (result.parseConfidence == 'reject') {
-    if (result.rejectReason != null)
+    if (result.rejectReason != null) {
       stdout.writeln('  rejectReason: ${result.rejectReason}');
+    }
     stdout.writeln(
       '(Needs clarification — no questions; do not write to ledger)',
     );
@@ -153,14 +159,17 @@ void _recordRun({
     buf.writeln('  percentageAmounts: ${result.percentageByName}');
     buf.writeln('  sharesAmounts: ${result.sharesByName}');
     buf.writeln('  parseConfidence: ${result.parseConfidence}');
-    if (result.constraintFlags.isNotEmpty)
+    if (result.constraintFlags.isNotEmpty) {
       buf.writeln('  constraintFlags: ${result.constraintFlags}');
+    }
     if (result.notes.isNotEmpty) buf.writeln('  notes: ${result.notes}');
-    if (result.rejectReason != null)
+    if (result.rejectReason != null) {
       buf.writeln('  rejectReason: ${result.rejectReason}');
+    }
     if (result.needsClarification) buf.writeln('  needsClarification: true');
-    if (result.clarificationQuestion != null)
+    if (result.clarificationQuestion != null) {
       buf.writeln('  clarificationQuestion: "${result.clarificationQuestion}"');
+    }
   }
   try {
     final file = File(_logPath);
@@ -482,8 +491,9 @@ Return ONLY JSON.''';
 }
 
 String? _validateResult(ParsedExpenseResult result) {
-  if (result.amount.isNaN || result.amount.isInfinite)
+  if (result.amount.isNaN || result.amount.isInfinite) {
     return 'Amount must be a valid number.';
+  }
 
   // Demote confidence if history or unresolved splits are mentioned
   if (result.parseConfidence == 'confident' &&
@@ -495,8 +505,9 @@ String? _validateResult(ParsedExpenseResult result) {
   // Force reject for settlements to prevent ledger pollution
   if (result.description.toLowerCase().contains('debt') ||
       result.description.toLowerCase().contains('settle')) {
-    if (result.parseConfidence != 'reject')
+    if (result.parseConfidence != 'reject') {
       return 'Validation: Settlements must be REJECTED.';
+    }
   }
 
   return null;
@@ -511,8 +522,9 @@ String _extractJson(String raw) {
   if (codeBlockMatch != null) raw = codeBlockMatch.group(1)?.trim() ?? raw;
   final start = raw.indexOf('{');
   final end = raw.lastIndexOf('}');
-  if (start != -1 && end != -1 && end > start)
+  if (start != -1 && end != -1 && end > start) {
     raw = raw.substring(start, end + 1);
+  }
   return raw.trim();
 }
 
@@ -662,8 +674,9 @@ class ParsedExpenseResult {
     List<String> names = [];
     if (parts is List) {
       for (final p in parts) {
-        if (p != null && p.toString().trim().isNotEmpty)
+        if (p != null && p.toString().trim().isNotEmpty) {
           names.add(p.toString().trim());
+        }
       }
     } else if (parts != null && parts.toString().trim().isNotEmpty) {
       names.add(parts.toString().trim());
@@ -673,8 +686,9 @@ class ParsedExpenseResult {
     List<String> excludedList = [];
     if (excluded is List) {
       for (final e in excluded) {
-        if (e != null && e.toString().trim().isNotEmpty)
+        if (e != null && e.toString().trim().isNotEmpty) {
           excludedList.add(e.toString().trim());
+        }
       }
     }
     final exactRaw = json['exactAmounts'];
@@ -734,16 +748,18 @@ class ParsedExpenseResult {
     final flagsRaw = json['constraintFlags'];
     if (flagsRaw is List) {
       for (final f in flagsRaw) {
-        if (f != null && f.toString().trim().isNotEmpty)
+        if (f != null && f.toString().trim().isNotEmpty) {
           flags.add(f.toString().trim());
+        }
       }
     }
     List<String> notesList = [];
     final notesRaw = json['notes'];
     if (notesRaw is List) {
       for (final n in notesRaw) {
-        if (n != null && n.toString().trim().isNotEmpty)
+        if (n != null && n.toString().trim().isNotEmpty) {
           notesList.add(n.toString().trim());
+        }
       }
     }
     final rejectReason = (json['rejectReason'] as String?)?.trim();
