@@ -162,14 +162,24 @@ class FirestoreService {
         .asyncMap((s) async {
           final docs = s.docs;
           if (_encryption != null && docs.isNotEmpty) {
-            await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
+            try {
+              await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
+            } catch (e) {
+              // Key fetch failed — fall back to raw (unencrypted) data
+              return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+            }
             final decryptedDocs = await Future.wait(
               docs.map((d) async {
-                final decrypted = await _encryption!.decryptGroupData(
-                  d.data(),
-                  d.id,
-                );
-                return _DecryptedDocView(d.id, decrypted) as DocView;
+                try {
+                  final decrypted = await _encryption!.decryptGroupData(
+                    d.data(),
+                    d.id,
+                  );
+                  return _DecryptedDocView(d.id, decrypted) as DocView;
+                } catch (e) {
+                  // Decryption failed for this doc — use raw data
+                  return _SnapshotDocView(d) as DocView;
+                }
               }),
             );
             return decryptedDocs;
@@ -626,14 +636,26 @@ class FirestoreService {
         .asyncMap((s) async {
           final docs = s.docs;
           if (_encryption != null && docs.isNotEmpty) {
-            await _encryption!.ensureGroupKey(groupId);
+            try {
+              await _encryption!.ensureGroupKey(groupId);
+            } catch (e) {
+              // Key fetch failed — fall back to raw data
+              final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+              list.sort((a, b) => _compareExpenseDocs(a, b));
+              return list;
+            }
             final decrypted = await Future.wait(
               docs.map((d) async {
-                final data = await _encryption!.decryptExpenseData(
-                  d.data(),
-                  groupId,
-                );
-                return _DecryptedDocView(d.id, data) as DocView;
+                try {
+                  final data = await _encryption!.decryptExpenseData(
+                    d.data(),
+                    groupId,
+                  );
+                  return _DecryptedDocView(d.id, data) as DocView;
+                } catch (e) {
+                  // Decryption failed for this doc — use raw data
+                  return _SnapshotDocView(d) as DocView;
+                }
               }),
             );
             decrypted.sort((a, b) => _compareExpenseDocs(a, b));
