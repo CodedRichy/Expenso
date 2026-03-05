@@ -74,7 +74,6 @@ class ErrorStates extends StatelessWidget {
                             ),
                             child: Text(
                               'Try Again',
-                              style: Theme.of(context).textTheme.labelLarge,
                             ),
                           ),
                         ],
@@ -136,7 +135,6 @@ class ErrorStates extends StatelessWidget {
                         ),
                         child: Text(
                           'Verify',
-                          style: Theme.of(context).textTheme.labelLarge,
                         ),
                       ),
                     ],
@@ -207,7 +205,6 @@ class ErrorStates extends StatelessWidget {
                             ),
                             child: Text(
                               'Go Back',
-                              style: Theme.of(context).textTheme.labelLarge,
                             ),
                           ),
                         ],
@@ -280,7 +277,6 @@ class ErrorStates extends StatelessWidget {
                           ),
                           child: Text(
                             'Try Again',
-                            style: Theme.of(context).textTheme.labelLarge,
                           ),
                         ),
                       ],
