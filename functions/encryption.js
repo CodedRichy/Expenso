@@ -2,8 +2,6 @@ const crypto = require('crypto');
 const admin = require('firebase-admin');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
-if (!admin.apps.length) admin.initializeApp();
-
 function deriveKey(prefix, id) {
   const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
   if (!raw) return null;
