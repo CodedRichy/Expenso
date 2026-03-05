@@ -27,6 +27,7 @@ class GroupsList extends StatefulWidget {
 
 class _GroupsListState extends State<GroupsList> {
   bool _showSlowLoadingHint = false;
+  bool _navigatingToError = false;
 
   @override
   void initState() {
@@ -451,14 +452,15 @@ class _GroupsListState extends State<GroupsList> {
       builder: (context, _) {
         final groups = _sortedGroups(repo.groups, pinService.pinnedIds);
         final loading = repo.groupsLoading && groups.isEmpty;
-        if (repo.streamError != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (repo.streamError != null && !_navigatingToError) {
+          _navigatingToError = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!context.mounted) return;
-            if (CycleRepository.instance.streamError == null) return;
-            Navigator.of(
+            CycleRepository.instance.clearStreamError();
+            await Navigator.of(
               context,
             ).pushNamed('/error-states', arguments: {'type': 'network'});
-            CycleRepository.instance.clearStreamError();
+            if (mounted) setState(() => _navigatingToError = false);
           });
         }
         return GradientScaffold(
