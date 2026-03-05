@@ -25,11 +25,13 @@ Use this when submitting to Google Play or App Store.
 
 ## Pre-submit
 
-- [ ] Run `flutter test` — all tests pass (unit + widget: 187+).
+- [ ] Run `flutter test` — all tests pass (unit + widget: **187+**).
 - [ ] Run integration test (optional): `flutter test integration_test/app_test.dart -d windows` (or your target device).
 - [ ] Run release build — `flutter build apk` or `flutter build appbundle` (Android), `flutter build ios` (iOS).
-- [ ] Test on a real device — sign-in, create group, add expense, settlement flow.
+- [ ] Test on a real device — sign-in, create group, add expense, settlement flow, invite link, cycle archive.
 - [ ] Confirm Firebase project has correct package name / bundle ID and `google-services.json` / `GoogleService-Info.plist` in the app.
+- [ ] Deploy Cloud Functions: `firebase deploy --only functions` (required for `settleAndRestart` and encryption key functions).
+- [ ] Deploy Firestore rules: `firebase deploy --only firestore`.
 
 ## Post-submit
 

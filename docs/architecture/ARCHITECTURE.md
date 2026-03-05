@@ -1,293 +1,225 @@
 # Architecture
 
-Module and directory structure of **Expenso**, inferred from Git history. This document reflects how the codebase was organized at key points in time.
+Module and directory structure of **Expenso** at current HEAD (v5.0.0).
 
 ---
 
-## Current structure (HEAD)
+## Current structure (HEAD — v5.0.0)
 
-- **Total files (git-tracked):** 312
-- **Top-level entries:** .cursor, .github, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, PRIVACY.md, SECURITY.md, README.md, analysis_options.yaml, devtools_options.yaml, firebase.json, firestore.rules, flutter_01.png, flutter_02.png, android, assets, docs, functions, integration_test, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
+- **Total git-tracked files:** ~320
+- **Platform targets:** Android (primary), iOS
 
-### Top-level modules (HEAD, from `git ls-files`)
+### Top-level layout
 
-| `.cursor/` | 5 files |
-| `.github/` | 2 files |
-| `.gitignore/` | 1 files |
-| `.metadata/` | 1 files |
-| `APP_BLUEPRINT.md/` | 1 files |
-| `LICENSE/` | 1 files |
-| `PRIVACY.md/` | 1 files |
-| `SECURITY.md/` | 1 files |
-| `README.md/` | 1 files |
-| `analysis_options.yaml/` | 1 files |
-| `devtools_options.yaml/` | 1 files |
-| `firebase.json/` | 1 files |
-| `firestore.rules/` | 1 files |
-| `flutter_01.png/` | 1 files |
-| `flutter_02.png/` | 1 files |
-| `android/` | 33 files |
-| `assets/` | 5 files |
-| `docs/` | 49 files |
-| `functions/` | 6 files |
-| `integration_test/` | 1 files |
-| `ios/` | 46 files |
-| `lib/` | 75 files |
-| `linux/` | 10 files |
-| `macos/` | 28 files |
-| `pubspec.lock/` | 1 files |
-| `pubspec.yaml/` | 1 files |
-| `test/` | 8 files |
-| `tool/` | 5 files |
-| `web/` | 7 files |
-| `windows/` | 18 files |
-
-## Evolution over time
-
-Snapshots at tagged or sampled revisions:
-
-### At 7dc1f58 (2026-02-18)
-
-- **Total files:** 171
-- **Top-level directories:** .cursor, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, assets, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
-
-- `.cursor/` — 1 files
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 20 files
-- `assets/` — 3 files
-- `ios/` — 40 files
-- `lib/` — 33 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 2 files
-- `tool/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At e462f90 (2026-02-16)
-
-- **Total files:** 166
-- **Top-level directories:** .cursor, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
-
-- `.cursor/` — 1 files
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 20 files
-- `ios/` — 40 files
-- `lib/` — 31 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 2 files
-- `tool/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At 1e72e6d (2026-02-16)
-
-- **Total files:** 165
-- **Top-level directories:** .cursor, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, tool, web, windows
-
-- `.cursor/` — 1 files
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 20 files
-- `ios/` — 40 files
-- `lib/` — 30 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 2 files
-- `tool/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At ea79514 (2026-02-16)
-
-- **Total files:** 163
-- **Top-level directories:** .cursor, .env.example, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.cursor/` — 1 files
-- `.env.example/` — 1 files
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 20 files
-- `ios/` — 40 files
-- `lib/` — 29 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At 8247061 (2026-02-15)
-
-- **Total files:** 156
-- **Top-level directories:** .cursor, .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.cursor/` — 1 files
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `ios/` — 39 files
-- `lib/` — 25 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At 7cd3d90 (2026-02-15)
-
-- **Total files:** 153
-- **Top-level directories:** .gitignore, .metadata, APP_BLUEPRINT.md, LICENSE, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `LICENSE/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `ios/` — 39 files
-- `lib/` — 23 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At eee5c5e (2026-02-15)
-
-- **Total files:** 152
-- **Top-level directories:** .gitignore, .metadata, APP_BLUEPRINT.md, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `ios/` — 39 files
-- `lib/` — 23 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At a04b68e (2026-02-15)
-
-- **Total files:** 152
-- **Top-level directories:** .gitignore, .metadata, APP_BLUEPRINT.md, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `APP_BLUEPRINT.md/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `ios/` — 39 files
-- `lib/` — 23 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At ad15777 (2026-02-12)
-
-- **Total files:** 156
-- **Top-level directories:** .gitignore, .metadata, BUGS_FIXED.md, BUG_REPORT.md, EXCEPTION_FIXED.md, FINAL_STATUS.md, FLOW_VERIFICATION.md, NAVIGATION_MAP.md, README.md, analysis_options.yaml, android, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `BUGS_FIXED.md/` — 1 files
-- `BUG_REPORT.md/` — 1 files
-- `EXCEPTION_FIXED.md/` — 1 files
-- `FINAL_STATUS.md/` — 1 files
-- `FLOW_VERIFICATION.md/` — 1 files
-- `NAVIGATION_MAP.md/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `ios/` — 39 files
-- `lib/` — 22 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-### At 1a2b9a2 (2026-02-12)
-
-- **Total files:** 236
-- **Top-level directories:** .gitignore, .metadata, BUGS_FIXED.md, BUG_REPORT.md, EXCEPTION_FIXED.md, FINAL_STATUS.md, FLOW_VERIFICATION.md, NAVIGATION_MAP.md, README.md, analysis_options.yaml, android, figma, ios, lib, linux, macos, pubspec.lock, pubspec.yaml, test, web, windows
-
-- `.gitignore/` — 1 files
-- `.metadata/` — 1 files
-- `BUGS_FIXED.md/` — 1 files
-- `BUG_REPORT.md/` — 1 files
-- `EXCEPTION_FIXED.md/` — 1 files
-- `FINAL_STATUS.md/` — 1 files
-- `FLOW_VERIFICATION.md/` — 1 files
-- `NAVIGATION_MAP.md/` — 1 files
-- `README.md/` — 1 files
-- `analysis_options.yaml/` — 1 files
-- `android/` — 19 files
-- `figma/` — 80 files
-- `ios/` — 39 files
-- `lib/` — 22 files
-- `linux/` — 10 files
-- `macos/` — 28 files
-- `pubspec.lock/` — 1 files
-- `pubspec.yaml/` — 1 files
-- `test/` — 1 files
-- `web/` — 7 files
-- `windows/` — 18 files
-
-## Notable structural changes
-
-- Top-level directory '.env.example' appears (commit `ea79514`)
-- Top-level directory 'BUGS_FIXED.md' appears (commit `b16cdeb`)
+| Directory / File | Role |
+|---|---|
+| `lib/` | Flutter app source (75 files) |
+| `functions/` | Firebase Cloud Functions (Node 20, 6 files) |
+| `test/` | Unit + widget tests (8 files) |
+| `integration_test/` | App-launch integration test |
+| `tool/` | CLI utilities (parser CLI, logs) |
+| `assets/` | App images (logo variants) |
+| `docs/` | All project documentation (~53 files) |
+| `firestore.rules` | Firestore security rules |
+| `firebase.json` | Firebase project config |
+| `APP_BLUEPRINT.md` | Primary implementation reference |
+| `README.md` | Project overview and getting started |
 
 ---
 
-*Generated from Git tree and commit history. No external APIs used.*
+## `lib/` structure
+
+```
+lib/
+  main.dart                    # Routes, initial route /splash then /, Firebase init, theme
+  firebase_app.dart            # firebaseAuthAvailable flag
+  firebase_options.dart        # Generated by flutterfire configure
+  country_codes.dart           # 15 supported country codes
+
+  design/
+    colors.dart                # AppColors (light), AppColorsDark + AppColorsX extension
+    typography.dart            # AppTypography + ThemedTypography extension
+    spacing.dart               # AppSpacing scale + semantic constants
+
+  models/
+    models.dart                # Group, Member, Expense, SettlementTransfer
+    cycle.dart                 # Cycle, CycleStatus
+    currency.dart              # Currency, CurrencyRegistry (ISO 4217 metadata)
+    money_minor.dart           # MoneyMinor, MoneyConversion, MoneySplitter
+    normalized_expense.dart    # NormalizedExpense (UI-agnostic, integer-based)
+    payment_attempt.dart       # PaymentAttempt, PaymentAttemptStatus
+    settlement_event.dart      # SettlementEvent, SettlementEventType
+
+  repositories/
+    cycle_repository.dart      # Singleton ChangeNotifier; Firestore-backed state hub
+
+  services/
+    phone_auth_service.dart    # Firebase phone OTP auth
+    firestore_service.dart     # All Firestore access (single choke-point for encryption)
+    pinned_groups_service.dart # Pin preference (SharedPreferences, max 3)
+    user_profile_cache.dart    # Local cache for cold-start instant profile
+    groq_expense_parser_service.dart  # AI NL parser (Groq, Llama-4-Scout)
+    profile_service.dart       # Firebase Storage avatar upload
+    razorpay_order_service.dart       # Cloud Function call → Razorpay order
+    upi_payment_service.dart          # UPI app discovery + transaction launch
+    data_encryption_service.dart      # AES-GCM field-level encryption
+
+  utils/
+    expense_validation.dart    # validateExpenseAmount, validateExpenseDescription
+    route_args.dart            # RouteArgs.getGroup/getMap — safe route args
+    settlement_engine.dart     # Debt minimization, net balances, payment routes
+    ledger_delta.dart          # LedgerDelta, toLedgerDeltas (integer-based)
+    expense_normalization.dart # Re-exports normalization_workflow.dart
+    normalization_workflow.dart # normalizeExpense, ParticipantSlot, PayerContributionSlot
+    expense_revision.dart      # Lifecycle guards (edit/delete validation)
+
+  widgets/
+    member_avatar.dart         # Letter avatar (instant) + photo upgrade layer
+    expenso_loader.dart        # Animated loading indicator
+    gradient_scaffold.dart     # Dark-mode gradient scaffold wrapper
+    upi_payment_card.dart      # Per-payment card (app picker, QR, attempt state)
+    upi_app_picker.dart        # Full UPI payment flow: app grid → waiting overlay
+    upi_payment_waiting.dart   # Zomato-style waiting overlay (countdown, pulse)
+    settlement_activity_feed.dart     # Read-only settlement event feed
+    settlement_progress_indicator.dart  # "X of Y settled" progress bar
+    tap_scale.dart             # TapScale micro-animation widget (V5)
+    staggered_list_item.dart   # StaggeredListItem cascade animation widget (V5)
+    fade_in.dart               # FadeIn widget for graceful entry (V5)
+
+  screens/
+    splash_screen.dart         # Logo splash + cross-fade to /
+    phone_auth.dart            # Phone OTP sign-in
+    onboarding_name.dart       # "What should we call you?" first-run screen
+    groups_list.dart           # Groups list with swipe actions and pending invitations
+    group_list_skeleton.dart   # Shimmer skeleton for groups loading state
+    create_group.dart          # Create group form
+    invite_members.dart        # Add members by phone/contacts; invite link generation
+    group_detail.dart          # Main group screen: expenses, balances, settlement
+    expense_input.dart         # Manual expense entry
+    edit_expense.dart          # Edit existing expense
+    undo_expense.dart          # 5s undo screen after add
+    group_members.dart         # Member list (with removal guard)
+    member_change.dart         # Confirm member removal
+    delete_group.dart          # Reference only — delete is done via GroupsList dialog
+    settlement_confirmation.dart  # Settlement screen: UPI picker, QR, mark as paid
+    payment_result.dart        # Post-payment result
+    cycle_settled.dart         # Cycle settled state
+    cycle_history.dart         # Past cycles list
+    cycle_history_detail.dart  # One past cycle detail
+    profile.dart               # Profile: avatar, name, UPI ID, theme, privacy, logout
+    empty_states.dart          # Typed empty states (no-groups, no-expenses, etc.)
+    error_states.dart          # Typed error states (network, session-expired, etc.)
+```
+
+---
+
+## `functions/` structure
+
+```
+functions/
+  index.js          # Cloud Function exports
+  encryption.js     # getUserEncryptionKey, getGroupEncryptionKey (AES-GCM key derivation)
+  package.json      # Node 20; deps: firebase-admin, firebase-functions, razorpay
+  package-lock.json
+  .env              # Local env (not committed): RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, DATA_ENCRYPTION_MASTER_KEY
+  test/             # Function test files (run via node --test in CI)
+```
+
+### Exported Cloud Functions (region: `asia-south1`)
+
+| Function | Trigger | Purpose |
+|---|---|---|
+| `settleAndRestart` | HTTPS Callable | Atomically archive cycle: validate balances, copy expenses, delete current, rotate cycleId |
+| `createRazorpayOrder` | HTTPS Callable | Create Razorpay payment order; returns orderId + keyId |
+| `getUserEncryptionKey` | HTTPS Callable | Derive per-user AES key from master secret |
+| `getGroupEncryptionKey` | HTTPS Callable | Derive per-group AES key from master secret |
+
+---
+
+## `docs/` structure
+
+```
+docs/
+  STABILIZATION.md               # Invariants, limitations, change safety guide
+  DATA_SPINE.md                  # Formal entity definitions (13+ entities)
+  DATA_FLOW_TABLES.md            # Screen-to-database mapping
+  PRODUCTION_READINESS_ASSESSMENT.md  # Ship/no-ship rubric and launch recommendation
+  PRODUCT_NORTH_STAR.md          # Core product philosophy
+  PORTFOLIO.md                   # Portfolio / demo presentation notes
+  README.md                      # Docs index
+
+  architecture/
+    ARCHITECTURE.md              # This file — module structure
+    DEVELOPMENT.md               # Commit timeline (generated)
+    BLUEPRINT_GAPS_VERIFICATION.md  # Gaps found and closed during V4 audit
+
+  features/
+    AUTH_FLOW.md                 # Phone OTP auth flow and identity principle
+    BIOMETRIC_LOCK.md            # Full implementation spec for biometric app lock
+    DATA_ENCRYPTION.md           # Encryption coverage and intentional gap
+    DATA_ENCRYPTION_SETUP.md     # Setup guide for DATA_ENCRYPTION_MASTER_KEY
+    EXPENSE_REVISIONS.md         # Compensation model for edit/delete
+    EXPENSE_SPLIT_USE_CASES.md   # All split type scenarios and who-paid semantics
+    GROQ_RATE_LIMITS.md          # 429 handling and cooldown strategy
+    MONEY_BALANCE_LOGIC.md       # Balance computation specification
+    MONEY_CANONICALIZATION.md    # Canonical implementation plan (integer amounts)
+    MONEY_PHASE2.md              # Phase 2 invariant enforcement plan
+    MONEY_TESTS.md               # Golden test cases for balance computation
+    MULTI_PAYER.md               # Multi-payer expense support spec
+    PARSER_OUTCOME_CONTRACT.md   # Parser output contract (parseConfidence, constraintFlags)
+    PHONE_AUTH_SETUP.md          # Firebase phone auth setup guide
+    RECEIPT_SCANNING_AND_ML.md   # Receipt scan-to-prefill spec (future)
+    SETTLEMENT_UI_FLOW.md        # Settlement button state machine and walkthrough
+    SINGLE_CURRENCY_MODEL.md     # Single-currency design decision
+
+  internal/
+    CODEBASE_ISSUE_TASKS.md      # Known tech debt tasks
+    GROWTH_AND_WEALTH_STRATEGY.md    # Growth strategy notes
+    LOGIC_AUDIT.md               # Logic errors found and fixed
+    MONETIZATION_EXECUTION.md    # Monetization plan (Expenso Plus)
+    MOTION_AND_UI_POLISH.md      # Motion design guidelines
+    PATH_TO_100_PLUS.md          # Roadmap to 100/100 scorecard
+    PRE_RELEASE_AUDIT.md         # Pre-release audit results (App 96, UI 97)
+    REACH_90S_GUIDE.md           # Guide to 90+ scorecard
+    STORE_CHECKLIST.md           # Play Store / App Store submission checklist
+    UI_UX_AUDIT.md               # UI/UX audit notes
+    V4_TESTING_ISSUES.md         # V4 tester-reported bugs and gap resolutions
+
+  releases/
+    V1_RELEASE.md                # Magic Bar, Decision Clarity, SettlementEngine
+    V2_RELEASE.md                # Profile pictures, UPI deep-linking, push foundation
+    V3_RELEASE.md                # Settlement activity, offline resilience, Dynamic UPI QR
+    V4_RELEASE.md                # Cross-group identity, God Mode foundation, FCM infrastructure
+    V5_RELEASE.md                # Animation polish, skeleton audit, splash, invite link, UPI cleanup
+
+  research/
+    EXPENSE_PARSER_PROMPT_REFINEMENT.md   # Prompt refinement notes
+    PARSER_AND_WHO_IS_INVOLVED.md         # Parser participant resolution research
+    PARSER_FINETUNING.md                  # Fine-tuning approach notes
+    PARSER_STRESS_CASES.md               # Stress test cases for parser
+    RESEARCH_PROMPT_REFINEMENT_AND_PARSING.md  # Literature and practical guidance
+    RESEARCH_SETTLEMENT_LOGIC.md         # Settlement algorithm research
+    SETTLEMENT_LOGIC_NOTES.md            # Settlement logic design notes
+    SURVEY_FEATURE_REQUESTS.md           # Jan 2026 survey feature requests summary
+
+  future/
+    DESKTOP_WEB_WORKSPACE.md     # Notes on potential desktop/web expansion
+```
+
+---
+
+## Key architectural decisions
+
+| Decision | Rationale |
+|---|---|
+| **Singleton `CycleRepository`** | Single source of truth for all in-memory state; Firestore streams kept in one place. Simpler than multiple providers but limits testability. |
+| **Firestore-first (no offline write queue)** | All writes require network; Firestore offline read cache is used for display only. Acceptable for the target use case. |
+| **Settlement archive via Cloud Function** | `settleAndRestart` runs in a Firestore transaction server-side — client cannot skip balance validation, partial-archive, or corrupt cycle state. |
+| **AES-GCM field-level encryption** | Encrypts sensitive Firestore fields before write. Single choke-point in `FirestoreService`; optional (backward-compatible when key not set). |
+| **Integer minor-unit amounts** | `MoneyMinor` + `MoneySplitter` for all accounting math (no floating-point). Bridge path writes `amountMinor`/`splitsMinor` alongside double fields for backward compatibility. |
+| **Model-agnostic AI prompt** | Groq system prompt in `GroqExpenseParserService` is not tied to a specific model. Currently uses `meta-llama/llama-4-scout-17b-16e-instruct`. |
+| **Compensation model for edits** | Expense edits/deletes append negation + replacement events, preserving audit history. `ExpenseRevision` guards prevent double-delete and edit-after-delete. |
+
+---
+
+*Updated: March 2026 — v5.0.0*
