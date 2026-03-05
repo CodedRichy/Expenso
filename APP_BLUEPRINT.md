@@ -10,7 +10,8 @@
 - [V1_RELEASE.md](docs/releases/V1_RELEASE.md) — Core identity (Magic Bar, Decision Clarity, SettlementEngine)
 - [V2_RELEASE.md](docs/releases/V2_RELEASE.md) — Profile pictures, UPI deep-linking, push foundation
 - [V3_RELEASE.md](docs/releases/V3_RELEASE.md) — Settlement activity, offline resilience, Dynamic UPI QR (complete)
-- [V4_RELEASE.md](docs/releases/V4_RELEASE.md) — Cross-group identity, God Mode debt minimization, FCM infrastructure (current)
+- [V4_RELEASE.md](docs/releases/V4_RELEASE.md) — Cross-group identity, God Mode foundation, FCM infrastructure
+- [V5_RELEASE.md](docs/releases/V5_RELEASE.md) — Animation polish pass (TapScale, StaggeredListItem, FadeIn) — **current**
 
 ---
 
@@ -178,7 +179,7 @@ On Android, shows installed UPI apps grid via `UpiAppPicker`. On iOS, limited UP
 | **Members** | `_membersById`. Creator in `addGroup` gets `currentUserName`. |
 | **Display names** | `getMemberDisplayName(phone)` → current user: `currentUserName` or “You”; others: member name or formatted phone. Ashe display name is sent to the AI expense parser for Magic Bar fuzzy matching. |
 | **Profile** | `currentUserPhotoURL`, `currentUserUpiId`; `updateCurrentUserPhotoURL`, `updateCurrentUserUpiId`; `getMemberPhotoURL(memberId)`, `getMemberUpiId(memberId)`. `setGlobalProfile` persists name to Firestore and local cache. All profile updates sync to `UserProfileCache` for instant availability on next cold start. |
-| **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` / `archiveAndRestart` (via Cloud Function) creator-only; archive moves expenses to `settled_cycles`. `getHistory(groupId)` async, reads `settled_cycles`. |
+| **Cycles** | `getActiveCycle` from `_groupMeta` + `_expensesByCycleId`. CRUD writes to `groups/{id}/expenses`. `settleAndRestartCycle` (Phase 1, client-side) sets `cycleStatus: 'settling'`. `archiveAndRestart` (Phase 2, creator-only) calls Cloud Function `settleAndRestart(groupId)` which atomically zero-sum-checks balances, copies expenses to `settled_cycles/{cycleId}/expenses`, deletes current expenses, deletes payment attempts, and rotates `activeCycleId`/`cycleStatus: 'active'`. `getHistory(groupId)` async, reads `settled_cycles`. |
 | **Balances** | `calculateBalances` uses each expense's `splitAmountsByPhone` from Firestore when present (else equal split); `getSettlementInstructions` uses `getMemberDisplayName`; `getSettlementTransfersForCurrentUser(groupId)` returns list of `SettlementTransfer` (creditor, amount) for the current user as debtor. **SettlementEngine** (see below) computes debts for the Balances section in Group Detail. |
 | **Payment Attempts** | `loadPaymentAttempts(groupId)` fetches from Firestore; `getPaymentAttempts(groupId)` returns cached list; `getPaymentAttemptForRoute(groupId, fromId, toId)` finds attempt by route. `getOrCreatePaymentAttempt(...)` creates if missing. `markPaymentInitiated`, `markPaymentConfirmedByPayer`, `markPaymentConfirmedByReceiver`, `markPaymentDisputed` update status with timestamps. State persists in `groups/{groupId}/payment_attempts`. |
 | **Smart Bar splits** | `addExpenseFromMagicBar(groupId, …)` builds `splits` for Even (equal among participants; **empty participants = everyone**), Exclude (equal among all minus excluded), Exact (per-person amounts); writes `splitType` and full `splits` map to Firestore. **Phone→UID** resolution uses `_uidForPhone` with normalized phone (digits, last 10 for IN) so parser-derived participants are not dropped when formats differ. On read, `_expenseFromFirestore` builds `participantPhones` and `splitAmountsByPhone` from `splits` and reads `splitType`; edit expense and balances use this saved data. See **docs/EXPENSE_SPLIT_USE_CASES.md** for all split scenarios and who-paid semantics. |
@@ -315,7 +316,7 @@ Wrapper that applies dark mode background gradient (`#0B0B0D → #121216`). Used
 
 - **Input:** Single text field at bottom of group detail (when cycle is active). User types e.g. “Dinner 500 with Ash”.
 - **Debounce:** Send is allowed only 500ms after the user stops typing (prevents accidental spam).
-- **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env; implementation uses Groq (`llama-3.3-70b-versatile`). System prompt is model-agnostic (see docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md). Service retries once on 429 (wait per `retry-after` header, else 2s; see docs/features/GROQ_RATE_LIMITS.md) then throws `GroqRateLimitException`.
+- **Engine:** `GroqExpenseParserService.parse(userInput, groupMemberNames)` — **GROQ_API_KEY** from env; implementation uses Groq (`meta-llama/llama-4-scout-17b-16e-instruct`). System prompt is model-agnostic (see docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md). Service retries once on 429 (wait per `retry-after` header, else 2s; see docs/features/GROQ_RATE_LIMITS.md) then throws `GroqRateLimitException`.
 - **Loading:** In-bar loading only during the actual API call (including retry wait); keeps UI snappy.
 - **Success:** Confirmation dialog with amount, description, category, split type, and participant chips. If a participant name from the AI cannot be resolved to a phone number, it is shown as a **"Select Member"** chip; the user must tap that chip to pick the correct member from the group list before Confirm is enabled. On Confirm → `CycleRepository.addExpenseFromMagicBar(…, category: result.category)`. Validation (amount > 0, non-empty description) runs in repo; on `ArgumentError` UI shows snackbar with message. Edit expense preserves `splitAmountsByPhone` and `category`; update uses them when present.
 - **Failure:** Only if no number could be extracted (API failed and fallback found no number); snackbar: “Couldn’t parse that. Try a clearer format like ‘Dinner 500’.”
@@ -477,7 +478,7 @@ The following are **not built yet**. Each feature has a **verdict**, **why it ma
 | **Dynamic UPI QR generator** | 🔥 Differentiator (India hit) | Early; no backend needed. Amount from your logic. | ✅ Implemented in V3 — `UpiPaymentCard` shows "Show QR" toggle; generates scannable QR with pre-filled amount via `qr_flutter`. |
 | **Category intelligence** | ✅ Add later, keep dumb | After receipts/QR. Simple keyword → category map; don’t overdo NLP. | Not implemented |
 | **Smart “nudge” templates** | ✅ Good — tone matters | Opt-in only. Don’t automate sending or nag. e.g. “₹2,480 pending. Settlement: Sunday.” | Not implemented |
-| **Biometric lock** | ⏳ Nice-to-have, not urgent | After core flow is solid. Adds friction if too early; good for trust/credibility. | Not implemented |
+| **Biometric lock** | ⏳ Nice-to-have, not urgent | After core flow is solid. Adds friction if too early; good for trust/credibility. | Not implemented. Full implementation spec in **docs/features/BIOMETRIC_LOCK.md** (free tier, `local_auth`). |
 
 **Implementation notes (Polished Local):**
 

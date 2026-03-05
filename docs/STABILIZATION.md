@@ -9,7 +9,7 @@
 
 ### What Expenso Does
 
-Expenso is a Flutter mobile application for tracking shared expenses within small groups. Users create groups, add members by phone number, record expenses with configurable split rules (even, exact amounts, percentages, shares, exclusions), and view derived balances showing who owes whom. The app follows a cycle-based settlement model: expenses accumulate in an active cycle until the group creator freezes it, at which point members settle debts (optionally via Razorpay) and the creator archives the cycle to start fresh. Data is stored in Firebase Firestore with optional field-level encryption. A natural-language "Magic Bar" feature uses the Groq API (Llama 3.3) to parse expense descriptions into structured data.
+Expenso is a Flutter mobile application for tracking shared expenses within small groups. Users create groups, add members by phone number, record expenses with configurable split rules (even, exact amounts, percentages, shares, exclusions), and view derived balances showing who owes whom. The app follows a cycle-based settlement model: expenses accumulate in an active cycle until the group creator freezes it, at which point members settle debts (optionally via UPI app picker or Razorpay) and the creator triggers the Cloud Function `settleAndRestart` to atomically archive the old cycle and start a new one. Data is stored in Firebase Firestore with optional field-level encryption. A natural-language "Magic Bar" feature uses the Groq API (Llama-4-Scout) to parse expense descriptions into structured data.
 
 ### What It Solves Well
 
@@ -203,7 +203,7 @@ Parsed intents move through the following states. This is the backbone for produ
 | 5 | **Only the group creator can delete a group** | ✅ Enforced by code (`canDeleteGroup` check) |
 | 6 | **A user can only be in `members[]` OR `pendingMembers[]`, not both** | ⚠️ Assumed. Transactions handle promotion, but no explicit check on read. |
 | 7 | **Net balances must sum to zero across all members** | ✅ Enforced by design (SettlementEngine computes balanced debits/credits) |
-| 8 | **Closed cycles are read-only** | ⚠️ Assumed but not enforced. Firestore rules may not prevent writes to `settled_cycles`. |
+| 8 | **Closed cycles are read-only** | ✅ Enforced by Firestore rules (`allow create, update, delete: if false` on `settled_cycles` and their expenses). Archive is performed server-side by the `settleAndRestart` Cloud Function only. |
 | 9 | **Each group has exactly one active cycle at any time** | ✅ Enforced by code (`activeCycleId` field, archive-then-create flow) |
 | 10 | **Phone numbers are normalized before comparison** | ✅ Enforced by code (`_normalizePhone` used consistently) |
 | 11 | **Pending members use `p_` prefix in IDs** | ✅ Enforced by code (convention throughout codebase) |
@@ -290,8 +290,8 @@ A "simple rename" requires: data migration, versioned read logic, and testing ag
 
 ## 7. Freeze Decision
 
-**Conclusion:** Expenso can safely evolve without major refactor.
+**The Freeze Decision:** Expenso can safely evolve without major refactor.
 
-The codebase is functional, coherent, and reasonably well-structured for its scope. The singleton repository pattern, while not ideal for testability, provides clear state ownership. Critical business logic (balance calculation, settlement) is isolated in `SettlementEngine` with unit test coverage (net balances, debts, payment routes, G9 edge cases, balance-after-settlements contract). Widget tests cover EmptyStates and ExpensoLoader; an integration test verifies app launch. The main risks are around the mutable expense model and lack of audit trails, but these are acceptable trade-offs for this stage of the expense tracker.
+The codebase is functional, coherent, and well-structured for its scope. The singleton repository pattern, while not ideal for testability, provides clear state ownership. Critical business logic (balance calculation, settlement) is isolated in `SettlementEngine` with 187+ unit and widget tests covering net balances, debts, payment routes, G9 edge cases, balance-after-settlements contract, normalization, revision lifecycle, encryption, parser outcomes, and app launch. CI enforces `flutter analyze`, `flutter test`, and a release APK build on every PR. The main risks are around the mutable expense model and lack of audit trails for concurrent edits, but these are acceptable trade-offs for this stage.
 
-The app should not be frozen—it has room for incremental feature work (offline support, better date handling, expense history) without architectural upheaval. However, any changes to the settlement engine or cycle archive flow should be approached with caution and require test coverage expansion. A v2 rewrite is not justified unless the scope expands significantly (multi-currency, recurring expenses, enterprise features).
+The app should not be frozen — it has room for incremental feature work (biometric lock, offline support, better date handling, expense history) without architectural upheaval. Any changes to the settlement engine or cycle archive flow should be approached with caution and require test coverage expansion. A v2 rewrite is not justified unless the scope expands significantly (multi-currency, recurring expenses, enterprise features).

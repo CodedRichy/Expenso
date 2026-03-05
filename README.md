@@ -7,7 +7,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey)]()
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
 
-**Group expense tracking done right.** Track who paid what, see who owes whom, settle via UPI, repeat.
+**Group expense tracking done right.** Track who paid what, see who owes whom, settle debts, repeat.
 
 ```
   ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
@@ -174,8 +174,8 @@ Expenso is a Flutter app that solves shared-expense tracking for small groups (f
 ## Key Features
 
 - **Groups** — Create groups, add members by phone or contacts, pin up to 3 groups, delete (creator only).
-- **Expenses** — Add via Magic Bar (natural language, Groq/Llama) or manual form. Splits: Even, Exact, Exclude, Percentage, Shares. Decision Clarity card shows cycle total, spent-by-you, and your net status (credit/debt).
-- **Settlement** — Two-phase: Settle (freeze cycle) then Start New Cycle (creator). Pay dues via in-app UPI (select from installed apps like GPay, PhonePe, Paytm) or cash. Payment tracking with payer/receiver confirmation flow.
+- **Expenses** — Add via Magic Bar (natural language, Groq/Llama-4-Scout) or manual form. Splits: Even, Exact, Exclude, Percentage, Shares. Decision Clarity card shows cycle total, spent-by-you, and your net status (credit/debt).
+- **Settlement** — Two-phase: Settle (freeze cycle) then Start New Cycle (creator). Phase 2 archive is handled by the Cloud Function `settleAndRestart` which atomically validates balances and rotates the cycle. Pay dues via UPI app picker (GPay, PhonePe, Paytm, etc.) with QR fallback, or mark as cash. Payer/receiver confirmation flow; receiver confirmation required before balance clears.
 - **Profile** — Display name, avatar (Firebase Storage), UPI ID for payment settings, logout.
 - **Auth** — Phone (OTP) sign-in via Firebase when configured; optional mock flow when not.
 
@@ -233,10 +233,10 @@ On launch, the app shows a splash then routes by Firebase Auth state: unauthenti
 ## Tech Stack
 
 - **Client:** Flutter (Dart), Material 3
-- **Backend / services:** Firebase (Phone Auth, Cloud Firestore, Cloud Functions, Storage)
-- **APIs:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) for natural-language expense parsing
-- **Payments:** UPI deep links via `upi_india` package (GPay, PhonePe, Paytm, BHIM, etc.)
-- **Local:** SharedPreferences (pinned groups), `flutter_contacts`, `flutter_dotenv` (e.g. `GROQ_API_KEY`)
+- **Backend / services:** Firebase (Phone Auth, Cloud Firestore, Cloud Functions `settleAndRestart` + `createRazorpayOrder` + encryption key functions, Storage)
+- **AI parsing:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) for natural-language expense parsing
+- **Payments:** UPI app picker via `upi_india` (GPay, PhonePe, Paytm, BHIM, etc.); QR code via `qr_flutter`; Razorpay for optional gateway payments
+- **Local:** SharedPreferences (pinned groups, theme, locale, app profile cache), `flutter_contacts`, `flutter_dotenv` (`GROQ_API_KEY`)
 
 ---
 
@@ -261,7 +261,8 @@ flutter pub get
 
 - **Firebase:** Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` and link Android/iOS. Enable Phone sign-in in Firebase Console. Deploy Firestore rules from `firestore.rules` (Console or `firebase deploy --only firestore`).
 - **Environment:** Create a `.env` in the project root (listed in `pubspec.yaml` assets). Set `GROQ_API_KEY` for Magic Bar; omit for manual-only expense entry.
-- **UPI Payments:** No configuration needed. The app detects installed UPI apps automatically on Android. On iOS, add UPI URL schemes to `Info.plist` (already configured).
+- **UPI Payments:** No configuration needed. The app detects installed UPI apps automatically on Android. On iOS, add UPI URL schemes to `Info.plist` (already configured). UPI intent launch is via the `upi_india` package; QR fallback generated with `qr_flutter`.
+- **Cloud Functions:** Deploy `functions/` with `firebase deploy --only functions`. Functions required: `settleAndRestart` (cycle archive), `createRazorpayOrder` (optional Razorpay), `getUserEncryptionKey` / `getGroupEncryptionKey` (optional encryption). All deployed to `asia-south1`.
 - **Data encryption (optional):** To encrypt sensitive data at rest, set `DATA_ENCRYPTION_MASTER_KEY` in Firebase Functions config. Use a 32-byte key as **64 hex characters** (e.g. `9f3c7a1d8b4e2f0c...` — 64 chars total). Deploy `getUserEncryptionKey` and `getGroupEncryptionKey`; the app will encrypt/decrypt automatically when the key is available.
 
 ### Running locally
@@ -276,9 +277,9 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 
 ## Usage
 
-- **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only).
+- **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only). Share invite link (`expenso://join/<groupId>`) from InviteMembers screen (creator only).
 - **Expenses:** In group detail, use the Magic Bar (e.g. "Dinner 1200 with Ash") or tap to add manually. Choose payer, split type, and participants; confirm. Recent add shows an undo screen for a few seconds.
-- **Settlement:** Everyone sees **Pay / Settle** (or **View settlement** when you have no dues), which opens the settlement screen (UPI, Mark as paid, cash). **Creator only** also sees **Close cycle** (or **Start New Cycle** when cycle is settling); confirm in the dialog archives the cycle and starts a new one. Members pay dues via UPI (in-app picker) or mark cash; receivers confirm receipt.
+- **Settlement:** Everyone sees **Settlement** button; opens the settlement screen (UPI app picker with QR fallback, Mark as paid, Paid via cash). **Creator only** also sees **Close cycle** (or **Start New Cycle** when cycle is settling); confirm in the dialog invokes the `settleAndRestart` Cloud Function which atomically validates, archives the old cycle, and starts a new one. Payer marks payment; receiver confirms receipt before balance clears.
 - **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID. Log out to switch accounts.
 
 Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
@@ -296,11 +297,15 @@ Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). A
 
 ## Project Status
 
-Expenso is **v5.0.0** (released). Core logic (expense recording, split calculation, settlement engine, cycle management) and V4 cross-group sync and FCM features are complete. Extensive animations and premium micro-interactions (V5) have refined the app experience. All primary flows are secured with **187+ tests**. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
+Expenso is **v5.0.0** (released). Core logic (expense recording, split calculation, settlement engine, cycle management) is complete and tested. V4 added cross-group identity, FCM infrastructure, and payment attempt tracking. V5 polished the experience with premium micro-animations (TapScale, StaggeredListItem, FadeIn). All primary flows are secured with **187+ tests** covering settlement math, balance-after-settlements contract, normalization, revision lifecycle, encryption, parser outcomes, widget states, and app launch. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
+
+**CI:** Every push/PR runs `flutter analyze`, `flutter test`, a release APK build (Android), and Cloud Functions `npm test`. CodeQL security scanning is also enabled.
 
 **Known limitations (documented in [STABILIZATION.md](docs/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
 
-**Past releases:** V4 added cross-group identity and Sync/FCM scaffolding. V5 polished user interfaces seamlessly using interactive micro-animations native to Flutter. See [docs/releases/](docs/releases/) for history.
+**Production readiness:** Assessed as ready for controlled beta / Early Access launch. See [docs/PRODUCTION_READINESS_ASSESSMENT.md](docs/PRODUCTION_READINESS_ASSESSMENT.md) for the full rubric and launch recommendation.
+
+**Past releases:** V1 — Magic Bar, Decision Clarity, SettlementEngine. V2 — Profile pictures, UPI deep-linking. V3 — Settlement activity feed, Dynamic UPI QR. V4 — Cross-group identity, God Mode foundation, FCM infrastructure. V5 — Animation polish pass. See [docs/releases/](docs/releases/) for contracts.
 
 **Planned features** (not yet implemented) are listed in APP_BLUEPRINT.md Section 9. No timeline commitments.
 
