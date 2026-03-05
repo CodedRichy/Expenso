@@ -44,6 +44,8 @@ dependencies:
   cloud_functions: ^5.2.1
   firebase_analytics: ^11.4.2
   firebase_messaging: ^15.2.4
+  firebase_crashlytics: ^4.3.2
+  firebase_performance: ^0.10.0+8
   cryptography: ^2.7.0
 
   # Env and UX

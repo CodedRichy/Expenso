@@ -293,7 +293,7 @@ test('validateRazorpayAmount: string that looks like number → invalid', () => 
 });
 
 test('validateRazorpayAmount: exceeds maximum → invalid', () => {
-    const result = validateRazorpayAmount(1_00_001);
+    const result = validateRazorpayAmount(1000001); // MAX_PAISE is 1_000_000
     assert.equal(result.ok, false);
     assert.ok(result.reason.includes('maximum'));
 });
