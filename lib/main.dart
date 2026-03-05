@@ -1,11 +1,11 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_performance/firebase_performance.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'design/colors.dart';
 import 'design/typography.dart';
