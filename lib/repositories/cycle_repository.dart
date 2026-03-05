@@ -801,12 +801,14 @@ class CycleRepository extends ChangeNotifier {
     if (meta == null) return;
     final cycleId = meta.activeCycleId;
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
-    final list = expDocs
-        .map(
-          (d) =>
-              _expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode),
-        )
-        .toList();
+    final list = <Expense>[];
+    for (final d in expDocs) {
+      try {
+        list.add(_expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode));
+      } catch (e) {
+        debugPrint('CycleRepository._onExpensesSnapshot: skipping doc ${d.id}: $e');
+      }
+    }
     _expensesByCycleId[cycleId] = list;
     _refreshGroupAmounts(groupId);
     _requestNotify();
@@ -883,10 +885,10 @@ class CycleRepository extends ChangeNotifier {
     String id, {
     String currencyCode = 'INR',
   }) {
-    final payerId = data['payerId'] as String? ?? '';
-    final participantIdsRaw = data['participantIds'] as List<dynamic>?;
-    final splits = data['splits'] as Map<String, dynamic>?;
-    final splitsMinorRaw = data['splitsMinor'] as Map<String, dynamic>?;
+    final payerId = data['payerId'] is String ? data['payerId'] as String : '';
+    final participantIdsRaw = data['participantIds'] is List ? data['participantIds'] as List<dynamic> : null;
+    final splits = data['splits'] is Map ? data['splits'] as Map<String, dynamic> : null;
+    final splitsMinorRaw = data['splitsMinor'] is Map ? data['splitsMinor'] as Map<String, dynamic> : null;
     final amountMinorStored = data['amountMinor'];
     final hasMinor =
         amountMinorStored != null &&

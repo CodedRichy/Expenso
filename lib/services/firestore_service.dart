@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import 'data_encryption_service.dart';
 
@@ -165,24 +166,20 @@ class FirestoreService {
             try {
               await _encryption!.ensureGroupKeys(docs.map((d) => d.id).toList());
             } catch (e) {
-              // Key fetch failed — fall back to raw (unencrypted) data
+              // Key fetch failed — treat as no encryption for this snapshot
               return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
             }
-            final decryptedDocs = await Future.wait(
-              docs.map((d) async {
-                try {
-                  final decrypted = await _encryption!.decryptGroupData(
-                    d.data(),
-                    d.id,
-                  );
-                  return _DecryptedDocView(d.id, decrypted) as DocView;
-                } catch (e) {
-                  // Decryption failed for this doc — use raw data
-                  return _SnapshotDocView(d) as DocView;
-                }
-              }),
-            );
-            return decryptedDocs;
+            final results = <DocView>[];
+            for (final d in docs) {
+              try {
+                final decrypted = await _encryption!.decryptGroupData(d.data(), d.id);
+                results.add(_DecryptedDocView(d.id, decrypted));
+              } catch (e) {
+                debugPrint('groupsStream: decrypt failed for ${d.id}, skipping: $e');
+                // Skip undecryptable docs rather than returning corrupt data
+              }
+            }
+            return results;
           }
           return docs.map((d) => _SnapshotDocView(d) as DocView).toList();
         });
@@ -639,27 +636,23 @@ class FirestoreService {
             try {
               await _encryption!.ensureGroupKey(groupId);
             } catch (e) {
-              // Key fetch failed — fall back to raw data
+              // Key fetch failed — treat as no encryption for this snapshot
               final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
               list.sort((a, b) => _compareExpenseDocs(a, b));
               return list;
             }
-            final decrypted = await Future.wait(
-              docs.map((d) async {
-                try {
-                  final data = await _encryption!.decryptExpenseData(
-                    d.data(),
-                    groupId,
-                  );
-                  return _DecryptedDocView(d.id, data) as DocView;
-                } catch (e) {
-                  // Decryption failed for this doc — use raw data
-                  return _SnapshotDocView(d) as DocView;
-                }
-              }),
-            );
-            decrypted.sort((a, b) => _compareExpenseDocs(a, b));
-            return decrypted;
+            final results = <DocView>[];
+            for (final d in docs) {
+              try {
+                final data = await _encryption!.decryptExpenseData(d.data(), groupId);
+                results.add(_DecryptedDocView(d.id, data));
+              } catch (e) {
+                debugPrint('expensesStream: decrypt failed for ${d.id}, skipping: $e');
+                // Skip undecryptable docs rather than passing encrypted strings downstream
+              }
+            }
+            results.sort((a, b) => _compareExpenseDocs(a, b));
+            return results;
           }
           final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
           list.sort((a, b) => _compareExpenseDocs(a, b));
