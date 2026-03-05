@@ -21,7 +21,7 @@ function deriveKey(prefix, id) {
 }
 
 const getUserEncryptionKey = onCall(
-  { region: 'asia-south1' },
+  { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.');
     const key = deriveKey('user', request.auth.uid);
@@ -31,7 +31,7 @@ const getUserEncryptionKey = onCall(
 );
 
 const getGroupEncryptionKey = onCall(
-  { region: 'asia-south1' },
+  { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.');
     const groupId = request.data?.groupId;
