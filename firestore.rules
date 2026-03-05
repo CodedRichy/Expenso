@@ -33,7 +33,8 @@ service cloud.firestore {
            && request.resource.data.creatorId == resource.data.creatorId
            && request.resource.data.activeCycleId == resource.data.activeCycleId
            && (request.resource.data.cycleStatus == resource.data.cycleStatus ||
-               (resource.data.cycleStatus == 'active' && request.resource.data.cycleStatus == 'settling'))
+               (resource.data.cycleStatus == 'active' && request.resource.data.cycleStatus == 'settling') ||
+               (resource.data.cycleStatus == 'settling' && request.resource.data.cycleStatus == 'active'))
           )
           ||
           (request.auth.uid != resource.data.creatorId
