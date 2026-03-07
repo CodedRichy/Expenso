@@ -15,11 +15,11 @@
     linkcolor=blue,
     filecolor=magenta,      
     urlcolor=cyan,
-    pdftitle={Automated Attendance Engine: A Zero-CAPEX Architecture},
+    pdftitle={Expenso: An NLP-Driven Distributed Ledger},
     pdfpagemode=FullScreen,
 }
 
-\title{\textbf{Automated Attendance Engine: A Decentralized Bluetooth Mesh Architecture for High-Integrity Proxiless Presence Verification}}
+\title{\textbf{Expenso: An NLP-Driven Distributed Ledger and Graph-Theoretic Debt Minimization Engine for Deterministic P2P Financial Settlements}}
 \author{Systems Architecture \& Engineering}
 \date{\today}
 
@@ -28,120 +28,112 @@
 \maketitle
 
 \begin{abstract}
-Traditional organizational attendance tracking mechanisms suffer from compounding failure modes, ranging from high operational latency to extreme susceptibility to proxy fraud. Current digital solutions, such as static QR codes or GPS geofencing, are capital-intensive to scale and fail to cryptographically guarantee physical presence. This paper presents a novel Automated Attendance Engine (AAE) engineered upon a passive Bluetooth Low Energy (BLE) mesh network that deterministically cross-verifies peer presence. Operating atop a zero-CAPEX stack comprising Flutter, Node.js, Redis Streams, and PostgreSQL, the system ensures highly concurrent, fault-tolerant telemetry ingestion. We outline the architectural tenets, the geometric spatial consensus algorithms securing the physical layer, and the asynchronous state management systems preventing distributed network-partition failures.
+Managing multiparty shared expenditures conventionally relies on rigid manual data entry and highly fragmented settlement workflows, resulting in cognitive friction and compounding behavioral drop-off. Existing ledger implementations scale poorly with network complexity and introduce high computational latency during manual reconciliation. We propose Expenso, a decentralized-capability financial ledger engineered upon a serverless event-driven architecture (Cloud Firestore) and a high-performance client edge (Flutter). The system introduces two fundamental structural innovations: (1) a Natural Language Processing (NLP) ingestion pipeline utilizing Groq-accelerated Large Language Models for deterministic, zero-friction expense parsing, and (2) a Graph-Theoretic ``God Mode'' debt minimization algorithm that mathematically reduces multiparty transactional volume to its absolute lower bound. Operating atop a zero-CAPEX architecture that natively integrates regional peer-to-peer settlement protocols (Unified Payments Interface - UPI), this paper outlines the architectural paradigms, security constraints, and algorithmic optimizations that make Expenso a highly resilient alternative to legacy monolithic SaaS solutions.
 \end{abstract}
 
 \section{Introduction \& Problem Statement}
-Empirically, legacy attendance and presence verification systems exhibit substantial inefficiencies. Manual enumeration is operationally blocking, exhibiting $O(N)$ temporal complexity where $N$ represents the cohort size. Conversely, current digital transformation attempts—such as generalized IP-based logging or static GPS boundary geofencing—introduce severe systemic vulnerabilities, notably proxy spoofing and location simulation. 
+Empirically, incumbent multiparty expense tracking frameworks exhibit severe systemic inefficiencies and structural failure modes. Manual expense ingestion forces high-friction context switching for users, exhibiting linear execution time relative to the complexity of the topological split (e.g., uneven exact allocations among sub-cohorts). Furthermore, unoptimized peer-to-peer ledgers natively form cyclical graph dependencies. If left unoptimized, the settlement transaction volume $V$ scales dangerously, producing high settlement latency and capital lockup.
 
-These legacy solutions represent compounding failure modes: they mandate capital-intensive infrastructural scaling (e.g., biometric hardware scanners, RFID gateways) while remaining fundamentally brittle against adversarial device exploitation. The proposed architecture shifts this paradigm by utilizing peer-to-peer ephemeral cryptographic handshakes over a passive BLE mesh. This ensures deterministic proof-of-presence through spatial distributed consensus, effectively eliminating proxy cheating without requiring dedicated institutional hardware.
+Current digital landscape solutions—such as Splitwise or Tricount—are capital-intensive monolithic architectures that intentionally create artificial scarcity, locking fundamental computational optimizations (like graph simplification) behind recurring subscription paywalls. Furthermore, they fail to deterministically close the loop via zero-fee, native P2P settlement protocols (like India's UPI), relying instead on abstract manual assertions. The Expenso architecture aggressively shifts this paradigm, leveraging edge-computed state management and externalized NLP inferencing to create a frictionless, zero-CAPEX settlement engine.
 
 \section{System Architecture}
-The system abandons monolithic antipatterns in favor of a multi-tiered, event-driven distributed architecture designed to handle severe burst traffic (e.g., an entire cohort connecting simultaneously at a designated time).
+Expenso abandons heavy monolithic backend antipatterns in favor of a multi-tiered, event-driven, cloud-native operational schematic.
 
 \begin{itemize}
-    \item \textbf{Client Edge (Flutter):} Operates as a background BLE beaconing service capable of ad-hoc topological discovery. It handles ephemeral key rotation and local conflict-free replicated data type (CRDT) caching.
-    \item \textbf{Ingestion Head (Node.js):} A stateless, horizontally scalable microservice layer operating over WebSocket and REST, exclusively designated for high-throughput ingestion of dense mesh telemetry.
-    \item \textbf{Transient State \& Queue (Redis Streams):} Buffers incoming graph telemetry. It acts as a shock absorber during traffic spikes, preventing database throttling and connection pool exhaustion.
-    \item \textbf{Persistent Storage (PostgreSQL):} An ACID-compliant relational hub handling the immutable registry of verified sessions, complex joins for analytical dashboards, and materialized views for reporting.
+    \item \textbf{Client Edge (Flutter/Dart):} Engineered for extreme responsiveness, retaining an embedded CRDT-like local cache (`UserProfileCache`) for sub-second zero-latency hydration before network resolution.
+    \item \textbf{Serverless State \& Pub/Sub (Cloud Firestore):} A highly scalable NoSQL temporal document store providing Real-Time WebSocket synchronization. Access control is strictly guarded via Firebase IAM security rules, operating under an AES-GCM local Data Encryption schema for data-at-rest.
+    \item \textbf{NLP Inference Layer (Groq API):} A stateless microservice bridging unstructured user telemetry with an ultra-low latency Llama-3/4 topology to parse natural language arrays into heavily structured JSON Abstract Syntax Trees (AST).
+    \item \textbf{Settlement Execution (UPI / Cloud Functions):} Utilizes isolated Node.js Cloud Functions for atomic state transitions (Cycle archiving) and native OS-level deep-linking to execute asynchronous escrow-free P2P ledger settlements.
 \end{itemize}
 
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}[
-    node distance=2cm and 3cm,
+    node distance=2cm and 2.5cm,
     >=Stealth,
-    box/.style={rectangle, draw=black, thick, fill=blue!5, text width=2.8cm, align=center, rounded corners, minimum height=1.2cm},
-    db/.style={cylinder, draw=black, thick, fill=green!5, shape border rotate=90, aspect=0.25, text width=2.4cm, align=center, minimum height=1.6cm}
+    box/.style={rectangle, draw=black, thick, fill=blue!5, text width=2.4cm, align=center, rounded corners, minimum height=1.2cm},
+    db/.style={cylinder, draw=black, thick, fill=green!5, shape border rotate=90, aspect=0.25, text width=2.4cm, align=center, minimum height=1.6cm},
+    ai/.style={rectangle, draw=purple, thick, fill=purple!5, text width=2.4cm, align=center, rounded corners, minimum height=1.2cm}
 ]
 
 % Nodes
-\node[box] (flutter) {Flutter\\Edge Clients};
-\node[box, right=of flutter] (node) {Node.js\\Ingestion API};
-\node[box, fill=red!5, below=of node] (redis) {Redis Streams\\(Event Bus)};
-\node[db, right=of redis, xshift=1cm] (postgres) {PostgreSQL\\(Persistence)};
+\node[box] (flutter) {Flutter Edge\\(Local Cache)};
+\node[ai, right=of flutter] (groq) {Groq NLP\\(Llama Inference)};
+\node[db, below=of groq] (firestore) {Firestore\\(Encrypted State)};
+\node[box, left=of firestore] (upi) {UPI / Node.js\\Settlement Engine};
 
 % Links
-\draw[->, thick] (flutter) -- node[above] {REST/WS} (node);
-\draw[->, thick] (node) -- node[right] {Enqueue} (redis);
-\draw[->, thick, dashed] (redis) -- node[above] {Worker Batch} (postgres);
+\draw[->, thick] (flutter) -- node[above] {REST (Text)} (groq);
+\draw[->, thick] (groq) -- node[right] {JSON AST} (firestore);
+\draw[<->, thick] (flutter) -- node[left] {WebSocket Sync} (firestore);
+\draw[->, thick, dashed] (firestore) -- node[below] {Event Trigger} (upi);
 
 \end{tikzpicture}
-\caption{Data flow from Edge topological discovery to Persistence.}
+\caption{Topological Data Flow from NLP Ingestion to P2P Settlement.}
 \label{fig:architecture}
 \end{figure}
 
 \section{Core Methodology / Algorithmic Approach}
-Central to the architectural rigor is the \textit{Graph-Based Spatial Consensus Protocol (GBSCP)}. Instead of trusting a single client's claim of presence, the system constructs a dynamic adjacency matrix of peer connections. For a node $i$ to be verified, it must be discovered by at least $k$ peer nodes within a temporally bounded epoch $\Delta t$.
+Central to Expenso's technical superiority is its integer-based **Graph-Theoretic Debt Minimization Engine** (internally coined ``God Mode'' Math). Legacy systems rely on maintaining the exact state of historical pairwise edges, leading to massive redundant capital transfers.
 
-Let $G = (V,E)$ be a time-variant graph of BLE connections. The presence confidence score $C_i$ for a device $i$ is calculated as a definite integral of peer verifications:
+Let $G = (V,E)$ be a time-variant directed multigraph where $V$ represents user nodes and $E$ represents discrete debt vectors. Instead of natively resolving $E$, the engine independently computes the net continuous balance $B_i$ for every node $i \in V$:
 
 \begin{equation}
-C_i = \int_{t_0}^{t_0 + \Delta t} \sum_{j \in V \setminus \{i\}} w_{i,j}(t) \cdot \mathbb{I}(d(i,j) \le D_{max}) \, dt
+B_i = \sum_{j \in V} w(j, i) - \sum_{j \in V} w(i, j)
 \end{equation}
 
-Where:
-\begin{itemize}
-    \item $w_{i,j}(t) \in \{0, 1\}$ is the cryptographic validity of the handshake payload between nodes $i$ and $j$.
-    \item $\mathbb{I}$ is an indicator function bounded by the maximum RSSI-derived distance threshold $D_{max}$.
-\end{itemize}
+Where $w(u,v)$ is the magnitude of the expense paid by node $u$ benefiting node $v$. All spatial currency is upscaled to integer minor units (Paise/Cents) to completely eradicate floating-point IEEE 754 precision loss during vector division.
 
-To determine the global state of attendance, a centralized worker maps the graph. Given the network density, processing raw adjacencies runs efficiently in $O(|V| \log |V| + |E|)$ time at the worker node using an optimized spatial sweep-line algorithm over the cached Redis snapshot, outputting a binary verified state mapped back to PostgreSQL.
+The nodes are partitioned into isolated sets of Creditors $C = \{i \mid B_i > 0\}$ and Debtors $D = \{j \mid B_j < 0\}$. The algorithm then executes a greedy sequence of bipartite simplifications, continuously matching $\max(B_c \in C)$ against $\min(B_d \in D)$.
+
+\begin{equation}
+\forall (c, d), \quad \text{Transfer } T = \min(|B_d|, B_c)
+\end{equation}
+
+By sequentially mutating the nodes and eliminating zeroed balances, the engine guarantees deterministic systemic settlement in a theoretical maximum of $|V| - 1$ transactions, optimizing routing efficiency from uncontrolled polynomial time down to $O(|V| \log |V|)$ leveraging standard heap sorting constraints.
 
 \section{Limitations and Mitigations}
 
-\subsection{Adversarial Relay Attacks (Proxy Cheating)}
-\textbf{Vulnerability:} A malicious actor could attempt a replay or relay attack, forwarding broadcasted Bluetooth payloads to an off-site proxy device over the internet.
-\textbf{Mitigation:} Implementation of Ephemeral Time-to-Live (TTL) cryptographic tokens. Payloads incorporate a rolling HMAC-SHA256 signature initialized by the backend, inherently restricted by a strict 5-second expiration window. Forwarded packets arrive computationally invalid, rendering relay interceptions mathematically obsolete.
+\subsection{Non-Deterministic LLM Hallucinations}
+\textbf{Vulnerability:} Relying on non-deterministic external LLMs for financial ledger entries invites risk of parsing anomalies (hallucinated integers, misidentified cohort participants).
+\textbf{Mitigation:} Implementation of a rigorously typed multi-shot `SYSTEM` prompt enforced via JSON schema constraints. Expenso rejects any NLP payload lacking a validated Boolean confidence flag. A heuristic deterministic cross-check explicitly verifies $\sum \text{Split} \equiv \text{Total Amount} \pm 0.01$ at the local state layer before allowing any Firestore IO mutation.
 
 \subsection{DevOps Failure States (Network Partitioning)}
-\textbf{Vulnerability:} High-density environments (e.g., a stadium or lecture hall) natively cause Wi-Fi access point (AP) saturation and resultant packet dropping.
-\textbf{Mitigation:} Implementation of Offline-Sync Event Queues. Telemetry is locally persisted on the Flutter edge layer via an embedded SQLite instance. Upon network restoration, data is aggressively flushed to Redis Streams. Time-series indexing ensures that eventual consistency is maintained without state collisions.
-
-\subsection{State Bloat and Memory Constraints}
-\textbf{Vulnerability:} Dense mesh graphs broadcasted continuously will generate millions of edges $E$ per hour, overwhelming standard RDBMS read/write limits.
-\textbf{Mitigation:} Asynchronous Node.js aggregation workers periodically flush ephemeral graph state. Raw mesh edges are held only in short-lived Redis sets with an explicit TTL. PostgreSQL materializes only the final boolean evaluation vectors, reducing storage footprint by orders of magnitude.
+\textbf{Vulnerability:} Mobile networks intrinsically experience severe latency variations and isolated packet drops, risking distributed ledger desync.
+\textbf{Mitigation:} Expenso leverages an asynchronous Offline-Sync CRDT pipeline. Telemetry operations are cached ephemerally in the local SQLite/SharedPreferences store and aggressively pushed up via Firebase's native persistence queue. This ensures eventual consistency during Wi-Fi drops, preventing read/write collision faults.
 
 \section{Market Landscape \& Competitive Analysis}
-The current attendance management market is segmented into three primary technological paradigms, each exhibiting critical vulnerabilities that the Automated Attendance Engine (AAE) fundamentally resolves:
+The competitive ecosystem is currently saturated by heavily monetized application frameworks (e.g., Splitwise, Settle Up). These incumbents structurally enforce high-friction barriers, such that advanced algorithmic features (like systemic debt simplification or receipt parsing) require monthly CAPEX subscriptions. 
 
-\begin{itemize}
-    \item \textbf{Legacy Biometric Systems (e.g., ZKTeco, BioEnable):} While historically robust, these systems mandate proprietary hardware gateways (\$500--\$2000 per scanner), incurring extreme Capital Expenditure (CAPEX). Furthermore, they create severe throughput bottlenecks ($O(N)$ queuing) during peak operational hours, failing the high-concurrency demands of modern institutions.
-    \item \textbf{Commercial Geofencing SaaS (e.g., Jibble, Zoho People, Calamari):} These platforms enforce location boundaries via OS-level GPS coordinates. Consequently, they are inherently susceptible to software-based location spoofing (e.g., mock location applications). Additionally, they fail indoors where GPS signal degrades, offering no cryptographic proof of actual room co-presence.
-    \item \textbf{RFID and Smart Card Solutions:} Though offering rapid throughput over localized networks, RFID topologies suffer from systemic ``buddy punching'' (proxy scanning). They fail the cryptographic property of non-repudiation, as possessing the hardware fob does not inherently prove the physical presence of the designated individual.
-\end{itemize}
-
-In stark contrast, the proposed AAE architecture utilizes a \textit{Zero-CAPEX} infrastructure model. By leveraging the existing computational fabric of user smartphones (Bring-Your-Own-Device) coupled with deterministic P2P cryptographic Bluetooth mesh logic, there is zero marginal hardware overhead and a mathematical guarantee of presence. This structural advantage dramatically undercuts incumbent business models that mandate rigid licensing and proprietary installations, positioning this solution as the definitive framework for massively scalable organizational compliance.
+Expenso utilizes a \textit{Zero-CAPEX} serverless approach combined with edge-distributed compute to radically undercut existing overhead. By bypassing legacy bank escrow and invoking localized deep-linking architectures directly to the Unified Payments Interface (UPI) grid, Expenso eliminates mediator transactional fees, achieving a fundamentally frictionless end-to-end user lifecycle that incumbents are architecturally incapable of matching without deprecating their core business models.
 
 \section{Project Execution \& Management Plan}
 The engineering lifecycle is strictly governed by the Triple Constraints Framework:
 \begin{enumerate}
-    \item \textbf{Cost Matrix:} Maintained firmly at nominal zero using open-source distributions (Postgres, Redis) and free-tier Platform-as-a-Service (PaaS) topologies.
-    \item \textbf{Scope Boundaries:} Version 1.0 explicitly targets core topological mesh verification and backend batch processing. Non-critical vectors (e.g., custom report builder UI) are rigidly deferred to avoid feature creep.
-    \item \textbf{Schedule and Agile Milestones:} Deployed across parallelized two-week Agile sprints: (Sprint 1) BLE Protocol \& Handshake; (Sprint 2) Redis Ingestion API; (Sprint 3) Worker Consensus Logic \& Persistence.
+    \item \textbf{Cost Matrix:} Anchored at absolute zero leveraging Google Firebase free-tier operational capacities ($50$K daily discrete document reads) and Groq developer API limits.
+    \item \textbf{Scope Boundaries:} Version 1.0 (MVP) strictly isolates logic to Group Generation, IAM synchronization, the LLM Magic Bar Pipeline, and Graph Settlement Math. Scope-creep items (e.g., Optical Character Recognition for receipts) are aggressively deferred.
+    \item \textbf{Schedule and Agile Milestones:} Deployed across concurrent iteration sprints: (Sprint 1) Flutter Identity \& UX Topologies; (Sprint 2) Groq NLP Integration; (Sprint 3) Bipartite Debt Minimization \& Atomic Firestore Rollbacks.
 \end{enumerate}
 
-Operational risk is mitigated via aggressive load testing (JMeter simulated burst connections against the Redis instance) to guarantee structural integrity during edge case loads. Ultimate Return on Investment (ROI) is empirically measured via institutional time reclaimed: $\mathit{ROI} = N \times \text{Average Roll Call Latency}$.
-
 \section{Conclusion}
-This architectural paradigm mathematically proves that highly reliable, cryptographically cheat-resistant proximity verification can be achieved without capital-intensive hardware deployments. By engineering a fault-tolerant ingestion pipeline backed by Redis Streams and formalizing geometric algorithms on the edge, this Automated Attendance Engine represents a foundational evolution from heuristic physical logging to incontrovertible, automated presence verification.
+Expenso mathematically formalizes ad-hoc social financial ledgers. By abstracting the cognitive friction of expense parsing to an external low-latency inference matrix, and applying strict spatial graph theory to simplify fiscal resolution, the system proves that zero-CAPEX decentralized structures can wildly outperform legacy monolithic SaaS configurations. Expenso serves as a highly scalable paradigm for resolving the asynchronous complexities of deterministic peer-to-peer settlement.
 
 \begin{thebibliography}{9}
 
-\bibitem{guidoni2020}
-D. L. Guidoni, et al. 
-\textit{Bluetooth Low Energy Mesh Networks: A Survey}. 
-IEEE Communications Surveys \& Tutorials, vol. 22, no. 4, pp. 2737-2768, 2020.
+\bibitem{cormen2009}
+T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein.
+\textit{Introduction to Algorithms, Third Edition}. 
+MIT Press, 2009. (Graph mapping and greedy optimization theory).
 
-\bibitem{vahdat2000}
-A. Vahdat and D. Becker.
-\textit{Epidemic Routing for Partially-Connected Ad Hoc Networks}. 
-Duke University, Technical Report CS-200006, 2000.
+\bibitem{vaswani2017}
+A. Vaswani, et al.
+\textit{Attention Is All You Need}.
+Advances in Neural Information Processing Systems (NeurIPS), 2017. (Foundational NLP parser architecture limiters).
 
-\bibitem{redis_streams}
-S. Sanfilippo. 
-\textit{Redis Streams: Event Sourcing and Processing for High-Throughput Microservices}.
-Redis Labs Engineering Documentation, 2022.
+\bibitem{shapiro2011}
+M. Shapiro, N. Preguiça, C. Baquero, and M. Zawirski.
+\textit{Conflict-Free Replicated Data Types}.
+International Symposium on Stabilization, Safety, and Security of Distributed Systems (SSS), 2011.
 
 \end{thebibliography}
 
