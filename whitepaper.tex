@@ -48,19 +48,18 @@ The system abandons monolithic antipatterns in favor of a multi-tiered, event-dr
 
 \begin{figure}[h]
 \centering
-\resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
-    node distance=1.5cm and 2cm,
+    node distance=2cm and 3cm,
     >=Stealth,
-    box/.style={rectangle, draw=black, thick, fill=blue!5, text width=2.5cm, align=center, rounded corners, minimum height=1.2cm},
-    db/.style={cylinder, draw=black, thick, fill=green!5, shape border rotate=90, aspect=0.25, text width=2cm, align=center, minimum height=1.5cm}
+    box/.style={rectangle, draw=black, thick, fill=blue!5, text width=2.8cm, align=center, rounded corners, minimum height=1.2cm},
+    db/.style={cylinder, draw=black, thick, fill=green!5, shape border rotate=90, aspect=0.25, text width=2.4cm, align=center, minimum height=1.6cm}
 ]
 
 % Nodes
 \node[box] (flutter) {Flutter\\Edge Clients};
 \node[box, right=of flutter] (node) {Node.js\\Ingestion API};
 \node[box, fill=red!5, below=of node] (redis) {Redis Streams\\(Event Bus)};
-\node[db, right=of redis] (postgres) {PostgreSQL\\(Persistence)};
+\node[db, right=of redis, xshift=1cm] (postgres) {PostgreSQL\\(Persistence)};
 
 % Links
 \draw[->, thick] (flutter) -- node[above] {REST/WS} (node);
@@ -68,7 +67,6 @@ The system abandons monolithic antipatterns in favor of a multi-tiered, event-dr
 \draw[->, thick, dashed] (redis) -- node[above] {Worker Batch} (postgres);
 
 \end{tikzpicture}
-}
 \caption{Data flow from Edge topological discovery to Persistence.}
 \label{fig:architecture}
 \end{figure}
@@ -105,7 +103,15 @@ To determine the global state of attendance, a centralized worker maps the graph
 \textbf{Mitigation:} Asynchronous Node.js aggregation workers periodically flush ephemeral graph state. Raw mesh edges are held only in short-lived Redis sets with an explicit TTL. PostgreSQL materializes only the final boolean evaluation vectors, reducing storage footprint by orders of magnitude.
 
 \section{Market Landscape \& Competitive Analysis}
-In stark contrast to industry incumbents (e.g., RFID badge ecosystems, capital-heavy SaaS geofencing suites), this architecture utilizes a \textit{Zero-CAPEX} infrastructure model. By leveraging the existing unified computational fabric of user smartphones (Bring-Your-Own-Device), there is zero marginal hardware overhead and frictionless onboarding. This structural advantage dramatically undercuts incumbent business models that mandate proprietary gateway installations and rigid per-user licensing, positioning this solution as the dominant framework for massively scalable organizational compliance.
+The current attendance management market is segmented into three primary technological paradigms, each exhibiting critical vulnerabilities that the Automated Attendance Engine (AAE) fundamentally resolves:
+
+\begin{itemize}
+    \item \textbf{Legacy Biometric Systems (e.g., ZKTeco, BioEnable):} While historically robust, these systems mandate proprietary hardware gateways (\$500--\$2000 per scanner), incurring extreme Capital Expenditure (CAPEX). Furthermore, they create severe throughput bottlenecks ($O(N)$ queuing) during peak operational hours, failing the high-concurrency demands of modern institutions.
+    \item \textbf{Commercial Geofencing SaaS (e.g., Jibble, Zoho People, Calamari):} These platforms enforce location boundaries via OS-level GPS coordinates. Consequently, they are inherently susceptible to software-based location spoofing (e.g., mock location applications). Additionally, they fail indoors where GPS signal degrades, offering no cryptographic proof of actual room co-presence.
+    \item \textbf{RFID and Smart Card Solutions:} Though offering rapid throughput over localized networks, RFID topologies suffer from systemic ``buddy punching'' (proxy scanning). They fail the cryptographic property of non-repudiation, as possessing the hardware fob does not inherently prove the physical presence of the designated individual.
+\end{itemize}
+
+In stark contrast, the proposed AAE architecture utilizes a \textit{Zero-CAPEX} infrastructure model. By leveraging the existing computational fabric of user smartphones (Bring-Your-Own-Device) coupled with deterministic P2P cryptographic Bluetooth mesh logic, there is zero marginal hardware overhead and a mathematical guarantee of presence. This structural advantage dramatically undercuts incumbent business models that mandate rigid licensing and proprietary installations, positioning this solution as the definitive framework for massively scalable organizational compliance.
 
 \section{Project Execution \& Management Plan}
 The engineering lifecycle is strictly governed by the Triple Constraints Framework:
