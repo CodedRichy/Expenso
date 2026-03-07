@@ -12,8 +12,6 @@
 \usepackage{microtype}
 \geometry{margin=0.85in, columnsep=0.25in}
 \usepackage{cite}
-\usepackage{titlesec}
-\usepackage{setspace}
 
 \hypersetup{
     colorlinks=true,
@@ -24,55 +22,24 @@
     pdfpagemode=FullScreen,
 }
 
-% Formatting for a more professional business/academic look
-\titleformat{\section}{\Large\bfseries\sffamily}{\thesection}{1em}{}
-\titleformat{\subsection}{\large\bfseries\sffamily}{\thesubsection}{1em}{}
-\setstretch{1.15}
+\title{\textbf{Expenso:} \\ \large An NLP-Driven Distributed Ledger for Deterministic P2P Financial Settlements}
+\author{Rishi Praseeth Krishnan}
+\date{March 2026}
 
 \begin{document}
 
-\begin{titlepage}
-    \centering
-    \vspace*{1cm}
-    
-    \Huge
-    \textbf{EXPENSO}
-    
-    \vspace{0.75cm}
-    \LARGE
-    \textbf{NLP-Driven Distributed Ledgers \& Deterministic \\ P2P Financial Settlements}
-    
-    \vspace{1.5cm}
-    
-    \Large
-    \textbf{Investment Memorandum \& Technical Whitepaper}
-    
-    \vspace{0.5cm}
-    \large
-    Prepared for Angel Investors \& Venture Syndicates
-    
-    \vspace{1.5cm}
-    
-    \textbf{Executive Summary}
-    \vspace{0.5cm}
-    \begin{flushleft}
-    \normalsize
-    The current peer-to-peer (P2P) shared finance market (dominated by incumbents like Splitwise and Tricount) suffers from extreme cognitive friction, systemic capital lockup, and archaic manual data entry workflows. These platforms artificially construct digital scarcity by paywalling foundational computational algorithms—such as graph-based debt simplification—and fail entirely to natively integrate with modern zero-fee digital payment grids like India's Unified Payments Interface (UPI).
-    
-    \textbf{Expenso} is a next-generation decentralized-capability financial ledger engineered to annihilate this friction. Built on a serverless, event-driven cloud architecture (Cloud Firestore) and a high-performance edge (Flutter/Dart), Expenso introduces a terminal disruption to the market. By deploying a heavily optimized Natural Language Processing (NLP) ingestion pipeline via Groq-accelerated Large Language Models, Expenso enables zero-friction, conversational expense parsing. Paired with a proprietary Graph-Theoretic ``God Mode'' debt minimization engine, we mathematically reduce multiparty transactional volume to its absolute theoretical lower bound, $O(|V| \log |V|)$. 
-    
-    Through a \textit{Zero-CAPEX} operational model and native OS-level deep-linking to existing UPI rails, Expenso achieves a fundamentally frictionless, zero-fee settlement engine. This document outlines the technical moats, unit economics, go-to-market strategy, and the highly asymmetric venture opportunity presented by the Expenso protocol.
-    \end{flushleft}
-    
-    \vfill
-    
-    \textbf{Systems Architecture \& Engineering} \\
-    \normalsize \today
-    
-\end{titlepage}
+\maketitle
 
-\newpage
 \tableofcontents
+
+\vspace{1cm}
+\section*{Executive Summary}
+The current peer-to-peer (P2P) shared finance market (dominated by incumbents like Splitwise and Tricount) suffers from extreme cognitive friction, systemic capital lockup, and archaic manual data entry workflows. These platforms artificially construct digital scarcity by paywalling foundational computational algorithms—such as graph-based debt simplification—and fail entirely to natively integrate with modern zero-fee digital payment grids like India's Unified Payments Interface (UPI).
+
+\textbf{Expenso} is a next-generation decentralized-capability financial ledger engineered to annihilate this friction. Built on a serverless, event-driven cloud architecture (Cloud Firestore) and a high-performance edge (Flutter/Dart), Expenso introduces a terminal disruption to the market. By deploying a heavily optimized Natural Language Processing (NLP) ingestion pipeline via Groq-accelerated Large Language Models, Expenso enables zero-friction, conversational expense parsing. Paired with a proprietary Graph-Theoretic ``God Mode'' debt minimization engine, we mathematically reduce multiparty transactional volume to its absolute theoretical lower bound, $O(|V| \log |V|)$. 
+
+Through a \textit{Zero-CAPEX} operational model and native OS-level deep-linking to existing UPI rails, Expenso achieves a fundamentally frictionless, zero-fee settlement engine. This document outlines the technical moats, unit economics, go-to-market strategy, and the highly asymmetric venture opportunity presented by the Expenso protocol.
+
 \newpage
 
 \section{The Core Problem \& Market Opportunity}
