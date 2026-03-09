@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/phone_auth_service.dart';
-import '../repositories/cycle_repository.dart';
-import '../widgets/expenso_loader.dart';
+import '../../services/phone_auth_service.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../widgets/expenso_loader.dart';
 import 'phone_auth.dart';
 import 'onboarding_name.dart';
-import 'groups_list.dart';
-import '../services/fcm_token_service.dart';
+import '../groups/groups_list.dart';
+import '../../services/fcm_token_service.dart';
 
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});
