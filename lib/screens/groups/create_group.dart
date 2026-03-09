@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../design/colors.dart';
+import '../../design/colors.dart';
 import 'invite_members.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../models/models.dart';
-import '../repositories/cycle_repository.dart';
-import '../services/connectivity_service.dart';
-import '../widgets/gradient_scaffold.dart';
-import '../widgets/tap_scale.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../models/models.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../services/connectivity_service.dart';
+import '../../widgets/gradient_scaffold.dart';
+import '../../widgets/tap_scale.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});

@@ -17,8 +17,6 @@
 library;
 
 import '../models/models.dart';
-import '../models/money_minor.dart';
-import '../models/normalized_expense.dart';
 import '../services/groq_expense_parser_service.dart';
 
 const double _tolerance = 0.01;

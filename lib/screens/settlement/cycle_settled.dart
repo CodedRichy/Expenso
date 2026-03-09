@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../models/models.dart';
-import '../utils/money_format.dart';
-import '../utils/route_args.dart';
-import '../widgets/fade_in.dart';
+import '../../design/colors.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../models/models.dart';
+import '../../utils/money_format.dart';
+import '../../utils/route_args.dart';
+import '../../widgets/fade_in.dart';
 
 class CycleSettled extends StatelessWidget {
   final Group? group;

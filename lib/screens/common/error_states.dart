@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
-import '../design/typography.dart';
-import '../repositories/cycle_repository.dart';
-import '../widgets/fade_in.dart';
+import '../../design/colors.dart';
+import '../../design/typography.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../widgets/fade_in.dart';
 
 class ErrorStates extends StatelessWidget {
   final String

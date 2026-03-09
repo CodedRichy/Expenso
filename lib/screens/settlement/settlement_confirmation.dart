@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../models/models.dart';
-import '../models/payment_attempt.dart';
-import '../repositories/cycle_repository.dart';
-import '../services/connectivity_service.dart';
-import '../utils/route_args.dart';
-import '../utils/settlement_engine.dart';
-import '../widgets/gradient_scaffold.dart';
-import '../widgets/offline_banner.dart';
-import '../widgets/settlement_activity_feed.dart';
-import '../widgets/skeleton_placeholders.dart';
-import '../widgets/staggered_list_item.dart';
-import '../widgets/upi_payment_card.dart';
-import '../utils/money_format.dart';
-import '../widgets/tap_scale.dart';
+import '../../design/colors.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../models/models.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../services/connectivity_service.dart';
+import '../../utils/route_args.dart';
+import '../../utils/settlement_engine.dart';
+import '../../widgets/gradient_scaffold.dart';
+import '../../widgets/offline_banner.dart';
+import '../../widgets/settlement_activity_feed.dart';
+import '../../widgets/skeleton_placeholders.dart';
+import '../../widgets/staggered_list_item.dart';
+import '../../widgets/upi_payment_card.dart';
+import '../../utils/money_format.dart';
+import '../../widgets/tap_scale.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   final Group? group;

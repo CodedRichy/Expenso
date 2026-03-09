@@ -8,3 +8,5 @@ export 'cycle.dart';
 export 'currency.dart';
 export 'normalized_expense.dart';
 export 'money_minor.dart';
+export 'payment_attempt.dart';
+export 'settlement_event.dart';

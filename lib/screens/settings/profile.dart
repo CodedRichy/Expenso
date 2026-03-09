@@ -4,16 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../design/colors.dart';
-import '../repositories/cycle_repository.dart';
-import '../services/connectivity_service.dart';
-import '../services/profile_service.dart';
-import '../services/locale_service.dart';
-import '../design/typography.dart';
-import '../widgets/gradient_scaffold.dart';
-import '../widgets/member_avatar.dart';
-import '../widgets/tap_scale.dart';
-import '../widgets/fade_in.dart';
+import '../../design/colors.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../services/connectivity_service.dart';
+import '../../services/profile_service.dart';
+import '../../services/locale_service.dart';
+import '../../design/typography.dart';
+import '../../widgets/gradient_scaffold.dart';
+import '../../widgets/member_avatar.dart';
+import '../../widgets/tap_scale.dart';
+import '../../widgets/fade_in.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
 /// Display name is the same value used for Groq fuzzy matching in the Magic Bar.

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../design/typography.dart';
-import '../repositories/cycle_repository.dart';
-import '../widgets/fade_in.dart';
-import '../widgets/tap_scale.dart';
+import '../../design/typography.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../widgets/fade_in.dart';
+import '../../widgets/tap_scale.dart';
 
 class OnboardingNameScreen extends StatefulWidget {
   const OnboardingNameScreen({super.key});

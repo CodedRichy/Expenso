@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../widgets/fade_in.dart';
-import '../widgets/tap_scale.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../widgets/fade_in.dart';
+import '../../widgets/tap_scale.dart';
 
 class EmptyStates extends StatelessWidget {
   final String

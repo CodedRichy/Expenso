@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../design/spacing.dart';
-import '../widgets/skeleton_placeholders.dart';
+import '../../design/spacing.dart';
+import '../../widgets/skeleton_placeholders.dart';
 
 /// Full-screen groups list skeleton. Structurally mirrors GroupsList:
 ///

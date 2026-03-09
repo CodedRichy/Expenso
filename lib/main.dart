@@ -11,8 +11,6 @@ import 'firebase_app.dart';
 import 'firebase_options.dart';
 import 'repositories/cycle_repository.dart';
 import 'services/user_profile_cache.dart';
-import 'screens/auth/phone_auth.dart';
-import 'screens/auth/onboarding_name.dart';
 import 'screens/groups/groups_list.dart';
 import 'screens/groups/create_group.dart';
 import 'models/models.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:expenso/design/typography.dart';
-import 'package:expenso/screens/empty_states.dart';
+import 'package:expenso/screens/common/empty_states.dart';
 
 void main() {
   Widget wrap(Widget child) {

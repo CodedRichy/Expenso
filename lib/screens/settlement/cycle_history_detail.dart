@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../design/spacing.dart';
-import '../widgets/fade_in.dart';
-import '../widgets/tap_scale.dart';
-import '../models/cycle.dart';
-import '../utils/money_format.dart';
-import '../utils/route_args.dart';
-import '../widgets/staggered_list_item.dart';
+import '../../design/spacing.dart';
+import '../../widgets/fade_in.dart';
+import '../../widgets/tap_scale.dart';
+import '../../models/cycle.dart';
+import '../../utils/money_format.dart';
+import '../../utils/route_args.dart';
+import '../../widgets/staggered_list_item.dart';
 
 class CycleHistoryDetail extends StatelessWidget {
   const CycleHistoryDetail({super.key});

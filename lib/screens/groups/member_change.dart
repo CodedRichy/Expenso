@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../repositories/cycle_repository.dart';
-import '../services/connectivity_service.dart';
+import '../../design/colors.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../services/connectivity_service.dart';
 
 class MemberChange extends StatelessWidget {
   final String groupName;

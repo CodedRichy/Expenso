@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:expenso/models/models.dart';
-import 'package:expenso/models/money_minor.dart';
 import 'package:expenso/utils/settlement_engine.dart';
 import 'package:expenso/utils/ledger_delta.dart';
 

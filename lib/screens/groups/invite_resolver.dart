@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../design/colors.dart';
-import '../design/spacing.dart';
-import '../design/typography.dart';
-import '../repositories/cycle_repository.dart';
-import '../services/firestore_service.dart';
-import '../widgets/expenso_loader.dart';
+import '../../design/colors.dart';
+import '../../design/spacing.dart';
+import '../../design/typography.dart';
+import '../../repositories/cycle_repository.dart';
+import '../../services/firestore_service.dart';
+import '../../widgets/expenso_loader.dart';
 
 /// Handles deep links of the form: expenso://invite/{groupId}/{token}
 ///

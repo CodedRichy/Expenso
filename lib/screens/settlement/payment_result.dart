@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../design/typography.dart';
-import '../models/models.dart';
-import '../utils/route_args.dart';
-import '../utils/money_format.dart';
-import '../widgets/tap_scale.dart';
+import '../../design/typography.dart';
+import '../../models/models.dart';
+import '../../utils/route_args.dart';
+import '../../utils/money_format.dart';
+import '../../widgets/tap_scale.dart';
 
 class PaymentResult extends StatefulWidget {
   final Group? group;
