@@ -56,7 +56,7 @@ void main() {
           const EmptyStates(type: 'zero-waste-cycle', wrapInScaffold: false),
         ),
       );
-      expect(find.text('Zero-Waste Cycle'), findsOneWidget);
+      expect(find.text('No expenses yet ...'), findsOneWidget);
     });
 
     testWidgets('no-groups with wrapInScaffold has Scaffold', (tester) async {
