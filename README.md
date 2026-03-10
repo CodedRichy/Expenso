@@ -283,11 +283,11 @@ Use a device or emulator with the same Firebase/Google config (e.g. `google-serv
 - **Settlement:** Everyone sees **Settlement** button; opens the settlement screen (UPI app picker with QR fallback, Mark as paid, Paid via cash). **Creator only** also sees **Close cycle** (or **Start New Cycle** when cycle is settling); confirm in the dialog invokes the `settleAndRestart` Cloud Function which atomically validates, archives the old cycle, and starts a new one. Payer marks payment; receiver confirms receipt before balance clears.
 - **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID. Log out to switch accounts.
 
-Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
-- [PRODUCT_NORTH_STAR.md](docs/PRODUCT_NORTH_STAR.md) — Core product philosophy ("I want my money back — without asking")
-- [STABILIZATION.md](docs/STABILIZATION.md) — Invariants, limitations, and change safety guidance
-- [DATA_SPINE.md](docs/DATA_SPINE.md) — Formal data entity definitions
-- [DATA_FLOW_TABLES.md](docs/DATA_FLOW_TABLES.md) — Screen-to-database data mapping (SQL table format)
+Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](docs/internal/APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
+- [PRODUCT_NORTH_STAR.md](docs/internal/PRODUCT_NORTH_STAR.md) — Core product philosophy ("I want my money back — without asking")
+- [STABILIZATION.md](docs/internal/STABILIZATION.md) — Invariants, limitations, and change safety guidance
+- [DATA_SPINE.md](docs/architecture/DATA_SPINE.md) — Formal data entity definitions
+- [DATA_FLOW_TABLES.md](docs/architecture/DATA_FLOW_TABLES.md) — Screen-to-database data mapping (SQL table format)
 - [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
 - [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
 - [features/SETTLEMENT_UI_FLOW.md](docs/features/SETTLEMENT_UI_FLOW.md) — Group Detail settlement buttons (Pay / Settle, Close cycle)
@@ -302,9 +302,9 @@ Expenso is **v5.0.0** (released). Core logic (expense recording, split calculati
 
 **CI:** Every push/PR runs `flutter analyze`, `flutter test`, a release APK build (Android), and Cloud Functions `npm test`. CodeQL security scanning is also enabled.
 
-**Known limitations (documented in [STABILIZATION.md](docs/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
+**Known limitations (documented in [STABILIZATION.md](docs/internal/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
 
-**Production readiness:** Assessed as ready for controlled beta / Early Access launch. See [docs/PRODUCTION_READINESS_ASSESSMENT.md](docs/PRODUCTION_READINESS_ASSESSMENT.md) for the full rubric and launch recommendation.
+**Production readiness:** Assessed as ready for controlled beta / Early Access launch. See [docs/operations/PRODUCTION_READINESS_ASSESSMENT.md](docs/operations/PRODUCTION_READINESS_ASSESSMENT.md) for the full rubric and launch recommendation.
 
 **Past releases:** V1 — Magic Bar, Decision Clarity, SettlementEngine. V2 — Profile pictures, UPI deep-linking. V3 — Settlement activity feed, Dynamic UPI QR. V4 — Cross-group identity, God Mode foundation, FCM infrastructure. V5 — Animation polish pass. See [docs/releases/](docs/releases/) for contracts.
 
