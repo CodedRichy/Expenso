@@ -4,320 +4,153 @@
 [![CodeQL](https://github.com/CodedRichy/Expenso/actions/workflows/codeql.yml/badge.svg)](https://github.com/CodedRichy/Expenso/actions/workflows/codeql.yml)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](#)
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey)]()
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
 
-**Group expense tracking done right.** Track who paid what, see who owes whom, settle debts, repeat.
+## Overview
 
-```
-  ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
-  │  ADD    │      │  TRACK  │      │  SEE    │      │  PAY    │
-  │ EXPENSE │ ───► │ SPLITS  │ ───► │ BALANCE │ ───► │  & GO   │
-  └─────────┘      └─────────┘      └─────────┘      └─────────┘
-      │                                                   │
-      └───────────────────── REPEAT ◄─────────────────────┘
-```
+Expenso is a premium group expense tracking application built with Flutter and Firebase. It addresses the friction of shared financial management for friends, roommates, and travel groups by enforcing a structured "Cycle" model. Unlike simple ledger apps, Expenso manages expenses through a discrete lifecycle: an active tracking phase, a "frozen" settlement phase, and an atomic archive-and-restart flow.
 
-> *"Dinner 1200 with Ash"* → Magic Bar parses it → Split calculated → Everyone knows what they owe
+The standout feature is the **Magic Bar**, an AI-powered input field that uses Natural Language Processing (NLP) to parse complex group expenses (e.g., *"Dinner 1200 with Ash excluding Rishi"*) into structured ledger entries automatically.
 
----
+## Features
 
-## Project Overview
-
-Expenso is a Flutter app that solves shared-expense tracking for small groups (friends, roommates, trips). It removes the pain of manual tallying and "who paid for what" confusion by enforcing a clear model: one group creator, an active expense cycle, and a two-phase settlement (freeze cycle, then archive and start new). Expenses are recorded with flexible splits (even, exact, exclude, percentage, shares); balances and settlement instructions are derived automatically. In-app settlement via UPI with app picker (GPay, PhonePe, Paytm, etc.). The app exists to give groups a single source of truth and a repeatable way to settle and reset.
-
----
-
-## How It Works
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           THE EXPENSO CYCLE                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-     ┌──────────┐          ┌──────────┐          ┌──────────┐
-     │  CREATE  │          │  TRACK   │          │  SETTLE  │
-     │  GROUP   │────────► │ EXPENSES │────────► │    UP    │
-     └──────────┘          └──────────┘          └──────────┘
-          │                      │                     │
-          │                      │                     │
-          ▼                      ▼                     ▼
-   ┌─────────────┐        ┌─────────────┐       ┌─────────────┐
-   │ Add members │        │ "Dinner     │       │ Pay via UPI │
-   │ via phone   │        │  1200 with  │       │ (GPay, etc) │
-   │ or contacts │        │  Ash"      │        │ or Cash     │
-   └─────────────┘        └─────────────┘       └─────────────┘
-                                │                     │
-                                ▼                     ▼
-                         ┌─────────────┐       ┌─────────────┐
-                         │ Auto-split  │       │ Start new   │
-                         │ & balance   │       │ cycle ──────┼──────┐
-                         │ calculation │       │             │      │
-                         └─────────────┘       └─────────────┘      │
-                                                                    │
-                                ┌───────────────────────────────────┘
-                                │
-                                ▼
-                         ┌─────────────┐
-                         │   REPEAT    │
-                         │   ∞         │
-                         └─────────────┘
-```
-
----
-
-## Expense Entry — Magic Bar
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         NATURAL LANGUAGE INPUT                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  You type:                          Expenso understands:
-  ─────────                          ────────────────────
-
-  "Dinner 1200 with Ash"       ──►  ₹1,200 • Dinner • Split with Ash
-
-  "Auto 450 paid by Ash"         ──►  ₹450 • Auto • Ash paid • Split all
-
-  "Groceries 800 exclude Ash" ──►  ₹800 • Groceries • Exclude Ash from split
-
-  "Movie 300 me and Ash"         ──►  ₹300 • Movie • Split: You + Ash
-
-                                          │
-                                          ▼
-                                   ┌─────────────┐
-                                   │  CONFIRM &  │
-                                   │    SAVE     │
-                                   └─────────────┘
-```
-
----
-
-## Settlement Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         PAYMENT & CONFIRMATION                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  PAYER                                              RECEIVER
-  ─────                                              ────────
-
-  ┌─────────────────┐                          ┌─────────────────┐
-  │  Pay / Settle   │                          │                 │
-  │  (or View       │                          │  ₹450 incoming  │
-  │   settlement)   │                          │  from Ash       │
-  │  You owe ₹450   │                          │                 │
-  └────────┬────────┘                          └────────┬────────┘
-           │                                            │
-           ▼                                            │
-  ┌─────────────────┐                                   │
-  │  Pay via UPI    │                                   │
-  │  ┌────┬────┬────┤                                   │
-  │  │GPay│PhPe│Paytm                                   │
-  │  └────┴────┴────┘                                   │
-  └────────┬────────┘                                   │
-           │                                            │
-           ▼                                            │
-  ┌─────────────────┐                                   │
-  │  Payment sent   │                                   │
-  │  ─────────────  │                                   │
-  │  Mark as paid ✓ │──────────── notification ────────►│
-  └────────┬────────┘                                   │
-           │                                            ▼
-           │                                   ┌─────────────────┐
-           │                                   │  Confirm        │
-           │                                   │  received? ✓    │ 
-           │                                   └────────┬────────┘
-           │                                            │
-           ▼                                            ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │                                                             │
-  │                      ✓ SETTLED                              │
-  │                                                             │
-  └─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Decision Clarity Card
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         ALWAYS KNOW WHERE YOU STAND                         │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                    ┌─────────────────────────────────┐
-                    │                                 │
-                    │   CYCLE TOTAL      ₹4,500       │
-                    │   ─────────────────────────     │
-                    │   You spent        ₹2,100       │
-                    │   Your share       ₹1,500       │
-                    │   ─────────────────────────     │
-                    │                                 │
-                    │   ┌─────────────────────────┐   │
-                    │   │  YOU GET BACK  ₹600  ▲  │   │  ◄── Green = others owe you
-                    │   └─────────────────────────┘   │
-                    │                                 │
-                    │           ── or ──              │
-                    │                                 │
-                    │   ┌─────────────────────────┐   │
-                    │   │  YOU OWE      ₹300   ▼  │   │  ◄── Red = you owe others
-                    │   └─────────────────────────┘   │
-                    │                                 │
-                    └─────────────────────────────────┘
-```
-
----
-
-## Key Features
-
-- **Groups** — Create groups, add members by phone or contacts, pin up to 3 groups, delete (creator only).
-- **Expenses** — Add via Magic Bar (natural language, Groq/Llama-4-Scout) or manual form. Splits: Even, Exact, Exclude, Percentage, Shares. Decision Clarity card shows cycle total, spent-by-you, and your net status (credit/debt).
-- **Settlement** — Two-phase: Settle (freeze cycle) then Start New Cycle (creator). Phase 2 archive is handled by the Cloud Function `settleAndRestart` which atomically validates balances and rotates the cycle. Pay dues via UPI app picker (GPay, PhonePe, Paytm, etc.) with QR fallback, or mark as cash. Payer/receiver confirmation flow; receiver confirmation required before balance clears.
-- **Profile** — Display name, avatar (Firebase Storage), UPI ID for payment settings, logout.
-- **Auth** — Phone (OTP) sign-in via Firebase when configured; optional mock flow when not.
-
----
+- **Magic Bar (NLP Parsing)**: AI-driven expense entry powered by Groq and Llama-3.
+- **Cycle Management**: Distinct phases for tracking and settlement (freeze, archive, restart).
+- **Decision Clarity Card**: A real-time net-balance visualization showing exactly who owes what.
+- **Integrated Payments**: Native deep-linking to UPI apps (GPay, PhonePe, Paytm) and dynamic QR fallback.
+- **Premium UX**: High-fidelity interface with Material 3, glassmorphism elements, and custom micro-animations (TapScale, StaggeredListItem).
+- **Offline Reliability**: Optimistic UI updates with real-time Firestore synchronization.
+- **Security**: Optional end-to-end encryption for sensitive group data at rest.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              DATA FLOW                                      │
-└─────────────────────────────────────────────────────────────────────────────┘
+Expenso follows a **Repository-driven Architecture** with a clear separation between UI, logic, and persistence.
 
-  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-  │    USER      │     │   FLUTTER    │     │   FIREBASE   │
-  │   ACTION     │────►│     APP      │────►│  FIRESTORE   │
-  └──────────────┘     └──────────────┘     └──────────────┘
-                              │                    │
-                              │                    │
-                       ┌──────┴──────┐      ┌──────┴──────┐
-                       │             │      │             │
-                       ▼             ▼      ▼             ▼
-                ┌───────────┐  ┌─────────┐  ┌─────────────────┐
-                │  MAGIC    │  │ SETTLE- │  │     REAL-TIME   │
-                │   BAR     │  │  MENT   │  │      SYNC       │
-                │  (Groq)   │  │ ENGINE  │  │                 │
-                └───────────┘  └─────────┘  └─────────────────┘
-                     │              │              │
-                     │              ▼              │
-                     │       ┌───────────┐         │
-                     │       │  BALANCE  │         │
-                     └──────►│   CALC    │◄────────┘
-                             └───────────┘
-                                   │
-                                   ▼
-                            ┌─────────────┐
-                            │  DECISION   │
-                            │  CLARITY    │
-                            │   CARD      │
-                            └─────────────┘
-```
-
-| Layer | Component | Role |
-|-------|-----------|------|
-| **UI** | Screens, Widgets | User interaction |
-| **State** | CycleRepository | Single source of truth, Firestore sync |
-| **Logic** | SettlementEngine | Balance math, debt minimization |
-| **AI** | GroqExpenseParserService | Natural language → structured expense |
-| **Payments** | UpiPaymentService | UPI app discovery, deep links |
-| **Backend** | Firebase (Auth, Firestore, Storage) | Persistence, real-time sync |
-
-On launch, the app shows a splash then routes by Firebase Auth state: unauthenticated users see Phone Auth; authenticated users sync identity to a singleton `CycleRepository` and then either onboarding (name) or the groups list. The repository subscribes to Firestore streams for groups (where the user is a member) and each group’s current-cycle expenses; it maintains in-memory state (`_groups`, `_expensesByCycleId`, `_membersById`) and notifies listeners. Group detail reads the active cycle and uses `SettlementEngine` to compute debts and net balances for the Decision Clarity card and Balances section. Expense writes go to `groups/{groupId}/expenses`; settlement is creator-only: Phase 1 sets cycle status to `settling`, Phase 2 archives expenses into `settled_cycles/{cycleId}/expenses`, clears current expenses, and creates a new active cycle. Magic Bar calls `GroqExpenseParserService` (with optional local number fallback); the result is confirmed in UI then persisted via `CycleRepository.addExpenseFromMagicBar`. Payments use `upi_india` to detect installed UPI apps and launch transactions directly; payment attempts are tracked in Firestore with payer/receiver confirmation states.
-
----
+- **Main Components**:
+  - `CycleRepository`: The central state manager and single source of truth; subscribes to real-time Firestore streams.
+  - `SettlementEngine`: A dedicated utility for complex balance math and debt minimization.
+  - `GroqExpenseParserService`: Orchestrates AI parsing with few-shot example learning and local fallback logic.
+- **Data Flow**:
+  - User input (Magic Bar/Manual) → `CycleRepository` → Firestore.
+  - Firestore Change → `CycleRepository` internal cache → UI Rebuild (via `ListenableBuilder`).
+  - Settlement/Archive → Firebase Cloud Functions (v2) for atomic cross-collection transactions.
 
 ## Tech Stack
 
-- **Client:** Flutter (Dart), Material 3
-- **Backend / services:** Firebase (Phone Auth, Cloud Firestore, Cloud Functions `settleAndRestart` + `createRazorpayOrder` + encryption key functions, Storage)
-- **AI parsing:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) for natural-language expense parsing
-- **Payments:** UPI app picker via `upi_india` (GPay, PhonePe, Paytm, BHIM, etc.); QR code via `qr_flutter`; Razorpay for optional gateway payments
-- **Local:** SharedPreferences (pinned groups, theme, locale, app profile cache), `flutter_contacts`, `flutter_dotenv` (`GROQ_API_KEY`)
+- **Client**: Flutter (Dart), Material 3
+- **Backend**: Firebase (Firestore, Auth, Functions, Storage, Messaging)
+- **AI**: Groq API (`meta-llama/llama-4-scout-17b-16e-instruct`)
+- **Payments**: `upi_india` (Intent launch), `qr_flutter`, `razorpay`
+- **Infrastructure**: GitHub Actions (CI), CodeQL
 
----
+## Repository Structure
 
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK (Dart 3.10+)
-- Firebase project with Phone Auth, Firestore, and (optional) Storage and Cloud Functions
-- For Magic Bar: Groq API key
-- For in-app UPI payments: Android device with UPI apps installed (GPay, PhonePe, etc.)
-
-### Installation
-
-```bash
-git clone <repo-url>
-cd Expenso
-flutter pub get
+```text
+/lib
+  /design       → Design system: colors, typography, theme tokens, and animations
+  /models       → Immutable data entities (Expense, Group, Cycle, Member)
+  /repositories → Central logic: CycleRepository for state and data orchestration
+  /screens      → Feature-based views (Auth, GroupDetail, Settlement, Profile)
+  /services     → External API wrappers (AI Parser, UPI, Firebase, Connectivity)
+  /utils        → Logic helpers: SettlementEngine, formatting, normalization
+  /widgets      → Generic UI components (MagicBar, TapScale, Loaders)
+/functions      → Node.js Firebase Cloud Functions for atomic cycle rotation
+/docs           → Comprehensive technical documentation and specifications
+/test           → 187+ unit, widget, and golden tests
 ```
 
-### Configuration
+## Installation
 
-- **Firebase:** Run `dart run flutterfire configure` to generate `lib/firebase_options.dart` and link Android/iOS. Enable Phone sign-in in Firebase Console. Deploy Firestore rules from `firestore.rules` (Console or `firebase deploy --only firestore`).
-- **Environment:** Create a `.env` in the project root (listed in `pubspec.yaml` assets). Set `GROQ_API_KEY` for Magic Bar; omit for manual-only expense entry.
-- **UPI Payments:** No configuration needed. The app detects installed UPI apps automatically on Android. On iOS, add UPI URL schemes to `Info.plist` (already configured). UPI intent launch is via the `upi_india` package; QR fallback generated with `qr_flutter`.
-- **Cloud Functions:** Deploy `functions/` with `firebase deploy --only functions`. Functions required: `settleAndRestart` (cycle archive), `createRazorpayOrder` (optional Razorpay), `getUserEncryptionKey` / `getGroupEncryptionKey` (optional encryption). All deployed to `asia-south1`.
-- **Data encryption (optional):** To encrypt sensitive data at rest, set `DATA_ENCRYPTION_MASTER_KEY` in Firebase Functions config. Use a 32-byte key as **64 hex characters** (e.g. `9f3c7a1d8b4e2f0c...` — 64 chars total). Deploy `getUserEncryptionKey` and `getGroupEncryptionKey`; the app will encrypt/decrypt automatically when the key is available.
+### Prerequisites
+- Flutter SDK (3.10.x or higher)
+- Firebase CLI (for backend deployment)
+- Groq API Key (for NLP parsing)
 
-### Running locally
+### Setup
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/CodedRichy/Expenso.git
+   cd Expenso
+   ```
+2. **Install dependencies**:
+   ```bash
+   flutter pub get
+   ```
+3. **Environment**: Create a `.env` in the root and add your Groq key:
+   ```env
+   GROQ_API_KEY=your_api_key_here
+   ```
+4. **Firebase Configuration**:
+   ```bash
+   dart run flutterfire configure
+   ```
+5. **Functions Deployment**:
+   ```bash
+   cd functions
+   npm install
+   firebase deploy --only functions
+   ```
 
+## Usage
+
+### Running Locally
+To launch the app on a connected device:
 ```bash
 flutter run
 ```
 
-Use a device or emulator with the same Firebase/Google config (e.g. `google-services.json` / `GoogleService-Info.plist`) as your project.
+### Magic Bar Examples
+Type these directly into the app for instant parsing:
+- *"Pizza 450"* (Splits with everyone, you paid)
+- *"Taxi 200 with Ash"* (Splits 50/50 between you and Ash)
+- *"Dinner 1200 Ash paid"* (Records Ash as payer)
 
----
+## Configuration
 
-## Usage
+- **.env**: Local keys for AI and third-party services.
+- **firebase_options.dart**: Auto-generated by FlutterFire for project linking.
+- **Data Encryption**: Optional master key config in Firebase Functions for at-rest encryption.
 
-- **Groups:** From the groups list, use the FAB to create a group, then add members (phone or contacts; supports 15 international country codes). Swipe left to pin/unpin (max 3), swipe right to delete (creator only). Share invite link (`expenso://join/<groupId>`) from InviteMembers screen (creator only).
-- **Expenses:** In group detail, use the Magic Bar (e.g. "Dinner 1200 with Ash") or tap to add manually. Choose payer, split type, and participants; confirm. Recent add shows an undo screen for a few seconds.
-- **Settlement:** Everyone sees **Settlement** button; opens the settlement screen (UPI app picker with QR fallback, Mark as paid, Paid via cash). **Creator only** also sees **Close cycle** (or **Start New Cycle** when cycle is settling); confirm in the dialog invokes the `settleAndRestart` Cloud Function which atomically validates, archives the old cycle, and starts a new one. Payer marks payment; receiver confirms receipt before balance clears.
-- **Profile:** Set display name (used in Magic Bar matching), avatar, and UPI ID. Log out to switch accounts.
+## Development
 
-Detailed flows, routes, and logic are in [APP_BLUEPRINT.md](docs/internal/APP_BLUEPRINT.md). Additional docs are in [docs/](docs/):
-- [PRODUCT_NORTH_STAR.md](docs/internal/PRODUCT_NORTH_STAR.md) — Core product philosophy ("I want my money back — without asking")
-- [STABILIZATION.md](docs/internal/STABILIZATION.md) — Invariants, limitations, and change safety guidance
-- [DATA_SPINE.md](docs/architecture/DATA_SPINE.md) — Formal data entity definitions
-- [DATA_FLOW_TABLES.md](docs/architecture/DATA_FLOW_TABLES.md) — Screen-to-database data mapping (SQL table format)
-- [features/MONEY_BALANCE_LOGIC.md](docs/features/MONEY_BALANCE_LOGIC.md) — Balance computation specification
-- [features/MONEY_TESTS.md](docs/features/MONEY_TESTS.md) — Golden test cases for balance computation
-- [features/SETTLEMENT_UI_FLOW.md](docs/features/SETTLEMENT_UI_FLOW.md) — Group Detail settlement buttons (Pay / Settle, Close cycle)
-- [features/MONEY_CANONICALIZATION.md](docs/features/MONEY_CANONICALIZATION.md) — Canonical implementation plan
-- [features/MONEY_PHASE2.md](docs/features/MONEY_PHASE2.md) — Phase 2 invariant enforcement plan
+- **Linting**: Rules are defined in `analysis_options.yaml`. Run locally:
+  ```bash
+  flutter analyze
+  ```
+- **Code Style**: Aligns with standard Flutter/Dart lint recommendations.
+- **Workflow**: Small, focused PRs matching the release contracts in `docs/releases/`.
 
----
+## Testing
 
-## Project Status
+Expenso is built with a test-heavy philosophy (187+ tests).
+- **Run all tests**:
+  ```bash
+  flutter test
+  ```
+- **Test Categories**:
+  - `settlement_engine_test.dart`: Verifies balance math and edge cases.
+  - `groq_parser_test.dart`: Validates NLP accuracy.
+  - `widget_test.dart`: Ensures UI state and navigation integrity.
 
-Expenso is **v5.0.0** (released). Core logic (expense recording, split calculation, settlement engine, cycle management) is complete and tested. V4 added cross-group identity, FCM infrastructure, and payment attempt tracking. V5 polished the experience with premium micro-animations (TapScale, StaggeredListItem, FadeIn). All primary flows are secured with **187+ tests** covering settlement math, balance-after-settlements contract, normalization, revision lifecycle, encryption, parser outcomes, widget states, and app launch. Detailed flows, invariants, and limitations are in [STABILIZATION.md](docs/STABILIZATION.md).
+## Deployment
 
-**CI:** Every push/PR runs `flutter analyze`, `flutter test`, a release APK build (Android), and Cloud Functions `npm test`. CodeQL security scanning is also enabled.
+- **Android**: `flutter build appbundle` (configured for Play Store via GitHub Actions).
+- **iOS**: `flutter build ipa` (configured for App Store Connect).
+- **Cloud Functions**: Deployable to `asia-south1` via Firebase CLI.
 
-**Known limitations (documented in [STABILIZATION.md](docs/internal/STABILIZATION.md)):** Expense dates stored as display strings; timezone/locale boundaries are device-dependent. Groups, expenses, and cycle history load in full (no pagination); add when scale demands.
+## Roadmap
 
-**Production readiness:** Assessed as ready for controlled beta / Early Access launch. See [docs/operations/PRODUCTION_READINESS_ASSESSMENT.md](docs/operations/PRODUCTION_READINESS_ASSESSMENT.md) for the full rubric and launch recommendation.
-
-**Past releases:** V1 — Magic Bar, Decision Clarity, SettlementEngine. V2 — Profile pictures, UPI deep-linking. V3 — Settlement activity feed, Dynamic UPI QR. V4 — Cross-group identity, God Mode foundation, FCM infrastructure. V5 — Animation polish pass. See [docs/releases/](docs/releases/) for contracts.
-
-**Planned features** (not yet implemented) are listed in APP_BLUEPRINT.md Section 9. No timeline commitments.
-
----
+- [ ] **FCM Infrastructure**: Real-time push notifications for expense activity.
+- [ ] **Multi-Currency Support**: Currently optimized for single-currency groups.
+- [ ] **Cross-Group Discovery**: Simplified invitation flows between existing users.
+- [ ] **Analytics**: Historical spending visualizations in the Profile section.
 
 ## Contributing
 
-This repository is shared for reference. If you have permission to contribute: prefer small, focused PRs; follow the logic and conventions in APP_BLUEPRINT.md and the existing code style; run `flutter test` before submitting (187+ unit and widget tests must pass). Optional: run `flutter test integration_test/app_test.dart -d <deviceId>` for the app-launch integration test. For behavioral or product changes, align with the release contracts in `docs/releases/`.
-
----
+This is a proprietary project. Access is limited to authorized contributors.
+1. Follow the Repository pattern in `lib/repositories`.
+2. Ensure no UI code directly accesses Firestore; use the `CycleRepository`.
+3. All feature changes must pass the full test suite (`flutter test`).
 
 ## License
 
-Proprietary. Copyright (c) 2025 Rishi Praseeth Krishnan. All rights reserved. This repository and source code are made visible for viewing and reference only. No license is granted to use, copy, modify, distribute, or create derivative works without express written permission from the copyright holder. See [LICENSE](LICENSE).
+**Proprietary**. Copyright (c) 2025 Rishi Praseeth Krishnan. All rights reserved. Source code is visible for reference only. No license is granted for modification, distribution, or commercial use without express written permission. See [LICENSE](LICENSE) for full terms.
