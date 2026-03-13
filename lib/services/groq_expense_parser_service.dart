@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // We'll remove this in next step
+import 'package:cloud_functions/cloud_functions.dart';
 
 /// Thrown when Groq API returns 429 (Rate Limit) after retry.
 class GroqRateLimitException implements Exception {
@@ -355,17 +355,6 @@ class GroqExpenseParserService {
     return null;
   }
 
-  static const String _baseUrl =
-      'https://api.groq.com/openai/v1/chat/completions';
-  // Model aligned with CLI parser (tool/parser_cli.dart) for consistent behavior.
-  static const String _model = 'meta-llama/llama-4-scout-17b-16e-instruct';
-
-  static String? get _apiKey {
-    final key = dotenv.env['GROQ_API_KEY'];
-    if (key == null || key.trim().isEmpty) return null;
-    return key.trim();
-  }
-
   /// System prompt aligned with PARSER_OUTCOME_CONTRACT.md and CLI parser (tool/parser_cli.dart).
   /// When [recentExamples] is non-empty, appends a RECENT EXAMPLES section (like CLI's parser_runs.log).
   static String _buildSystemPrompt(
@@ -557,17 +546,6 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     String? currentUserDisplayName,
     String? expectedCurrencyCode,
   }) async {
-    final apiKey = _apiKey;
-    if (apiKey == null) {
-      final fallback = _fallbackParse(
-        userInput,
-        expectedCurrencyCode: expectedCurrencyCode,
-        groupMemberNames: groupMemberNames,
-      );
-      if (fallback != null) return fallback;
-      throw Exception('GROQ_API_KEY is not set in environment.');
-    }
-
     final memberList = groupMemberNames.isEmpty
         ? ' (no members listed)'
         : ' ${groupMemberNames.join(", ")}';
@@ -579,54 +557,23 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
     );
     final normalizedInput = expandNumberWordsInText(userInput.trim());
 
-    final body = {
-      'model': _model,
-      'messages': [
-        {'role': 'system', 'content': systemPrompt},
-        {'role': 'user', 'content': normalizedInput},
-      ],
-      'temperature': 0,
-      'max_tokens': 256,
-    };
+    final messages = [
+      {'role': 'system', 'content': systemPrompt},
+      {'role': 'user', 'content': normalizedInput},
+    ];
 
     try {
       await _throttleForRateLimit();
       _inFlight = true;
       try {
-        http.Response response = await _post(apiKey, body);
+        final callable = FirebaseFunctions.instanceFor(
+          region: 'asia-south1',
+        ).httpsCallable('callGroqParser');
+        final response = await callable.call({'messages': messages});
         _markRequestDone();
 
-        if (response.statusCode == 429) {
-          final wait1 = _retryAfterSeconds(response);
-          await Future<void>.delayed(Duration(seconds: wait1));
-          response = await _post(apiKey, body);
-          _markRequestDone();
-          if (response.statusCode == 429) {
-            final wait2 = (wait1 * 2).clamp(2, 60);
-            await Future<void>.delayed(Duration(seconds: wait2));
-            debugPrint(
-              'Groq API rate limit (429) after backoff: ${response.body}',
-            );
-            throw GroqRateLimitException(
-              'Rate limit exceeded. Try again in a moment.',
-            );
-          }
-        }
-
-        if (response.statusCode != 200) {
-          debugPrint('Groq API error: ${response.statusCode} ${response.body}');
-          final fallback = _fallbackParse(
-            userInput,
-            expectedCurrencyCode: expectedCurrencyCode,
-          );
-          if (fallback != null) return fallback;
-          throw Exception(
-            'AI request failed. Try again or use a clearer format like "Dinner 500".',
-          );
-        }
-
-        final map = jsonDecode(response.body) as Map<String, dynamic>?;
-        if (map == null) {
+        final map = response.data;
+        if (map == null || map is! Map) {
           final fallback = _fallbackParse(
             userInput,
             expectedCurrencyCode: expectedCurrencyCode,
@@ -634,8 +581,9 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           if (fallback != null) return fallback;
           throw Exception('Invalid response from AI.');
         }
+        final Map<String, dynamic> mapCast = Map<String, dynamic>.from(map);
 
-        final choices = map['choices'] as List?;
+        final choices = mapCast['choices'] as List?;
         final first = choices?.isNotEmpty == true ? choices!.first : null;
         final message = first is Map<String, dynamic> ? first['message'] : null;
         final content = message is Map<String, dynamic>
@@ -750,6 +698,17 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         _inFlight = false;
       }
     } on GroqRateLimitException {
+      rethrow;
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'resource-exhausted') {
+        throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
+      }
+      final fallback = _fallbackParse(
+        userInput,
+        expectedCurrencyCode: expectedCurrencyCode,
+        groupMemberNames: groupMemberNames,
+      );
+      if (fallback != null) return fallback;
       rethrow;
     } on GroqParserRejectException {
       // Semantic rejects must propagate as user-facing errors; do not apply fallback.
@@ -963,25 +922,5 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
   static String _fixCommonJsonIssues(String raw) {
     raw = raw.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
     return raw;
-  }
-
-  static int _retryAfterSeconds(http.Response response) {
-    final v = response.headers['retry-after']?.trim();
-    if (v == null || v.isEmpty) return 2;
-    final s = int.tryParse(v);
-    if (s == null || s < 1) return 2;
-    if (s > 60) return 60;
-    return s;
-  }
-
-  static Future<http.Response> _post(String apiKey, Map<String, dynamic> body) {
-    return http.post(
-      Uri.parse(_baseUrl),
-      headers: {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
   }
 }

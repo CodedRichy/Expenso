@@ -235,6 +235,55 @@ const notifyOnNewExpense = onDocumentCreated(
   }
 );
 
+// --- SECURE GROQ API PROXY ---
+const callGroqParser = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new HttpsError('failed-precondition', 'GROQ_API_KEY not configured.');
+    }
+    
+    const { messages } = request.data || {};
+    if (!messages || !Array.isArray(messages)) {
+      throw new HttpsError('invalid-argument', 'messages must be an array.');
+    }
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: messages,
+          temperature: 0,
+          max_tokens: 256
+        })
+      });
+
+      if (response.status === 429) {
+        throw new HttpsError('resource-exhausted', 'Rate limit exceeded.');
+      }
+      
+      if (!response.ok) {
+        throw new HttpsError('internal', `Groq API Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (e) {
+      console.error('Groq Proxy Error:', e);
+      throw new HttpsError('internal', e.message || 'Error parsing expense with AI');
+    }
+  }
+);
+
 module.exports = {
   createRazorpayOrder,
   settleAndRestart,
@@ -243,4 +292,5 @@ module.exports = {
   dailyCleanupJob,
   api,
   notifyOnNewExpense,
+  callGroqParser,
 };
