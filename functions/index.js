@@ -58,7 +58,7 @@ const settleAndRestart = onCall(
       throw new HttpsError('invalid-argument', 'groupId is required.');
     }
 
-    return await db.runTransaction(async (transaction) => {
+    const result = await db.runTransaction(async (transaction) => {
       const groupRef = db.collection('groups').doc(groupId);
       const groupSnap = await transaction.get(groupRef);
       if (!groupSnap.exists) {
@@ -108,26 +108,41 @@ const settleAndRestart = onCall(
         .doc(cycleId);
       transaction.set(settledCycleRef, { startDate: startStr, endDate: endStr });
 
-      // Archive expenses
-      expensesSnap.docs.forEach(doc => {
-        const settledExpRef = settledCycleRef.collection('expenses').doc(doc.id);
-        transaction.set(settledExpRef, doc.data());
-        transaction.delete(doc.ref);
-      });
-
-      // Clear payment attempts
-      attemptsSnap.docs.forEach(doc => {
-        transaction.delete(doc.ref);
-      });
-
       // Rotate cycle
       transaction.update(groupRef, {
         activeCycleId: newCycleId,
         cycleStatus: 'active',
       });
 
-      return { success: true, newCycleId };
+      return { 
+        newCycleId, 
+        startStr, 
+        endStr, 
+        cycleId, 
+        expensesDocs: expensesSnap.docs.map(d => ({ id: d.id, ref: d.ref, data: d.data() })), 
+        attemptsDocs: attemptsSnap.docs.map(d => ({ ref: d.ref })) 
+      };
     });
+
+    // Execute the bulky operations outside the 500-op transaction limit using bulkWriter
+    const bulkWriter = db.bulkWriter();
+    const settledCycleRef = db.collection('groups').doc(groupId).collection('settled_cycles').doc(result.cycleId);
+    
+    // Archive expenses
+    result.expensesDocs.forEach(doc => {
+      const settledExpRef = settledCycleRef.collection('expenses').doc(doc.id);
+      bulkWriter.set(settledExpRef, doc.data);
+      bulkWriter.delete(doc.ref);
+    });
+
+    // Clear payment attempts
+    result.attemptsDocs.forEach(doc => {
+      bulkWriter.delete(doc.ref);
+    });
+
+    await bulkWriter.close();
+
+    return { success: true, newCycleId: result.newCycleId };
   }
 );
 
