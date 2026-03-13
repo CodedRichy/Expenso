@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'design/theme.dart';
 import 'firebase_app.dart';
 import 'firebase_options.dart';
@@ -46,11 +45,6 @@ void main() async {
   ]);
   CycleRepository.instance.loadFromLocalCache();
 
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (e) {
-    debugPrint('dotenv: .env not loaded (optional): $e');
-  }
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

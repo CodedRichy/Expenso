@@ -49,11 +49,9 @@ dependencies:
   cryptography: ^2.7.0
 
   # Env and UX
-  flutter_dotenv: ^5.2.1
   cached_network_image: ^3.4.1
   image_picker: ^1.2.1
   shimmer: ^3.0.0
-  http: ^1.2.2
   flutter_slidable: ^3.1.1
   shared_preferences: ^2.3.3
   permission_handler: ^11.3.1
@@ -94,7 +92,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/images/
     - assets/app_icon_transparent.png
     - assets/app_icon_light.png
