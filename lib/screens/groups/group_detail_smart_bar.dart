@@ -930,10 +930,10 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
             TapScale(
               child: IconButton(
                 onPressed: _showMagicMenu,
-                icon: const Icon(
-                  Icons.auto_awesome,
-                  size: 20,
-                  color: Colors.amber,
+                icon: Icon(
+                  Icons.add_rounded,
+                  size: 24,
+                  color: iconColor,
                 ),
                 style: IconButton.styleFrom(
                   padding: const EdgeInsets.all(8),
@@ -1923,27 +1923,33 @@ class _MagicActionTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.colorGradientStart,
+                context.colorGradientEnd,
+              ],
+            ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorGradientStart.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
+              Icon(icon, color: Colors.white, size: 24),
               const SizedBox(height: 12),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1951,7 +1957,7 @@ class _MagicActionTile extends StatelessWidget {
                 description,
                 style: TextStyle(
                   fontSize: 11,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: Colors.white.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),
