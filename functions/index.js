@@ -1,4 +1,5 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
 const { getUserEncryptionKey, getGroupEncryptionKey } = require('./encryption');
@@ -129,9 +130,59 @@ const settleAndRestart = onCall(
   }
 );
 
+// --- BACKGROUND JOBS ---
+const dailyCleanupJob = onSchedule('every day 00:00', async (event) => {
+  console.log('Running daily cleanup tasks...');
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  // Cleanup old failed payment attempts
+  const attemptsSnap = await db.collectionGroup('payment_attempts')
+    .where('timestamp', '<', oneWeekAgo)
+    .where('status', '==', 'failed')
+    .get();
+  
+  const batch = db.batch();
+  let count = 0;
+  attemptsSnap.forEach(doc => {
+    batch.delete(doc.ref);
+    count++;
+  });
+  
+  if (count > 0) {
+    await batch.commit();
+    console.log(`Cleaned up ${count} old failed payment attempts.`);
+  }
+});
+
+// --- REST API BACKEND SURFACE ---
+const api = onRequest(
+  { region: 'asia-south1' },
+  async (req, res) => {
+    // A simple public API extension for health/status
+    if (req.method === 'GET' && req.path === '/health') {
+      return res.status(200).json({ status: 'ok', api_version: '1.0' });
+    }
+    
+    // Group lookup endpoint
+    if (req.method === 'GET' && req.path.startsWith('/group/')) {
+      const groupId = req.path.split('/')[2];
+      const groupSnap = await db.collection('groups').doc(groupId).get();
+      if (!groupSnap.exists) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      return res.status(200).json({ id: groupId, name: groupSnap.data().name });
+    }
+
+    return res.status(404).json({ error: 'Not implemented' });
+  }
+);
+
 module.exports = {
   createRazorpayOrder,
   settleAndRestart,
   getUserEncryptionKey,
   getGroupEncryptionKey,
+  dailyCleanupJob,
+  api,
 };
