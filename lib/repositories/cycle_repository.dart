@@ -644,9 +644,8 @@ class CycleRepository extends ChangeNotifier {
           _membersById[pid] = Member(id: pid, phone: phone, name: name);
         }
       }
-
-      }
     }
+
 
     _loadUsersForMembers(docs);
     _requestNotify();
