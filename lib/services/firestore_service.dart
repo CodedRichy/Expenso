@@ -990,8 +990,10 @@ class FirestoreService {
         'groupName': data['groupName'] as String? ?? 'Group',
         'creatorId': data['creatorId'] as String? ?? '',
       };
-    } catch (e) {
-      return null;
+    } catch (e, st) {
+      debugPrint('Error resolving invite link: $e');
+      debugPrint(st.toString());
+      rethrow;
     }
   }
 }

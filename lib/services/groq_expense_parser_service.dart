@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // We'll remove this in next step
 import 'package:cloud_functions/cloud_functions.dart';
 
 /// Thrown when Groq API returns 429 (Rate Limit) after retry.

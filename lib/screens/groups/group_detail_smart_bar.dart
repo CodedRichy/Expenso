@@ -1,29 +1,45 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_contacts/flutter_contacts.dart' as fc;
-import '../../design/colors.dart';
-import '../../design/spacing.dart';
-import '../../design/typography.dart';
-import '../../models/models.dart';
-import '../../repositories/cycle_repository.dart';
-import '../../services/connectivity_service.dart';
-import '../../services/groq_expense_parser_service.dart';
-import '../../services/locale_service.dart';
-import '../../utils/expense_normalization.dart';
-import '../../utils/money_format.dart';
-import '../../utils/route_args.dart';
-import '../../utils/settlement_engine.dart';
-import '../../widgets/expenso_loader.dart';
-import '../../widgets/gradient_scaffold.dart';
-import '../../widgets/member_avatar.dart';
-import '../../widgets/offline_banner.dart';
-import '../../widgets/settlement_activity_feed.dart';
-import '../../widgets/settlement_progress_indicator.dart';
-import '../../widgets/staggered_list_item.dart';
-import '../../widgets/undo_toast.dart';
-import '../common/empty_states.dart';
-import '../../widgets/tap_scale.dart';
+part of 'group_detail.dart';
+
+void _showUndoExpenseOverlay(
+  BuildContext context, {
+  required String groupId,
+  required String expenseId,
+  required String description,
+  required double amount,
+  String? currencyCode,
+}) {
+  final repo = CycleRepository.instance;
+  final code = currencyCode ?? repo.getGroup(groupId)?.currencyCode ?? 'INR';
+  showDialog(
+    context: context,
+    barrierColor: Colors.transparent,
+    barrierDismissible: false,
+    builder: (ctx) => UndoToast(
+      description: description,
+      amount: amount,
+      currencyCode: code,
+      onUndo: () {
+        if (ConnectivityService.instance.isOffline) {
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot undo while offline'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(ctx);
+          return;
+        }
+        repo.deleteExpense(groupId, expenseId);
+        repo.clearLastAdded();
+        Navigator.pop(ctx);
+      },
+      onDismiss: () {
+        repo.clearLastAdded();
+        Navigator.pop(ctx);
+      },
+    ),
+  );
+}
 
 class _SmartBarSection extends StatefulWidget {
   final Group group;

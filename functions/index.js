@@ -158,15 +158,15 @@ const dailyCleanupJob = onSchedule('every day 00:00', async (event) => {
     .where('status', '==', 'failed')
     .get();
   
-  const batch = db.batch();
+  const writer = db.bulkWriter();
   let count = 0;
   attemptsSnap.forEach(doc => {
-    batch.delete(doc.ref);
+    writer.delete(doc.ref);
     count++;
   });
   
   if (count > 0) {
-    await batch.commit();
+    await writer.close();
     console.log(`Cleaned up ${count} old failed payment attempts.`);
   }
 });
@@ -213,15 +213,23 @@ const notifyOnNewExpense = onDocumentCreated(
     const members = group.members || [];
     
     // Find tokens for all members except author
+    const membersToNotify = members.filter(id => id !== authorId);
+    if (membersToNotify.length === 0) return;
+
     const tokens = [];
-    for (const memberId of members) {
-      if (memberId === authorId) continue;
-      
-      const userSnap = await db.collection('users').doc(memberId).get();
-      if (userSnap.exists) {
-        const userData = userSnap.data();
-        if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
-          tokens.push(...userData.fcmTokens);
+    // Firestore getAll has a limit of 100 docs per call
+    const chunkSize = 100;
+    for (let i = 0; i < membersToNotify.length; i += chunkSize) {
+      const chunk = membersToNotify.slice(i, i + chunkSize);
+      const refs = chunk.map(id => db.collection('users').doc(id));
+      const snaps = await db.getAll(...refs);
+
+      for (const userSnap of snaps) {
+        if (userSnap.exists) {
+          const userData = userSnap.data();
+          if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
+            tokens.push(...userData.fcmTokens);
+          }
         }
       }
     }

@@ -45,34 +45,34 @@ void main() async {
   ]);
   CycleRepository.instance.loadFromLocalCache();
 
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  if (DefaultFirebaseOptions.currentPlatform.apiKey.isEmpty ||
+      DefaultFirebaseOptions.currentPlatform.appId.isEmpty) {
+    throw StateError(
+      'Firebase configuration is missing! Ensure environment variables are set '
+      'via --dart-define or run flutterfire configure for development.',
     );
-    setFirebaseAuthAvailable(true);
-    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
-
-    // --- Crashlytics setup ---
-    // Pass all Flutter framework errors to Crashlytics.
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    // Pass all async/platform errors that Flutter doesn’t catch internally.
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-
-    // --- Performance monitoring ---
-    await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-
-    debugPrint('Firebase initialized (Crashlytics + Performance enabled).');
-  } catch (e, st) {
-    debugPrint(
-      'Firebase not configured (run: dart run flutterfire configure): $e',
-    );
-    debugPrint('$st');
-    setFirebaseAuthAvailable(false);
   }
+
+  setFirebaseAuthAvailable(true);
+  FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+
+  // --- Crashlytics setup ---
+  // Pass all Flutter framework errors to Crashlytics.
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  // Pass all async/platform errors that Flutter doesn’t catch internally.
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+  // --- Performance monitoring ---
+  await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+
+  debugPrint('Firebase initialized (Crashlytics + Performance enabled).');
   runApp(const MyApp());
 }
 

@@ -60,10 +60,20 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
       return;
     }
 
-    final result = await FirestoreService.instance.resolveInviteLink(
-      widget.groupId,
-      widget.token,
-    );
+    Map<String, String>? result;
+    try {
+      result = await FirestoreService.instance.resolveInviteLink(
+        widget.groupId,
+        widget.token,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = _ResolveState.error;
+        _errorMessage = 'Could not process invite: ${e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '')}';
+      });
+      return;
+    }
 
     if (!mounted) return;
 
