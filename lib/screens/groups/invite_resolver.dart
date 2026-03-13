@@ -6,6 +6,7 @@ import '../../design/typography.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/expenso_loader.dart';
+import '../../widgets/gradient_scaffold.dart';
 
 /// Handles deep links of the form: expenso://invite/{groupId}/{token}
 ///
@@ -125,8 +126,7 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return GradientScaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
@@ -237,7 +237,11 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: onPrimary,
-              child: Text(primaryLabel),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+              ),
+              child: Text(primaryLabel, style: AppTypography.button),
             ),
           ),
           if (secondaryLabel != null && onSecondary != null) ...[
@@ -246,7 +250,10 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: onSecondary,
-                child: Text(secondaryLabel),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: Text(secondaryLabel, style: AppTypography.button),
               ),
             ),
           ],

@@ -100,6 +100,9 @@ class CycleRepository extends ChangeNotifier {
   String get currentUserName => _currentUserName;
   String _currentUserName = '';
 
+  /// Temporarily holds an invite link if the user is not authenticated when clicking it.
+  Map<String, String>? pendingInvitation;
+
   /// True if the current user is the creator of the group (for Settle & Restart, etc.).
   bool isCurrentUserCreator(String groupId) =>
       isCreator(groupId, _currentUserId);

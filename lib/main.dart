@@ -120,31 +120,52 @@ class _MyAppState extends State<MyApp> {
 
   void _handleLink(Uri uri) {
     debugPrint('Received deep link: $uri');
+
+    String? groupId;
+    String? token;
+
     if (uri.scheme == 'expenso' || uri.scheme.contains('expenso')) {
       final path = uri.path.replaceAll(RegExp(r'^/'), '');
       if (uri.host == 'invite' || path.startsWith('invite/')) {
         // format: expenso://invite/groupId/token
-        // If host is empty but path is invite/groupId/token, handle appropriately
         final segments = uri.host == 'invite'
             ? uri.pathSegments
             : path.split('/').skip(1).toList();
 
-        if (segments.length == 2) {
-          final groupId = segments[0];
-          final token = segments[1];
-          // Delay pushing to allow app to finish initializing if it's a cold boot
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              globalNavigatorKey.currentState?.push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      InviteResolverScreen(groupId: groupId, token: token),
-                ),
-              );
-            });
-          });
+        if (segments.length >= 2) {
+          groupId = segments[0];
+          token = segments[1];
         }
       }
+    } else if (uri.scheme == 'https' &&
+        (uri.host == 'expenso-e138a.web.app' ||
+            uri.host == 'expenso-e138a.firebaseapp.com')) {
+      // format: https://expenso-e138a.web.app/invite/groupId/token
+      if (uri.pathSegments.length >= 3 && uri.pathSegments[0] == 'invite') {
+        groupId = uri.pathSegments[1];
+        token = uri.pathSegments[2];
+      }
+    }
+
+    if (groupId != null && token != null) {
+      final repo = CycleRepository.instance;
+      if (FirebaseAuth.instance.currentUser == null) {
+        repo.pendingInvitation = {'groupId': groupId!, 'token': token!};
+        debugPrint('Stored pending invitation: ${repo.pendingInvitation}');
+        return;
+      }
+
+      // Delay pushing to allow app to finish initializing if it's a cold boot
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          globalNavigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  InviteResolverScreen(groupId: groupId!, token: token!),
+            ),
+          );
+        });
+      });
     }
   }
 

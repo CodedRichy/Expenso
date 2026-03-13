@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../utils/country_codes.dart';
 import '../../design/colors.dart';
 import '../../design/spacing.dart';
@@ -235,10 +236,15 @@ class _InviteMembersState extends State<InviteMembers>
     }
   }
 
-  Future<void> handleCopyLink(Group group) async {
+  Future<void> handleShareLink(Group group) async {
     if (!group.inviteLinkEnabled || group.inviteLinkToken == null) return;
-    final link = 'expenso://invite/${group.id}/${group.inviteLinkToken}';
-    await Clipboard.setData(ClipboardData(text: link));
+    final link =
+        'https://expenso-e138a.web.app/invite/${group.id}/${group.inviteLinkToken}';
+    final shareMessage =
+        'Join my group "${group.name}" on Expenso to manage shared expenses together!\n\n$link';
+
+    await Share.share(shareMessage, subject: 'Invite to join ${group.name}');
+
     if (!mounted) return;
     setState(() => linkCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
@@ -400,12 +406,12 @@ class _InviteMembersState extends State<InviteMembers>
                               const SizedBox(height: 12),
                               Semantics(
                                 label: linkCopied
-                                    ? 'Link copied'
-                                    : 'Copy invite link',
+                                    ? 'Link shared'
+                                    : 'Share invite link',
                                 button: true,
                                 child: TapScale(
                                   child: InkWell(
-                                    onTap: () => handleCopyLink(groupArg),
+                                    onTap: () => handleShareLink(groupArg),
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
@@ -414,7 +420,7 @@ class _InviteMembersState extends State<InviteMembers>
                                         border: Border.all(
                                           color: context.colorBorder,
                                         ),
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
                                         mainAxisAlignment:
@@ -432,16 +438,14 @@ class _InviteMembersState extends State<InviteMembers>
                                               const SizedBox(width: 12),
                                               Text(
                                                 linkCopied
-                                                    ? 'Link copied'
-                                                    : 'Copy invite link',
+                                                    ? 'Link shared'
+                                                    : 'Share invite link',
                                                 style: context.bodyPrimary,
                                               ),
                                             ],
                                           ),
                                           Icon(
-                                            linkCopied
-                                                ? Icons.check
-                                                : Icons.content_copy,
+                                            linkCopied ? Icons.check : Icons.share,
                                             size: 20,
                                             color: Theme.of(
                                               context,

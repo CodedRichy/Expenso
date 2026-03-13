@@ -6,6 +6,7 @@ import '../../widgets/expenso_loader.dart';
 import 'phone_auth.dart';
 import 'onboarding_name.dart';
 import '../groups/groups_list.dart';
+import '../groups/invite_resolver.dart';
 import '../../services/fcm_token_service.dart';
 
 class RootScreen extends StatelessWidget {
@@ -58,6 +59,23 @@ class RootScreen extends StatelessWidget {
               if (repo.currentUserName.isEmpty) {
                 return const OnboardingNameScreen();
               }
+
+              // Check for a pending invite link that was clicked while signed out
+              if (repo.pendingInvitation != null) {
+                final invite = repo.pendingInvitation!;
+                repo.pendingInvitation = null; // Clear it
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => InviteResolverScreen(
+                        groupId: invite['groupId']!,
+                        token: invite['token']!,
+                      ),
+                    ),
+                  );
+                });
+              }
+
               return const GroupsList();
             },
           );
