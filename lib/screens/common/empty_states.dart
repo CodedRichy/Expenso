@@ -192,9 +192,9 @@ class EmptyStates extends StatelessWidget {
                   ),
                   child: ClipOval(
                     child: Image.file(
-                      File('C:/Users/rishi/.gemini/antigravity/brain/78b0a27d-c42e-4cf4-95dc-92081c341592/magic_crystal_icon_1773418968625.png'),
-                      fit: BoxFit.cover,
-                    ),
+                    File('c:/Users/rishi/Documents/GitHub/Expenso/assets/images/magic_crystal.png'),
+                    fit: BoxFit.cover,
+                  ),
                   ),
                 ),
               ),
