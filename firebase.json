@@ -1,16 +1,1 @@
-{
-  "firestore": {
-    "rules": "firestore.rules"
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "README.md"
-      ]
-    }
-  ]
-}
+{"firestore":{"rules":"firestore.rules"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","README.md"]}],"flutter":{"platforms":{"android":{"default":{"projectId":"expenso-e138a","appId":"1:211875033656:android:c65dbc8db71f53b2a5eccd","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options_new.dart":{"projectId":"expenso-e138a","configurations":{"android":"1:211875033656:android:c65dbc8db71f53b2a5eccd","ios":"1:211875033656:ios:cab73d7d3a1bfe86a5eccd","web":"1:211875033656:web:2f8174003c25c7ada5eccd"}}}}}}
