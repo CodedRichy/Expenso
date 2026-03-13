@@ -210,9 +210,9 @@ class EmptyStates extends StatelessWidget {
                   height: 140,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: accentColor.withValues(alpha: 0.05),
+                    color: accentColor.withOpacity(0.05),
                     border: Border.all(
-                      color: accentColor.withValues(alpha: 0.1),
+                      color: accentColor.withOpacity(0.1),
                       width: 1,
                     ),
                   ),
@@ -220,7 +220,7 @@ class EmptyStates extends StatelessWidget {
                     child: Icon(
                       Icons.receipt_long_outlined,
                       size: 64,
-                      color: accentColor.withValues(alpha: 0.8),
+                      color: accentColor.withOpacity(0.8),
                     ),
                   ),
                 ),
@@ -240,7 +240,7 @@ class EmptyStates extends StatelessWidget {
                   'The cycle is empty. Use the Magic Bar below to log your first shared expense.',
                   textAlign: TextAlign.center,
                   style: context.bodySecondary.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                     height: 1.5,
                   ),
                 ),
@@ -253,10 +253,10 @@ class EmptyStates extends StatelessWidget {
 
     if (type == 'zero-waste-cycle') {
       final titleColor = forDarkCard
-          ? Colors.white.withValues(alpha: 0.95)
+          ? Colors.white.withOpacity(0.95)
           : Theme.of(context).colorScheme.onSurface;
       final bodyColor = forDarkCard
-          ? Colors.white.withValues(alpha: 0.75)
+          ? Colors.white.withOpacity(0.75)
           : Theme.of(context).colorScheme.onSurfaceVariant;
       return FadeIn(
         child: Column(
