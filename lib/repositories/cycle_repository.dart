@@ -1544,6 +1544,7 @@ class CycleRepository extends ChangeNotifier {
       'description': description,
       'date': date,
       'dateSortKey': _dateStringToSortKey(date),
+      'createdById': _currentUserId,
       if (category.isNotEmpty) 'category': category,
     };
     await FirestoreService.instance.addExpense(groupId, data);
@@ -1600,6 +1601,7 @@ class CycleRepository extends ChangeNotifier {
       'description': normalized.description,
       'date': normalized.date,
       'dateSortKey': _dateStringToSortKey(normalized.date),
+      'createdById': _currentUserId,
       if (normalized.category.isNotEmpty) 'category': normalized.category,
     };
 
