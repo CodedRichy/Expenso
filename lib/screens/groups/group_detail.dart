@@ -10,6 +10,8 @@ import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/groq_expense_parser_service.dart';
 import '../../services/locale_service.dart';
+import '../../services/receipt_scanner_service.dart';
+import '../../services/feature_flag_service.dart';
 import '../../utils/expense_normalization.dart';
 import '../../utils/money_format.dart';
 import '../../utils/route_args.dart';

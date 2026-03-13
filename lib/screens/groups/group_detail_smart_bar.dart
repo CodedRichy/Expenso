@@ -59,6 +59,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   Timer? _cooldownTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 500);
   static const Duration _cooldownDuration = Duration(seconds: 30);
+  final ReceiptScannerService _scanner = ReceiptScannerService();
 
   Map<String, String>? _phoneToContactName;
   Map<String, List<String>>? _contactNameToNormalizedPhones;
@@ -145,6 +146,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
   void dispose() {
     _debounceTimer?.cancel();
     _cooldownTimer?.cancel();
+    _scanner.dispose();
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
@@ -362,6 +364,23 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           break;
         }
       }
+    }
+  }
+
+  Future<void> _scanReceipt() async {
+    if (_loading || _inCooldown) return;
+    HapticFeedback.mediumImpact();
+    
+    setState(() => _loading = true);
+    try {
+      final text = await _scanner.scanReceipt();
+      if (text != null && text.trim().isNotEmpty) {
+        _controller.text = text;
+        _onTextChanged(); // Trigger debounce/send state
+        await _submit();
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -869,6 +888,23 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 ),
               ),
             ),
+            if (FeatureFlagService.instance.canUseOCR) ...[
+              const SizedBox(width: 4),
+              TapScale(
+                child: IconButton(
+                  onPressed: _loading || _inCooldown ? null : _scanReceipt,
+                  icon: Icon(
+                    Icons.camera_alt_outlined,
+                    size: 22,
+                    color: _loading || _inCooldown ? iconColor.withValues(alpha: 0.5) : iconColor,
+                  ),
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(40, 40),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(width: 4),
             Expanded(
               child: TextField(

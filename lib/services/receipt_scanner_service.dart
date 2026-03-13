@@ -19,8 +19,10 @@ class ReceiptScannerService {
     } catch (e) {
       debugPrint('Error scanning receipt: $e');
       return null;
-    } finally {
-      // _textRecognizer.close(); // Not closing here so it can be reused, or close it if it's singleton
     }
+  }
+
+  Future<void> dispose() async {
+    await _textRecognizer.close();
   }
 }
