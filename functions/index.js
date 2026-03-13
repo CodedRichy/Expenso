@@ -1,5 +1,6 @@
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
 const { getUserEncryptionKey, getGroupEncryptionKey } = require('./encryption');
@@ -178,6 +179,62 @@ const api = onRequest(
   }
 );
 
+// --- FCM NOTIFICATIONS ---
+const notifyOnNewExpense = onDocumentCreated(
+  'groups/{groupId}/expenses/{expenseId}',
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const expense = snap.data();
+    const groupId = event.params.groupId;
+    const authorId = expense.paidBy;
+
+    // Fetch group members
+    const groupSnap = await db.collection('groups').doc(groupId).get();
+    if (!groupSnap.exists) return;
+    
+    const group = groupSnap.data();
+    const members = group.members || [];
+    
+    // Find tokens for all members except author
+    const tokens = [];
+    for (const memberId of members) {
+      if (memberId === authorId) continue;
+      
+      const userSnap = await db.collection('users').doc(memberId).get();
+      if (userSnap.exists) {
+        const userData = userSnap.data();
+        if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
+          tokens.push(...userData.fcmTokens);
+        }
+      }
+    }
+    
+    if (tokens.length === 0) return;
+
+    // Send multicast message
+    const message = {
+      notification: {
+        title: `New Expense in ${group.name}`,
+        body: 'A new expense has been added to your group.',
+      },
+      data: {
+        groupId: groupId,
+        type: 'new_expense',
+      },
+      tokens: tokens,
+    };
+
+    try {
+      const response = await admin.messaging().sendEachForMulticast(message);
+      console.log(`Successfully sent ${response.successCount} messages`);
+    } catch (error) {
+      console.error('Error sending messages:', error);
+    }
+  }
+);
+
 module.exports = {
   createRazorpayOrder,
   settleAndRestart,
@@ -185,4 +242,5 @@ module.exports = {
   getGroupEncryptionKey,
   dailyCleanupJob,
   api,
+  notifyOnNewExpense,
 };
