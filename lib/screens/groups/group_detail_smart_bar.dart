@@ -384,6 +384,84 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     }
   }
 
+  void _showMagicMenu() {
+    HapticFeedback.lightImpact();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.colorSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ctx.colorBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _MagicActionTile(
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/expense-input',
+                        arguments: widget.group,
+                      );
+                      if (!context.mounted) return;
+                      final map = result as Map<String, dynamic>?;
+                      if (map != null && map['groupId'] != null && map['expenseId'] != null) {
+                        _showUndoExpenseOverlay(
+                          context,
+                          groupId: map['groupId'] as String,
+                          expenseId: map['expenseId'] as String,
+                          description: CycleRepository.instance.lastAddedDescription ?? '',
+                          amount: CycleRepository.instance.lastAddedAmount ?? 0.0,
+                          currencyCode: CycleRepository.instance.getGroup(map['groupId'])?.currencyCode,
+                        );
+                      }
+                    },
+                    icon: Icons.keyboard_alt_outlined,
+                    label: 'Manual Entry',
+                    description: 'Type details yourself',
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (FeatureFlagService.instance.canUseOCR)
+                  Expanded(
+                    child: _MagicActionTile(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _scanReceipt();
+                      },
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Scan Receipt',
+                      description: 'Auto-fill from photo',
+                      color: Colors.amber,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     final input = _controller.text.trim();
     if (input.isEmpty || _loading || !_sendAllowed || _inCooldown) return;
@@ -851,36 +929,11 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
           children: [
             TapScale(
               child: IconButton(
-                onPressed: () async {
-                  HapticFeedback.lightImpact();
-                  final result = await Navigator.pushNamed(
-                    context,
-                    '/expense-input',
-                    arguments: widget.group,
-                  );
-                  if (!context.mounted) return;
-                  final map = result as Map<String, dynamic>?;
-                  if (map != null &&
-                      map['groupId'] != null &&
-                      map['expenseId'] != null) {
-                    final repo = CycleRepository.instance;
-                    final groupId = map['groupId'] as String;
-                    final expenseId = map['expenseId'] as String;
-                    if (!context.mounted) return;
-                    _showUndoExpenseOverlay(
-                      context,
-                      groupId: groupId,
-                      expenseId: expenseId,
-                      description: repo.lastAddedDescription ?? '',
-                      amount: repo.lastAddedAmount ?? 0.0,
-                      currencyCode: repo.getGroup(groupId)?.currencyCode,
-                    );
-                  }
-                },
-                icon: Icon(
-                  Icons.keyboard_alt_outlined,
-                  size: 22,
-                  color: iconColor,
+                onPressed: _showMagicMenu,
+                icon: const Icon(
+                  Icons.auto_awesome,
+                  size: 20,
+                  color: Colors.amber,
                 ),
                 style: IconButton.styleFrom(
                   padding: const EdgeInsets.all(8),
@@ -906,21 +959,6 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   filled: false,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                   isDense: true,
-                  suffixIcon: FeatureFlagService.instance.canUseOCR
-                      ? TapScale(
-                          child: IconButton(
-                            onPressed: _loading || _inCooldown ? null : _scanReceipt,
-                            icon: Icon(
-                              Icons.camera_alt_outlined,
-                              size: 20,
-                              color: _loading || _inCooldown
-                                  ? iconColor.withValues(alpha: 0.3)
-                                  : iconColor.withValues(alpha: 0.7),
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                        )
-                      : null,
                 ),
                 style: TextStyle(fontSize: 17, color: textColor),
               ),
@@ -1852,6 +1890,73 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MagicActionTile extends StatelessWidget {
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final String description;
+  final Color color;
+
+  const _MagicActionTile({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return TapScale(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
