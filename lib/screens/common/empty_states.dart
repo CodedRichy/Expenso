@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../design/spacing.dart';
 import '../../design/typography.dart';
@@ -158,29 +159,71 @@ class EmptyStates extends StatelessWidget {
     if (type == 'no-expenses-new-cycle') {
       return Center(
         child: FadeIn(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
-            child: SizedBox(
-              width: 280,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'No expenses yet',
-                    textAlign: TextAlign.center,
-                    style: context.bodyPrimary.copyWith(
-                      fontWeight: FontWeight.w500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TweenAnimationBuilder<double>(
+                key: const Key('pulse_animation'),
+                tween: Tween(begin: 0.96, end: 1.04),
+                duration: const Duration(seconds: 2),
+                curve: Curves.easeInOutSine,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: child,
+                  );
+                },
+                onEnd: () {
+                  // This is a hacky but effective way to loop in a stateless widget
+                  // for simple visual effects.
+                },
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                        blurRadius: 50,
+                        spreadRadius: 15,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.file(
+                      File('C:/Users/rishi/.gemini/antigravity/brain/78b0a27d-c42e-4cf4-95dc-92081c341592/magic_crystal_icon_1773418968625.png'),
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap the button below to start the cycle!',
-                    textAlign: TextAlign.center,
-                    style: context.bodySecondary,
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.tertiary,
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  'Fresh Start',
+                  style: context.heroTitle.copyWith(
+                    color: Colors.white,
+                    fontSize: 28,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: Text(
+                  'The cycle is empty. Use the Magic Bar below to add your first expense!',
+                  textAlign: TextAlign.center,
+                  style: context.bodySecondary.copyWith(height: 1.5),
+                ),
+              ),
+            ],
           ),
         ),
       );

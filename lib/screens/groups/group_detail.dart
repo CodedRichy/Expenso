@@ -222,19 +222,20 @@ class _GroupDetailState extends State<GroupDetail> {
                           ),
                         ),
                       ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                          child: _DecisionClarityCard(
-                            repo: repo,
-                            groupId: groupId,
-                            groupName: defaultGroup.name,
-                            expenses: expenses,
-                            isSettled: isSettled,
-                            isPassive: isPassive,
+                      if (expenses.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                            child: _DecisionClarityCard(
+                              repo: repo,
+                              groupId: groupId,
+                              groupName: defaultGroup.name,
+                              expenses: expenses,
+                              isSettled: isSettled,
+                              isPassive: isPassive,
+                            ),
                           ),
                         ),
-                      ),
                       if (isPassive)
                         SliverToBoxAdapter(
                           child: Padding(
@@ -671,7 +672,8 @@ class _GroupDetailState extends State<GroupDetail> {
                               ),
                             ]
                           : [
-                              SliverToBoxAdapter(
+                              SliverFillRemaining(
+                                hasScrollBody: false,
                                 child: EmptyStates(
                                   type: 'no-expenses-new-cycle',
                                 ),

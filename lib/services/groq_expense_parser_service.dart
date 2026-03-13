@@ -766,18 +766,33 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
         .trim()
         .toLowerCase();
     if (nonNumeric.isNotEmpty) {
+      final isSoloGroup = groupMemberNames.length <= 1;
+      
       // Single-word non-numeric portion that matches a group member name exactly.
       final isMemberNameOnly = groupMemberNames.any(
         (name) => name.trim().toLowerCase() == nonNumeric,
       );
-      // Heuristic: single capitalised word with no known verb/preposition is also ambiguous.
+      
+      // Heuristic: single word with no known verb/preposition is ambiguous if it's NOT a solo group.
+      // If it IS a solo group, "Chicken 500" is a perfectly valid "Chicken" expense.
       final hasVerb = RegExp(
         r'\b(paid|bought|covered|for|with|spent|got|took|owe|owes|had|lent|gave|dinner|lunch|breakfast|coffee|uber|cab|rent|groceries|movie|bill|ticket|petrol|hotel|flight)\b',
         caseSensitive: false,
       ).hasMatch(trimmed);
+
+      // We only trigger semanticIncomplete if:
+      // 1. It's EXCLUSIVELY a member name (e.g. "Rishi 500") -> Who paid? What for?
+      // 2. Or if it's a multi-person group and the input is just "Person 500" or "Item 500" without context.
       if (isMemberNameOnly ||
-          (!hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 2)) {
-        // Return constrained with clarification — never commit.
+          (!isSoloGroup && !hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 1)) {
+        
+        final isLikelyName = isMemberNameOnly || 
+            (nonNumeric.length > 2 && !RegExp(r'[0-9]').hasMatch(nonNumeric));
+            
+        final suggestionSuffix = isMemberNameOnly 
+            ? 'with $nonNumeric' 
+            : 'for $nonNumeric';
+
         final result = ParsedExpenseResult(
           amount: amount,
           currencyCode: currencyCode,
@@ -789,7 +804,7 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
           constraintFlags: ['semanticIncomplete'],
           needsClarification: true,
           clarificationQuestion:
-              'What was this expense for? Try something like "Dinner $amount with ${nonNumeric.isNotEmpty ? nonNumeric : 'them'}".',
+              'What was this expense for? Try something like "Dinner $amount $suggestionSuffix".',
         );
         final err = validateResult(
           result,
