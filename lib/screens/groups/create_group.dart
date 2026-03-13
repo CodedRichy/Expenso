@@ -191,7 +191,7 @@ class _CreateGroupState extends State<CreateGroup> {
                         Container(
                           decoration: BoxDecoration(
                             color: context.colorSurface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.colorBorder),
                           ),
                           child: Column(
@@ -243,7 +243,7 @@ class _CreateGroupState extends State<CreateGroup> {
                               border: Border.all(
                                 color: context.colorBorderInput,
                               ),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(

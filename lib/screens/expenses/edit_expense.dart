@@ -103,7 +103,7 @@ class _EditExpenseState extends State<EditExpense> {
                       ? theme.colorScheme.surfaceContainerHighest
                       : Colors.white),
             border: Border.all(color: theme.dividerColor),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             label,
@@ -325,7 +325,7 @@ class _EditExpenseState extends State<EditExpense> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             minimumSize: const Size(double.infinity, 0),
                           ),
@@ -418,7 +418,7 @@ class _EditExpenseState extends State<EditExpense> {
                                   vertical: 14,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 0,
                               ),
@@ -504,15 +504,15 @@ class _EditExpenseState extends State<EditExpense> {
                 ? theme.colorScheme.surfaceContainerHighest
                 : Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: theme.dividerColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: theme.dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: theme.colorScheme.primary),
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -554,7 +554,7 @@ class _EditExpenseState extends State<EditExpense> {
                     ? theme.colorScheme.surfaceContainerHighest
                     : Colors.white,
                 border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 CurrencyRegistry.symbol(currencyCode),
@@ -577,15 +577,15 @@ class _EditExpenseState extends State<EditExpense> {
                       ? theme.colorScheme.surfaceContainerHighest
                       : Colors.white,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: theme.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: theme.colorScheme.primary),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -644,7 +644,7 @@ class _EditExpenseState extends State<EditExpense> {
                                 ? theme.colorScheme.surfaceContainerHighest
                                 : Colors.white),
                       border: Border.all(color: theme.dividerColor),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -681,7 +681,7 @@ class _EditExpenseState extends State<EditExpense> {
                   ? theme.colorScheme.surfaceContainerHighest
                   : Colors.white,
               border: Border.all(color: theme.dividerColor),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               _selectedDateDisplay,
@@ -866,7 +866,7 @@ class _EditExpenseState extends State<EditExpense> {
             : null,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
         child: const Text(

@@ -586,7 +586,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                         minimumSize: const Size(double.infinity, 0),
@@ -729,15 +729,15 @@ class _ExpenseInputState extends State<ExpenseInput> {
                             ? theme.colorScheme.surfaceContainerHighest
                             : context.colorSurface,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: theme.dividerColor),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
                             color: theme.colorScheme.primary,
                           ),
@@ -766,7 +766,7 @@ class _ExpenseInputState extends State<ExpenseInput> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                             minimumSize: const Size(double.infinity, 0),

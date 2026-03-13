@@ -495,7 +495,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                           vertical: AppSpacing.spaceMd,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
