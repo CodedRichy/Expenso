@@ -35,6 +35,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
+        child: Column(
+          children: [
             Expanded(
               child: Center(
                 child: SingleChildScrollView(

@@ -68,130 +68,136 @@ class _PaymentResultState extends State<PaymentResult>
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: SizedBox(
-              width: 320,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    label: statusLabel,
-                    child: ScaleTransition(
-                      scale: isSuccess
-                          ? _scaleAnimation
-                          : const AlwaysStoppedAnimation(1.0),
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: isSuccess
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.surfaceContainerHighest,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isSuccess
-                              ? Icons.check
-                              : widget.status == 'failed'
-                              ? Icons.error_outline
-                              : Icons.close,
-                          color: isSuccess
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurfaceVariant,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Column(
-                    children: [
-                      Text(
-                        statusLabel,
-                        textAlign: TextAlign.center,
-                        style: context.screenTitle,
-                      ),
-                      const SizedBox(height: 12),
-                      if (isSuccess && widget.amount != null) ...[
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SizedBox(
+                    width: 320,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Semantics(
-                          label:
-                              '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
-                          child: Text(
-                            '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
-                            textAlign: TextAlign.center,
-                            style: context.bodyPrimary.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                          label: statusLabel,
+                          child: ScaleTransition(
+                            scale: isSuccess
+                                ? _scaleAnimation
+                                : const AlwaysStoppedAnimation(1.0),
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: isSuccess
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isSuccess
+                                    ? Icons.check
+                                    : widget.status == 'failed'
+                                    ? Icons.error_outline
+                                    : Icons.close,
+                                color: isSuccess
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurfaceVariant,
+                                size: 32,
+                              ),
                             ),
                           ),
                         ),
-                        if (widget.transactionId != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Transaction ID: ${widget.transactionId}',
-                            textAlign: TextAlign.center,
-                            style: context.caption.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 32),
+                        Column(
+                          children: [
+                            Text(
+                              statusLabel,
+                              textAlign: TextAlign.center,
+                              style: context.screenTitle,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            if (isSuccess && widget.amount != null) ...[
+                              Semantics(
+                                label:
+                                    '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
+                                child: Text(
+                                  '${formatMoneyFromMajor(widget.amount!, group.currencyCode)} transferred',
+                                  textAlign: TextAlign.center,
+                                  style: context.bodyPrimary.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              if (widget.transactionId != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Transaction ID: ${widget.transactionId}',
+                                  textAlign: TextAlign.center,
+                                  style: context.caption.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
+                            if (widget.status == 'failed')
+                              Text(
+                                'The transaction could not be completed',
+                                textAlign: TextAlign.center,
+                                style: context.bodyPrimary.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            if (widget.status == 'cancelled')
+                              Text(
+                                'No amount was transferred',
+                                textAlign: TextAlign.center,
+                                style: context.bodyPrimary.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 48),
                       ],
-                      if (widget.status == 'failed')
-                        Text(
-                          'The transaction could not be completed',
-                          textAlign: TextAlign.center,
-                          style: context.bodyPrimary.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      if (widget.status == 'cancelled')
-                        Text(
-                          'No amount was transferred',
-                          textAlign: TextAlign.center,
-                          style: context.bodyPrimary.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 48),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            child: TapScale(
-              child: Semantics(
-                label: isSuccess ? 'Done' : 'Close',
-                button: true,
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/cycle-settled',
-                      arguments: group,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
-                    minimumSize: const Size(double.infinity, 0),
-                  ),
-                  child: Text(
-                    isSuccess ? 'Done' : 'Close',
-                    style: AppTypography.button,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: TapScale(
+                child: Semantics(
+                  label: isSuccess ? 'Done' : 'Close',
+                  button: true,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/cycle-settled',
+                        arguments: group,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
+                    child: Text(
+                      isSuccess ? 'Done' : 'Close',
+                      style: AppTypography.button,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
