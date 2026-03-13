@@ -157,15 +157,19 @@ class EmptyStates extends StatelessWidget {
     }
 
     if (type == 'no-expenses-new-cycle') {
+      final accentColor = Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF7BA3C4)
+          : const Color(0xFF5B7C99);
+
       return Center(
         child: FadeIn(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TweenAnimationBuilder<double>(
-                key: const Key('pulse_animation'),
-                tween: Tween(begin: 0.96, end: 1.04),
-                duration: const Duration(seconds: 2),
+                key: const Key('pulse_animation_new'),
+                tween: Tween(begin: 0.98, end: 1.02),
+                duration: const Duration(seconds: 3),
                 curve: Curves.easeInOutSine,
                 builder: (context, value, child) {
                   return Transform.scale(
@@ -173,63 +177,44 @@ class EmptyStates extends StatelessWidget {
                     child: child,
                   );
                 },
-                onEnd: () {
-                  // This is a hacky but effective way to loop in a stateless widget
-                  // for simple visual effects.
-                },
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                          Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.05),
-                        ],
-                      ),
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accentColor.withValues(alpha: 0.05),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.1),
+                      width: 1,
                     ),
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.tertiary,
-                        ],
-                      ).createShader(bounds),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 80,
-                        color: Colors.white,
-                      ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.receipt_long_outlined,
+                      size: 64,
+                      color: accentColor.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 32),
-              ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.tertiary,
-                  ],
-                ).createShader(bounds),
-                child: Text(
-                  'Fresh Start',
-                  style: context.heroTitle.copyWith(
-                    color: Colors.white,
-                    fontSize: 28,
-                  ),
+              Text(
+                'No expenses yet',
+                style: context.subheader.copyWith(
+                  letterSpacing: -0.5,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 54),
                 child: Text(
-                  'The cycle is empty. Use the Magic Bar below to add your first expense!',
+                  'The cycle is empty. Use the Magic Bar below to log your first shared expense.',
                   textAlign: TextAlign.center,
-                  style: context.bodySecondary.copyWith(height: 1.5),
+                  style: context.bodySecondary.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
