@@ -9,6 +9,7 @@ import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/tap_scale.dart';
+import '../../services/feature_flag_service.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -89,13 +90,21 @@ class _CreateGroupState extends State<CreateGroup> {
       final groupToPass = newGroup;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                InviteMembers(group: groupToPass, groupName: groupToPass.name),
-          ),
-        );
+        if (FeatureFlagService.instance.isBetaTester) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  InviteMembers(group: groupToPass, groupName: groupToPass.name),
+            ),
+          );
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            '/group-detail',
+            arguments: groupToPass,
+          );
+        }
       });
     } catch (e) {
       if (!mounted) return;

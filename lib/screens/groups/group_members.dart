@@ -8,6 +8,7 @@ import '../../widgets/expenso_loader.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
+import '../../services/feature_flag_service.dart';
 
 class GroupMembers extends StatelessWidget {
   final Group? group;
@@ -327,20 +328,22 @@ class GroupMembers extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: TapScale(
-            child: FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/invite-members',
-                  arguments: currentGroup,
-                );
-              },
-              backgroundColor: context.colorPrimary,
-              foregroundColor: context.colorSurface,
-              child: const Icon(Icons.person_add),
-            ),
-          ),
+          floatingActionButton: FeatureFlagService.instance.isBetaTester
+              ? TapScale(
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/invite-members',
+                        arguments: currentGroup,
+                      );
+                    },
+                    backgroundColor: context.colorPrimary,
+                    foregroundColor: context.colorSurface,
+                    child: const Icon(Icons.person_add),
+                  ),
+                )
+              : null,
         );
       },
     );

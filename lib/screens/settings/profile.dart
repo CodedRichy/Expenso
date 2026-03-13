@@ -14,6 +14,8 @@ import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/fade_in.dart';
+import '../../services/feature_flag_service.dart';
+import 'package:flutter/services.dart';
 
 /// Profile screen: identity (avatar, display name) and Payment Settings (UPI ID).
 /// Display name is the same value used for Groq fuzzy matching in the Magic Bar.
@@ -567,6 +569,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
+                        _BetaAccessTile(),
+                        const SizedBox(height: 24),
                         _LocaleTile(),
                         const SizedBox(height: 24),
                         _PrivacyPolicyTile(url: kPrivacyPolicyUrl),
@@ -828,6 +832,138 @@ class _PrivacyPolicyTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BetaAccessTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final repo = CycleRepository.instance;
+    final flags = FeatureFlagService.instance;
+    final isBeta = flags.isBetaTester;
+    final uid = repo.currentUserId;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surfaceContainerLow
+            : context.colorSurfaceVariant,
+        border: Border.all(color: context.colorBorder),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isBeta ? Icons.verified_user : Icons.science_outlined,
+                size: 20,
+                color: isBeta ? Colors.green : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isBeta ? 'Beta Tester' : 'Experimental Features',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              if (isBeta) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                  ),
+                  child: const Text(
+                    'ACTIVE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isBeta
+                ? 'You have access to experimental features before they release to everyone.'
+                : 'Share your User ID with the creator to join the beta program.',
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: uid));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('User ID copied to clipboard'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.dividerColor),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'YOUR USER ID',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          uid.isEmpty ? 'Not logged in' : uid,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.copy,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
