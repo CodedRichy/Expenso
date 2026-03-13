@@ -328,22 +328,20 @@ class GroupMembers extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: FeatureFlagService.instance.isBetaTester
-              ? TapScale(
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/invite-members',
-                        arguments: currentGroup,
-                      );
-                    },
-                    backgroundColor: context.colorPrimary,
-                    foregroundColor: context.colorSurface,
-                    child: const Icon(Icons.person_add),
-                  ),
-                )
-              : null,
+          floatingActionButton: TapScale(
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/invite-members',
+                  arguments: currentGroup,
+                );
+              },
+              backgroundColor: context.colorPrimary,
+              foregroundColor: context.colorSurface,
+              child: const Icon(Icons.person_add),
+            ),
+          ),
         );
       },
     );

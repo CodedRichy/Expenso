@@ -90,21 +90,13 @@ class _CreateGroupState extends State<CreateGroup> {
       final groupToPass = newGroup;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
-        if (FeatureFlagService.instance.isBetaTester) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  InviteMembers(group: groupToPass, groupName: groupToPass.name),
-            ),
-          );
-        } else {
-          Navigator.pushReplacementNamed(
-            context,
-            '/group-detail',
-            arguments: groupToPass,
-          );
-        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                InviteMembers(group: groupToPass, groupName: groupToPass.name),
+          ),
+        );
       });
     } catch (e) {
       if (!mounted) return;

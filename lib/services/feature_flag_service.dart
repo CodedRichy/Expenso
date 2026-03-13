@@ -18,6 +18,7 @@ class FeatureFlagService {
   /// User IDs of invited beta testers.
   static const Set<String> _betaUserIds = {
     // Add beta tester UIDs here
+    'QoLVTOw3heVLRZZih5nEhdsL55T2',
   };
 
   /// Returns true if the current user is a creator.
@@ -34,12 +35,9 @@ class FeatureFlagService {
 
   // --- Feature Toggles ---
 
-  /// OCR Receipt Scanning feature.
+  /// OCR Receipt Scanning feature (Camera icon in Magic Bar).
   bool get canUseOCR => isBetaTester;
 
-  /// Experimental Smart Bar improvements.
+  /// High-rate Experimental NLP (e.g. more advanced expense extraction).
   bool get canUseExperimentalNLP => isBetaTester;
-
-  /// Access to hidden settings/logs.
-  bool get hasDeveloperMode => isCreator;
 }
