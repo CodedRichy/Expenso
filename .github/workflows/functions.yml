@@ -29,3 +29,24 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+  deploy-functions:
+    needs: test-functions
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Deploy Functions
+        run: npx firebase-tools deploy --only functions --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
