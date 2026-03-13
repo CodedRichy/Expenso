@@ -331,8 +331,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                   groupId: group.id,
                                   maxItems: 10,
                                 ),
-                                const SizedBox(height: AppSpacing.space4xl),
-                                _buildBackButton(context),
                               ],
                             ),
                           );
@@ -371,6 +369,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                       },
                     ),
             ),
+            if (!_loading) _buildBackButton(context),
           ],
         ),
       ),
@@ -578,8 +577,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           ],
           const SizedBox(height: AppSpacing.space4xl),
           SettlementActivityFeed(groupId: group.id, maxItems: 10),
-          const SizedBox(height: AppSpacing.space4xl),
-          _buildBackButton(context),
         ],
       );
     }
@@ -707,28 +704,29 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           ),
         const SizedBox(height: AppSpacing.space3xl),
         SettlementActivityFeed(groupId: group.id, maxItems: 5),
-        const SizedBox(height: AppSpacing.space3xl),
-        _buildBackButton(context),
       ],
     );
   }
 
   Widget _buildBackButton(BuildContext context) {
-    return TapScale(
-      child: Semantics(
-        label: 'Back to group',
-        button: true,
-        child: ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: TapScale(
+        child: Semantics(
+          label: 'Back to group',
+          button: true,
+          child: ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: const Size(double.infinity, 0),
+              elevation: 0,
             ),
-            minimumSize: const Size(double.infinity, 0),
-            elevation: 0,
+            child: const Text('Back to Group', style: AppTypography.button),
           ),
-          child: const Text('Back to Group', style: AppTypography.button),
         ),
       ),
     );
