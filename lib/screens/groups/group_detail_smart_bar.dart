@@ -888,24 +888,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                 ),
               ),
             ),
-            if (FeatureFlagService.instance.canUseOCR) ...[
-              const SizedBox(width: 4),
-              TapScale(
-                child: IconButton(
-                  onPressed: _loading || _inCooldown ? null : _scanReceipt,
-                  icon: Icon(
-                    Icons.camera_alt_outlined,
-                    size: 22,
-                    color: _loading || _inCooldown ? iconColor.withValues(alpha: 0.5) : iconColor,
-                  ),
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(8),
-                    minimumSize: const Size(40, 40),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -921,8 +904,23 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   focusedBorder: InputBorder.none,
                   disabledBorder: InputBorder.none,
                   filled: false,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                   isDense: true,
+                  suffixIcon: FeatureFlagService.instance.canUseOCR
+                      ? TapScale(
+                          child: IconButton(
+                            onPressed: _loading || _inCooldown ? null : _scanReceipt,
+                            icon: Icon(
+                              Icons.camera_alt_outlined,
+                              size: 20,
+                              color: _loading || _inCooldown
+                                  ? iconColor.withValues(alpha: 0.3)
+                                  : iconColor.withValues(alpha: 0.7),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                      : null,
                 ),
                 style: TextStyle(fontSize: 17, color: textColor),
               ),
