@@ -177,24 +177,33 @@ class EmptyStates extends StatelessWidget {
                   // This is a hacky but effective way to loop in a stateless widget
                   // for simple visual effects.
                 },
-                child: Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
-                        blurRadius: 50,
-                        spreadRadius: 15,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.05),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.file(
-                    File('c:/Users/rishi/Documents/GitHub/Expenso/assets/images/magic_crystal.png'),
-                    fit: BoxFit.cover,
-                  ),
+                    ),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.tertiary,
+                        ],
+                      ).createShader(bounds),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 80,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
