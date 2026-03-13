@@ -35,51 +35,66 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              FadeIn(
-                delay: const Duration(milliseconds: 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'What should we call you?',
-                      style: context.heroTitle.copyWith(height: 1.2),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'This name will appear in groups and expense logs.',
-                      style: context.bodySecondary,
-                    ),
-                  ],
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FadeIn(
+                        delay: const Duration(milliseconds: 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'What should we call you?',
+                              style: context.heroTitle.copyWith(height: 1.2),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'This name will appear in groups and expense logs.',
+                              style: context.bodySecondary,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+                      FadeIn(
+                        delay: const Duration(milliseconds: 100),
+                        child: TextField(
+                          controller: _nameController,
+                          autofocus: true,
+                          textCapitalization: TextCapitalization.words,
+                          onChanged: (_) => setState(() {}),
+                          onSubmitted: (_) => handleGetStarted(),
+                          decoration:
+                              const InputDecoration(hintText: 'Your name'),
+                          style: context.input,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 48),
-              FadeIn(
-                delay: const Duration(milliseconds: 100),
-                child: TextField(
-                  controller: _nameController,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (_) => handleGetStarted(),
-                  decoration: const InputDecoration(hintText: 'Your name'),
-                  style: context.input,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FadeIn(
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: FadeIn(
                 delay: const Duration(milliseconds: 200),
                 child: TapScale(
                   child: ElevatedButton(
                     onPressed: _nameController.text.trim().isNotEmpty
                         ? handleGetStarted
                         : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
                     child: const Text(
                       'Get Started',
                       style: AppTypography.button,
@@ -87,9 +102,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                   ),
                 ),
               ),
-              const Spacer(),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -67,7 +67,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         foregroundColor: surface,
         disabledForegroundColor: disabledFg,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
       ),
     ),
@@ -77,7 +77,7 @@ ThemeData buildAppTheme(Brightness brightness) {
         foregroundColor: textPrimary,
         side: BorderSide(color: border),
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -91,19 +91,19 @@ ThemeData buildAppTheme(Brightness brightness) {
       fillColor: surface,
       hintStyle: AppTypography.hint.copyWith(color: textDisabled),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: borderInput),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: borderInput),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: borderFocused),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: error),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

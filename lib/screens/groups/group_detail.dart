@@ -267,12 +267,7 @@ class _GroupDetailState extends State<GroupDetail> {
                               );
 
                               return Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  24,
-                                  0,
-                                  24,
-                                  8,
-                                ),
+                                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
@@ -296,7 +291,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                           ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                              8,
+                                              12,
                                             ),
                                           ),
                                           elevation: 0,
@@ -421,7 +416,7 @@ class _GroupDetailState extends State<GroupDetail> {
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(12),
                                             ),
                                             elevation: 0,
                                             minimumSize: const Size(

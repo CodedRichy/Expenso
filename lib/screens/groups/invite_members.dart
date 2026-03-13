@@ -822,12 +822,7 @@ class _InviteMembersState extends State<InviteMembers>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: context.colorBorder, width: 1),
-                    ),
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: Semantics(
                     label: 'Done',
                     button: true,
@@ -850,7 +845,7 @@ class _InviteMembersState extends State<InviteMembers>
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                           minimumSize: const Size(double.infinity, 0),

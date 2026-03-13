@@ -94,40 +94,46 @@ class DeleteGroup extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: context.bodySecondary.copyWith(height: 1.5),
                           ),
-                        const SizedBox(height: 48),
-                        Column(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                'Delete Group',
-                                style: Theme.of(context).textTheme.labelLarge,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 0),
-                              ),
-                              child: Text(
-                                'Cancel',
-                                style: Theme.of(context).textTheme.labelLarge,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                   ),
                 ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.colorError,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
+                    child: const Text('Delete Group', style: AppTypography.button),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
+                    child: const Text('Cancel', style: AppTypography.button),
+                  ),
+                ],
               ),
             ),
           ],

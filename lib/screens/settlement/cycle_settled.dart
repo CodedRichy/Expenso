@@ -93,79 +93,67 @@ class CycleSettled extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: context.bodySecondary,
                           ),
-                          const SizedBox(height: 48),
-                          Column(
-                            children: [
-                              Semantics(
-                                label: 'Continue to group',
-                                button: true,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamedAndRemoveUntil(
-                                      context,
-                                      '/group-detail',
-                                      (route) => route.isFirst,
-                                      arguments: resolvedGroup,
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    elevation: 0,
-                                    minimumSize: const Size(double.infinity, 0),
-                                  ),
-                                  child: Text(
-                                    'Continue',
-                                    style: AppTypography.button,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Semantics(
-                                label: 'View settlement history',
-                                button: true,
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/cycle-history',
-                                      arguments: resolvedGroup,
-                                    );
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    backgroundColor: isDark
-                                        ? theme
-                                              .colorScheme
-                                              .surfaceContainerHighest
-                                        : context.colorSurface,
-                                    foregroundColor:
-                                        theme.colorScheme.onSurface,
-                                    side: BorderSide(color: theme.dividerColor),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    minimumSize: const Size(double.infinity, 0),
-                                  ),
-                                  child: Text(
-                                    'View History',
-                                    style: AppTypography.button,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    label: 'Continue to group',
+                    button: true,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/group-detail',
+                          (route) => route.isFirst,
+                          arguments: resolvedGroup,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child: const Text('Continue', style: AppTypography.button),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Semantics(
+                    label: 'View settlement history',
+                    button: true,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/cycle-history',
+                          arguments: resolvedGroup,
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : context.colorSurface,
+                        foregroundColor: theme.colorScheme.onSurface,
+                        side: BorderSide(color: theme.dividerColor),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size(double.infinity, 0),
+                      ),
+                      child:
+                          const Text('View History', style: AppTypography.button),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
