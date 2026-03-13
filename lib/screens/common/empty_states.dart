@@ -1,9 +1,49 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../design/colors.dart';
 import '../../design/spacing.dart';
 import '../../design/typography.dart';
 import '../../widgets/fade_in.dart';
 import '../../widgets/tap_scale.dart';
+
+class _PulseIcon extends StatefulWidget {
+  final Widget child;
+  const _PulseIcon({required this.child});
+
+  @override
+  State<_PulseIcon> createState() => _PulseIconState();
+}
+
+class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _animation,
+      child: widget.child,
+    );
+  }
+}
 
 class EmptyStates extends StatelessWidget {
   final String
@@ -157,26 +197,14 @@ class EmptyStates extends StatelessWidget {
     }
 
     if (type == 'no-expenses-new-cycle') {
-      final accentColor = Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF7BA3C4)
-          : const Color(0xFF5B7C99);
+      final accentColor = context.colorAccent;
 
       return Center(
         child: FadeIn(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TweenAnimationBuilder<double>(
-                key: const Key('pulse_animation_new'),
-                tween: Tween(begin: 0.98, end: 1.02),
-                duration: const Duration(seconds: 3),
-                curve: Curves.easeInOutSine,
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: child,
-                  );
-                },
+              _PulseIcon(
                 child: Container(
                   width: 140,
                   height: 140,
