@@ -59,7 +59,10 @@
 		<string>mobikwik</string>
 		<string>freecharge</string>
 	</array>
-	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Expenso needs access to your camera to scan receipts and extract expense details automatically.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Expenso needs access to your photo library to process saved receipt images.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
