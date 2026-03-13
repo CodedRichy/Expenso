@@ -125,6 +125,15 @@ class GroupDetail extends StatefulWidget {
 
 class _GroupDetailState extends State<GroupDetail> {
   bool _profilesRefreshed = false;
+  String? _initializedGroupId;
+
+  @override
+  void dispose() {
+    if (_initializedGroupId != null) {
+      CycleRepository.instance.unfocusGroupStreams(_initializedGroupId!);
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +152,9 @@ class _GroupDetailState extends State<GroupDetail> {
       _profilesRefreshed = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         repo.refreshGroupMemberProfiles(groupId);
+        repo.ensureGroupStreams(groupId);
       });
+      _initializedGroupId = groupId;
     }
 
     return ListenableBuilder(

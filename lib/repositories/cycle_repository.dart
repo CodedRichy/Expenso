@@ -645,77 +645,100 @@ class CycleRepository extends ChangeNotifier {
         }
       }
 
-      if (!_expenseSubs.containsKey(groupId)) {
-        _expenseSubs[groupId] = FirestoreService.instance
-            .expensesStream(groupId)
-            .listen(
-              (expDocs) => _onExpensesSnapshot(groupId, expDocs),
-              onError: (e, st) {
-                debugPrint(
-                  'CycleRepository expensesStream($groupId) error: $e',
-                );
-                if (kDebugMode && st != null) debugPrint(st.toString());
-                _streamError = e.toString();
-                notifyListeners();
-              },
-            );
-      }
-      if (!_systemMessageSubs.containsKey(groupId)) {
-        _systemMessageSubs[groupId] = FirestoreService.instance
-            .systemMessagesStream(groupId)
-            .listen(
-              (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
-              onError: (e, st) {
-                debugPrint(
-                  'CycleRepository systemMessagesStream($groupId) error: $e',
-                );
-              },
-            );
-      }
-      if (!_revisionSubs.containsKey(groupId)) {
-        _revisionSubs[groupId] = FirestoreService.instance
-            .expenseRevisionsStream(groupId)
-            .listen(
-              (revs) => _onRevisionsSnapshot(groupId, revs),
-              onError: (e, st) {
-                debugPrint(
-                  'CycleRepository expenseRevisionsStream($groupId) error: $e',
-                );
-              },
-            );
-      }
-      if (!_deletedIdsSubs.containsKey(groupId)) {
-        _deletedIdsSubs[groupId] = FirestoreService.instance
-            .deletedExpenseIdsStream(groupId)
-            .listen(
-              (ids) => _onDeletedIdsSnapshot(groupId, ids),
-              onError: (e, st) {
-                debugPrint(
-                  'CycleRepository deletedExpenseIdsStream($groupId) error: $e',
-                );
-              },
-            );
-      }
-      final needPaymentAttemptSub =
-          _paymentAttemptCycleId[groupId] != activeCycleId;
-      if (needPaymentAttemptSub) {
-        _paymentAttemptSubs[groupId]?.cancel();
-        _paymentAttemptSubs[groupId] = FirestoreService.instance
-            .paymentAttemptsStream(groupId, activeCycleId)
-            .listen(
-              (attemptDocs) => _onPaymentAttemptsSnapshot(groupId, attemptDocs),
-              onError: (e, st) {
-                debugPrint(
-                  'CycleRepository paymentAttemptsStream($groupId) error: $e',
-                );
-              },
-            );
-        _paymentAttemptCycleId[groupId] = activeCycleId;
       }
     }
 
     _loadUsersForMembers(docs);
     _requestNotify();
+  }
+
+  /// Lazily subscribe to group details (expenses, messages, etc.) when the UI enters a group.
+  void ensureGroupStreams(String groupId) {
+    if (_streamError != null || _groupsLoading) return;
+    final meta = _groupMeta[groupId];
+    if (meta == null) return;
+    final activeCycleId = meta.activeCycleId;
+
+    if (!_expenseSubs.containsKey(groupId)) {
+      _expenseSubs[groupId] = FirestoreService.instance
+          .expensesStream(groupId)
+          .listen(
+            (expDocs) => _onExpensesSnapshot(groupId, expDocs),
+            onError: (e, st) {
+              debugPrint('CycleRepository expensesStream($groupId) error: $e');
+              if (kDebugMode && st != null) debugPrint(st.toString());
+              _streamError = e.toString();
+              notifyListeners();
+            },
+          );
+    }
+    if (!_systemMessageSubs.containsKey(groupId)) {
+      _systemMessageSubs[groupId] = FirestoreService.instance
+          .systemMessagesStream(groupId)
+          .listen(
+            (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
+            onError: (e, st) {
+              debugPrint(
+                'CycleRepository systemMessagesStream($groupId) error: $e',
+              );
+            },
+          );
+    }
+    if (!_revisionSubs.containsKey(groupId)) {
+      _revisionSubs[groupId] = FirestoreService.instance
+          .expenseRevisionsStream(groupId)
+          .listen(
+            (revs) => _onRevisionsSnapshot(groupId, revs),
+            onError: (e, st) {
+              debugPrint(
+                'CycleRepository expenseRevisionsStream($groupId) error: $e',
+              );
+            },
+          );
+    }
+    if (!_deletedIdsSubs.containsKey(groupId)) {
+      _deletedIdsSubs[groupId] = FirestoreService.instance
+          .deletedExpenseIdsStream(groupId)
+          .listen(
+            (ids) => _onDeletedIdsSnapshot(groupId, ids),
+            onError: (e, st) {
+              debugPrint(
+                'CycleRepository deletedExpenseIdsStream($groupId) error: $e',
+              );
+            },
+          );
+    }
+    final needPaymentAttemptSub =
+        _paymentAttemptCycleId[groupId] != activeCycleId;
+    if (needPaymentAttemptSub) {
+      _paymentAttemptSubs[groupId]?.cancel();
+      _paymentAttemptSubs[groupId] = FirestoreService.instance
+          .paymentAttemptsStream(groupId, activeCycleId)
+          .listen(
+            (attemptDocs) => _onPaymentAttemptsSnapshot(groupId, attemptDocs),
+            onError: (e, st) {
+              debugPrint(
+                'CycleRepository paymentAttemptsStream($groupId) error: $e',
+              );
+            },
+          );
+      _paymentAttemptCycleId[groupId] = activeCycleId;
+    }
+  }
+
+  /// Unsubscribe from streams when leaving group detail, to conserve resources.
+  void unfocusGroupStreams(String groupId) {
+    _expenseSubs[groupId]?.cancel();
+    _expenseSubs.remove(groupId);
+    _systemMessageSubs[groupId]?.cancel();
+    _systemMessageSubs.remove(groupId);
+    _revisionSubs[groupId]?.cancel();
+    _revisionSubs.remove(groupId);
+    _deletedIdsSubs[groupId]?.cancel();
+    _deletedIdsSubs.remove(groupId);
+    _paymentAttemptSubs[groupId]?.cancel();
+    _paymentAttemptSubs.remove(groupId);
+    _paymentAttemptCycleId.remove(groupId);
   }
 
   Future<void> _loadUsersForMembers(List<DocView> docs) async {
