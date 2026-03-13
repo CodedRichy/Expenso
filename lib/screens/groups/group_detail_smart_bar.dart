@@ -810,9 +810,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: borderColor, width: 1)),
-      ),
+      decoration: const BoxDecoration(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
@@ -931,7 +929,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   style: IconButton.styleFrom(
                     backgroundColor: buttonBgColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -1308,7 +1306,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
           color: dialogBgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: theme.colorScheme.shadow.withValues(alpha: 0.15),
@@ -1325,7 +1323,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+                  top: Radius.circular(12),
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -1400,7 +1398,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                           decoration: BoxDecoration(
                             color: inputBgColor,
                             border: Border.all(color: borderColor),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             CurrencyRegistry.symbol(currencyCode),
@@ -1514,7 +1512,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: _pickPayer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -1523,7 +1521,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         decoration: BoxDecoration(
                           color: inputBgColor,
                           border: Border.all(color: borderColor),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
@@ -1575,7 +1573,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         ),
                         decoration: BoxDecoration(
                           color: context.colorErrorBackground,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'Assigned total (${formatMoneyFromMajor(_totalSplit, currencyCode)}) must match amount (${formatMoneyFromMajor(_editedAmount!, currencyCode)}).',
@@ -1627,7 +1625,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                   : isGuessed
                                   ? const Color(0xFFFFF8E1)
                                   : chipBgColor,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               border: isPlaceholder
                                   ? Border.all(color: primaryColor, width: 1)
                                   : isGuessed
@@ -1688,12 +1686,12 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                                         ),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
-                                            6,
+                                            12,
                                           ),
                                         ),
                                         errorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
-                                            6,
+                                            12,
                                           ),
                                           borderSide: BorderSide(
                                             color: context.colorError,
@@ -1783,7 +1781,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
               decoration: BoxDecoration(
                 color: dialogBgColor,
                 borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16),
+                  bottom: Radius.circular(12),
                 ),
               ),
               child: Row(
@@ -1796,7 +1794,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                         side: BorderSide(color: borderColor),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: const Text('Cancel'),
@@ -1809,7 +1807,7 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
