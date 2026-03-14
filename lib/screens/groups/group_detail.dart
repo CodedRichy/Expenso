@@ -146,10 +146,8 @@ class _GroupDetailState extends State<GroupDetail> {
         return GradientScaffold(
           body: Stack(
             children: [
-              // Ambient Glow Blobs
               if (theme.brightness == Brightness.dark) ...[
-              // Ambient Liquid Glow
-              if (theme.brightness == Brightness.dark) ...[
+                // Vibrant Liquid Glass Blobs
                 Positioned(
                   top: -50,
                   right: -50,
@@ -167,20 +165,21 @@ class _GroupDetailState extends State<GroupDetail> {
                   ),
                 ),
                 Positioned(
-                  top: 100,
-                  left: -150,
+                  top: 250,
+                  left: -80,
                   child: Container(
-                    width: 400,
-                    height: 400,
+                    width: 300,
+                    height: 300,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.03),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     ),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+                      filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
                       child: const SizedBox.shrink(),
                     ),
                   ),
+                ),
                 Positioned(
                   bottom: -100,
                   left: 50,
@@ -189,7 +188,7 @@ class _GroupDetailState extends State<GroupDetail> {
                     height: 400,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: context.colorPrimary.withValues(alpha: 0.1),
+                      color: context.colorPrimary.withValues(alpha: 0.15),
                     ),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
@@ -1030,26 +1029,27 @@ class _DecisionClarityCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
+                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.05)
+                          ? Colors.white.withValues(alpha: 0.04)
                           : Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
                         color: (theme.brightness == Brightness.dark 
                             ? Colors.white 
-                            : Colors.black).withValues(alpha: 0.18),
-                        width: 1.5,
+                            : Colors.black).withValues(alpha: 0.22),
+                        width: 1.8,
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.12),
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.18),
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
                         ],
+                        stops: const [0.0, 1.0],
                       ),
                     ),
                     padding: EdgeInsets.all(AppSpacing.space2xl),
@@ -1067,6 +1067,24 @@ class _DecisionClarityCard extends StatelessWidget {
                               gradient: RadialGradient(
                                 colors: [
                                   (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Bottom refractive depth
+                        Positioned(
+                          bottom: -40,
+                          right: -20,
+                          child: Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                                   Colors.transparent,
                                 ],
                               ),
