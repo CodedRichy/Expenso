@@ -24,6 +24,12 @@ class FcmTokenService {
 
   Future<void> _requestPermission() async {
     try {
+      final currentSettings = await _messaging.getNotificationSettings();
+      if (currentSettings.authorizationStatus != AuthorizationStatus.notDetermined) {
+        debugPrint('FCM: Permission already decided or ignored. Status: ${currentSettings.authorizationStatus}');
+        return;
+      }
+
       final settings = await _messaging.requestPermission(
         alert: true,
         badge: true,
