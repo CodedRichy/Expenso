@@ -145,10 +145,13 @@ class _GroupDetailState extends State<GroupDetail> {
         final theme = Theme.of(context);
 
         return GradientScaffold(
-          body: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          body: Stack(
+            children: [
+              const _AmbientBackgroundGlows(),
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 OfflineBanner(
                   onRetry: () => ConnectivityService.instance.checkNow(),
                 ),
@@ -974,16 +977,17 @@ class _DecisionClarityCard extends StatelessWidget {
             opacity: isMuted ? 0.6 : 1.0,
             child: LiquidGlass.withOwnLayer(
               settings: const LiquidGlassSettings(
-                thickness: 15,       // How much it refracts/distorts background
-                blur: 10,            // Frosted blur amount
-                glassColor: Color(0x0AFFFFFF), // Nearly invisible tint
-                lightIntensity: 1.6,
-                lightAngle: -0.5,
-                chromaticAberration: 0.02, // Subtle color fringe for realism
-                saturation: 1.2,
+                thickness: 25,       // Increased for more "liquid" distortion
+                blur: 15,            // More frosted look
+                glassColor: Color(0x0FFFFFFF), // Extremely subtle white tint
+                lightIntensity: 2.0, // Stronger rim highlights
+                lightAngle: -0.7,
+                chromaticAberration: 0.03, // More realistic glass lensing
+                saturation: 1.3,     // Pop those background colors
+                refractiveIndex: 1.4,
               ),
-              shape: LiquidRoundedSuperellipse(borderRadius: 32),
-              // Child is transparent — glass shows whatever is on screen behind it
+              shape: LiquidRoundedSuperellipse(borderRadius: 36),
+ma              // Child is transparent — glass shows whatever is on screen behind it
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
                 // No decoration — glass is a pure lens over the app background
@@ -1467,6 +1471,77 @@ class _LockedSpendBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AmbientBackgroundGlows extends StatelessWidget {
+  const _AmbientBackgroundGlows();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Stack(
+      children: [
+        // Top-right soft blue glow
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  (isDark ? const Color(0xFF1E88E5) : const Color(0xFFBBDEFB))
+                      .withValues(alpha: 0.15),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Center-left warm amber glow (subtle)
+        Positioned(
+          top: 200,
+          left: -150,
+          child: Container(
+            width: 500,
+            height: 500,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  (isDark ? const Color(0xFFFF8F00) : const Color(0xFFFFECB3))
+                      .withValues(alpha: 0.12),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Bottom deep purple/indigo glow
+        Positioned(
+          bottom: -50,
+          right: 100,
+          child: Container(
+            width: 350,
+            height: 350,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  (isDark ? const Color(0xFF4527A0) : const Color(0xFFD1C4E9))
+                      .withValues(alpha: 0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
