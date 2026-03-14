@@ -392,13 +392,14 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getFirestore, collection, collectionGroup, getDocs, doc, updateDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
 
 const cfg = {apiKey:'AIzaSyAp9g83dmX1-XgNkFPzDVQo2orY9OvuLbQ',authDomain:'expenso-e138a.firebaseapp.com',
   projectId:'expenso-e138a',storageBucket:'expenso-e138a.firebasestorage.app',
   messagingSenderId:'211875033656',appId:'1:211875033656:web:2f8174003c25c7ada5eccd'};
 const CREATOR='605oNyF1miUumLGMgEnaGGD0Lyh2';
 
-const app=initializeApp(cfg), auth=getAuth(app), db=getFirestore(app);
+const app=initializeApp(cfg), auth=getAuth(app), db=getFirestore(app), functions=getFunctions(app, 'asia-south1');
 
 // ── State ──
 let users=[], groups=[], disputes=[], pendingInvites=[], devStats={ios:0,android:0};
@@ -487,15 +488,18 @@ async function loadAll(user){
   $('hulbl').textContent=user.phoneNumber||'';
   
   try {
-    // Stage 1: Load main users and groups
-    console.log('Fetching users and groups...');
-    const [uSnap, gSnap] = await Promise.all([
-      getDocs(collection(db, 'users')),
-      getDocs(collection(db, 'groups'))
+    // Stage 1: Load main users and groups via Cloud Functions (Decrypted)
+    console.log('Fetching decrypted users and groups...');
+    const fetchUsers = httpsCallable(functions, 'adminFetchUsers');
+    const fetchGroups = httpsCallable(functions, 'adminFetchGroups');
+
+    const [uRes, gRes] = await Promise.all([
+      fetchUsers(),
+      fetchGroups()
     ]);
     
-    users = uSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
-    groups = gSnap.docs.map(d => ({ gid: d.id, ...d.data() }));
+    users = uRes.data.users || [];
+    groups = gRes.data.groups || [];
     
     // Calculate initial group counts
     users.forEach(u => {
@@ -512,7 +516,8 @@ async function loadAll(user){
     
   } catch (e) {
     console.error('Load Error:', e);
-    tbody.innerHTML = `<tr class="empty"><td colspan="8" style="color:var(--rd)">Initial load failed: ${e.message}</td></tr>`;
+    // Fallback to direct Firestore if functions fail (will be encrypted)
+    toast('Cloud Fetch failed: ' + e.message, 'er');
   }
 }
 

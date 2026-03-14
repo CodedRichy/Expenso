@@ -3,7 +3,12 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
-const { getUserEncryptionKey, getGroupEncryptionKey } = require('./encryption');
+const {
+  getUserEncryptionKey,
+  getGroupEncryptionKey,
+  adminFetchUsers,
+  adminFetchGroups
+} = require('./encryption');
 const {
   formatDate,
   computeNetBalances,
@@ -312,6 +317,8 @@ module.exports = {
   settleAndRestart,
   getUserEncryptionKey,
   getGroupEncryptionKey,
+  adminFetchUsers,
+  adminFetchGroups,
   dailyCleanupJob,
   api,
   notifyOnNewExpense,
