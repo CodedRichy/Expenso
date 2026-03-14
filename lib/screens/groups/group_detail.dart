@@ -971,11 +971,38 @@ class _DecisionClarityCard extends StatelessWidget {
             opacity: isMuted ? 0.6 : 1.0,
             child: Container(
               constraints: const BoxConstraints(minHeight: _minHeight),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                  child: Container(
+              child: Stack(
+                children: [
+                  // Local Liquid Blobs (visible through glass)
+                  Positioned(
+                    top: -40,
+                    right: -20,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -50,
+                    left: 20,
+                    child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                      child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
                           ? Colors.white.withValues(alpha: 0.04)
