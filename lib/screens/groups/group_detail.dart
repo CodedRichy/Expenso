@@ -692,6 +692,8 @@ class _GroupDetailState extends State<GroupDetail> {
               ],
             ),
           ),
+        ],
+      ),
         );
       },
     );
@@ -987,7 +989,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 refractiveIndex: 1.4,
               ),
               shape: LiquidRoundedSuperellipse(borderRadius: 36),
-ma              // Child is transparent — glass shows whatever is on screen behind it
+              // Child is transparent — glass shows whatever is on screen behind it
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
                 // No decoration — glass is a pure lens over the app background
