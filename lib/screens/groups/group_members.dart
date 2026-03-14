@@ -341,7 +341,7 @@ void _showMemberProfileBottomSheet(
       final repo = CycleRepository.instance;
       final displayName = repo.getMemberDisplayName(member.phone);
       final photoURL = repo.getMemberPhotoURL(member.id);
-      final isAppCreator = member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
+      final isAppCreator = member.id == '605oNyF1miUumLGMgEnaGGD0Lyh2';
       final isPending = member.id.startsWith('p_');
       return Padding(
         padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom),
@@ -425,7 +425,7 @@ void _showMemberProfileBottomSheet(
                       final data = snapshot.data;
                       final isBeta = data?['isBeta'] == true;
                       final joinedAt = data?['joinedAt'] as int?;
-                      final showBeta = isBeta || member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
+                      final showBeta = isBeta || member.id == '605oNyF1miUumLGMgEnaGGD0Lyh2';
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,

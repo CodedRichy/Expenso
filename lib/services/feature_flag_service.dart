@@ -18,7 +18,7 @@ class FeatureFlagService extends ChangeNotifier {
   /// User IDs of the primary creators. 
   /// These users always have access to all experimental features.
   static const Set<String> _creatorUserIds = {
-    'QoLVTOw3heVLRZZih5nEhdsL55T2', // Rishi's UID from earlier context
+    '605oNyF1miUumLGMgEnaGGD0Lyh2', // App creator
   };
 
   /// Returns true if the service has finished its initial fetch.
