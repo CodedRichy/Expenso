@@ -970,16 +970,40 @@ class _DecisionClarityCard extends StatelessWidget {
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(40), // More pill-like
+              borderRadius: BorderRadius.circular(32),
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
                 child: Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [
-                    // 1. Organic Orange Lava (Left side)
+                    // --- BLOB LAYER: These are the vivid background colors ---
+                    // Solid dark base so blobs pop
+                    Container(
+                      color: const Color(0xFF0A0A10),
+                    ),
+                    // Orange blob — left/center, very vivid, fills most of left half
                     Positioned(
-                      top: -40,
-                      left: -80,
+                      top: -20,
+                      left: -60,
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              const Color(0xFFFF9800), // Full-opacity orange
+                              const Color(0xFFFF9800).withValues(alpha: 0.0),
+                            ],
+                            stops: const [0.4, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Blue blob — right/bottom, vivid sky blue
+                    Positioned(
+                      bottom: -30,
+                      right: -40,
                       child: Container(
                         width: 320,
                         height: 320,
@@ -987,110 +1011,59 @@ class _DecisionClarityCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              const Color(0xFFFFA726).withValues(alpha: 0.7), // Vibrant Orange
-                              const Color(0xFFFFA726).withValues(alpha: 0.0),
+                              const Color(0xFF1E88E5), // Vivid blue
+                              const Color(0xFF1E88E5).withValues(alpha: 0.0),
                             ],
-                            stops: const [0.3, 1.0],
+                            stops: const [0.4, 1.0],
                           ),
                         ),
                       ),
                     ),
-                    // 2. Organic Blue Stream (Right side)
-                    Positioned(
-                      bottom: -60,
-                      right: -60,
-                      child: Container(
-                        width: 350,
-                        height: 350,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFF42A5F5).withValues(alpha: 0.6), // Sky Blue
-                              const Color(0xFF42A5F5).withValues(alpha: 0.0),
-                            ],
-                            stops: const [0.2, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 3. Central Ambient Glow
-                    Positioned(
-                      top: 40,
-                      left: 100,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(40),
+                    // --- GLASS LAYER: Nearly invisible, just blur + hairline rim ---
+                    Positioned.fill(
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 65, sigmaY: 65), // Deep refraction
+                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: theme.brightness == Brightness.dark
-                                ? Colors.white.withValues(alpha: 0.03)
-                                : Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(40),
+                            // Almost zero tint — just the blur does the work
+                            color: Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(32),
+                            // Crisp white rim on top-left, fades bottom-right
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              width: 0.8, // Shaper, thinner rim
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1.0,
                             ),
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withValues(alpha: 0.12),
-                                Colors.white.withValues(alpha: 0.02),
+                                Colors.white.withValues(alpha: 0.08),
+                                Colors.white.withValues(alpha: 0.0),
                               ],
                             ),
                           ),
-                          padding: EdgeInsets.all(AppSpacing.space2xl),
-                          child: Stack(
-                            children: [
-                              // Top-left surface glare
-                              Positioned(
-                                top: -120,
-                                left: -60,
-                                child: Container(
-                                  width: 250,
-                                  height: 250,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.1),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              isEmpty
-                                  ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                                  : _buildContent(
-                                      context,
-                                      currencyCode: currencyCode,
-                                      cycleTotal: cycleTotal,
-                                      youPaid: youPaid,
-                                      settledPaid: settledPaid,
-                                      myNet: myNet,
-                                      myRemaining: myRemaining,
-                                      hasPaymentProgress: hasPaymentProgress,
-                                      isCredit: isCredit,
-                                      isDebt: isDebt,
-                                      isBalanceClear: isBalanceClear,
-                                      isMuted: isMuted,
-                                    ),
-                            ],
-                          ),
                         ),
                       ),
+                    ),
+                    // --- CONTENT LAYER ---
+                    Padding(
+                      padding: EdgeInsets.all(AppSpacing.space2xl),
+                      child: isEmpty
+                          ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                          : _buildContent(
+                              context,
+                              currencyCode: currencyCode,
+                              cycleTotal: cycleTotal,
+                              youPaid: youPaid,
+                              settledPaid: settledPaid,
+                              myNet: myNet,
+                              myRemaining: myRemaining,
+                              hasPaymentProgress: hasPaymentProgress,
+                              isCredit: isCredit,
+                              isDebt: isDebt,
+                              isBalanceClear: isBalanceClear,
+                              isMuted: isMuted,
+                            ),
                     ),
                   ],
                 ),
