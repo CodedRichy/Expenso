@@ -197,6 +197,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               ],
             ),
 
+            /*
             // ── QR Code (expandable) ───────────────────────────────────────
             const SizedBox(height: AppSpacing.spaceSm),
             GestureDetector(
@@ -234,6 +235,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
               firstChild: _buildQrPanel(theme),
               secondChild: const SizedBox.shrink(),
             ),
+            */
           ],
 
           // ── No UPI ID notice ─────────────────────────────────────────────
@@ -277,36 +279,11 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     );
   }
 
+  /*
   Widget _buildQrPanel(ThemeData theme) {
-    final data = _paymentData;
-    if (data == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.spaceMd),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: QrImageView(
-            data: data.qrData,
-            version: QrVersions.auto,
-            size: 180,
-            backgroundColor: Colors.white,
-            eyeStyle: const QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: Colors.black,
-            ),
-            dataModuleStyle: const QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.square,
-              color: Colors.black,
-            ),
-          ),
-        ),
-      ),
-    );
+    ...
   }
+  */
 
   Widget _buildStatusChip() {
     Color bgColor;
@@ -524,6 +501,32 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_hasUpiId) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final data = _paymentData;
+                if (data != null) {
+                  UpiPaymentService.launchUpi(data);
+                }
+              },
+              icon: const Icon(Icons.bolt, size: 20),
+              label: const Text('Pay with UPI app'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.colorAccent,
+                foregroundColor: context.colorSurface,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+                shadowColor: context.colorAccent.withOpacity(0.3),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spaceLg),
+        ],
         // Disclaimer
         Container(
           padding: const EdgeInsets.symmetric(

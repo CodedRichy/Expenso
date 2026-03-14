@@ -1,3 +1,5 @@
+import 'package:url_launcher/url_launcher.dart';
+
 /// Payment data needed for QR display and copy-to-clipboard UPI flows.
 /// Intent launching is NOT supported — this class is used for QR code
 /// generation and UPI ID display only.
@@ -20,17 +22,19 @@ class UpiPaymentData {
 
   double get amountDisplay => amountMinor / 100;
 
-  /// UPI deep-link string used for QR code display.
-  /// Not used for intent launching.
+  /// UPI deep-link string used for QR code display and intent launching.
+  /// Cleaned per "Villain" refinement rules to avoid GPay security blocks.
   String get upiDeepLink {
     final amount = amountDisplay.toStringAsFixed(2);
     final encodedName = Uri.encodeComponent(payeeName);
     final encodedNote = Uri.encodeComponent(transactionNote);
-    final encodedRef = Uri.encodeComponent(transactionRef);
-    return 'upi://pay?pa=$payeeUpiId&pn=$encodedName&am=$amount&cu=$currencyCode&tn=$encodedNote&tr=$encodedRef';
+    
+    // RULE 1: Strip Merchant Tags (mc, tr, tid) to avoid digital signature requirement.
+    // RULE 4: Ensure standard VPA format (sanitized in createPaymentData).
+    return 'upi://pay?pa=$payeeUpiId&pn=$encodedName&am=$amount&cu=$currencyCode&tn=$encodedNote';
   }
 
-  String get qrData => upiDeepLink;
+  // String get qrData => upiDeepLink;
 }
 
 class UpiPaymentService {
@@ -81,5 +85,30 @@ class UpiPaymentService {
       transactionNote: note.isNotEmpty ? note : 'Expenso Settlement',
       transactionRef: finalRef,
     );
+  }
+
+  /// Launches the device's UPI app picker using the standardized intent format.
+  /// Follows the "Generic Intent" principle to avoid security blocks in GPay.
+  static Future<bool> launchUpi(UpiPaymentData data) async {
+    final uri = Uri.parse(data.upiDeepLink);
+    
+    // Using externalApplication mode ensures Android triggers the "App Picker"
+    // rather than trying to force a specific package, which satisfies RULE 3.
+    try {
+      final success = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      return success;
+    } catch (e) {
+      // Fallback: If amount causes a fraud block, Rule 2 suggests removing am=
+      final fallbackUri = Uri.parse(
+        data.upiDeepLink.replaceFirst(RegExp(r'&am=[0-9.]+'), ''),
+      );
+      return await launchUrl(
+        fallbackUri,
+        mode: LaunchMode.externalApplication,
+      );
+    }
   }
 }
