@@ -144,66 +144,13 @@ class _GroupDetailState extends State<GroupDetail> {
         final theme = Theme.of(context);
 
         return GradientScaffold(
-          body: Stack(
-            children: [
-              if (theme.brightness == Brightness.dark) ...[
-                // Vibrant Liquid Glass Blobs
-                Positioned(
-                  top: -50,
-                  right: -50,
-                  child: Container(
-                    width: 350,
-                    height: 350,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.colorPrimary.withValues(alpha: 0.12),
-                    ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                      child: const SizedBox.shrink(),
-                    ),
-                  ),
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                OfflineBanner(
+                  onRetry: () => ConnectivityService.instance.checkNow(),
                 ),
-                Positioned(
-                  top: 250,
-                  left: -80,
-                  child: Container(
-                    width: 300,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
-                      child: const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -100,
-                  left: 50,
-                  child: Container(
-                    width: 400,
-                    height: 400,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.colorPrimary.withValues(alpha: 0.15),
-                    ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
-                      child: const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-              ],
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    OfflineBanner(
-                      onRetry: () => ConnectivityService.instance.checkNow(),
-                    ),
                 Expanded(
                   child: CustomScrollView(
                     slivers: [
