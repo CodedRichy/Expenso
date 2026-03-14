@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../../design/colors.dart';
 import '../../design/spacing.dart';
@@ -145,13 +143,10 @@ class _GroupDetailState extends State<GroupDetail> {
         final theme = Theme.of(context);
 
         return GradientScaffold(
-          body: Stack(
-            children: [
-              const _AmbientBackgroundGlows(),
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 OfflineBanner(
                   onRetry: () => ConnectivityService.instance.checkNow(),
                 ),
@@ -692,8 +687,6 @@ class _GroupDetailState extends State<GroupDetail> {
               ],
             ),
           ),
-        ],
-      ),
         );
       },
     );
@@ -925,7 +918,6 @@ class _DecisionClarityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEmpty = expenses.isEmpty;
     final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
@@ -966,8 +958,6 @@ class _DecisionClarityCard extends StatelessWidget {
                   ? "You are owed ${_formatAmount(myRemaining.abs(), currencyCode)}."
                   : "You owe ${_formatAmount(myRemaining.abs(), currencyCode)}."}';
 
-    // The blobs live OUTSIDE the glass — the glass refracts them.
-    // This is how real liquid glass works.
     return Semantics(
       label: semanticsLabel,
       button: !isEmpty,
@@ -977,22 +967,28 @@ class _DecisionClarityCard extends StatelessWidget {
           scaleDown: 0.98,
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
-            child: LiquidGlass.withOwnLayer(
-              settings: const LiquidGlassSettings(
-                thickness: 25,       // Increased for more "liquid" distortion
-                blur: 15,            // More frosted look
-                glassColor: Color(0x0FFFFFFF), // Extremely subtle white tint
-                lightIntensity: 2.0, // Stronger rim highlights
-                lightAngle: -0.7,
-                chromaticAberration: 0.03, // More realistic glass lensing
-                saturation: 1.3,     // Pop those background colors
-                refractiveIndex: 1.4,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: _minHeight),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.colorPrimary.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.colorGradientStart,
+                    context.colorGradientEnd,
+                  ],
+                ),
               ),
-              shape: LiquidRoundedSuperellipse(borderRadius: 36),
-              // Child is transparent — glass shows whatever is on screen behind it
-              child: Container(
-                constraints: const BoxConstraints(minHeight: _minHeight),
-                // No decoration — glass is a pure lens over the app background
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.space2xl),
                   child: isEmpty
@@ -1034,10 +1030,11 @@ class _DecisionClarityCard extends StatelessWidget {
     required bool isBalanceClear,
     required bool isMuted,
   }) {
-    final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onSurface;
+    final onDark = Theme.of(context).brightness == Brightness.dark
+        ? context.colorPrimary
+        : context.colorSurface;
     final statusColor = isBalanceClear
-        ? onSurface.withValues(alpha: 0.7)
+        ? onDark.withValues(alpha: 0.7)
         : isCredit
         ? context.colorSuccessLight
         : context.colorDebtRed;
@@ -1055,13 +1052,13 @@ class _DecisionClarityCard extends StatelessWidget {
         Text(
           'Cycle Total',
           style: AppTypography.sectionLabel.copyWith(
-            color: onSurface.withValues(alpha: 0.7),
+            color: onDark.withValues(alpha: 0.7),
           ),
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
           _formatAmount(cycleTotal, currencyCode),
-          style: AppTypography.amountLG.copyWith(color: onSurface),
+          style: AppTypography.amountLG.copyWith(color: onDark),
         ),
         SizedBox(height: AppSpacing.spaceXl),
         Row(
@@ -1070,37 +1067,37 @@ class _DecisionClarityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'You Paid',
+                    style: AppTypography.captionSmall.copyWith(
+                      color: onDark.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.space2xs),
+                  Text(
+                    _formatAmount(youPaid, currencyCode),
+                    style: AppTypography.amountSM.copyWith(
+                      color: onDark.withValues(alpha: 0.95),
+                    ),
+                  ),
+                  if (settledPaid > 0.01) ...[
+                    SizedBox(height: AppSpacing.spaceXs),
                     Text(
-                      'You Paid',
+                      'Settled',
                       style: AppTypography.captionSmall.copyWith(
-                        color: onSurface.withValues(alpha: 0.7),
+                        color: onDark.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
-                      _formatAmount(youPaid, currencyCode),
+                      _formatAmount(settledPaid, currencyCode),
                       style: AppTypography.amountSM.copyWith(
-                        color: onSurface.withValues(alpha: 0.95),
+                        color: onDark.withValues(alpha: 0.95),
                       ),
                     ),
-                    if (settledPaid > 0.01) ...[
-                      SizedBox(height: AppSpacing.spaceXs),
-                      Text(
-                        'Settled',
-                        style: AppTypography.captionSmall.copyWith(
-                          color: onSurface.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.space2xs),
-                      Text(
-                        _formatAmount(settledPaid, currencyCode),
-                        style: AppTypography.amountSM.copyWith(
-                          color: onSurface.withValues(alpha: 0.95),
-                        ),
-                      ),
-                    ],
+                  ],
                 ],
               ),
             ),
@@ -1111,7 +1108,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   Text(
                     'Your Status',
                     style: AppTypography.captionSmall.copyWith(
-                      color: onSurface.withValues(alpha: 0.7),
+                      color: onDark.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1473,77 +1470,6 @@ class _LockedSpendBar extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AmbientBackgroundGlows extends StatelessWidget {
-  const _AmbientBackgroundGlows();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Stack(
-      children: [
-        // Top-right soft blue glow
-        Positioned(
-          top: -100,
-          right: -50,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  (isDark ? const Color(0xFF1E88E5) : const Color(0xFFBBDEFB))
-                      .withValues(alpha: 0.15),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Center-left warm amber glow (subtle)
-        Positioned(
-          top: 200,
-          left: -150,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  (isDark ? const Color(0xFFFF8F00) : const Color(0xFFFFECB3))
-                      .withValues(alpha: 0.12),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Bottom deep purple/indigo glow
-        Positioned(
-          bottom: -50,
-          right: 100,
-          child: Container(
-            width: 350,
-            height: 350,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  (isDark ? const Color(0xFF4527A0) : const Color(0xFFD1C4E9))
-                      .withValues(alpha: 0.1),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
