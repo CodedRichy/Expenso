@@ -1015,89 +1015,88 @@ class _DecisionClarityCard extends StatelessWidget {
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
                       child: Container(
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.04)
-                          : Colors.white.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: (theme.brightness == Brightness.dark 
-                            ? Colors.white 
-                            : Colors.black).withValues(alpha: 0.22),
-                        width: 1.8,
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.18),
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
-                        ],
-                        stops: const [0.0, 1.0],
-                      ),
-                    ),
-                    padding: EdgeInsets.all(AppSpacing.space2xl),
-                    child: Stack(
-                      children: [
-                        // Subtle surface shine
-                        Positioned(
-                          top: -50,
-                          left: -50,
-                          child: Container(
-                            width: 200,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : Colors.white.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: (theme.brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black).withValues(alpha: 0.22),
+                            width: 1.8,
                           ),
-                        ),
-                        // Bottom refractive depth
-                        Positioned(
-                          bottom: -40,
-                          right: -20,
-                          child: Container(
-                            width: 180,
-                            height: 180,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        isEmpty
-                            ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                            : _buildContent(
-                                context,
-                                currencyCode: currencyCode,
-                                cycleTotal: cycleTotal,
-                                youPaid: youPaid,
-                                settledPaid: settledPaid,
-                                myNet: myNet,
-                                myRemaining: myRemaining,
-                                hasPaymentProgress: hasPaymentProgress,
-                                isCredit: isCredit,
-                                isDebt: isDebt,
-                                isBalanceClear: isBalanceClear,
-                                isMuted: isMuted,
-                              ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.18),
+                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
                             ],
+                            stops: const [0.0, 1.0],
                           ),
+                        ),
+                        padding: EdgeInsets.all(AppSpacing.space2xl),
+                        child: Stack(
+                          children: [
+                            // Subtle surface shine
+                            Positioned(
+                              top: -50,
+                              left: -50,
+                              child: Container(
+                                width: 200,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Bottom refractive depth
+                            Positioned(
+                              bottom: -40,
+                              right: -20,
+                              child: Container(
+                                width: 180,
+                                height: 180,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            isEmpty
+                                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                                : _buildContent(
+                                    context,
+                                    currencyCode: currencyCode,
+                                    cycleTotal: cycleTotal,
+                                    youPaid: youPaid,
+                                    settledPaid: settledPaid,
+                                    myNet: myNet,
+                                    myRemaining: myRemaining,
+                                    hasPaymentProgress: hasPaymentProgress,
+                                    isCredit: isCredit,
+                                    isDebt: isDebt,
+                                    isBalanceClear: isBalanceClear,
+                                    isMuted: isMuted,
+                                  ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
