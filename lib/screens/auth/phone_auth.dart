@@ -429,6 +429,31 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                       letterSpacing: 8,
                                     ),
                                   ),
+                                  const SizedBox(height: 16),
+                                  Center(
+                                    child: TextButton(
+                                      onPressed: (_resendCountdown == 0 && !_loading)
+                                          ? handlePhoneSubmit
+                                          : null,
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _resendCountdown > 0
+                                            ? 'Resend code in ${_resendCountdown}s'
+                                            : 'Resend code',
+                                        style: context.bodySecondary.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: _resendCountdown > 0
+                                              ? context.colorTextDisabled
+                                              : AppColors.accent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   if (_errorMessage != null) ...[
                                     const SizedBox(height: 12),
                                     Text(
@@ -436,97 +461,69 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                       style: context.bodySecondary.copyWith(
                                         color: context.colorError,
                                       ),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ],
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TapScale(
-                              child: ElevatedButton(
-                                onPressed:
-                                    (otp.length == 6 && !_loading)
-                                        ? handleOtpSubmit
-                                        : null,
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TapScale(
+                                child: ElevatedButton(
+                                  onPressed:
+                                      (otp.length == 6 && !_loading)
+                                          ? handleOtpSubmit
+                                          : null,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                    minimumSize: const Size(double.infinity, 0),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 0,
-                                  minimumSize: const Size(double.infinity, 0),
-                                ),
-                                child:
-                                    _loading
-                                        ? SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
+                                  child:
+                                      _loading
+                                          ? SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                          )
+                                          : const Text(
+                                            'Verify',
+                                            style: AppTypography.button,
                                           ),
-                                        )
-                                        : const Text(
-                                          'Verify',
-                                          style: AppTypography.button,
-                                        ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                TextButton(
-                                  onPressed: (_resendCountdown == 0 && !_loading)
-                                      ? handlePhoneSubmit
-                                      : null,
-                                  child: Text(
-                                    _resendCountdown > 0
-                                        ? 'Resend code in ${_resendCountdown}s'
-                                        : 'Resend code',
-                                    style: context.bodySecondary.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: _resendCountdown > 0
-                                          ? context.colorTextDisabled
-                                          : AppColors.accent,
-                                    ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _loading ? null : _goBackToPhone,
+                                child: Text(
+                                  'Change number',
+                                  style: context.bodySecondary.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.accent,
                                   ),
                                 ),
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: context.colorTextDisabled,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: _loading ? null : _goBackToPhone,
-                                  child: Text(
-                                    'Change number',
-                                    style: context.bodySecondary.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.accent,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
