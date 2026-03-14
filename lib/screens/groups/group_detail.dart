@@ -685,10 +685,8 @@ class _GroupDetailState extends State<GroupDetail> {
                   isPassive
                       ? _LockedSpendBar(group: defaultGroup)
                       : _SmartBarSection(group: defaultGroup),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
