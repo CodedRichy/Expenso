@@ -80,13 +80,24 @@ class FirestoreService {
     String? currencyCode,
   }) async {
     final ref = _firestore.collection(FirestorePaths.users).doc(uid);
+    
+    // Check if user exists to preserve joinedAt
+    final snap = await ref.get();
     final data = <String, dynamic>{};
+    
+    if (!snap.exists) {
+      data['joinedAt'] = DateTime.now().millisecondsSinceEpoch;
+    }
+    
+    data['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
     if (displayName != null) data['displayName'] = displayName;
     if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
     if (photoURL != null) data['photoURL'] = photoURL;
     if (upiId != null) data['upiId'] = upiId;
     if (currencyCode != null) data['currencyCode'] = currencyCode;
+    
     if (data.isEmpty) return;
+    
     if (_encryption != null) {
       await _encryption!.ensureUserKey();
     }

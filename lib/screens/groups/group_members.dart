@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../design/typography.dart';
 import '../../design/colors.dart';
 import '../../design/spacing.dart';
@@ -342,32 +343,28 @@ void _showMemberProfileBottomSheet(
       final photoURL = repo.getMemberPhotoURL(member.id);
       final isAppCreator = member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
       final isPending = member.id.startsWith('p_');
-
-      return ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(
-              24, 
-              12, 
-              24, 
-              32 + MediaQuery.of(ctx).padding.bottom
-            ),
-            decoration: BoxDecoration(
-              color: isDark 
-                  ? Colors.black.withValues(alpha: 0.5) 
-                  : Colors.white.withValues(alpha: 0.6),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              border: Border.all(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-                width: 0.5,
+      return Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.of(ctx).viewInsets.bottom),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: 36,
@@ -421,37 +418,52 @@ void _showMemberProfileBottomSheet(
                   ),
                 ],
                 const SizedBox(height: 24),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    if (isAppCreator)
-                      _Badge(
-                        icon: Icons.workspace_premium,
-                        color: Colors.amber,
-                        label: 'App Creator',
-                        isDark: isDark,
-                      ),
-                    if (!isPending)
-                      FutureBuilder<Map<String, dynamic>?>(
-                        future: FirestoreService.instance.getUser(member.id),
-                        builder: (context, snapshot) {
-                          final isBeta = snapshot.data?['isBeta'] == true;
-                          final showBeta = isBeta || member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
-                          if (showBeta) {
-                            return _Badge(
-                              icon: Icons.science_outlined,
-                              color: Colors.green,
-                              label: 'Beta Tester',
-                              isDark: isDark,
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                  ],
-                ),
+                if (!isPending)
+                  FutureBuilder<Map<String, dynamic>?>(
+                    future: FirestoreService.instance.getUser(member.id),
+                    builder: (context, snapshot) {
+                      final data = snapshot.data;
+                      final isBeta = data?['isBeta'] == true;
+                      final joinedAt = data?['joinedAt'] as int?;
+                      final showBeta = isBeta || member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (joinedAt != null) ...[
+                            Text(
+                              'Member since ${DateFormat('MMM yyyy').format(DateTime.fromMillisecondsSinceEpoch(joinedAt))}',
+                              style: context.caption.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              if (isAppCreator)
+                                _Badge(
+                                  icon: Icons.workspace_premium,
+                                  color: Colors.amber,
+                                  label: 'App Creator',
+                                  isDark: isDark,
+                                ),
+                              if (showBeta)
+                                _Badge(
+                                  icon: Icons.science_outlined,
+                                  color: Colors.green,
+                                  label: 'Beta Tester',
+                                  isDark: isDark,
+                                ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 if (canRemove) ...[
                   const SizedBox(height: 32),
                   SizedBox(
