@@ -231,7 +231,7 @@
         <div class="lerr" id="pe"></div>
         <div class="iw"><span class="ipfx">+91</span><input type="text" id="ph" class="pfx" placeholder="Enter Number" maxlength="10" inputmode="numeric"/></div>
         <button class="bprim" id="sbtn">Send Code</button>
-        <div id="rc" style="margin-top:14px"></div>
+        <div id="rc-container"></div>
         <p class="rnote">Protected by Firebase. Only the app creator can access this.</p>
       </div>
       <div id="so" class="lstep">
@@ -419,17 +419,42 @@ const avHtml=(u,size=32)=>`<div class="av" style="width:${size}px;height:${size}
 // ── Auth ──
 auth.onAuthStateChanged(u=>{if(u){if(u.uid!==CREATOR){showStep('sd');signOut(auth);return}loadAll(u)}});
 
-function setupRC(){if(window._rc)return;window._rc=new RecaptchaVerifier(auth,'rc',{size:'invisible'})}
+function setupRC(){
+  if(window._rc) {
+    try { window._rc.clear(); } catch(e){}
+    window._rc = null;
+  }
+  // Using 'rc-container' instead of the button itself to avoid conflict with disabled state
+  window._rc = new RecaptchaVerifier(auth, 'rc-container', {
+    'size': 'invisible',
+    'callback': (response) => { 
+      console.log('reCAPTCHA solved');
+    }
+  });
+}
 
 $('sbtn').onclick=async()=>{
   const raw=$('ph').value.replace(/\D/g,'');
   if(raw.length!==10){showErr('pe','Enter a valid 10-digit number');return}
-  const btn=$('sbtn');btn.disabled=true;btn.textContent='Sending…';
-  try{setupRC();confirmRes=await signInWithPhoneNumber(auth,'+91'+raw,window._rc);
+  const btn=$('sbtn'); btn.disabled=true; btn.textContent='Sending…';
+  
+  try {
+    setupRC();
+    const verifier = window._rc;
+    confirmRes = await signInWithPhoneNumber(auth, '+91' + raw, verifier);
+    
     $('osub').querySelector('strong').textContent=`+91 ${raw.slice(0,5)} ${raw.slice(5)}`;
-    showStep('so');document.querySelectorAll('.obox')[0].focus();
-  }catch(e){showErr('pe',e.message||'Failed');window._rc=null}
-  finally{btn.disabled=false;btn.textContent='Send Code'}
+    showStep('so');
+    setTimeout(() => boxes[0].focus(), 100);
+  } catch(e) {
+    console.error('SMS Error:', e);
+    let msg = e.message || 'Failed to send code';
+    if(e.code === 'auth/internal-error') msg = 'Firebase Internal Error. Check if "localhost" is added to Authorized Domains in Firebase Console.';
+    showErr('pe', msg);
+    if(window._rc) { try { window._rc.clear(); } catch(i){} window._rc = null; }
+  } finally {
+    btn.disabled=false; btn.textContent='Send Code';
+  }
 };
 $('ph').onkeydown=e=>{if(e.key==='Enter')$('sbtn').click()};
 
