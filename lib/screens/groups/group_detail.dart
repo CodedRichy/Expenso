@@ -1121,8 +1121,9 @@ class _DecisionClarityCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildContent(
     BuildContext context, {
