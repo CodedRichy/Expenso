@@ -979,7 +979,7 @@ class _DecisionClarityCard extends StatelessWidget {
                 glassColor: Color(0x0AFFFFFF), // Nearly invisible tint
                 lightIntensity: 1.6,
                 lightAngle: -0.5,
-                outlineIntensity: 0.8,
+                chromaticAberration: 0.02, // Subtle color fringe for realism
                 saturation: 1.2,
               ),
               shape: LiquidRoundedSuperellipse(borderRadius: 32),
