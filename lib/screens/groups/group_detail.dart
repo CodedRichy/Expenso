@@ -973,78 +973,38 @@ class _DecisionClarityCard extends StatelessWidget {
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
             child: LiquidGlass.withOwnLayer(
-              settings: LiquidGlassSettings(
-                thickness: 18,
-                blur: 12,
-                glassColor: const Color(0x14FFFFFF), // Almost invisible tint
-                lightIntensity: 1.8,
-                lightAngle: -0.6,
-                outlineIntensity: 0.9,
-                saturation: 1.4, // Boost color saturation through glass
+              settings: const LiquidGlassSettings(
+                thickness: 15,       // How much it refracts/distorts background
+                blur: 10,            // Frosted blur amount
+                glassColor: Color(0x0AFFFFFF), // Nearly invisible tint
+                lightIntensity: 1.6,
+                lightAngle: -0.5,
+                outlineIntensity: 0.8,
+                saturation: 1.2,
               ),
               shape: LiquidRoundedSuperellipse(borderRadius: 32),
+              // Child is transparent — glass shows whatever is on screen behind it
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
-                // The background content the glass warps
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFFF9800), // Vivid orange
-                      const Color(0xFF1565C0), // Deep blue
-                    ],
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Extra warm blob top-left
-                    Positioned(
-                      top: -60,
-                      left: -40,
-                      child: Container(
-                        width: 240,
-                        height: 240,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFFFD54F), // Yellow-orange
+                // No decoration — glass is a pure lens over the app background
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.space2xl),
+                  child: isEmpty
+                      ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                      : _buildContent(
+                          context,
+                          currencyCode: currencyCode,
+                          cycleTotal: cycleTotal,
+                          youPaid: youPaid,
+                          settledPaid: settledPaid,
+                          myNet: myNet,
+                          myRemaining: myRemaining,
+                          hasPaymentProgress: hasPaymentProgress,
+                          isCredit: isCredit,
+                          isDebt: isDebt,
+                          isBalanceClear: isBalanceClear,
+                          isMuted: isMuted,
                         ),
-                      ),
-                    ),
-                    // Cool blue blob bottom-right
-                    Positioned(
-                      bottom: -50,
-                      right: -30,
-                      child: Container(
-                        width: 260,
-                        height: 260,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFF0D47A1), // Dark blue
-                        ),
-                      ),
-                    ),
-                    // Content on top
-                    Padding(
-                      padding: EdgeInsets.all(AppSpacing.space2xl),
-                      child: isEmpty
-                          ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                          : _buildContent(
-                              context,
-                              currencyCode: currencyCode,
-                              cycleTotal: cycleTotal,
-                              youPaid: youPaid,
-                              settledPaid: settledPaid,
-                              myNet: myNet,
-                              myRemaining: myRemaining,
-                              hasPaymentProgress: hasPaymentProgress,
-                              isCredit: isCredit,
-                              isDebt: isDebt,
-                              isBalanceClear: isBalanceClear,
-                              isMuted: isMuted,
-                            ),
-                    ),
-                  ],
                 ),
               ),
             ),
