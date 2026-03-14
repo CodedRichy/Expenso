@@ -590,10 +590,20 @@ class CycleRepository extends ChangeNotifier {
       final cycleStatus = data['cycleStatus'] as String? ?? 'active';
       final pendingList = _extractPendingMembersList(data['pendingMembers']);
 
+      final settlementRhythm = data['settlementRhythm'] as String? ?? 'weekly';
+      final settlementDay = data['settlementDay'] as int? ?? 0;
+
       _groupMeta[groupId] = _GroupMeta(
         activeCycleId: activeCycleId,
         cycleStatus: cycleStatus,
+        settlementRhythm: settlementRhythm,
+        settlementDay: settlementDay,
       );
+
+      // Automated Reckoning Check (The Villain Principle)
+      if (cycleStatus == 'active') {
+        _checkAutomatedClosure(groupId, settlementRhythm, settlementDay);
+      }
       final status = cycleStatus == 'settling'
           ? 'closing'
           : (cycleStatus == 'active' ? 'open' : 'settled');
@@ -2435,9 +2445,45 @@ class CycleRepository extends ChangeNotifier {
     _groupMeta[groupId] = _GroupMeta(
       activeCycleId: meta.activeCycleId,
       cycleStatus: 'settling',
+      settlementRhythm: meta.settlementRhythm,
+      settlementDay: meta.settlementDay,
     );
     _refreshGroupAmounts();
     _logSettlementEvent(groupId, SettlementEventType.cycleSettlementStarted);
+    notifyListeners();
+  }
+
+  /// Automated Recking: System-enforced closure based on the weekly rhythm.
+  /// This is the "Villain" mode—the app shuts down spending when the week ends.
+  void _checkAutomatedClosure(String groupId, String rhythm, int settlementDay) {
+    if (rhythm != 'weekly') return;
+
+    final now = DateTime.now();
+    // Sunday=0, Monday=1, ..., Saturday=6
+    final currentDay = now.weekday % 7;
+
+    // RULE: If it is the Settlement Day (Default Sunday), the cycle moves to 'settling' mode.
+    // This blocks new expenses until the group creator archives and restarts.
+    if (currentDay == settlementDay) {
+      _automatedFreeze(groupId);
+    }
+  }
+
+  void _automatedFreeze(String groupId) {
+    final meta = _groupMeta[groupId];
+    if (meta == null || meta.cycleStatus == 'settling') return;
+
+    // We bypass the isCreator check here because this is a system-enforced rule.
+    FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
+    
+    // We update local state immediately for snappy UI
+    _groupMeta[groupId] = _GroupMeta(
+      activeCycleId: meta.activeCycleId,
+      cycleStatus: 'settling',
+      settlementRhythm: meta.settlementRhythm,
+      settlementDay: meta.settlementDay,
+    );
+    _refreshGroupAmounts();
     notifyListeners();
   }
 
@@ -2763,7 +2809,15 @@ class CycleRepository extends ChangeNotifier {
 class _GroupMeta {
   final String activeCycleId;
   final String cycleStatus;
-  _GroupMeta({required this.activeCycleId, required this.cycleStatus});
+  final String settlementRhythm;
+  final int settlementDay;
+
+  _GroupMeta({
+    required this.activeCycleId,
+    required this.cycleStatus,
+    this.settlementRhythm = 'weekly',
+    this.settlementDay = 0,
+  });
 }
 
 class _BalanceEntry {

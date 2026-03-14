@@ -680,8 +680,10 @@ class _GroupDetailState extends State<GroupDetail> {
                     ],
                   ),
                 ),
-                if (!isSettled && !isPassive)
-                  _SmartBarSection(group: defaultGroup),
+                if (!isSettled)
+                  isPassive
+                      ? _LockedSpendBar(group: defaultGroup)
+                      : _SmartBarSection(group: defaultGroup),
               ],
             ),
           ),
@@ -1420,3 +1422,54 @@ class _SettlementDetailsSheet extends StatelessWidget {
   }
 }
 
+class _LockedSpendBar extends StatelessWidget {
+  final Group group;
+  const _LockedSpendBar({required this.group});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        12 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.error.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lock_clock_outlined,
+              size: 20,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Weekly spending is locked. Please settle the current cycle to continue.',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
