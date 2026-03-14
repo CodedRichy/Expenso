@@ -333,7 +333,7 @@ void _showMemberProfileBottomSheet(
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     useRootNavigator: true,
-    barrierColor: Colors.black.withValues(alpha: 0.7),
+    barrierColor: Colors.black.withValues(alpha: 0.4),
     builder: (ctx) {
       final theme = Theme.of(ctx);
       final isDark = theme.brightness == Brightness.dark;
@@ -370,20 +370,25 @@ void _showMemberProfileBottomSheet(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 40,
+                  width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: theme.dividerColor,
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(height: 32),
                 Container(
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.05),
                         blurRadius: 32,
                         spreadRadius: 4,
                       ),
@@ -399,9 +404,10 @@ void _showMemberProfileBottomSheet(
                 Text(
                   displayName,
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 if (member.phone.isNotEmpty) ...[
@@ -422,9 +428,9 @@ void _showMemberProfileBottomSheet(
                   children: [
                     if (isAppCreator)
                       _Badge(
-                        icon: Icons.verified,
-                        color: Colors.blueAccent,
-                        label: 'Creator',
+                        icon: Icons.workspace_premium,
+                        color: Colors.amber,
+                        label: 'App Creator',
                         isDark: isDark,
                       ),
                     if (!isPending)
