@@ -460,58 +460,107 @@ async function loadAll(user){
   $('dash').style.display='flex';
   $('cdot').classList.add('on');
   $('hulbl').textContent=user.phoneNumber||'';
-  await Promise.all([loadUsers(),loadGroups()]);
-  await loadDisputes();
-  renderAll();
+  
+  try {
+    // Stage 1: Load main users and groups
+    console.log('Fetching users and groups...');
+    const [uSnap, gSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'groups'))
+    ]);
+    
+    users = uSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    groups = gSnap.docs.map(d => ({ gid: d.id, ...d.data() }));
+    
+    // Calculate initial group counts
+    users.forEach(u => {
+      u._groups = groups.filter(g => (g.members || []).includes(u.uid)).length;
+    });
+    
+    // Render first pass
+    console.log('First pass render...');
+    renderAll();
+    
+    // Stage 2: Background loads
+    loadAlertsBackground();
+    loadDeviceStatsBackground();
+    
+  } catch (e) {
+    console.error('Load Error:', e);
+    tbody.innerHTML = `<tr class="empty"><td colspan="8" style="color:var(--rd)">Initial load failed: ${e.message}</td></tr>`;
+  }
 }
 
-async function loadUsers(){
-  const snap=await getDocs(collection(db,'users'));
-  users=snap.docs.map(d=>({uid:d.id,...d.data()}));
-  // Load FCM token platform info
-  devStats={ios:0,android:0};
-  await Promise.all(users.map(async u=>{
-    try{
-      const ts=await getDocs(collection(db,'users',u.uid,'fcmTokens'));
-      const platforms=ts.docs.map(d=>d.data().platform||'');
-      u._ios=platforms.filter(p=>p==='ios').length>0;
-      u._android=platforms.filter(p=>p==='android').length>0;
-      if(u._ios)devStats.ios++;
-      if(u._android&&!u._ios)devStats.android++;
-      if(!u._ios&&!u._android&&platforms.length===0){} // no token yet
-    }catch{}
-  }));
-}
-
-async function loadGroups(){
-  const snap=await getDocs(collection(db,'groups'));
-  groups=snap.docs.map(d=>({gid:d.id,...d.data()}));
-  // Count groups per user
-  users.forEach(u=>{u._groups=groups.filter(g=>(g.members||[]).includes(u.uid)).length});
-}
-
-async function loadDisputes(){
-  disputes=[];pendingInvites=[];
-  try{
-    const q=query(collectionGroup(db,'payment_attempts'),where('disputed','==',true));
-    const snap=await getDocs(q);
-    disputes=snap.docs.map(d=>({...d.data(),_gid:d.ref.parent.parent.id}));
-  }catch(e){console.warn('disputes query:',e.message)}
-
-  // Pending invites from all groups
-  groups.forEach(g=>{
-    const pm=g.pendingMembers||[];
-    if(Array.isArray(pm)){
-      pm.forEach(p=>pendingInvites.push({gid:g.gid,gname:g.groupName,...p}));
+async function loadAlertsBackground() {
+  console.log('Fetching disputes and invites...');
+  try {
+    // Load disputes with specific error handling for indexes
+    try {
+      const q = query(collectionGroup(db, 'payment_attempts'), where('disputed', '==', true));
+      const snap = await getDocs(q);
+      disputes = snap.docs.map(d => ({ ...d.data(), _gid: d.ref.parent.parent.id }));
+    } catch (e) {
+      console.warn('Disputes fetch failed:', e);
+      if (e.message.includes('index')) {
+        console.error('MISSING INDEX! Click the link in your console to create it.');
+        toast('⚠️ Missing Index: Check Console', 'er');
+      }
     }
-  });
 
-  // Update alert badge
-  const total=disputes.length;
-  const badge=$('altbadge');
-  if(total>0){badge.style.display='inline';badge.textContent=total}
-  else{badge.style.display='none'}
+    // Load pending invites from groups we already have
+    pendingInvites = [];
+    groups.forEach(g => {
+      const pm = g.pendingMembers || [];
+      if (Array.isArray(pm)) {
+        pm.forEach(p => pendingInvites.push({ gid: g.gid, gname: g.groupName, ...p }));
+      }
+    });
+
+    // Update UI bits that depend on alerts
+    const total = disputes.length;
+    const badge = $('altbadge');
+    if (total > 0) { badge.style.display = 'inline'; badge.textContent = total; }
+    else { badge.style.display = 'none'; }
+    
+    renderAlerts();
+    renderOv(); // update dispute stat
+  } catch (e) {
+    console.warn('Alerts background fetch error:', e);
+  }
 }
+
+async function loadDeviceStatsBackground() {
+  console.log('Fetching device stats...');
+  devStats = { ios: 0, android: 0 };
+  let fetchedCount = 0;
+  
+  for (const u of users) {
+    try {
+      const ts = await getDocs(collection(db, 'users', u.uid, 'fcmTokens'));
+      const platforms = ts.docs.map(d => d.data().platform || '');
+      u._ios = platforms.some(p => p === 'ios');
+      u._android = platforms.some(p => p === 'android');
+      
+      if (u._ios) devStats.ios++;
+      if (u._android && !u._ios) devStats.android++;
+      
+      fetchedCount++;
+      // Periodically update the OVERVIEW if we are on it
+      if (fetchedCount % 5 === 0 || fetchedCount === users.length) {
+        renderOv();
+        renderUsers();
+      }
+    } catch (e) {
+      console.warn(`Device fetch failed for ${u.uid}:`, e);
+    }
+  }
+}
+
+async function loadUsers(){ /* Replaced by logic in loadAll */ }
+
+async function loadGroups(){ /* Replaced by logic in loadAll */ }
+
+async function loadDisputes(){ /* Replaced by logic in loadAlertsBackground */ }
 
 function renderAll(){
   renderOv();renderUsers();renderGroups();renderAlerts();
