@@ -973,102 +973,100 @@ class _DecisionClarityCard extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: _minHeight),
               child: Stack(
                 children: [
-                  // Local Liquid Blobs (visible through glass)
                   Positioned(
-                    top: -40,
-                    right: -20,
+                    top: -60,
+                    right: -40,
+                    child: Container(
+                      width: 280,
+                      height: 280,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 60,
+                    left: -80,
+                    child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.25),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -40,
+                    right: 60,
                     child: Container(
                       width: 200,
                       height: 200,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 20,
-                    left: -30,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -30,
-                    right: 40,
-                    child: Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: context.colorPrimary.withValues(alpha: 0.08),
+                        color: context.colorPrimary.withValues(alpha: 0.3),
                       ),
                     ),
                   ),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(32),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                      filter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
                       child: Container(
                         decoration: BoxDecoration(
                           color: theme.brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.04)
-                              : Colors.white.withValues(alpha: 0.4),
+                              ? Colors.black.withValues(alpha: 0.3) // Darker base for better liquid contrast
+                              : Colors.white.withValues(alpha: 0.45),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
                             color: (theme.brightness == Brightness.dark 
                                 ? Colors.white 
-                                : Colors.black).withValues(alpha: 0.22),
-                            width: 1.8,
+                                : Colors.black).withValues(alpha: 0.35),
+                            width: 1.5,
                           ),
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.18),
-                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
+                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.12),
+                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                             ],
-                            stops: const [0.0, 1.0],
                           ),
                         ),
                         padding: EdgeInsets.all(AppSpacing.space2xl),
                         child: Stack(
                           children: [
-                            // Subtle surface shine
+                            // Refractive Rim Shine (Top Left)
                             Positioned(
-                              top: -50,
-                              left: -50,
+                              top: -80,
+                              left: -80,
                               child: Container(
-                                width: 200,
-                                height: 100,
+                                width: 250,
+                                height: 150,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.08),
                                       Colors.transparent,
                                     ],
                                   ),
                                 ),
                               ),
                             ),
-                            // Bottom refractive depth
+                            // Liquid refractive depth (Bottom Right)
                             Positioned(
-                              bottom: -40,
-                              right: -20,
+                              bottom: -60,
+                              right: -40,
                               child: Container(
-                                width: 180,
-                                height: 180,
+                                width: 200,
+                                height: 200,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
+                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.05),
                                       Colors.transparent,
                                     ],
                                   ),
