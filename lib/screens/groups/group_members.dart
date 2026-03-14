@@ -9,6 +9,7 @@ import '../../widgets/member_avatar.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
 import '../../services/feature_flag_service.dart';
+import '../../services/firestore_service.dart';
 
 class GroupMembers extends StatelessWidget {
   final Group? group;
@@ -154,44 +155,15 @@ class GroupMembers extends StatelessWidget {
                                   child: TapScale(
                                     scaleDown: 0.99,
                                     child: InkWell(
-                                      onTap: canRemove
-                                          ? () {
-                                              if (remainingBalance.abs() >=
-                                                  0.01) {
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (ctx) => AlertDialog(
-                                                    title: const Text(
-                                                      'Cannot Remove Member',
-                                                    ),
-                                                    content: const Text(
-                                                      'Cannot remove this member. Settle their outstanding debt before removing them from the group.',
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.pop(ctx),
-                                                        child: const Text('OK'),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                                return;
-                                              }
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/member-change',
-                                                arguments: {
-                                                  'groupId': currentGroup.id,
-                                                  'groupName':
-                                                      currentGroup.name,
-                                                  'memberId': member.id,
-                                                  'memberPhone': member.phone,
-                                                  'action': 'remove',
-                                                },
-                                              );
-                                            }
-                                          : null,
+                                      onTap: () {
+                                        _showMemberProfileBottomSheet(
+                                          context,
+                                          currentGroup,
+                                          member,
+                                          canRemove,
+                                          remainingBalance,
+                                        );
+                                      },
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 24,
@@ -306,14 +278,13 @@ class GroupMembers extends StatelessWidget {
                                                 ],
                                               ),
                                             ),
-                                            if (canRemove)
-                                              Icon(
-                                                Icons.chevron_right,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                                size: 20,
-                                              ),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                              size: 20,
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -344,6 +315,199 @@ class GroupMembers extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+void _showMemberProfileBottomSheet(
+  BuildContext context,
+  Group group,
+  Member member,
+  bool canRemove,
+  double remainingBalance,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      final isDark = theme.brightness == Brightness.dark;
+      final repo = CycleRepository.instance;
+      final displayName = repo.getMemberDisplayName(member.phone);
+      final photoURL = repo.getMemberPhotoURL(member.id);
+      final isAppCreator = member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
+      final isPending = member.id.startsWith('p_');
+
+      return Container(
+        padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.dividerColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 32),
+            MemberAvatar(
+              displayName: displayName,
+              photoURL: photoURL,
+              size: 100,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              displayName,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            if (member.name.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                member.phone,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                if (isAppCreator)
+                  _Badge(
+                    icon: Icons.verified,
+                    color: Colors.blueAccent,
+                    label: 'Creator',
+                    isDark: isDark,
+                  ),
+                if (!isPending)
+                  FutureBuilder<Map<String, dynamic>?>(
+                    future: FirestoreService.instance.getUser(member.id),
+                    builder: (context, snapshot) {
+                      final isBeta = snapshot.data?['isBeta'] == true;
+                      final showBeta = isBeta || member.id == 'QoLVTOw3heVLRZZih5nEhdsL55T2';
+                      if (showBeta) {
+                        return _Badge(
+                          icon: Icons.science_outlined,
+                          color: Colors.green,
+                          label: 'Beta Tester',
+                          isDark: isDark,
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+              ],
+            ),
+            if (canRemove) ...[
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (remainingBalance.abs() >= 0.01) {
+                      Navigator.pop(ctx);
+                      showDialog(
+                        context: context,
+                        builder: (alertCtx) => AlertDialog(
+                          title: const Text('Cannot Remove Member'),
+                          content: const Text(
+                            'Cannot remove this member. Settle their outstanding debt before removing them from the group.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(alertCtx),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    Navigator.pushNamed(
+                      context,
+                      '/member-change',
+                      arguments: {
+                        'groupId': group.id,
+                        'groupName': group.name,
+                        'memberId': member.id,
+                        'memberPhone': member.phone,
+                        'action': 'remove',
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.person_remove),
+                  label: const Text('Remove from Group'),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                    backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _Badge extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final bool isDark;
+
+  const _Badge({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

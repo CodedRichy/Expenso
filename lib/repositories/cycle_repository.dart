@@ -11,6 +11,7 @@ import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
 import '../utils/settlement_engine.dart';
+import '../services/feature_flag_service.dart';
 
 class CycleRepository extends ChangeNotifier {
   CycleRepository._();
@@ -175,6 +176,7 @@ class CycleRepository extends ChangeNotifier {
     // loading flag so GroupsList shows skeleton, not the empty/Create Group screen,
     // during the addPostFrameCallback window before _startListening fires.
     _groupsLoading = true;
+    FeatureFlagService.instance.refresh();
   }
 
   /// Sets in-memory identity from Firebase user. Call during build; does not notify.
@@ -233,6 +235,7 @@ class CycleRepository extends ChangeNotifier {
     });
     _loadCurrentUserProfileFromFirestore();
     _startListening();
+    FeatureFlagService.instance.refresh();
     notifyListeners();
   }
 

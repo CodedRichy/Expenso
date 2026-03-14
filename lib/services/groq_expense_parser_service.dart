@@ -402,6 +402,7 @@ When parseConfidence is "reject":
 - set needsClarification = true
 - do NOT ask a question
 - do NOT create a ledger-impacting expense
+- If rejected due to inappropriate content (profanity, sexual, illegal), set rejectReason to EXACTLY: "Keep it clean! Inappropriate expenses are not allowed."
 
 Example:
 {"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"$currentUser"}
@@ -498,6 +499,7 @@ CONSTRAINED if:
 - advance payment not yet distributed
 
 REJECT if:
+- explicit profanity, sexual terms, or illegal activities are mentioned ("sex 200", etc.)
 - no amount AND ledger mutation implied
 - settlement-only message ("clear what I owed") with no expense
 - future intent ("I'll take care of mine next time")
