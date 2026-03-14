@@ -520,7 +520,7 @@ class _UpiPaymentCardState extends State<UpiPaymentCard> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 4,
-                shadowColor: context.colorAccent.withOpacity(0.3),
+                shadowColor: context.colorAccent.withValues(alpha: 0.3),
               ),
             ),
           ),

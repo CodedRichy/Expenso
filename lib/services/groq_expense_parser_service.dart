@@ -787,9 +787,6 @@ Output ONE valid JSON object only. Double-quoted keys/strings. No trailing comma
       // 2. Or if it's a multi-person group and the input is just "Person 500" or "Item 500" without context.
       if (isMemberNameOnly ||
           (!isSoloGroup && !hasVerb && nonNumeric.split(RegExp(r'\s+')).length <= 1)) {
-        
-        final isLikelyName = isMemberNameOnly || 
-            (nonNumeric.length > 2 && !RegExp(r'[0-9]').hasMatch(nonNumeric));
             
         final suggestionSuffix = isMemberNameOnly 
             ? 'with $nonNumeric' 

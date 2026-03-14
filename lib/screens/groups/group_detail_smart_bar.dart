@@ -386,8 +386,6 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
 
   void _showMagicMenu() {
     HapticFeedback.lightImpact();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     
     showModalBottomSheet(
       context: context,
@@ -417,15 +415,15 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                     onTap: () async {
                       Navigator.pop(ctx);
                       final result = await Navigator.pushNamed(
-                        context,
+                        ctx,
                         '/expense-input',
                         arguments: widget.group,
                       );
-                      if (!context.mounted) return;
+                      if (!ctx.mounted) return;
                       final map = result as Map<String, dynamic>?;
                       if (map != null && map['groupId'] != null && map['expenseId'] != null) {
                         _showUndoExpenseOverlay(
-                          context,
+                          ctx,
                           groupId: map['groupId'] as String,
                           expenseId: map['expenseId'] as String,
                           description: CycleRepository.instance.lastAddedDescription ?? '',
@@ -1913,9 +1911,6 @@ class _MagicActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return TapScale(
       child: InkWell(
         onTap: onTap,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CrossGroupDiscovery extends StatelessWidget {
-  const CrossGroupDiscovery({Key? key}) : super(key: key);
+  const CrossGroupDiscovery({super.key});
 
   @override
   Widget build(BuildContext context) {

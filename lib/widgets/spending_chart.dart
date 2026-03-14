@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 class SpendingChart extends StatelessWidget {
   final Map<String, double> categoryTotals;
 
-  const SpendingChart({Key? key, required this.categoryTotals}) : super(key: key);
+  const SpendingChart({super.key, required this.categoryTotals});
 
   @override
   Widget build(BuildContext context) {

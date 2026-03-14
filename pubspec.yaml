@@ -62,6 +62,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.1
   fl_chart: ^1.1.1
   share_plus: ^10.1.4
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

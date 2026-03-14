@@ -1443,10 +1443,10 @@ class _LockedSpendBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer.withOpacity(0.1),
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: theme.colorScheme.error.withOpacity(0.2),
+            color: theme.colorScheme.error.withValues(alpha: 0.2),
           ),
         ),
         child: Row(

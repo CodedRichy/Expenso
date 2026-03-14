@@ -151,7 +151,7 @@ class _MyAppState extends State<MyApp> {
     if (groupId != null && token != null) {
       final repo = CycleRepository.instance;
       if (FirebaseAuth.instance.currentUser == null) {
-        repo.pendingInvitation = {'groupId': groupId!, 'token': token!};
+        repo.pendingInvitation = {'groupId': groupId, 'token': token};
         debugPrint('Stored pending invitation: ${repo.pendingInvitation}');
         return;
       }
