@@ -149,6 +149,18 @@
     .bedit{padding:4px 11px;border-radius:7px;border:1px solid var(--bd);background:transparent;
       color:var(--tx2);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:.15s}
     .bedit:hover{background:var(--s2);color:var(--tx);border-color:var(--bd2)}
+    .bdel{padding:4px 11px;border-radius:7px;border:1px solid rgba(248,113,113,.25);background:transparent;
+      color:var(--rd);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:.15s}
+    .bdel:hover{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.5)}
+    .b-ban{background:rgba(248,113,113,.1);color:var(--rd);border:1px solid rgba(248,113,113,.25)}
+    .act-gap{display:flex;gap:4px;align-items:center}
+    .dzone{margin-top:16px;padding:14px;border-radius:11px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04)}
+    .dzone-ttl{font-size:11px;font-weight:700;color:var(--rd);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+    .dzone-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dzone-lbl{font-size:12px;color:var(--tx2)}
+    .bdang{padding:6px 14px;border-radius:8px;border:1px solid rgba(248,113,113,.4);
+      background:transparent;color:var(--rd);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+    .bdang:hover{background:rgba(248,113,113,.15)}
 
     /* mini overview lists */
     .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
@@ -368,20 +380,48 @@
   </div>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- EDIT USER MODAL -->
 <div class="ov" id="modal" style="display:none">
   <div class="modal">
     <div class="mhdr"><div class="mttl" id="mttl">Edit User</div><button class="mx" id="mx">✕</button></div>
     <div class="mf"><label>Display Name</label><input type="text" id="en" placeholder="Name"/></div>
     <div class="mf">
-      <label>Access</label>
-      <div class="trow"><div><div class="tl">🧪 Beta Tester</div><div class="ts">Unlocks experimental features</div></div>
+      <label>Badges & Access</label>
+      <div class="trow">
+        <div><div class="tl">🧪 Beta Tester</div><div class="ts">Unlocks experimental features</div></div>
         <label class="tsw"><input type="checkbox" id="eb"/><div class="ttr"></div><div class="tth"></div></label>
+      </div>
+      <div class="trow">
+        <div><div class="tl">👑 Creator Badge</div><div class="ts">Marks user as app creator in the UI</div></div>
+        <label class="tsw"><input type="checkbox" id="ec"/><div class="ttr"></div><div class="tth"></div></label>
+      </div>
+    </div>
+    <div class="dzone">
+      <div class="dzone-ttl">⚠️ Danger Zone</div>
+      <div class="dzone-row" style="margin-bottom:8px">
+        <div class="dzone-lbl">🚫 Ban user from logging in</div>
+        <button class="bdang" id="mban">Ban User</button>
+      </div>
+      <div class="dzone-row">
+        <div class="dzone-lbl">🗑 Permanently delete this user</div>
+        <button class="bdang" id="mdelete">Delete User</button>
       </div>
     </div>
     <div class="macts">
       <button class="bcan" id="mcan">Cancel</button>
-      <button class="bsav" id="msav">Save</button>
+      <button class="bsav" id="msav">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE GROUP CONFIRM -->
+<div class="ov" id="gdel-modal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="mhdr"><div class="mttl">Delete Group?</div><button class="mx" id="gdelmx">✕</button></div>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.6">This will permanently delete <strong id="gdel-name"></strong> and all its expenses, payments, and history. This cannot be undone.</p>
+    <div class="macts">
+      <button class="bcan" id="gdel-cancel">Cancel</button>
+      <button class="bdang" id="gdel-confirm" style="padding:9px 20px;font-size:13px">Yes, Delete Group</button>
     </div>
   </div>
 </div>
@@ -643,17 +683,18 @@ function renderUsers(){
   if(!list.length){$('utbody').innerHTML=`<tr class="emp"><td colspan="8">No users found</td></tr>`;return}
   $('utbody').innerHTML=list.map(u=>{
     const isC=u.uid===CREATOR;
-    const badge=isC?`<span class="badge b-cr">👑 Creator</span>`:u.isBeta?`<span class="badge b-beta">🧪 Beta</span>`:`<span class="badge b-none">—</span>`;
+    const isBanned=!!u.isBanned;
+    const badge=isC?`<span class="badge b-cr">👑 Creator</span>`:u.isBeta?`<span class="badge b-beta">🧪 Beta</span>`:isBanned?`<span class="badge b-ban">🚫 Banned</span>`:`<span class="badge b-none">—</span>`;
     const plat=u._ios?`<span class="badge b-ios">🍎 iOS</span>`:u._android?`<span class="badge b-and">🤖 Android</span>`:`<span class="badge b-none">—</span>`;
-    return`<tr>
+    return`<tr style="${isBanned?'opacity:.55':''}">  
       <td><div class="uc">${avHtml(u)}<div><div class="un">${u.displayName||'<span style="color:var(--tx3)">No name</span>'}</div></div></div></td>
       <td class="tm">${u.phoneNumber||'—'}</td>
       <td>${badge}</td>
       <td>${plat}</td>
-      <td class="tm">${u._groups||0}</td>
+      <td class="tm">${u._groupsCount||u._groups||0}</td>
       <td class="tm">${fmt(u.joinedAt)}</td>
       <td class="tm">${ago(u.lastSeen)}</td>
-      <td><button class="bedit" onclick="openEdit('${u.uid}')">Edit</button></td>
+      <td><div class="act-gap"><button class="bedit" onclick="openEdit('${u.uid}')">Edit</button></div></td>
     </tr>`;
   }).join('');
 }
@@ -680,6 +721,7 @@ function renderGroups(){
       <td>${cs}</td>
       <td class="tm">${g.currencyCode||'INR'}</td>
       <td>${invLink}</td>
+      <td><button class="bdel" onclick="openDeleteGroup('${g.gid}','${(g.groupName||'Unnamed').replace(/'/g,"\\'")}')">Delete</button></td>
     </tr>`;
   }).join('');
 }
@@ -743,21 +785,89 @@ window.openEdit=uid=>{
   $('mttl').textContent=u.displayName||u.phoneNumber||'Edit User';
   $('en').value=u.displayName||'';
   $('eb').checked=!!u.isBeta;
+  $('ec').checked=!!u.isCreator;
+  // Update ban button label
+  const isBanned=!!u.isBanned;
+  $('mban').textContent=isBanned?'Unban User':'Ban User';
+  $('mban').style.borderColor=isBanned?'rgba(52,211,153,.4)':'rgba(248,113,113,.4)';
+  $('mban').style.color=isBanned?'var(--gr)':'var(--rd)';
+  // Hide ban/delete for creator
+  const isC=uid===CREATOR;
+  $('mban').style.display=isC?'none':'block';
+  $('mdelete').style.display=isC?'none':'block';
   $('modal').style.display='flex';
 };
-$('mx').onclick=$('mcan').onclick=()=>$('modal').style.display='none';
-$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').style.display='none'};
+const closeModal=()=>$('modal').style.display='none';
+$('mx').onclick=$('mcan').onclick=closeModal;
+$('modal').onclick=e=>{if(e.target===$('modal'))closeModal()};
+
+$('mban').onclick=async()=>{
+  const u=users.find(x=>x.uid===editUID);if(!u)return;
+  const isBanned=!!u.isBanned;
+  const action=isBanned?'unban':'ban';
+  if(!confirm(`${action==='ban'?'Ban':'Unban'} ${u.displayName||u.phoneNumber}? ${action==='ban'?'They will be signed out immediately.':'They will be able to log in again.'}`))return;
+  const btn=$('mban');btn.disabled=true;
+  try{
+    const fn=httpsCallable(functions,'adminBanUser');
+    await fn({uid:editUID,banned:!isBanned});
+    const i=users.findIndex(x=>x.uid===editUID);
+    if(i!==-1)users[i].isBanned=!isBanned;
+    toast(`✓ User ${action==='ban'?'banned':'unbanned'}`,'ok');
+    closeModal();renderUsers();
+  }catch(e){toast('Failed: '+e.message,'er')}
+  finally{btn.disabled=false}
+};
+
+$('mdelete').onclick=async()=>{
+  const u=users.find(x=>x.uid===editUID);if(!u)return;
+  if(!confirm(`Permanently delete ${u.displayName||u.phoneNumber}?\n\nThis removes their account from Firebase Auth and Firestore. Cannot be undone.`))return;
+  const btn=$('mdelete');btn.disabled=true;
+  try{
+    const fn=httpsCallable(functions,'adminDeleteUser');
+    await fn({uid:editUID});
+    users=users.filter(x=>x.uid!==editUID);
+    toast('✓ User deleted','ok');
+    closeModal();renderUsers();renderOv();
+  }catch(e){toast('Failed: '+e.message,'er')}
+  finally{btn.disabled=false}
+};
+
 $('msav').onclick=async()=>{
   if(!editUID)return;
   const btn=$('msav');btn.disabled=true;btn.textContent='Saving…';
   try{
-    const up={displayName:$('en').value.trim(),isBeta:$('eb').checked};
-    await updateDoc(doc(db,'users',editUID),up);
-    const i=users.findIndex(u=>u.uid===editUID);if(i!==-1)users[i]={...users[i],...up};
+    const fn=httpsCallable(functions,'adminUpdateUser');
+    const up={uid:editUID,displayName:$('en').value.trim(),isBeta:$('eb').checked,isCreator:$('ec').checked};
+    await fn(up);
+    const i=users.findIndex(u=>u.uid===editUID);
+    if(i!==-1)users[i]={...users[i],...up};
     renderUsers();renderOv();
-    $('modal').style.display='none';toast('✓ Updated','ok');
+    closeModal();toast('✓ Updated','ok');
   }catch(e){toast('Failed: '+e.message,'er')}
-  finally{btn.disabled=false;btn.textContent='Save'}
+  finally{btn.disabled=false;btn.textContent='Save Changes'}
+};
+
+// ── Delete Group ──
+let deleteGroupId=null;
+window.openDeleteGroup=(gid,name)=>{
+  deleteGroupId=gid;
+  $('gdel-name').textContent=name;
+  $('gdel-modal').style.display='flex';
+};
+const closeGdel=()=>{$('gdel-modal').style.display='none';deleteGroupId=null};
+$('gdelmx').onclick=$('gdel-cancel').onclick=closeGdel;
+$('gdel-modal').onclick=e=>{if(e.target===$('gdel-modal'))closeGdel()};
+$('gdel-confirm').onclick=async()=>{
+  if(!deleteGroupId)return;
+  const btn=$('gdel-confirm');btn.disabled=true;btn.textContent='Deleting…';
+  try{
+    const fn=httpsCallable(functions,'adminDeleteGroup');
+    await fn({groupId:deleteGroupId});
+    groups=groups.filter(g=>g.gid!==deleteGroupId);
+    toast('✓ Group deleted','ok');
+    closeGdel();renderGroups();renderOv();
+  }catch(e){toast('Failed: '+e.message,'er')}
+  finally{btn.disabled=false;btn.textContent='Yes, Delete Group'}
 };
 </script>
 </body>
