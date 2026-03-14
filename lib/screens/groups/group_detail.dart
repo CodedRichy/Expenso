@@ -180,17 +180,17 @@ class _GroupDetailState extends State<GroupDetail> {
                     ),
                   ),
                 Positioned(
-                  bottom: -200,
-                  right: -50,
+                  bottom: -100,
+                  left: 50,
                   child: Container(
-                    width: 500,
-                    height: 500,
+                    width: 400,
+                    height: 400,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: context.colorPrimary.withValues(alpha: 0.04),
+                      color: context.colorPrimary.withValues(alpha: 0.1),
                     ),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 150, sigmaY: 150),
+                      filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
                       child: const SizedBox.shrink(),
                     ),
                   ),
@@ -737,7 +737,7 @@ class _GroupDetailState extends State<GroupDetail> {
                   isPassive
                       ? _LockedSpendBar(group: defaultGroup)
                       : _SmartBarSection(group: defaultGroup),
-              ],
+                  ],
                 ),
               ),
             ],
@@ -1032,21 +1032,21 @@ class _DecisionClarityCard extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.black.withValues(alpha: 0.2)
+                          ? Colors.white.withValues(alpha: 0.08)
                           : Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
                         color: (theme.brightness == Brightness.dark 
                             ? Colors.white 
-                            : Colors.black).withValues(alpha: 0.12),
-                        width: 0.8,
+                            : Colors.black).withValues(alpha: 0.15),
+                        width: 1.2,
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                          Colors.transparent,
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                         ],
                       ),
                     ),
