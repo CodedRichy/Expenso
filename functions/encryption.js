@@ -148,10 +148,120 @@ const adminFetchGroups = onCall(
   }
 );
 
+// ── Admin User Update ──
+const adminUpdateUser = onCall(
+  { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
+  async (request) => {
+    if (!request.auth || request.auth.uid !== CREATOR) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+    const { uid, displayName, isBeta, isCreator } = request.data || {};
+    if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
+
+    const updates = {};
+    if (displayName !== undefined) updates.displayName = displayName;
+    if (isBeta !== undefined) updates.isBeta = isBeta;
+    if (isCreator !== undefined) updates.isCreator = isCreator;
+
+    if (displayName !== undefined) {
+      const key = deriveKey('user', uid);
+      if (key) updates.displayName = decryptData(key, displayName);
+    }
+
+    await admin.firestore().collection('users').doc(uid).update(updates);
+    return { success: true };
+  }
+);
+
+// ── Admin Ban/Unban User ──
+const adminBanUser = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth || request.auth.uid !== CREATOR) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+    const { uid, banned } = request.data || {};
+    if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
+
+    // Set disabled state in Firebase Auth
+    await admin.auth().updateUser(uid, { disabled: !!banned });
+    // Also flag in Firestore for app to check
+    await admin.firestore().collection('users').doc(uid).update({ isBanned: !!banned });
+
+    return { success: true };
+  }
+);
+
+// ── Admin Delete User ──
+const adminDeleteUser = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth || request.auth.uid !== CREATOR) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+    const { uid } = request.data || {};
+    if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
+    if (uid === CREATOR) throw new HttpsError('failed-precondition', 'Cannot delete the creator account.');
+
+    // Remove from Firebase Auth
+    try { await admin.auth().deleteUser(uid); } catch (e) { console.warn('Auth delete failed:', e.message); }
+
+    // Remove Firestore user doc and subcollections (fcmTokens)
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const tokensSnap = await userRef.collection('fcmTokens').get();
+    const batch = admin.firestore().batch();
+    tokensSnap.docs.forEach(d => batch.delete(d.ref));
+    batch.delete(userRef);
+    await batch.commit();
+
+    return { success: true };
+  }
+);
+
+// ── Admin Delete Group ──
+const adminDeleteGroup = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth || request.auth.uid !== CREATOR) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+    const { groupId } = request.data || {};
+    if (!groupId) throw new HttpsError('invalid-argument', 'groupId is required.');
+
+    const groupRef = admin.firestore().collection('groups').doc(groupId);
+
+    // Delete all known subcollections
+    const subcollections = [
+      'expenses', 'payment_attempts', 'settlement_events',
+      'system_messages', 'expense_revisions', 'deleted_expenses'
+    ];
+    const writer = admin.firestore().bulkWriter();
+    for (const sub of subcollections) {
+      const snap = await groupRef.collection(sub).get();
+      snap.docs.forEach(d => writer.delete(d.ref));
+    }
+    // Also delete settled_cycles and their expenses
+    const cyclesSnap = await groupRef.collection('settled_cycles').get();
+    for (const cycleDoc of cyclesSnap.docs) {
+      const expSnap = await cycleDoc.ref.collection('expenses').get();
+      expSnap.docs.forEach(d => writer.delete(d.ref));
+      writer.delete(cycleDoc.ref);
+    }
+    writer.delete(groupRef);
+    await writer.close();
+
+    return { success: true };
+  }
+);
+
 module.exports = {
   deriveKey,
   getUserEncryptionKey,
   getGroupEncryptionKey,
   adminFetchUsers,
   adminFetchGroups,
+  adminUpdateUser,
+  adminBanUser,
+  adminDeleteUser,
+  adminDeleteGroup,
 };

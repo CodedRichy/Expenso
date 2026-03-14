@@ -7,7 +7,11 @@ const {
   getUserEncryptionKey,
   getGroupEncryptionKey,
   adminFetchUsers,
-  adminFetchGroups
+  adminFetchGroups,
+  adminUpdateUser,
+  adminBanUser,
+  adminDeleteUser,
+  adminDeleteGroup
 } = require('./encryption');
 const {
   formatDate,
@@ -319,6 +323,10 @@ module.exports = {
   getGroupEncryptionKey,
   adminFetchUsers,
   adminFetchGroups,
+  adminUpdateUser,
+  adminBanUser,
+  adminDeleteUser,
+  adminDeleteGroup,
   dailyCleanupJob,
   api,
   notifyOnNewExpense,
