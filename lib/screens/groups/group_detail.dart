@@ -970,160 +970,137 @@ class _DecisionClarityCard extends StatelessWidget {
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(40), // More pill-like
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
                 child: Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [
-                  // 1. Primary Deep Liquid (Top Right)
-                  Positioned(
-                    top: -120,
-                    right: -60,
-                    child: Container(
-                      width: 380,
-                      height: 380,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            theme.colorScheme.primary.withValues(alpha: 0.6),
-                            theme.colorScheme.primary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 2. Fire/Gold Liquid Flow (Left)
-                  Positioned(
-                    top: 20,
-                    left: -120,
-                    child: Container(
-                      width: 320,
-                      height: 320,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFFFFAB40).withValues(alpha: 0.5), // Electric Orange
-                            const Color(0xFFFFAB40).withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 3. Deep Sea Liquid (Bottom Right)
-                  Positioned(
-                    bottom: -100,
-                    right: 40,
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFF00E5FF).withValues(alpha: 0.4), // Cyan Glow
-                            const Color(0xFF00E5FF).withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(32),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                    // 1. Organic Orange Lava (Left side)
+                    Positioned(
+                      top: -40,
+                      left: -80,
                       child: Container(
+                        width: 320,
+                        height: 320,
                         decoration: BoxDecoration(
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.02)
-                              : Colors.white.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(32),
-                          border: Border.all(
-                            color: (theme.brightness == Brightness.dark 
-                                ? Colors.white 
-                                : Colors.black).withValues(alpha: 0.25),
-                            width: 1.5,
-                          ),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
                             colors: [
-                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.15),
-                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
+                              const Color(0xFFFFA726).withValues(alpha: 0.7), // Vibrant Orange
+                              const Color(0xFFFFA726).withValues(alpha: 0.0),
+                            ],
+                            stops: const [0.3, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // 2. Organic Blue Stream (Right side)
+                    Positioned(
+                      bottom: -60,
+                      right: -60,
+                      child: Container(
+                        width: 350,
+                        height: 350,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              const Color(0xFF42A5F5).withValues(alpha: 0.6), // Sky Blue
+                              const Color(0xFF42A5F5).withValues(alpha: 0.0),
+                            ],
+                            stops: const [0.2, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // 3. Central Ambient Glow
+                    Positioned(
+                      top: 40,
+                      left: 100,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(40),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 65, sigmaY: 65), // Deep refraction
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: theme.brightness == Brightness.dark
+                                ? Colors.white.withValues(alpha: 0.03)
+                                : Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(40),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              width: 0.8, // Shaper, thinner rim
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.02),
+                              ],
+                            ),
+                          ),
+                          padding: EdgeInsets.all(AppSpacing.space2xl),
+                          child: Stack(
+                            children: [
+                              // Top-left surface glare
+                              Positioned(
+                                top: -120,
+                                left: -60,
+                                child: Container(
+                                  width: 250,
+                                  height: 250,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.1),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              isEmpty
+                                  ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                                  : _buildContent(
+                                      context,
+                                      currencyCode: currencyCode,
+                                      cycleTotal: cycleTotal,
+                                      youPaid: youPaid,
+                                      settledPaid: settledPaid,
+                                      myNet: myNet,
+                                      myRemaining: myRemaining,
+                                      hasPaymentProgress: hasPaymentProgress,
+                                      isCredit: isCredit,
+                                      isDebt: isDebt,
+                                      isBalanceClear: isBalanceClear,
+                                      isMuted: isMuted,
+                                    ),
                             ],
                           ),
                         ),
-                        padding: EdgeInsets.all(AppSpacing.space2xl),
-                        child: Stack(
-                          children: [
-                            // "Wet" Surface Highlight
-                            Positioned(
-                              top: -100,
-                              left: -100,
-                              child: Container(
-                                width: 300,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Liquid refractive depth (Bottom Right)
-                            Positioned(
-                              bottom: -60,
-                              right: -40,
-                              child: Container(
-                                width: 200,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            isEmpty
-                                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                                : _buildContent(
-                                    context,
-                                    currencyCode: currencyCode,
-                                    cycleTotal: cycleTotal,
-                                    youPaid: youPaid,
-                                    settledPaid: settledPaid,
-                                    myNet: myNet,
-                                    myRemaining: myRemaining,
-                                    hasPaymentProgress: hasPaymentProgress,
-                                    isCredit: isCredit,
-                                    isDebt: isDebt,
-                                    isBalanceClear: isBalanceClear,
-                                    isMuted: isMuted,
-                                  ),
-                          ],
-                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildContent(
     BuildContext context, {
