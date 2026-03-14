@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +26,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
   bool _loading = false;
   String? _errorMessage;
   String _selectedCountryCode = '+91';
+  int _resendCountdown = 0;
+  Timer? _countdownTimer;
 
   /// E.164 for Firebase: selected code + digits, no spaces.
   static String _e164(String code, String digits) {
@@ -83,9 +86,33 @@ class _PhoneAuthState extends State<PhoneAuth> {
           _loading = false;
           _errorMessage = null;
         });
+        _startResendTimer();
       },
       resendToken: _resendToken,
     );
+  }
+
+  void _startResendTimer() {
+    _countdownTimer?.cancel();
+    setState(() => _resendCountdown = 30);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCountdown == 1) {
+        setState(() => _resendCountdown = 0);
+        timer.cancel();
+      } else {
+        setState(() => _resendCountdown--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
@@ -359,9 +386,10 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 horizontal: 24,
                               ),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  const SizedBox(height: 32),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -372,14 +400,14 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                           height: 1.2,
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 8),
                                       Text(
                                         'Sent to $_selectedCountryCode $phone',
                                         style: context.bodySecondary,
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 48),
+                                  const SizedBox(height: 42),
                                   TextField(
                                     autofocus: true,
                                     keyboardType: TextInputType.number,
@@ -456,16 +484,45 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                         ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            TextButton(
-                              onPressed: _loading ? null : _goBackToPhone,
-                              child: Text(
-                                'Change number',
-                                style: context.bodySecondary.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.accent,
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                TextButton(
+                                  onPressed: (_resendCountdown == 0 && !_loading)
+                                      ? handlePhoneSubmit
+                                      : null,
+                                  child: Text(
+                                    _resendCountdown > 0
+                                        ? 'Resend code in ${_resendCountdown}s'
+                                        : 'Resend code',
+                                    style: context.bodySecondary.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: _resendCountdown > 0
+                                          ? context.colorTextDisabled
+                                          : AppColors.accent,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: context.colorTextDisabled,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _loading ? null : _goBackToPhone,
+                                  child: Text(
+                                    'Change number',
+                                    style: context.bodySecondary.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
