@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../../design/colors.dart';
 import '../../design/spacing.dart';
@@ -960,6 +961,8 @@ class _DecisionClarityCard extends StatelessWidget {
                   ? "You are owed ${_formatAmount(myRemaining.abs(), currencyCode)}."
                   : "You owe ${_formatAmount(myRemaining.abs(), currencyCode)}."}';
 
+    // The blobs live OUTSIDE the glass — the glass refracts them.
+    // This is how real liquid glass works.
     return Semantics(
       label: semanticsLabel,
       button: !isEmpty,
@@ -969,83 +972,59 @@ class _DecisionClarityCard extends StatelessWidget {
           scaleDown: 0.98,
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+            child: LiquidGlass.withOwnLayer(
+              settings: LiquidGlassSettings(
+                thickness: 18,
+                blur: 12,
+                glassColor: const Color(0x14FFFFFF), // Almost invisible tint
+                lightIntensity: 1.8,
+                lightAngle: -0.6,
+                outlineIntensity: 0.9,
+                saturation: 1.4, // Boost color saturation through glass
+              ),
+              shape: LiquidRoundedSuperellipse(borderRadius: 32),
               child: Container(
                 constraints: const BoxConstraints(minHeight: _minHeight),
+                // The background content the glass warps
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFFF9800), // Vivid orange
+                      const Color(0xFF1565C0), // Deep blue
+                    ],
+                  ),
+                ),
                 child: Stack(
-                  clipBehavior: Clip.hardEdge,
                   children: [
-                    // --- BLOB LAYER: These are the vivid background colors ---
-                    // Solid dark base so blobs pop
-                    Container(
-                      color: const Color(0xFF0A0A10),
-                    ),
-                    // Orange blob — left/center, very vivid, fills most of left half
+                    // Extra warm blob top-left
                     Positioned(
-                      top: -20,
-                      left: -60,
+                      top: -60,
+                      left: -40,
                       child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
+                        width: 240,
+                        height: 240,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFFFF9800), // Full-opacity orange
-                              const Color(0xFFFF9800).withValues(alpha: 0.0),
-                            ],
-                            stops: const [0.4, 1.0],
-                          ),
+                          color: Color(0xFFFFD54F), // Yellow-orange
                         ),
                       ),
                     ),
-                    // Blue blob — right/bottom, vivid sky blue
+                    // Cool blue blob bottom-right
                     Positioned(
-                      bottom: -30,
-                      right: -40,
+                      bottom: -50,
+                      right: -30,
                       child: Container(
-                        width: 320,
-                        height: 320,
-                        decoration: BoxDecoration(
+                        width: 260,
+                        height: 260,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFF1E88E5), // Vivid blue
-                              const Color(0xFF1E88E5).withValues(alpha: 0.0),
-                            ],
-                            stops: const [0.4, 1.0],
-                          ),
+                          color: Color(0xFF0D47A1), // Dark blue
                         ),
                       ),
                     ),
-                    // --- GLASS LAYER: Nearly invisible, just blur + hairline rim ---
-                    Positioned.fill(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            // Almost zero tint — just the blur does the work
-                            color: Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(32),
-                            // Crisp white rim on top-left, fades bottom-right
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1.0,
-                            ),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white.withValues(alpha: 0.08),
-                                Colors.white.withValues(alpha: 0.0),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // --- CONTENT LAYER ---
+                    // Content on top
                     Padding(
                       padding: EdgeInsets.all(AppSpacing.space2xl),
                       child: isEmpty
