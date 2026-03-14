@@ -1,10 +1,3 @@
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
@@ -25,7 +18,7 @@ subprojects {
             if (namespace.isNullOrEmpty()) {
                 val manifestFile = file("src/main/AndroidManifest.xml")
                 if (manifestFile.exists()) {
-                    val packageName = Regex("""package\s*=\s*"([^"]+)"""")
+                    val packageName = Regex("""package\s*=\s*"([^"]+)""")
                         .find(manifestFile.readText())?.groupValues?.get(1)
                     if (!packageName.isNullOrEmpty()) {
                         namespace = packageName

@@ -715,7 +715,7 @@ const fmt=ms=>ms?new Date(ms).toLocaleDateString('en-IN',{day:'numeric',month:'s
 const ago=ms=>{if(!ms)return'—';const d=Date.now()-ms,m=Math.floor(d/6e4);if(m<1)return'now';if(m<60)return`${m}m`;const h=Math.floor(m/60);if(h<24)return`${h}h`;return`${Math.floor(h/24)}d`};
 const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 const rupee=minor=>`₹${(minor/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-const nameOf=uid=>{const u=users.find(x=>x.uid===uid);return u?.displayName||u?.phoneNumber||uid.slice(0,8)+'…'};
+const nameOf=uid=>{const u=users.find(x=>x.uid===uid);return u?.displayName||u?.phoneNumber||(uid?uid.slice(0,8)+'…':'Unknown')};
 const avHtml=(u,size=32)=>`<div class="av" style="width:${size}px;height:${size}px;font-size:${size*0.38}px">${u?.photoURL?`<img src="${u.photoURL}" onerror="this.style.display='none'"/>`:''}${ini(u?.displayName||u?.phoneNumber)}</div>`;
 
 // ── Auth ──
@@ -801,6 +801,12 @@ async function loadAll(user){
     
     users = uRes.data.users || [];
     groups = gRes.data.groups || [];
+    
+    // Check for encryption warnings
+    if (uRes.data.warning || gRes.data.warning) {
+      console.warn('Encryption warning:', uRes.data.warning || gRes.data.warning);
+      toast('⚠️ Encryption key missing - some data may not be readable', 'er');
+    }
     
     // Calculate initial group counts
     users.forEach(u => {

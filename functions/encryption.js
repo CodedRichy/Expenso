@@ -4,7 +4,10 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 function deriveKey(prefix, id) {
   const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
-  if (!raw) return null;
+  if (!raw) {
+    console.error('DATA_ENCRYPTION_MASTER_KEY is not set');
+    return null;
+  }
   let master;
   if (/^[0-9a-fA-F]{63,64}$/.test(raw)) {
     const hex = raw.length === 63 ? '0' + raw : raw;
@@ -54,6 +57,12 @@ function decryptData(base64Key, encryptedString) {
   if (!encryptedString || typeof encryptedString !== 'string' || !encryptedString.startsWith('e:')) {
     return encryptedString;
   }
+  
+  // If key is null, we can't decrypt
+  if (!base64Key) {
+    return '[Decryption Key Missing]';
+  }
+  
   try {
     const key = Buffer.from(base64Key, 'base64');
     const buffer = Buffer.from(encryptedString.substring(2), 'base64');
@@ -69,8 +78,9 @@ function decryptData(base64Key, encryptedString) {
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch (e) {
-    console.error('Decryption failed:', e);
-    return encryptedString;
+    console.error('Decryption failed:', e.message);
+    // Return a placeholder instead of the encrypted string to prevent frontend issues
+    return '[Decryption Failed]';
   }
 }
 
@@ -81,6 +91,23 @@ const adminFetchUsers = onCall(
   async (request) => {
     if (!request.auth || request.auth.uid !== CREATOR) {
       throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    // Check if encryption key is available
+    const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
+    if (!raw) {
+      console.error('DATA_ENCRYPTION_MASTER_KEY environment variable is not set');
+      // Return users without decryption rather than failing completely
+      const usersSnap = await admin.firestore().collection('users').get();
+      const users = usersSnap.docs.map(doc => ({
+        ...doc.data(),
+        uid: doc.id,
+        displayName: '[Encryption Key Missing]',
+        phoneNumber: '[Encryption Key Missing]',
+        photoURL: null,
+        upiId: '[Encryption Key Missing]'
+      }));
+      return { users, warning: 'Encryption key missing - data cannot be decrypted' };
     }
 
     const [usersSnap, tokensSnap, groupsSnap] = await Promise.all([
@@ -129,6 +156,20 @@ const adminFetchGroups = onCall(
   async (request) => {
     if (!request.auth || request.auth.uid !== CREATOR) {
       throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    // Check if encryption key is available
+    const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
+    if (!raw) {
+      console.error('DATA_ENCRYPTION_MASTER_KEY environment variable is not set');
+      // Return groups without decryption rather than failing completely
+      const snap = await admin.firestore().collection('groups').get();
+      const groups = snap.docs.map(doc => ({
+        ...doc.data(),
+        gid: doc.id,
+        groupName: '[Encryption Key Missing]'
+      }));
+      return { groups, warning: 'Encryption key missing - data cannot be decrypted' };
     }
 
     const snap = await admin.firestore().collection('groups').get();

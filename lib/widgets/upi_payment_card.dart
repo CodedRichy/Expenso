@@ -41,7 +41,6 @@ class UpiPaymentCard extends StatefulWidget {
 }
 
 class _UpiPaymentCardState extends State<UpiPaymentCard> {
-  bool _qrExpanded = false;
   bool _copying = false;
 
   String get _formattedAmount =>
