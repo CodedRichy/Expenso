@@ -969,35 +969,38 @@ class _DecisionClarityCard extends StatelessWidget {
             opacity: isMuted ? 0.6 : 1.0,
             child: Container(
               constraints: const BoxConstraints(minHeight: _minHeight),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.colorPrimary.withValues(alpha: 0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.colorGradientStart,
-                    context.colorGradientEnd,
-                  ],
-                ),
-              ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.space2xl),
-                  child: isEmpty
-                      ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                      : _buildContent(
-                          context,
-                          currencyCode: currencyCode,
-                          cycleTotal: cycleTotal,
-                          youPaid: youPaid,
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.brightness == Brightness.dark
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : Colors.white.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(
+                        color: (theme.brightness == Brightness.dark 
+                            ? Colors.white 
+                            : Colors.black).withValues(alpha: 0.1),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colorPrimary.withValues(alpha: 0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(AppSpacing.space2xl),
+                    child: isEmpty
+                        ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                        : _buildContent(
+                            context,
+                            currencyCode: currencyCode,
+                            cycleTotal: cycleTotal,
+                            youPaid: youPaid,
                           settledPaid: settledPaid,
                           myNet: myNet,
                           myRemaining: myRemaining,
@@ -1007,6 +1010,7 @@ class _DecisionClarityCard extends StatelessWidget {
                           isBalanceClear: isBalanceClear,
                           isMuted: isMuted,
                         ),
+                  ),
                 ),
               ),
             ),
@@ -1030,11 +1034,10 @@ class _DecisionClarityCard extends StatelessWidget {
     required bool isBalanceClear,
     required bool isMuted,
   }) {
-    final onDark = Theme.of(context).brightness == Brightness.dark
-        ? context.colorPrimary
-        : context.colorSurface;
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
     final statusColor = isBalanceClear
-        ? onDark.withValues(alpha: 0.7)
+        ? onSurface.withValues(alpha: 0.7)
         : isCredit
         ? context.colorSuccessLight
         : context.colorDebtRed;
@@ -1052,13 +1055,13 @@ class _DecisionClarityCard extends StatelessWidget {
         Text(
           'Cycle Total',
           style: AppTypography.sectionLabel.copyWith(
-            color: onDark.withValues(alpha: 0.7),
+            color: onSurface.withValues(alpha: 0.7),
           ),
         ),
         SizedBox(height: AppSpacing.spaceXs),
         Text(
           _formatAmount(cycleTotal, currencyCode),
-          style: AppTypography.amountLG.copyWith(color: onDark),
+          style: AppTypography.amountLG.copyWith(color: onSurface),
         ),
         SizedBox(height: AppSpacing.spaceXl),
         Row(
@@ -1067,37 +1070,37 @@ class _DecisionClarityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'You Paid',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: onDark.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.space2xs),
-                  Text(
-                    _formatAmount(youPaid, currencyCode),
-                    style: AppTypography.amountSM.copyWith(
-                      color: onDark.withValues(alpha: 0.95),
-                    ),
-                  ),
-                  if (settledPaid > 0.01) ...[
-                    SizedBox(height: AppSpacing.spaceXs),
                     Text(
-                      'Settled',
+                      'You Paid',
                       style: AppTypography.captionSmall.copyWith(
-                        color: onDark.withValues(alpha: 0.7),
+                        color: onSurface.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(height: AppSpacing.space2xs),
                     Text(
-                      _formatAmount(settledPaid, currencyCode),
+                      _formatAmount(youPaid, currencyCode),
                       style: AppTypography.amountSM.copyWith(
-                        color: onDark.withValues(alpha: 0.95),
+                        color: onSurface.withValues(alpha: 0.95),
                       ),
                     ),
-                  ],
+                    if (settledPaid > 0.01) ...[
+                      SizedBox(height: AppSpacing.spaceXs),
+                      Text(
+                        'Settled',
+                        style: AppTypography.captionSmall.copyWith(
+                          color: onSurface.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.space2xs),
+                      Text(
+                        _formatAmount(settledPaid, currencyCode),
+                        style: AppTypography.amountSM.copyWith(
+                          color: onSurface.withValues(alpha: 0.95),
+                        ),
+                      ),
+                    ],
                 ],
               ),
             ),
@@ -1108,7 +1111,7 @@ class _DecisionClarityCard extends StatelessWidget {
                   Text(
                     'Your Status',
                     style: AppTypography.captionSmall.copyWith(
-                      color: onDark.withValues(alpha: 0.7),
+                      color: onSurface.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
