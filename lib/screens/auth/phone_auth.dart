@@ -147,6 +147,26 @@ class _PhoneAuthState extends State<PhoneAuth> {
     setState(() => _loading = false);
   }
 
+  void _showCountryPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CountryPickerSheet(
+        onSelect: (country) {
+          setState(() {
+            _selectedCountryCode = country.dialCode;
+            final maxLen = country.maxPhoneDigits;
+            final digits = phone.replaceAll(RegExp(r'\D'), '');
+            if (digits.length > maxLen) {
+              phone = digits.substring(0, maxLen);
+            }
+          });
+        },
+      ),
+    );
+  }
+
   void _goBackToPhone() {
     setState(() {
       step = 'phone';
@@ -178,9 +198,10 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                 horizontal: 24,
                               ),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  const SizedBox(height: 32),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -191,97 +212,47 @@ class _PhoneAuthState extends State<PhoneAuth> {
                                           height: 1.2,
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 8),
                                       Text(
                                         'You will receive a verification code',
                                         style: context.bodySecondary,
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 48),
+                                  const SizedBox(height: 42),
                                   Row(
                                     children: [
                                       Container(
                                         decoration: BoxDecoration(
-                                          color:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .surface,
+                                          color: Theme.of(context).colorScheme.surface,
                                           border: Border.all(
-                                            color:
-                                                Theme.of(context).dividerColor,
+                                            color: Theme.of(context).inputDecorationTheme.enabledBorder?.borderSide.color ?? Theme.of(context).dividerColor,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: PopupMenuButton<String>(
-                                          onSelected: (code) {
-                                            setState(() {
-                                              _selectedCountryCode = code;
-                                              final maxLen =
-                                                  maxPhoneDigitsForDialCode(
-                                                    code,
-                                                  );
-                                              final digits = phone.replaceAll(
-                                                RegExp(r'\D'),
-                                                '',
-                                              );
-                                              if (digits.length > maxLen) {
-                                                phone = digits.substring(
-                                                  0,
-                                                  maxLen,
-                                                );
-                                              }
-                                            });
-                                          },
-                                          offset: const Offset(0, 48),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          itemBuilder: (context) =>
-                                              countryCodesWithCurrency
-                                                  .map(
-                                                    (c) => PopupMenuItem<
-                                                      String
-                                                    >(
-                                                      value: c.dialCode,
-                                                      child: Text(
-                                                        '${c.dialCode} ${c.countryCode}',
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                          child: TapScale(
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 16,
-                                                  ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    _selectedCountryCode,
-                                                    style:
-                                                        context.bodySecondary,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_drop_down,
-                                                    size: 20,
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                  ),
-                                                ],
-                                              ),
+                                        child: TapScale(
+                                          onTap: _showCountryPicker,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 16,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  _selectedCountryCode,
+                                                  style: context.bodySecondary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_drop_down,
+                                                  size: 20,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
@@ -505,5 +476,107 @@ class _PhoneAuthState extends State<PhoneAuth> {
         ),
       ),
     );
+  }
+}
+
+class _CountryPickerSheet extends StatelessWidget {
+  final Function(CountryEntry) onSelect;
+
+  const _CountryPickerSheet({required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom + 20,
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.dividerColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Text(
+                  'Select country',
+                  style: context.subheader,
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: countryCodesWithCurrency.length,
+              itemBuilder: (context, index) {
+                final country = countryCodesWithCurrency[index];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: Text(
+                    _getFlagEmoji(country.countryCode),
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  title: Text(
+                    country.name,
+                    style: context.bodyPrimary.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: Text(
+                    country.dialCode,
+                    style: context.bodySecondary.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    onSelect(country);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getFlagEmoji(String countryCode) {
+    // Converts ISO country code to emoji flag
+    return countryCode.toUpperCase().replaceAllMapped(
+          RegExp(r'[A-Z]'),
+          (match) => String.fromCharCode(match.group(0)!.codeUnitAt(0) + 127397),
+        );
   }
 }

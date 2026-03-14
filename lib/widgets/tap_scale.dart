@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 class TapScale extends StatefulWidget {
   final Widget child;
   final double scaleDown;
+  final VoidCallback? onTap;
 
-  const TapScale({super.key, required this.child, this.scaleDown = 0.98});
+  const TapScale({
+    super.key,
+    required this.child,
+    this.scaleDown = 0.98,
+    this.onTap,
+  });
 
   @override
   State<TapScale> createState() => _TapScaleState();
@@ -37,11 +43,15 @@ class _TapScaleState extends State<TapScale>
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (_) => _controller.forward(),
-      onPointerUp: (_) => _controller.reverse(),
-      onPointerCancel: (_) => _controller.reverse(),
-      child: ScaleTransition(scale: _scale, child: widget.child),
+    return GestureDetector(
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Listener(
+        onPointerDown: (_) => _controller.forward(),
+        onPointerUp: (_) => _controller.reverse(),
+        onPointerCancel: (_) => _controller.reverse(),
+        child: ScaleTransition(scale: _scale, child: widget.child),
+      ),
     );
   }
 }
