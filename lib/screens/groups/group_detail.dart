@@ -148,18 +148,20 @@ class _GroupDetailState extends State<GroupDetail> {
             children: [
               // Ambient Glow Blobs
               if (theme.brightness == Brightness.dark) ...[
+              // Ambient Liquid Glow
+              if (theme.brightness == Brightness.dark) ...[
                 Positioned(
-                  top: -100,
-                  right: -100,
+                  top: -50,
+                  right: -50,
                   child: Container(
-                    width: 300,
-                    height: 300,
+                    width: 350,
+                    height: 350,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: context.colorPrimary.withValues(alpha: 0.05),
+                      color: context.colorPrimary.withValues(alpha: 0.12),
                     ),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                      filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
                       child: const SizedBox.shrink(),
                     ),
                   ),
@@ -1028,24 +1030,24 @@ class _DecisionClarityCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.08)
+                          ? Colors.white.withValues(alpha: 0.05)
                           : Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
                         color: (theme.brightness == Brightness.dark 
                             ? Colors.white 
-                            : Colors.black).withValues(alpha: 0.15),
-                        width: 1.2,
+                            : Colors.black).withValues(alpha: 0.18),
+                        width: 1.5,
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.12),
                           (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                         ],
                       ),
