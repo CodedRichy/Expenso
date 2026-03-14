@@ -11,7 +11,6 @@ import '../../widgets/expenso_loader.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
-import '../../services/feature_flag_service.dart';
 import '../../services/firestore_service.dart';
 
 class GroupMembers extends StatelessWidget {

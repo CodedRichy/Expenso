@@ -88,12 +88,15 @@ class DeleteGroup extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: context.bodySecondary,
                           ),
-                        ] else
+                        ] else ...[
                           Text(
                             'This will permanently delete the group and all expense history.',
                             textAlign: TextAlign.center,
                             style: context.bodySecondary.copyWith(height: 1.5),
                           ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -203,6 +203,510 @@ const api = onRequest(
   }
 );
 
+// --- ADMIN ANALYTICS ---
+const adminGetAnalytics = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    // Check if user is admin
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isCreator) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const { timeRange = '30d' } = request.data || {};
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate;
+    switch (timeRange) {
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case '1y':
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default: // 30d
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    try {
+      // Get user analytics
+      const usersSnapshot = await db.collection('users').get();
+      const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const now = new Date();
+      const dau = users.filter(u => u.lastSeenAt && 
+        u.lastSeenAt.toDate() > new Date(now.getTime() - 24 * 60 * 60 * 1000)).length;
+      const mau = users.filter(u => u.lastSeenAt && 
+        u.lastSeenAt.toDate() > new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)).length;
+      
+      // Get real expense analytics
+      const expensesSnapshot = await db
+        .collectionGroup('expenses')
+        .where('createdAt', '>=', startDate)
+        .get();
+      
+      const expenses = expensesSnapshot.docs.map(doc => doc.data());
+      const totalVolume = expenses.reduce((sum, e) => sum + (e.amountMinor || 0), 0);
+      const avgExpense = expenses.length > 0 ? totalVolume / expenses.length / 100 : 0;
+      
+      // Calculate real settlement rate
+      const settledExpenses = expenses.filter(e => e.settlementStatus === 'settled').length;
+      const settlementRate = expenses.length > 0 ? Math.round((settledExpenses / expenses.length) * 100) : 0;
+      
+      // Get real group analytics
+      const groupsSnapshot = await db.collection('groups').get();
+      const groups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const groupSizes = groups.map(g => g.members ? g.members.length : 0);
+      const avgGroupSize = groupSizes.length > 0 ? 
+        Math.round(groupSizes.reduce((a, b) => a + b, 0) / groupSizes.length) : 0;
+      const largeGroups = groupSizes.filter(size => size > 10).length;
+      
+      // Calculate retention metrics
+      const retention1Day = calculateRetention(users, 1);
+      const retention7Day = calculateRetention(users, 7);
+      const retention30Day = calculateRetention(users, 30);
+
+      return {
+        users: {
+          total: users.length,
+          dau,
+          mau,
+          newThisPeriod: users.filter(u => u.createdAt && u.createdAt.toDate() >= startDate).length,
+          retention: {
+            day1: retention1Day,
+            day7: retention7Day,
+            day30: retention30Day
+          }
+        },
+        expenses: {
+          total: expenses.length,
+          volume: totalVolume,
+          average: avgExpense,
+          settlementRate
+        },
+        groups: {
+          total: groups.length,
+          avgSize: Math.round(avgGroupSize),
+          largeGroups,
+          newThisPeriod: groups.filter(g => g.createdAt && g.createdAt.toDate() >= startDate).length
+        }
+      };
+    } catch (error) {
+      console.error('Analytics error:', error);
+      throw new HttpsError('internal', 'Failed to fetch analytics');
+    }
+  }
+);
+
+// Helper function to calculate retention
+function calculateRetention(users, days) {
+  const cutoffDate = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
+  const eligibleUsers = users.filter(u => u.createdAt && u.createdAt.toDate() < cutoffDate);
+  
+  if (eligibleUsers.length === 0) return 0;
+  
+  const retainedUsers = eligibleUsers.filter(u => 
+    u.lastSeenAt && u.lastSeenAt.toDate() > cutoffDate
+  ).length;
+  
+  return Math.round((retainedUsers / eligibleUsers.length) * 100);
+}
+
+// --- ADMIN ADVANCED ANALYTICS ---
+const adminGetAdvancedAnalytics = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    // Check if user is admin
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isCreator) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const { timeRange = '30d' } = request.data || {};
+    
+    try {
+      // Get session analytics
+      const sessionSnapshot = await db.collection('userSessions')
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .get();
+      
+      const sessions = sessionSnapshot.docs.map(doc => doc.data());
+      
+      // Calculate session metrics
+      const sessionDurations = sessions.map(s => s.duration || 0);
+      const avgSessionDuration = sessionDurations.length > 0 ? 
+        sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length : 0;
+      
+      // Get user activity patterns
+      const userActivity = {};
+      sessions.forEach(s => {
+        const date = s.createdAt.toDate().toDateString();
+        userActivity[date] = (userActivity[date] || 0) + 1;
+      });
+      
+      // Get financial analytics
+      const expensesSnapshot = await db
+        .collectionGroup('expenses')
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .get();
+      
+      const expenses = expensesSnapshot.docs.map(doc => doc.data());
+      
+      // Calculate category analytics
+      const categoryStats = {};
+      expenses.forEach(e => {
+        const category = e.category || 'uncategorized';
+        categoryStats[category] = (categoryStats[category] || 0) + (e.amountMinor || 0);
+      });
+      
+      // Get settlement analytics
+      const settlementsSnapshot = await db
+        .collectionGroup('settlements')
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .get();
+      
+      const settlements = settlementsSnapshot.docs.map(doc => doc.data());
+      const avgSettlementTime = calculateAvgSettlementTime(expenses, settlements);
+      
+      // Get geographic data
+      const geoSnapshot = await db.collection('users')
+        .where('lastLocation', '!=', null)
+        .get();
+      
+      const geoData = {};
+      geoSnapshot.docs.forEach(doc => {
+        const user = doc.data();
+        if (user.lastLocation) {
+          const country = user.lastLocation.country || 'unknown';
+          geoData[country] = (geoData[country] || 0) + 1;
+        }
+      });
+      
+      // Get performance metrics
+      const performanceSnapshot = await db.collection('apiLogs')
+        .where('timestamp', '>=', getTimeRangeStart(timeRange))
+        .orderBy('timestamp', 'desc')
+        .limit(1000)
+        .get();
+      
+      const logs = performanceSnapshot.docs.map(doc => doc.data());
+      const avgResponseTime = logs.length > 0 ? 
+        logs.reduce((sum, log) => sum + (log.responseTime || 0), 0) / logs.length : 0;
+      const errorRate = logs.length > 0 ? 
+        (logs.filter(log => log.status >= 400).length / logs.length) * 100 : 0;
+      
+      // Get business intelligence
+      const usersSnapshot = await db.collection('users').get();
+      const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const userSegments = {
+        total: allUsers.length,
+        premium: allUsers.filter(u => u.isPremium).length,
+        active: allUsers.filter(u => u.lastSeenAt && 
+          (Date.now() - u.lastSeenAt.toDate().getTime()) < 7 * 24 * 60 * 60 * 1000).length,
+        newThisMonth: allUsers.filter(u => u.createdAt && 
+          u.createdAt.toDate() >= getTimeRangeStart('30d')).length,
+        churned: calculateChurnedUsers(allUsers, timeRange)
+      };
+
+      return {
+        sessions: {
+          total: sessions.length,
+          avgDuration: avgSessionDuration,
+          dailyActivity: userActivity,
+          peakUsage: findPeakUsageTimes(sessions)
+        },
+        financial: {
+          categoryBreakdown: categoryStats,
+          avgSettlementTime,
+          settlementMethods: analyzeSettlementMethods(settlements)
+        },
+        geographic: geoData,
+        performance: {
+          avgResponseTime,
+          errorRate,
+          uptime: calculateUptime(logs)
+        },
+        business: userSegments
+      };
+    } catch (error) {
+      console.error('Advanced analytics error:', error);
+      throw new HttpsError('internal', 'Failed to fetch advanced analytics');
+    }
+  }
+);
+
+// --- ADMIN USER BEHAVIOR ANALYTICS ---
+const adminGetUserBehavior = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isCreator) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const { userId, timeRange = '30d' } = request.data || {};
+    
+    try {
+      if (!userId) {
+        throw new HttpsError('invalid-argument', 'User ID is required');
+      }
+
+      // Get user's detailed activity
+      const userExpenses = await db
+        .collectionGroup('expenses')
+        .where('paidBy', '==', userId)
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      const userSettlements = await db
+        .collectionGroup('settlements')
+        .where('fromMemberId', '==', userId)
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .get();
+      
+      const userSessions = await db.collection('userSessions')
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      const userGroups = await db.collection('groups')
+        .where('members', 'array-contains', userId)
+        .get();
+      
+      // Calculate user-specific metrics
+      const expenses = userExpenses.docs.map(doc => doc.data());
+      const settlements = userSettlements.docs.map(doc => doc.data());
+      const sessions = userSessions.docs.map(doc => doc.data());
+      
+      return {
+        expenses: {
+          total: expenses.length,
+          totalAmount: expenses.reduce((sum, e) => sum + (e.amountMinor || 0), 0),
+          categories: analyzeExpenseCategories(expenses),
+          frequency: calculateExpenseFrequency(expenses)
+        },
+        settlements: {
+          total: settlements.length,
+          totalAmount: settlements.reduce((sum, s) => sum + (s.amountMinor || 0), 0),
+          avgTime: calculateAvgSettlementTime(expenses, settlements)
+        },
+        engagement: {
+          sessionCount: sessions.length,
+          avgSessionDuration: sessions.length > 0 ? 
+            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / sessions.length : 0,
+          screenTime: analyzeScreenTime(sessions),
+          groupsActive: userGroups.docs.length
+        },
+        patterns: {
+          spendingPatterns: analyzeSpendingPatterns(expenses),
+          activityPatterns: analyzeActivityPatterns(sessions)
+        }
+      };
+    } catch (error) {
+      console.error('User behavior error:', error);
+      throw new HttpsError('internal', 'Failed to fetch user behavior');
+    }
+  }
+);
+
+// Helper functions
+function getTimeRangeStart(timeRange) {
+  const now = new Date();
+  switch (timeRange) {
+    case '7d':
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case '90d':
+      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    case '1y':
+      return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    default: // 30d
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+}
+
+function calculateAvgSettlementTime(expenses, settlements) {
+  let totalTime = 0;
+  let count = 0;
+  
+  settlements.forEach(settlement => {
+    const expense = expenses.find(e => e.id === settlement.expenseId);
+    if (expense && expense.createdAt && settlement.createdAt) {
+      totalTime += settlement.createdAt.toDate() - expense.createdAt.toDate();
+      count++;
+    }
+  });
+  
+  return count > 0 ? totalTime / count : 0;
+}
+
+function findPeakUsageTimes(sessions) {
+  const hourCounts = {};
+  sessions.forEach(s => {
+    const hour = s.createdAt.toDate().getHours();
+    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+  });
+  
+  return Object.keys(hourCounts).reduce((a, b) => 
+    hourCounts[a] > hourCounts[b] ? a : b, '12');
+}
+
+function calculateChurnedUsers(users, timeRange) {
+  const cutoffDate = getTimeRangeStart(timeRange);
+  return users.filter(u => 
+    u.lastSeenAt && u.lastSeenAt.toDate() < cutoffDate
+  ).length;
+}
+
+function analyzeSettlementMethods(settlements) {
+  const methods = {};
+  settlements.forEach(s => {
+    const method = s.method || 'unknown';
+    methods[method] = (methods[method] || 0) + 1;
+  });
+  return methods;
+}
+
+function analyzeExpenseCategories(expenses) {
+  const categories = {};
+  expenses.forEach(e => {
+    const category = e.category || 'uncategorized';
+    categories[category] = (categories[category] || 0) + (e.amountMinor || 0);
+  });
+  return categories;
+}
+
+function calculateExpenseFrequency(expenses) {
+  if (expenses.length === 0) return 0;
+  const days = new Set(expenses.map(e => e.createdAt.toDate().toDateString())).size;
+  return expenses.length / days;
+}
+
+function analyzeScreenTime(sessions) {
+  const screenTime = {};
+  sessions.forEach(s => {
+    if (s.screens) {
+      Object.keys(s.screens).forEach(screen => {
+        screenTime[screen] = (screenTime[screen] || 0) + (s.screens[screen] || 0);
+      });
+    }
+  });
+  return screenTime;
+}
+
+function analyzeSpendingPatterns(expenses) {
+  const dayOfWeek = {};
+  expenses.forEach(e => {
+    const day = e.createdAt.toDate().getDay();
+    dayOfWeek[day] = (dayOfWeek[day] || 0) + (e.amountMinor || 0);
+  });
+  return dayOfWeek;
+}
+
+function analyzeActivityPatterns(sessions) {
+  const patterns = {
+    morning: 0, afternoon: 0, evening: 0, night: 0
+  };
+  
+  sessions.forEach(s => {
+    const hour = s.createdAt.toDate().getHours();
+    if (hour >= 6 && hour < 12) patterns.morning++;
+    else if (hour >= 12 && hour < 18) patterns.afternoon++;
+    else if (hour >= 18 && hour < 22) patterns.evening++;
+    else patterns.night++;
+  });
+  
+  return patterns;
+}
+
+function calculateUptime(logs) {
+  if (logs.length === 0) return 99.9;
+  const errors = logs.filter(log => log.status >= 500).length;
+  return Math.max(99.9, 100 - (errors / logs.length * 100));
+}
+
+// --- ADMIN ACTIVITY LOG ---
+const adminGetActivityLog = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    // Check if user is admin
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isCreator) {
+      throw new HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const { limit = 50 } = request.data || {};
+    
+    try {
+      const activities = [];
+      
+      // Get recent user registrations
+      const recentUsers = await db.collection('users')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+      
+      recentUsers.docs.forEach(doc => {
+        const user = doc.data();
+        activities.push({
+          type: 'user_join',
+          title: 'New user joined',
+          description: `${user.displayName || user.phoneNumber} registered`,
+          timestamp: user.createdAt,
+          userId: doc.id
+        });
+      });
+      
+      // Get recent group creations
+      const recentGroups = await db.collection('groups')
+        .orderBy('createdAt', 'desc')
+        .limit(5)
+        .get();
+      
+      recentGroups.docs.forEach(doc => {
+        const group = doc.data();
+        activities.push({
+          type: 'group_create',
+          title: 'New group created',
+          description: `${group.groupName} by ${group.createdBy}`,
+          timestamp: group.createdAt,
+          groupId: doc.id
+        });
+      });
+      
+      // Sort by timestamp and limit
+      activities.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+      return activities.slice(0, limit);
+    } catch (error) {
+      console.error('Activity log error:', error);
+      throw new HttpsError('internal', 'Failed to fetch activity log');
+    }
+  }
+);
+
 // --- FCM NOTIFICATIONS ---
 const notifyOnNewExpense = onDocumentCreated(
   'groups/{groupId}/expenses/{expenseId}',
