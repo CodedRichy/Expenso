@@ -5,364 +5,494 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Expenso Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0a0a0f;
-      --surface: #111118;
-      --surface2: #1a1a26;
-      --border: rgba(255,255,255,0.07);
+      --bg: #08080d;
+      --surface: #0f0f18;
+      --surface2: #161622;
+      --surface3: #1c1c2e;
+      --border: rgba(255,255,255,0.06);
+      --border2: rgba(255,255,255,0.10);
       --accent: #7c6ef7;
       --accent2: #a78bfa;
+      --accent-glow: rgba(124,110,247,0.25);
       --green: #34d399;
       --amber: #fbbf24;
       --red: #f87171;
-      --text: #f0f0f8;
-      --text2: #9090b0;
-      --text3: #55556a;
-      --radius: 14px;
+      --text: #eeeef8;
+      --text2: #8888a8;
+      --text3: #44445a;
+      --radius: 16px;
     }
 
+    html, body { height: 100%; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    /* ── Header ── */
-    header {
+    /* ══════════════════════════════════
+       LOGIN SCREEN
+    ══════════════════════════════════ */
+    #login-screen {
+      min-height: 100vh;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 18px 32px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(10,10,15,0.8);
-      backdrop-filter: blur(12px);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,110,247,0.12) 0%, transparent 60%),
+        var(--bg);
     }
-    .logo { display: flex; align-items: center; gap: 10px; }
-    .logo-icon {
-      width: 34px; height: 34px; border-radius: 10px;
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .login-logo-icon {
+      width: 64px; height: 64px; border-radius: 20px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: 28px; margin: 0 auto 16px;
+      box-shadow: 0 0 40px var(--accent-glow);
     }
-    .logo-text { font-weight: 700; font-size: 17px; letter-spacing: -0.3px; }
-    .logo-badge {
-      font-size: 11px; font-weight: 600; padding: 2px 8px;
-      background: rgba(124,110,247,0.15); border: 1px solid rgba(124,110,247,0.3);
-      border-radius: 100px; color: var(--accent2); letter-spacing: 0.5px;
-    }
-    #auth-status { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
-    #auth-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); transition: background 0.3s; }
-    #auth-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .login-logo h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; }
+    .login-logo p { font-size: 13px; color: var(--text2); margin-top: 4px; }
 
-    /* ── Layout ── */
-    main { flex: 1; padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+    }
 
-    /* ── Stats row ── */
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 22px;
-    }
-    .stat-label { font-size: 12px; color: var(--text3); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
-    .stat-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; }
-    .stat-value.accent { color: var(--accent2); }
-    .stat-value.green { color: var(--green); }
-    .stat-value.amber { color: var(--amber); }
+    .login-step { display: none; }
+    .login-step.active { display: block; animation: fadeUp 0.3s ease; }
 
-    /* ── Toolbar ── */
-    .toolbar {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-    }
-    .search-wrap {
-      position: relative; flex: 1; min-width: 220px;
-    }
-    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.4; pointer-events: none; }
-    #search {
-      width: 100%; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
-      padding: 10px 14px 10px 38px; outline: none; transition: border-color 0.2s;
-    }
-    #search:focus { border-color: rgba(124,110,247,0.5); }
-    #search::placeholder { color: var(--text3); }
+    .step-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .step-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
 
-    .filter-btn {
-      padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text2); font-family: inherit;
-      font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    .input-wrap { position: relative; margin-bottom: 16px; }
+    .input-prefix {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      font-size: 14px; font-weight: 500; color: var(--text2); pointer-events: none;
     }
-    .filter-btn:hover { border-color: rgba(124,110,247,0.4); color: var(--text); }
-    .filter-btn.active { background: rgba(124,110,247,0.15); border-color: rgba(124,110,247,0.5); color: var(--accent2); }
-    #refresh-btn {
-      padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text2); font-family: inherit;
-      font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
-      display: flex; align-items: center; gap: 6px;
+    .input-wrap input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 12px; color: var(--text); font-family: inherit; font-size: 16px;
+      padding: 14px 16px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 1px;
     }
-    #refresh-btn:hover { border-color: rgba(124,110,247,0.4); color: var(--text); }
+    .input-wrap input.has-prefix { padding-left: 50px; }
+    .input-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .input-wrap input::placeholder { color: var(--text3); letter-spacing: 0; }
 
-    /* ── Table ── */
-    .table-wrap {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
+    /* OTP boxes */
+    .otp-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+    .otp-box {
+      width: 50px; height: 58px; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 12px; color: var(--text); font-family: inherit; font-size: 22px;
+      font-weight: 700; text-align: center; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
     }
-    table { width: 100%; border-collapse: collapse; }
-    thead { background: var(--surface2); }
-    th {
-      padding: 13px 20px; text-align: left; font-size: 11px; font-weight: 600;
-      color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-    }
-    td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
+    .otp-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
-    .user-cell { display: flex; align-items: center; gap: 12px; }
-    .avatar {
-      width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;
+    .btn-primary {
+      width: 100%; padding: 15px; border-radius: 12px; border: none;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white; font-family: inherit; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: -0.2px;
     }
-    .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-    .user-name { font-weight: 500; }
-    .user-phone { font-size: 12px; color: var(--text2); margin-top: 2px; letter-spacing: 0.5px; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-    .uid-cell { font-size: 12px; color: var(--text3); font-family: monospace; cursor: pointer; }
-    .uid-cell:hover { color: var(--accent2); }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600;
+    .btn-ghost {
+      background: transparent; border: none; color: var(--accent2); font-family: inherit;
+      font-size: 13px; font-weight: 500; cursor: pointer; padding: 0; margin-top: 14px;
+      display: block; width: 100%; text-align: center; transition: opacity 0.15s;
     }
-    .badge.beta { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
-    .badge.creator { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
-    .badge.none { background: rgba(255,255,255,0.04); color: var(--text3); border: 1px solid var(--border); }
+    .btn-ghost:hover { opacity: 0.7; }
 
-    .joined-cell { font-size: 13px; color: var(--text2); }
+    .login-error {
+      background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+      border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--red);
+      margin-bottom: 16px; display: none;
+    }
+    .login-error.show { display: block; animation: shake 0.3s ease; }
 
-    .action-btn {
-      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+    .recaptcha-notice { font-size: 11px; color: var(--text3); text-align: center; margin-top: 14px; line-height: 1.5; }
+
+    /* ══════════════════════════════════
+       DASHBOARD
+    ══════════════════════════════════ */
+    #dashboard { display: none; flex-direction: column; min-height: 100vh; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px; border-bottom: 1px solid var(--border);
+      background: rgba(8,8,13,0.85); backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .h-logo { display: flex; align-items: center; gap: 10px; }
+    .h-logo-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .h-logo-name { font-weight: 700; font-size: 16px; }
+    .h-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      background: rgba(124,110,247,0.12); border: 1px solid rgba(124,110,247,0.25);
+      border-radius: 100px; color: var(--accent2); letter-spacing: 0.8px; text-transform: uppercase;
+    }
+
+    .h-right { display: flex; align-items: center; gap: 14px; }
+    #conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); transition: 0.3s; flex-shrink: 0; }
+    #conn-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .h-user { font-size: 13px; color: var(--text2); }
+    .btn-logout {
+      padding: 7px 16px; border-radius: 9px; border: 1px solid var(--border2);
       background: transparent; color: var(--text2); font-family: inherit;
       font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
     }
-    .action-btn:hover { background: var(--surface2); color: var(--text); border-color: rgba(124,110,247,0.4); }
+    .btn-logout:hover { border-color: rgba(248,113,113,0.4); color: var(--red); }
 
-    /* ── Empty / loading ── */
-    .empty-row td { text-align: center; padding: 60px; color: var(--text3); }
-    .spinner {
-      display: inline-block; width: 20px; height: 20px;
-      border: 2px solid var(--border); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
+    main { flex: 1; padding: 28px; max-width: 1360px; margin: 0 auto; width: 100%; }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .stat-l { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-v { font-size: 28px; font-weight: 800; letter-spacing: -1.5px; }
+    .c-purple { color: var(--accent2); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
 
-    /* ── Modal ── */
-    .modal-bg {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      z-index: 200; display: flex; align-items: center; justify-content: center;
+    /* Toolbar */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .search-w { position: relative; flex: 1; min-width: 200px; }
+    .search-w svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
+    #search {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: inherit; font-size: 13px;
+      padding: 10px 14px 10px 36px; outline: none; transition: border-color 0.2s;
+    }
+    #search:focus { border-color: rgba(124,110,247,0.4); }
+    #search::placeholder { color: var(--text3); }
+
+    .filt {
+      padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text2); font-family: inherit;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .filt:hover { border-color: rgba(124,110,247,0.35); color: var(--text); }
+    .filt.on { background: rgba(124,110,247,0.12); border-color: rgba(124,110,247,0.4); color: var(--accent2); }
+    .btn-refresh {
+      padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text2); font-family: inherit;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-refresh:hover { color: var(--text); border-color: var(--border2); }
+
+    /* Table */
+    .tbl-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--surface2); }
+    th { padding: 12px 18px; text-align: left; font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 13px 18px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(124,110,247,0.03); }
+
+    .u-cell { display: flex; align-items: center; gap: 11px; }
+    .av {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; overflow: hidden;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    }
+    .av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .u-name { font-weight: 500; }
+    .u-phone { font-size: 11px; color: var(--text2); margin-top: 1px; letter-spacing: 0.4px; }
+
+    .uid-btn { font-size: 11px; color: var(--text3); font-family: monospace; cursor: pointer; background: none; border: none; padding: 0; transition: color 0.15s; }
+    .uid-btn:hover { color: var(--accent2); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600;
+    }
+    .badge.b-beta { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.22); }
+    .badge.b-creator { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.22); }
+    .badge.b-none { background: rgba(255,255,255,0.03); color: var(--text3); border: 1px solid var(--border); }
+
+    .t-muted { font-size: 12px; color: var(--text2); }
+
+    .btn-edit {
+      padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text2); font-family: inherit;
+      font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-edit:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+    .empty td { text-align: center; padding: 60px; color: var(--text3); }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px); z-index: 200; display: flex;
+      align-items: center; justify-content: center; padding: 16px;
       animation: fadeIn 0.15s ease;
     }
     .modal {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-      padding: 32px; width: 480px; max-width: calc(100vw - 32px);
-      animation: fadeIn 0.2s ease;
+      background: var(--surface); border: 1px solid var(--border2); border-radius: 24px;
+      padding: 28px; width: 460px; max-width: 100%; animation: fadeUp 0.2s ease;
     }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .modal-title { font-size: 18px; font-weight: 700; }
-    .modal-close {
-      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-      background: transparent; color: var(--text2); font-size: 18px; cursor: pointer;
+    .modal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal-ttl { font-size: 17px; font-weight: 700; }
+    .modal-x {
+      width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text2); cursor: pointer; font-size: 16px;
       display: flex; align-items: center; justify-content: center; transition: all 0.15s;
     }
-    .modal-close:hover { background: var(--surface2); color: var(--text); }
+    .modal-x:hover { background: var(--surface2); color: var(--text); }
 
-    .field { margin-bottom: 16px; }
-    label { display: block; font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
-    input[type=text] {
+    .f { margin-bottom: 14px; }
+    .f label { display: block; font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 6px; letter-spacing: 0.4px; text-transform: uppercase; }
+    .f input[type=text] {
       width: 100%; background: var(--surface2); border: 1px solid var(--border);
       border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
-      padding: 10px 14px; outline: none; transition: border-color 0.2s;
+      padding: 11px 14px; outline: none; transition: border-color 0.2s;
     }
-    input[type=text]:focus { border-color: rgba(124,110,247,0.5); }
+    .f input[type=text]:focus { border-color: rgba(124,110,247,0.5); }
+
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
       background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 16px;
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
     }
-    .toggle-label { font-size: 14px; font-weight: 500; }
-    .toggle-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
-    .toggle {
-      position: relative; width: 44px; height: 24px; cursor: pointer;
+    .t-lbl { font-size: 14px; font-weight: 500; }
+    .t-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .sw { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .sw-track {
+      position: absolute; inset: 0; border-radius: 100px;
+      background: var(--surface3); border: 1px solid var(--border2);
+      transition: background 0.2s, border-color 0.2s;
     }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-track {
-      position: absolute; inset: 0; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 100px; transition: background 0.2s;
-    }
-    .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
-    .toggle-thumb {
+    .sw input:checked + .sw-track { background: var(--accent); border-color: var(--accent); }
+    .sw-thumb {
       position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
       border-radius: 50%; background: white; transition: transform 0.2s; pointer-events: none;
     }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+    .sw input:checked ~ .sw-thumb { transform: translateX(18px); }
 
-    .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
-    .btn-cancel {
-      padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border);
+    .modal-acts { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .btn-can {
+      padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border);
       background: transparent; color: var(--text2); font-family: inherit;
-      font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
     }
-    .btn-cancel:hover { background: var(--surface2); color: var(--text); }
-    .btn-save {
-      padding: 10px 24px; border-radius: 10px; border: none;
+    .btn-can:hover { background: var(--surface2); color: var(--text); }
+    .btn-sav {
+      padding: 10px 22px; border-radius: 10px; border: none;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white; font-family: inherit; font-size: 14px; font-weight: 600;
+      color: white; font-family: inherit; font-size: 13px; font-weight: 700;
       cursor: pointer; transition: opacity 0.15s;
     }
-    .btn-save:hover { opacity: 0.85; }
-    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-sav:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* ── Toast ── */
+    /* Toast */
     #toast {
-      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 100px;
-      padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text);
-      z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none;
-      white-space: nowrap;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: 100px;
+      padding: 9px 18px; font-size: 13px; font-weight: 500; z-index: 999;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap;
     }
-    #toast.show { opacity: 1; }
-    #toast.success { border-color: rgba(52,211,153,0.4); color: var(--green); }
-    #toast.error { border-color: rgba(248,113,113,0.4); color: var(--red); }
+    #toast.s { opacity: 1; }
+    #toast.ok { border-color: rgba(52,211,153,0.35); color: var(--green); }
+    #toast.er { border-color: rgba(248,113,113,0.35); color: var(--red); }
+
+    /* Spinner */
+    .spin {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid var(--border2); border-top-color: var(--accent);
+      border-radius: 50%; animation: rot 0.7s linear infinite;
+    }
+
+    /* Animations */
+    @keyframes rot { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%,60% { transform: translateX(-6px); }
+      40%,80% { transform: translateX(6px); }
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-icon">💸</div>
-    <span class="logo-text">Expenso</span>
-    <span class="logo-badge">ADMIN</span>
-  </div>
-  <div id="auth-status">
-    <div id="auth-dot"></div>
-    <span id="auth-text">Connecting…</span>
-  </div>
-</header>
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">💸</div>
+      <h1>Expenso Admin</h1>
+      <p>Sign in with your registered phone number</p>
+    </div>
 
-<main>
-  <!-- Stats -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Total Users</div>
-      <div class="stat-value accent" id="stat-total">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Beta Testers</div>
-      <div class="stat-value green" id="stat-beta">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Joined This Week</div>
-      <div class="stat-value amber" id="stat-week">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Active (24h)</div>
-      <div class="stat-value" id="stat-active">—</div>
-    </div>
-  </div>
+    <div class="login-box">
+      <div id="step-phone" class="login-step active">
+        <div class="step-title">Welcome back</div>
+        <div class="step-sub">Enter your phone number to receive a verification code.</div>
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input type="text" id="search" placeholder="Search by name, phone or UID…" />
-    </div>
-    <button class="filter-btn active" data-filter="all">All</button>
-    <button class="filter-btn" data-filter="beta">Beta Only</button>
-    <button class="filter-btn" data-filter="recent">Recent</button>
-    <button id="refresh-btn">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-      </svg>
-      Refresh
-    </button>
-  </div>
+        <div class="login-error" id="phone-err"></div>
 
-  <!-- Table -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>User</th>
-          <th>UID</th>
-          <th>Status</th>
-          <th>Joined</th>
-          <th>Last Seen</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="user-table-body">
-        <tr class="empty-row"><td colspan="6"><div class="spinner"></div></td></tr>
-      </tbody>
-    </table>
-  </div>
-</main>
-
-<!-- Edit Modal -->
-<div class="modal-bg" id="modal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Edit User</div>
-      <button class="modal-close" id="modal-close">✕</button>
-    </div>
-    <div class="field">
-      <label>Display Name</label>
-      <input type="text" id="edit-name" placeholder="Display name" />
-    </div>
-    <div class="field">
-      <label>UPI ID</label>
-      <input type="text" id="edit-upi" placeholder="user@bank" />
-    </div>
-    <div class="field" style="margin-bottom:8px;">
-      <label>Access</label>
-      <div class="toggle-row" style="margin-bottom:10px;">
-        <div>
-          <div class="toggle-label">🧪 Beta Tester</div>
-          <div class="toggle-desc">Unlocks experimental features</div>
+        <div class="input-wrap">
+          <span class="input-prefix">+91</span>
+          <input type="text" id="phone-input" class="has-prefix" placeholder="98765 43210" maxlength="10" inputmode="numeric" />
         </div>
-        <label class="toggle">
-          <input type="checkbox" id="edit-beta" />
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
+
+        <button class="btn-primary" id="send-otp-btn">Send Code</button>
+        <div id="recaptcha-container" style="margin-top:14px;"></div>
+        <p class="recaptcha-notice">Protected by Firebase. Unauthorized access will be denied.</p>
+      </div>
+
+      <div id="step-otp" class="login-step">
+        <div class="step-title">Enter the code</div>
+        <div class="step-sub" id="otp-sub">We sent a 6-digit code to <strong></strong></div>
+
+        <div class="login-error" id="otp-err"></div>
+
+        <div class="otp-row">
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+          <input class="otp-box" maxlength="1" inputmode="numeric" />
+        </div>
+
+        <button class="btn-primary" id="verify-btn" disabled>Verify</button>
+        <button class="btn-ghost" id="back-btn">← Change number</button>
+      </div>
+
+      <div id="step-denied" class="login-step">
+        <div style="text-align:center;padding:16px 0;">
+          <div style="font-size:48px;margin-bottom:16px;">🚫</div>
+          <div class="step-title">Access denied</div>
+          <div class="step-sub" style="margin-top:8px;">This account doesn't have admin access. Contact the app owner.</div>
+          <button class="btn-ghost" id="try-again-btn" style="margin-top:20px;">Try a different number</button>
+        </div>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="cancel-btn">Cancel</button>
-      <button class="btn-save" id="save-btn">Save Changes</button>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard">
+  <header>
+    <div class="h-logo">
+      <div class="h-logo-icon">💸</div>
+      <span class="h-logo-name">Expenso</span>
+      <span class="h-badge">Admin</span>
+    </div>
+    <div class="h-right">
+      <div id="conn-dot"></div>
+      <span class="h-user" id="h-user-label"></span>
+      <button class="btn-logout" id="logout-btn">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Total Users</div><div class="stat-v c-purple" id="s-total">—</div></div>
+      <div class="stat"><div class="stat-l">Beta Testers</div><div class="stat-v c-green" id="s-beta">—</div></div>
+      <div class="stat"><div class="stat-l">This Week</div><div class="stat-v c-amber" id="s-week">—</div></div>
+      <div class="stat"><div class="stat-l">Active 24h</div><div class="stat-v" id="s-active">—</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-w">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="search" type="text" placeholder="Search name, phone or UID…" />
+      </div>
+      <button class="filt on" data-f="all">All</button>
+      <button class="filt" data-f="beta">Beta</button>
+      <button class="filt" data-f="recent">Recent</button>
+      <button class="btn-refresh" id="refresh-btn">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th><th>UID</th><th>Status</th><th>Joined</th><th>Last Seen</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="empty"><td colspan="6"><div class="spin"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-ttl" id="modal-name">Edit User</div>
+      <button class="modal-x" id="modal-x">✕</button>
+    </div>
+    <div class="f"><label>Display Name</label><input type="text" id="e-name" placeholder="Name" /></div>
+    <div class="f"><label>UPI ID</label><input type="text" id="e-upi" placeholder="user@bank" /></div>
+    <div class="f">
+      <label>Access</label>
+      <div class="toggle-row">
+        <div><div class="t-lbl">🧪 Beta Tester</div><div class="t-sub">Unlocks experimental features</div></div>
+        <label class="sw"><input type="checkbox" id="e-beta" /><div class="sw-track"></div><div class="sw-thumb"></div></label>
+      </div>
+    </div>
+    <div class="modal-acts">
+      <button class="btn-can" id="m-cancel">Cancel</button>
+      <button class="btn-sav" id="m-save">Save Changes</button>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
-<!-- Firebase SDK -->
+<!-- Firebase -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
   import { getFirestore, collection, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-  const firebaseConfig = {
+  const cfg = {
     apiKey: "AIzaSyAp9g83dmX1-XgNkFPzDVQo2orY9OvuLbQ",
     authDomain: "expenso-e138a.firebaseapp.com",
     projectId: "expenso-e138a",
@@ -373,198 +503,259 @@
 
   const CREATOR_UID = '605oNyF1miUumLGMgEnaGGD0Lyh2';
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const app  = initializeApp(cfg);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ── Auth state listener ──
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      if (user.uid !== CREATOR_UID) {
+        showStep('step-denied');
+        signOut(auth);
+        return;
+      }
+      showDashboard(user);
+    }
+  });
+
+  // ── UI refs ──
+  const loginScreen = document.getElementById('login-screen');
+  const dashboard   = document.getElementById('dashboard');
+  const modal       = document.getElementById('modal');
+  const tbody       = document.getElementById('tbody');
+  const toast       = document.getElementById('toast');
 
   // ── State ──
+  let confirmResult = null;
   let allUsers = [];
-  let currentFilter = 'all';
-  let searchQuery = '';
-  let editingUid = null;
-
-  // ── DOM ──
-  const tbody = document.getElementById('user-table-body');
-  const searchEl = document.getElementById('search');
-  const modal = document.getElementById('modal');
-  const toast = document.getElementById('toast');
-  const authDot = document.getElementById('auth-dot');
-  const authText = document.getElementById('auth-text');
+  let activeFilter = 'all';
+  let searchQ = '';
+  let editUID = null;
 
   // ── Helpers ──
-  function formatDate(ms) {
+  const $ = id => document.getElementById(id);
+  function showStep(id) {
+    document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+  function showErr(id, msg) {
+    const el = $(id); el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+  function toastMsg(msg, type='') {
+    toast.textContent = msg; toast.className = 's ' + type;
+    clearTimeout(toast._t); toast._t = setTimeout(() => toast.className = '', 2500);
+  }
+  function fmt(ms) {
     if (!ms) return '—';
-    return new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(ms).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   }
-  function timeAgo(ms) {
+  function ago(ms) {
     if (!ms) return '—';
-    const diff = Date.now() - ms;
-    const m = Math.floor(diff / 60000);
-    if (m < 1) return 'just now';
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    const d = Math.floor(h / 24);
-    return `${d}d ago`;
+    const d = Date.now() - ms, m = Math.floor(d/60000);
+    if (m < 1) return 'now'; if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m/60); if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
   }
-  function initials(name) {
-    if (!name) return '?';
-    return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  function init2(name) {
+    return (name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   }
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => showToast('UID copied!', 'success'));
+
+  // ── Recaptcha ──
+  function setupRecaptcha() {
+    if (window._recaptcha) return;
+    window._recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => {},
+    });
   }
-  function showToast(msg, type='') {
-    toast.textContent = msg;
-    toast.className = `show ${type}`;
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => { toast.className = ''; }, 2400);
+
+  // ── Send OTP ──
+  $('send-otp-btn').onclick = async () => {
+    const raw = $('phone-input').value.replace(/\D/g,'');
+    if (raw.length !== 10) { showErr('phone-err','Enter a valid 10-digit number'); return; }
+    const btn = $('send-otp-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      setupRecaptcha();
+      confirmResult = await signInWithPhoneNumber(auth, '+91' + raw, window._recaptcha);
+      $('otp-sub').querySelector('strong').textContent = `+91 ${raw.slice(0,5)} ${raw.slice(5)}`;
+      showStep('step-otp');
+      document.querySelectorAll('.otp-box')[0].focus();
+    } catch(e) {
+      showErr('phone-err', e.message || 'Failed to send code');
+      window._recaptcha = null;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send Code';
+    }
+  };
+  $('phone-input').addEventListener('keydown', e => { if (e.key==='Enter') $('send-otp-btn').click(); });
+
+  // ── OTP boxes ──
+  const boxes = document.querySelectorAll('.otp-box');
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/,'').slice(-1);
+      if (box.value && i < boxes.length - 1) boxes[i+1].focus();
+      updateVerifyBtn();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) boxes[i-1].focus();
+    });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const digits = (e.clipboardData.getData('text') || '').replace(/\D/g,'').slice(0,6).split('');
+      digits.forEach((d,j) => { if (boxes[i+j]) boxes[i+j].value = d; });
+      updateVerifyBtn();
+      if (digits.length === 6) $('verify-btn').click();
+    });
+  });
+  function otpValue() { return [...boxes].map(b=>b.value).join(''); }
+  function updateVerifyBtn() { $('verify-btn').disabled = otpValue().length < 6; }
+
+  // ── Verify OTP ──
+  $('verify-btn').onclick = async () => {
+    const code = otpValue();
+    if (code.length < 6 || !confirmResult) return;
+    const btn = $('verify-btn');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    try {
+      const cred = await confirmResult.confirm(code);
+      if (cred.user.uid !== CREATOR_UID) {
+        showStep('step-denied');
+        await signOut(auth);
+      }
+      // onAuthStateChanged handles the rest
+    } catch(e) {
+      showErr('otp-err', 'Invalid code. Try again.');
+      boxes.forEach(b => { b.value = ''; }); boxes[0].focus();
+    } finally {
+      btn.disabled = false; btn.textContent = 'Verify';
+    }
+  };
+
+  $('back-btn').onclick = () => { boxes.forEach(b => b.value=''); showStep('step-phone'); };
+  $('try-again-btn').onclick = () => { $('phone-input').value=''; showStep('step-phone'); };
+
+  // ── Dashboard ──
+  async function showDashboard(user) {
+    loginScreen.style.display = 'none';
+    dashboard.style.display = 'flex';
+    $('conn-dot').classList.add('on');
+    $('h-user-label').textContent = user.phoneNumber || '';
+    await loadUsers();
   }
+
+  $('logout-btn').onclick = async () => {
+    await signOut(auth);
+    dashboard.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    showStep('step-phone');
+  };
 
   // ── Load users ──
   async function loadUsers() {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="6"><div class="spinner"></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty"><td colspan="6"><div class="spin"></div></td></tr>`;
     try {
       const snap = await getDocs(collection(db, 'users'));
       allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-      authDot.classList.add('connected');
-      authText.textContent = 'Connected';
-      updateStats();
-      renderTable();
+      updateStats(); renderTable();
     } catch(e) {
-      authText.textContent = 'Error';
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="6" style="color:#f87171">Failed to load: ${e.message}</td></tr>`;
+      tbody.innerHTML = `<tr class="empty"><td colspan="6" style="color:var(--red)">Error: ${e.message}</td></tr>`;
     }
   }
 
   function updateStats() {
-    const now = Date.now();
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    const dayMs = 24 * 60 * 60 * 1000;
-    document.getElementById('stat-total').textContent = allUsers.length;
-    document.getElementById('stat-beta').textContent = allUsers.filter(u => u.isBeta).length;
-    document.getElementById('stat-week').textContent = allUsers.filter(u => u.joinedAt && (now - u.joinedAt) < weekMs).length;
-    document.getElementById('stat-active').textContent = allUsers.filter(u => u.lastSeen && (now - u.lastSeen) < dayMs).length;
+    const now = Date.now(), W = 7*86400000, D = 86400000;
+    $('s-total').textContent  = allUsers.length;
+    $('s-beta').textContent   = allUsers.filter(u=>u.isBeta).length;
+    $('s-week').textContent   = allUsers.filter(u=>u.joinedAt&&(now-u.joinedAt)<W).length;
+    $('s-active').textContent = allUsers.filter(u=>u.lastSeen&&(now-u.lastSeen)<D).length;
   }
 
-  function getFiltered() {
-    let list = allUsers;
-    if (currentFilter === 'beta') list = list.filter(u => u.isBeta);
-    if (currentFilter === 'recent') {
-      const w = 7 * 24 * 60 * 60 * 1000;
-      list = list.filter(u => u.joinedAt && (Date.now() - u.joinedAt) < w);
+  function getList() {
+    let l = allUsers;
+    if (activeFilter==='beta') l = l.filter(u=>u.isBeta);
+    if (activeFilter==='recent') l = l.filter(u=>u.joinedAt&&(Date.now()-u.joinedAt)<7*86400000);
+    if (searchQ) {
+      const q=searchQ.toLowerCase();
+      l = l.filter(u=>(u.displayName||'').toLowerCase().includes(q)||(u.phoneNumber||'').includes(q)||u.uid.toLowerCase().includes(q));
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(u =>
-        (u.displayName||'').toLowerCase().includes(q) ||
-        (u.phoneNumber||'').includes(q) ||
-        u.uid.toLowerCase().includes(q)
-      );
-    }
-    return list;
+    return l;
   }
 
   function renderTable() {
-    const users = getFiltered();
-    if (!users.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No users found</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = users.map(u => {
-      const isCreator = u.uid === CREATOR_UID;
-      const badge = isCreator
-        ? `<span class="badge creator">👑 Creator</span>`
+    const list = getList();
+    if (!list.length) { tbody.innerHTML=`<tr class="empty"><td colspan="6">No users found</td></tr>`; return; }
+    tbody.innerHTML = list.map(u => {
+      const isC = u.uid===CREATOR_UID;
+      const badge = isC
+        ? `<span class="badge b-creator">👑 Creator</span>`
         : u.isBeta
-          ? `<span class="badge beta">🧪 Beta</span>`
-          : `<span class="badge none">—</span>`;
-
-      const avatarContent = u.photoURL
-        ? `<img src="${u.photoURL}" alt="" onerror="this.style.display='none'" />`
-        : initials(u.displayName || u.phoneNumber);
-
-      const shortUid = u.uid.slice(0, 14) + '…';
-
+          ? `<span class="badge b-beta">🧪 Beta</span>`
+          : `<span class="badge b-none">—</span>`;
+      const av = u.photoURL
+        ? `<div class="av"><img src="${u.photoURL}" onerror="this.parentNode.textContent='${init2(u.displayName)}'" /></div>`
+        : `<div class="av">${init2(u.displayName||u.phoneNumber)}</div>`;
       return `<tr>
-        <td>
-          <div class="user-cell">
-            <div class="avatar">${avatarContent}</div>
-            <div>
-              <div class="user-name">${u.displayName || '<span style="color:var(--text3)">No name</span>'}</div>
-              <div class="user-phone">${u.phoneNumber || ''}</div>
-            </div>
-          </div>
-        </td>
-        <td class="uid-cell" title="Click to copy" onclick="copyUID('${u.uid}')">${shortUid}</td>
+        <td><div class="u-cell">${av}<div><div class="u-name">${u.displayName||'<span style="color:var(--text3)">No name</span>'}</div><div class="u-phone">${u.phoneNumber||''}</div></div></div></td>
+        <td><button class="uid-btn" onclick="copyUID('${u.uid}')" title="Copy UID">${u.uid.slice(0,12)}…</button></td>
         <td>${badge}</td>
-        <td class="joined-cell">${formatDate(u.joinedAt)}</td>
-        <td class="joined-cell">${timeAgo(u.lastSeen)}</td>
-        <td><button class="action-btn" onclick="openEdit('${u.uid}')">Edit</button></td>
+        <td class="t-muted">${fmt(u.joinedAt)}</td>
+        <td class="t-muted">${ago(u.lastSeen)}</td>
+        <td><button class="btn-edit" onclick="openEdit('${u.uid}')">Edit</button></td>
       </tr>`;
     }).join('');
   }
 
+  // ── Filter / search ──
+  document.querySelectorAll('.filt').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.filt').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); activeFilter=b.dataset.f; renderTable();
+    };
+  });
+  $('search').oninput = e => { searchQ=e.target.value; renderTable(); };
+  $('refresh-btn').onclick = loadUsers;
+
   // ── Edit modal ──
-  window.openEdit = function(uid) {
-    const user = allUsers.find(u => u.uid === uid);
-    if (!user) return;
-    editingUid = uid;
-    document.getElementById('edit-name').value = user.displayName || '';
-    document.getElementById('edit-upi').value = user.upiId || '';
-    document.getElementById('edit-beta').checked = !!user.isBeta;
+  window.openEdit = uid => {
+    const u = allUsers.find(x=>x.uid===uid); if(!u) return;
+    editUID = uid;
+    $('modal-name').textContent = u.displayName || 'Edit User';
+    $('e-name').value  = u.displayName||'';
+    $('e-upi').value   = u.upiId||'';
+    $('e-beta').checked = !!u.isBeta;
     modal.style.display = 'flex';
-    document.getElementById('modal-title') && (document.getElementById('modal-title').textContent = user.displayName || 'User');
   };
+  window.copyUID = uid => { navigator.clipboard.writeText(uid).then(()=>toastMsg('UID copied!','ok')); };
 
-  window.copyUID = copyToClipboard;
+  $('modal-x').onclick = $('m-cancel').onclick = () => modal.style.display='none';
+  modal.onclick = e => { if(e.target===modal) modal.style.display='none'; };
 
-  document.getElementById('modal-close').onclick = () => modal.style.display = 'none';
-  document.getElementById('cancel-btn').onclick = () => modal.style.display = 'none';
-  modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
-
-  document.getElementById('save-btn').onclick = async () => {
-    if (!editingUid) return;
-    const btn = document.getElementById('save-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
+  $('m-save').onclick = async () => {
+    if (!editUID) return;
+    const btn = $('m-save');
+    btn.disabled=true; btn.textContent='Saving…';
     try {
       const updates = {
-        displayName: document.getElementById('edit-name').value.trim(),
-        upiId: document.getElementById('edit-upi').value.trim(),
-        isBeta: document.getElementById('edit-beta').checked,
+        displayName: $('e-name').value.trim(),
+        upiId: $('e-upi').value.trim(),
+        isBeta: $('e-beta').checked,
       };
-      await updateDoc(doc(db, 'users', editingUid), updates);
-      // Update local cache
-      const idx = allUsers.findIndex(u => u.uid === editingUid);
-      if (idx !== -1) allUsers[idx] = { ...allUsers[idx], ...updates };
-      updateStats();
-      renderTable();
-      modal.style.display = 'none';
-      showToast('✓ User updated', 'success');
+      await updateDoc(doc(db,'users',editUID), updates);
+      const i = allUsers.findIndex(u=>u.uid===editUID);
+      if (i!==-1) allUsers[i]={...allUsers[i],...updates};
+      updateStats(); renderTable();
+      modal.style.display='none';
+      toastMsg('✓ User updated','ok');
     } catch(e) {
-      showToast('Failed: ' + e.message, 'error');
+      toastMsg('Save failed: '+e.message,'er');
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Changes';
+      btn.disabled=false; btn.textContent='Save Changes';
     }
   };
-
-  // ── Filters & search ──
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      renderTable();
-    });
-  });
-  searchEl.addEventListener('input', () => {
-    searchQuery = searchEl.value;
-    renderTable();
-  });
-  document.getElementById('refresh-btn').onclick = loadUsers;
-
-  // ── Init ──
-  loadUsers();
 </script>
 </body>
 </html>
