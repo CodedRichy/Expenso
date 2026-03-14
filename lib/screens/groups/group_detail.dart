@@ -973,63 +973,81 @@ class _DecisionClarityCard extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: _minHeight),
               child: Stack(
                 children: [
+                  // 1. Primary Deep Liquid (Top Right)
                   Positioned(
-                    top: -60,
-                    right: -40,
+                    top: -120,
+                    right: -60,
                     child: Container(
-                      width: 280,
-                      height: 280,
+                      width: 380,
+                      height: 380,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                        gradient: RadialGradient(
+                          colors: [
+                            theme.colorScheme.primary.withValues(alpha: 0.6),
+                            theme.colorScheme.primary.withValues(alpha: 0.0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  // 2. Fire/Gold Liquid Flow (Left)
                   Positioned(
-                    top: 60,
-                    left: -80,
+                    top: 20,
+                    left: -120,
                     child: Container(
-                      width: 220,
-                      height: 220,
+                      width: 320,
+                      height: 320,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFFFD700).withValues(alpha: 0.25),
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFFFFAB40).withValues(alpha: 0.5), // Electric Orange
+                            const Color(0xFFFFAB40).withValues(alpha: 0.0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  // 3. Deep Sea Liquid (Bottom Right)
                   Positioned(
-                    bottom: -40,
-                    right: 60,
+                    bottom: -100,
+                    right: 40,
                     child: Container(
-                      width: 200,
-                      height: 200,
+                      width: 350,
+                      height: 350,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.colorPrimary.withValues(alpha: 0.3),
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF00E5FF).withValues(alpha: 0.4), // Cyan Glow
+                            const Color(0xFF00E5FF).withValues(alpha: 0.0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(32),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
+                      filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
                       child: Container(
                         decoration: BoxDecoration(
                           color: theme.brightness == Brightness.dark
-                              ? Colors.black.withValues(alpha: 0.3) // Darker base for better liquid contrast
-                              : Colors.white.withValues(alpha: 0.45),
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : Colors.white.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
                             color: (theme.brightness == Brightness.dark 
                                 ? Colors.white 
-                                : Colors.black).withValues(alpha: 0.35),
+                                : Colors.black).withValues(alpha: 0.25),
                             width: 1.5,
                           ),
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.12),
+                              (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.15),
                               (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                             ],
                           ),
@@ -1037,18 +1055,18 @@ class _DecisionClarityCard extends StatelessWidget {
                         padding: EdgeInsets.all(AppSpacing.space2xl),
                         child: Stack(
                           children: [
-                            // Refractive Rim Shine (Top Left)
+                            // "Wet" Surface Highlight
                             Positioned(
-                              top: -80,
-                              left: -80,
+                              top: -100,
+                              left: -100,
                               child: Container(
-                                width: 250,
-                                height: 150,
+                                width: 300,
+                                height: 200,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                                      (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.1),
                                       Colors.transparent,
                                     ],
                                   ),
