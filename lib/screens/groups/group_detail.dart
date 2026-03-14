@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -143,13 +144,65 @@ class _GroupDetailState extends State<GroupDetail> {
         final theme = Theme.of(context);
 
         return GradientScaffold(
-          body: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OfflineBanner(
-                  onRetry: () => ConnectivityService.instance.checkNow(),
+          body: Stack(
+            children: [
+              // Ambient Glow Blobs
+              if (theme.brightness == Brightness.dark) ...[
+                Positioned(
+                  top: -100,
+                  right: -100,
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.colorPrimary.withValues(alpha: 0.05),
+                    ),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                      child: const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
+                Positioned(
+                  top: 100,
+                  left: -150,
+                  child: Container(
+                    width: 400,
+                    height: 400,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.03),
+                    ),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+                      child: const SizedBox.shrink(),
+                    ),
+                  ),
+                Positioned(
+                  bottom: -200,
+                  right: -50,
+                  child: Container(
+                    width: 500,
+                    height: 500,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.colorPrimary.withValues(alpha: 0.04),
+                    ),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 150, sigmaY: 150),
+                      child: const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              ],
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OfflineBanner(
+                      onRetry: () => ConnectivityService.instance.checkNow(),
+                    ),
                 Expanded(
                   child: CustomScrollView(
                     slivers: [
@@ -685,7 +738,9 @@ class _GroupDetailState extends State<GroupDetail> {
                       ? _LockedSpendBar(group: defaultGroup)
                       : _SmartBarSection(group: defaultGroup),
               ],
-            ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -918,6 +973,7 @@ class _DecisionClarityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isEmpty = expenses.isEmpty;
     final currencyCode = repo.getGroup(groupId)?.currencyCode ?? 'INR';
     final cycleTotal = expenses.fold<double>(0.0, (s, e) => s + e.amount);
@@ -972,44 +1028,67 @@ class _DecisionClarityCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : Colors.white.withValues(alpha: 0.6),
+                          ? Colors.black.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
                         color: (theme.brightness == Brightness.dark 
                             ? Colors.white 
-                            : Colors.black).withValues(alpha: 0.1),
-                        width: 0.5,
+                            : Colors.black).withValues(alpha: 0.12),
+                        width: 0.8,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.colorPrimary.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                     padding: EdgeInsets.all(AppSpacing.space2xl),
-                    child: isEmpty
-                        ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                        : _buildContent(
-                            context,
-                            currencyCode: currencyCode,
-                            cycleTotal: cycleTotal,
-                            youPaid: youPaid,
-                          settledPaid: settledPaid,
-                          myNet: myNet,
-                          myRemaining: myRemaining,
-                          hasPaymentProgress: hasPaymentProgress,
-                          isCredit: isCredit,
-                          isDebt: isDebt,
-                          isBalanceClear: isBalanceClear,
-                          isMuted: isMuted,
+                    child: Stack(
+                      children: [
+                        // Subtle surface shine
+                        Positioned(
+                          top: -50,
+                          left: -50,
+                          child: Container(
+                            width: 200,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  (theme.brightness == Brightness.dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
+                        isEmpty
+                            ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                            : _buildContent(
+                                context,
+                                currencyCode: currencyCode,
+                                cycleTotal: cycleTotal,
+                                youPaid: youPaid,
+                                settledPaid: settledPaid,
+                                myNet: myNet,
+                                myRemaining: myRemaining,
+                                hasPaymentProgress: hasPaymentProgress,
+                                isCredit: isCredit,
+                                isDebt: isDebt,
+                                isBalanceClear: isBalanceClear,
+                                isMuted: isMuted,
+                              ),
+                      ],
+                    ),
                   ),
                 ),
               ),
