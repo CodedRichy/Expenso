@@ -518,9 +518,10 @@ void _showMemberProfileBottomSheet(
             ),
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
 }
 
 class _Badge extends StatelessWidget {
