@@ -969,10 +969,13 @@ class _DecisionClarityCard extends StatelessWidget {
           scaleDown: 0.98,
           child: Opacity(
             opacity: isMuted ? 0.6 : 1.0,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: _minHeight),
-              child: Stack(
-                children: [
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: _minHeight),
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
                   // 1. Primary Deep Liquid (Top Right)
                   Positioned(
                     top: -120,
