@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Expenso</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #000;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 48px;
+            background: var(--s1);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            text-align: center;
+        }
+        .login-card h2 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+        .login-card p { color: var(--text-muted); font-size: 15px; margin-bottom: 40px; }
+        .input-group { text-align: left; margin-bottom: 24px; }
+        label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: var(--text-dim); }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--s2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus { border-color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo-icon" style="margin: 0 auto 32px;">💸</div>
+        <h2>Welcome.</h2>
+        <p>Access your group finances.</p>
+
+        <form action="../admin/index.html">
+            <div class="input-group">
+                <label>Phone Number</label>
+                <div style="position: relative;">
+                    <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">+91</span>
+                    <input type="tel" placeholder="98765 43210" style="padding-left: 54px;" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">Continue</button>
+        </form>
+        
+        <div style="margin-top: 32px;">
+            <a href="index.html" style="color: var(--text-dim); text-decoration: none; font-size: 14px;">← Back Home</a>
+        </div>
+    </div>
+</body>
+</html>
