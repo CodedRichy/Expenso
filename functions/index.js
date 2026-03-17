@@ -6,12 +6,14 @@ const Razorpay = require('razorpay');
 const {
   getUserEncryptionKey,
   getGroupEncryptionKey,
+  requireAdmin,
   adminFetchUsers,
   adminFetchGroups,
   adminUpdateUser,
   adminBanUser,
   adminDeleteUser,
-  adminDeleteGroup
+  adminDeleteGroup,
+  setAdminClaim,
 } = require('./encryption');
 const {
   formatDate,
@@ -20,6 +22,7 @@ const {
   validateZeroSum,
   validateRazorpayAmount,
 } = require('./logic');
+const { standardLimiter, aiLimiter, adminLimiter } = require('./rate_limiter');
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -33,6 +36,7 @@ const createRazorpayOrder = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Must be signed in.');
     }
+    standardLimiter.check(request.auth.uid);
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
@@ -62,6 +66,7 @@ const settleAndRestart = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Must be signed in.');
     }
+    standardLimiter.check(request.auth.uid);
     const groupId = request.data.groupId;
     if (!groupId) {
       throw new HttpsError('invalid-argument', 'groupId is required.');
@@ -184,22 +189,12 @@ const dailyCleanupJob = onSchedule('every day 00:00', async (event) => {
 const api = onRequest(
   { region: 'asia-south1' },
   async (req, res) => {
-    // A simple public API extension for health/status
+    // Health check endpoint (public — no sensitive data)
     if (req.method === 'GET' && req.path === '/health') {
       return res.status(200).json({ status: 'ok', api_version: '1.0' });
     }
-    
-    // Group lookup endpoint
-    if (req.method === 'GET' && req.path.startsWith('/group/')) {
-      const groupId = req.path.split('/')[2];
-      const groupSnap = await db.collection('groups').doc(groupId).get();
-      if (!groupSnap.exists) {
-        return res.status(404).json({ error: 'Not found' });
-      }
-      return res.status(200).json({ id: groupId, name: groupSnap.data().name });
-    }
 
-    return res.status(404).json({ error: 'Not implemented' });
+    return res.status(404).json({ error: 'Not found' });
   }
 );
 
@@ -207,15 +202,8 @@ const api = onRequest(
 const adminGetAnalytics = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Must be signed in.');
-    }
-
-    // Check if user is admin
-    const userDoc = await db.collection('users').doc(request.auth.uid).get();
-    if (!userDoc.exists || !userDoc.data().isCreator) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
+    adminLimiter.check(request.auth.uid);
 
     const { timeRange = '30d' } = request.data || {};
     
@@ -325,14 +313,8 @@ function calculateRetention(users, days) {
 const adminGetAdvancedAnalytics = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Must be signed in.');
-    }
-
-    // Check if user is admin (using CREATOR constant for consistency)
-    if (request.auth.uid !== '605oNyF1miUumLGMgEnaGGD0Lyh2') {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
+    adminLimiter.check(request.auth.uid);
 
     const { timeRange = '30d' } = request.data || {};
     
@@ -497,14 +479,8 @@ const adminGetAdvancedAnalytics = onCall(
 const adminGetUserBehavior = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Must be signed in.');
-    }
-
-    const userDoc = await db.collection('users').doc(request.auth.uid).get();
-    if (!userDoc.exists || !userDoc.data().isCreator) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
+    adminLimiter.check(request.auth.uid);
 
     const { userId, timeRange = '30d' } = request.data || {};
     
@@ -692,15 +668,8 @@ function calculateUptime(logs) {
 const adminGetActivityLog = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Must be signed in.');
-    }
-
-    // Check if user is admin
-    const userDoc = await db.collection('users').doc(request.auth.uid).get();
-    if (!userDoc.exists || !userDoc.data().isCreator) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
+    adminLimiter.check(request.auth.uid);
 
     const { limit = 50 } = request.data || {};
     
@@ -796,7 +765,7 @@ const notifyOnNewExpense = onDocumentCreated(
     // Send multicast message
     const message = {
       notification: {
-        title: `New Expense in ${group.name}`,
+        title: `New Expense in ${group.groupName || 'your group'}`,
         body: 'A new expense has been added to your group.',
       },
       data: {
@@ -822,6 +791,7 @@ const callGroqParser = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Must be signed in.');
     }
+    aiLimiter.check(request.auth.uid);
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       throw new HttpsError('failed-precondition', 'GROQ_API_KEY not configured.');
@@ -875,8 +845,13 @@ module.exports = {
   adminBanUser,
   adminDeleteUser,
   adminDeleteGroup,
+  setAdminClaim,
   dailyCleanupJob,
   api,
+  adminGetAnalytics,
+  adminGetAdvancedAnalytics,
+  adminGetUserBehavior,
+  adminGetActivityLog,
   notifyOnNewExpense,
   callGroqParser,
 };

@@ -12,6 +12,8 @@ import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
 import '../utils/settlement_engine.dart';
 import '../services/feature_flag_service.dart';
+import '../utils/phone_utils.dart';
+import '../utils/id_utils.dart';
 
 class CycleRepository extends ChangeNotifier {
   CycleRepository._();
@@ -87,7 +89,6 @@ class CycleRepository extends ChangeNotifier {
     }
   }
 
-  static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
 
   /// Current user id; used as creator id when creating a group. From Firebase Auth UID only (no mock).
   String get currentUserId => _currentUserId;
@@ -586,7 +587,7 @@ class CycleRepository extends ChangeNotifier {
       final members = List<String>.from(data['members'] as List? ?? []);
       final creatorId = data['creatorId'] as String? ?? '';
       final currencyCode = data['currencyCode'] as String? ?? 'INR';
-      final activeCycleId = data['activeCycleId'] as String? ?? _nextCycleId();
+      final activeCycleId = data['activeCycleId'] as String? ?? IdUtils.generateCycleId();
       final cycleStatus = data['cycleStatus'] as String? ?? 'active';
       final pendingList = _extractPendingMembersList(data['pendingMembers']);
 
@@ -1053,6 +1054,8 @@ class CycleRepository extends ChangeNotifier {
     int? settlementDay,
   }) async {
     if (_currentUserId.isEmpty) return;
+    final nameError = validateGroupName(group.name);
+    if (nameError != null) throw ArgumentError(nameError);
     final groupId = group.id;
     try {
       await FirestoreService.instance.createGroup(
@@ -1153,25 +1156,9 @@ class CycleRepository extends ChangeNotifier {
     return RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(s);
   }
 
-  static String _formatPhone(String phone) {
-    final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 11 && digits.startsWith('91')) {
-      return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
-    }
-    if (digits.length == 10) {
-      return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
-    }
-    return phone;
-  }
+  static String _formatPhone(String phone) => PhoneUtils.formatDisplay(phone);
 
-  static String _normalizePhone(String phone) {
-    final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 11 && digits.startsWith('91')) {
-      return digits.substring(digits.length - 10);
-    }
-    if (digits.length >= 10) return digits.substring(digits.length - 10);
-    return digits;
-  }
+  static String _normalizePhone(String phone) => PhoneUtils.normalizeTo10Digits(phone);
 
   /// Extracts pendingMembers list, handling legacy encrypted data gracefully.
   /// If data is a String (legacy encrypted), returns empty list - pendingPhones is source of truth.
@@ -1448,7 +1435,7 @@ class CycleRepository extends ChangeNotifier {
       'splitType': expense.splitType.isNotEmpty ? expense.splitType : 'Even',
       'participantIds': uids,
       'splits': splits.map((k, v) => MapEntry(k, v)),
-      'description': expense.description,
+      'description': sanitizeTextInput(expense.description),
       'date': expense.date,
       'dateSortKey': _dateStringToSortKey(expense.date),
       'createdById': _currentUserId,
@@ -1557,7 +1544,7 @@ class CycleRepository extends ChangeNotifier {
       'splitType': splitType,
       'participantIds': writtenParticipantIds,
       'splits': splits.map((k, v) => MapEntry(k, v)),
-      'description': description,
+      'description': sanitizeTextInput(description),
       'date': date,
       'dateSortKey': _dateStringToSortKey(date),
       'createdById': _currentUserId,
@@ -1614,7 +1601,7 @@ class CycleRepository extends ChangeNotifier {
       'splitType': splitType,
       'participantIds': participantIds,
       'splits': splits,
-      'description': normalized.description,
+      'description': sanitizeTextInput(normalized.description),
       'date': normalized.date,
       'dateSortKey': _dateStringToSortKey(normalized.date),
       'createdById': _currentUserId,
@@ -1768,7 +1755,7 @@ class CycleRepository extends ChangeNotifier {
       'amount': updatedExpense.amount,
       'amountMinor': amountMinor,
       'splitsMinor': splitsMinor,
-      'description': updatedExpense.description,
+      'description': sanitizeTextInput(updatedExpense.description),
       'date': updatedExpense.date,
       'dateSortKey': _dateStringToSortKey(updatedExpense.date),
       'payerId': payerId,
@@ -1951,11 +1938,12 @@ class CycleRepository extends ChangeNotifier {
         .where((m) => !m.id.startsWith('p_'))
         .map((m) => m.id)
         .toSet();
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final net = Map<String, int>.from(
       SettlementEngine.computeNetBalances(
         cycle.expenses,
         members,
-        currencyCode: 'INR',
+        currencyCode: currencyCode,
       ),
     );
     for (final id in ids) {
@@ -1975,8 +1963,11 @@ class CycleRepository extends ChangeNotifier {
   }
 
   Map<String, double> calculateBalances(String groupId) {
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final netMinor = getNetBalancesAfterSettlementsMinor(groupId);
-    return netMinor.map((id, minor) => MapEntry(id, minor / 100.0));
+    return netMinor.map(
+      (id, minor) => MapEntry(id, MoneyConversion.minorToDisplay(minor, currencyCode)),
+    );
   }
 
   List<String> getSettlementInstructions(String groupId) {
@@ -2594,13 +2585,15 @@ class CycleRepository extends ChangeNotifier {
   /// Remaining balance for a member (positive = owed to them, negative = they owe).
   /// Uses net from expenses adjusted by all fully confirmed payments.
   double getRemainingBalance(String groupId, String memberId) {
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final netMinor = getNetBalancesAfterSettlementsMinor(groupId);
-    return ((netMinor[memberId] ?? 0) / 100.0);
+    return MoneyConversion.minorToDisplay(netMinor[memberId] ?? 0, currencyCode);
   }
 
   /// Total amount this member has paid in settlement (marked as paid or confirmed).
   /// Used so the summary card can show "Settled ₹X" alongside "You Paid" (expenses).
   double getSettlementPaidByMember(String groupId, String memberId) {
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
     int totalMinor = 0;
     for (final a in attempts) {
@@ -2608,13 +2601,14 @@ class CycleRepository extends ChangeNotifier {
         totalMinor += a.amountMinor;
       }
     }
-    return totalMinor / 100.0;
+    return MoneyConversion.minorToDisplay(totalMinor, currencyCode);
   }
 
   /// True when remaining balances (after confirmed payments) are zero for everyone.
   bool isFullySettled(String groupId) {
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final net = getNetBalancesAfterSettlementsMinor(groupId);
-    final routes = SettlementEngine.computePaymentRoutes(net, 'INR');
+    final routes = SettlementEngine.computePaymentRoutes(net, currencyCode);
     return routes.isEmpty;
   }
 
@@ -2640,11 +2634,13 @@ class CycleRepository extends ChangeNotifier {
     String? paymentAttemptId,
     int? pendingCount,
   }) {
+    final currencyCode = getGroup(groupId)?.currencyCode;
     FirestoreService.instance
         .addSettlementEvent(
           groupId,
           type: type.firestoreValue,
           amountMinor: amountMinor,
+          currencyCode: currencyCode,
           paymentAttemptId: paymentAttemptId,
           pendingCount: pendingCount,
         )
@@ -2708,11 +2704,13 @@ class CycleRepository extends ChangeNotifier {
     final members = getMembersForGroup(groupId);
     if (members.isEmpty) return (0, 0, []);
 
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final netBalances = SettlementEngine.computeNetBalances(
       cycle.expenses,
       members,
+      currencyCode: currencyCode,
     );
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, currencyCode);
     final attempts = _paymentAttemptsByGroup[groupId] ?? [];
 
     final membersWithDues = <String>{};
@@ -2771,11 +2769,13 @@ class CycleRepository extends ChangeNotifier {
     final members = getMembersForGroup(groupId);
     if (members.isEmpty) return true;
 
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
     final netBalances = SettlementEngine.computeNetBalances(
       cycle.expenses,
       members,
+      currencyCode: currencyCode,
     );
-    final routes = SettlementEngine.computePaymentRoutes(netBalances, 'INR');
+    final routes = SettlementEngine.computePaymentRoutes(netBalances, currencyCode);
     final myRoutes = routes.where((r) => r.fromMemberId == memberId).toList();
 
     if (myRoutes.isEmpty) return true;

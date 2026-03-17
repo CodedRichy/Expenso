@@ -51,7 +51,7 @@ const getGroupEncryptionKey = onCall(
   }
 );
 
-// --- Admin Decryption Helpers ---
+// --- Admin Encryption/Decryption Helpers ---
 
 function decryptData(base64Key, encryptedString) {
   if (!encryptedString || typeof encryptedString !== 'string' || !encryptedString.startsWith('e:')) {
@@ -79,19 +79,62 @@ function decryptData(base64Key, encryptedString) {
     return decrypted;
   } catch (e) {
     console.error('Decryption failed:', e.message);
-    // Return a placeholder instead of the encrypted string to prevent frontend issues
     return '[Decryption Failed]';
+  }
+}
+
+/**
+ * Encrypts plaintext using AES-256-GCM, producing the same 'e:' prefixed format
+ * as the Flutter client's DataEncryptionService.
+ * Format: 'e:' + base64(nonce[12] + ciphertext + authTag[16])
+ */
+function encryptData(base64Key, plaintext) {
+  if (!plaintext || typeof plaintext !== 'string') return plaintext;
+  if (!base64Key) {
+    console.error('encryptData: key is null, returning plaintext');
+    return plaintext;
+  }
+
+  try {
+    const key = Buffer.from(base64Key, 'base64');
+    const nonce = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, nonce);
+    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    const combined = Buffer.concat([nonce, encrypted, authTag]);
+    return 'e:' + combined.toString('base64');
+  } catch (e) {
+    console.error('Encryption failed:', e.message);
+    return plaintext;
   }
 }
 
 const CREATOR = '605oNyF1miUumLGMgEnaGGD0Lyh2';
 
+/**
+ * Centralised admin check. Uses Firebase Custom Claims (preferred) with
+ * fallback to hardcoded CREATOR UID for backward compatibility.
+ *
+ * Migration path:
+ * 1. Deploy this code
+ * 2. Call setAdminClaim({ uid: CREATOR }) to grant the custom claim
+ * 3. Once confirmed, remove the CREATOR fallback in a future deploy
+ */
+function requireAdmin(request) {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be signed in.');
+  }
+  // Primary: Firebase Custom Claims
+  if (request.auth.token && request.auth.token.admin === true) return;
+  // Fallback: hardcoded CREATOR UID (remove after migration)
+  if (request.auth.uid === CREATOR) return;
+  throw new HttpsError('permission-denied', 'Admin access required.');
+}
+
 const adminFetchUsers = onCall(
   { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
 
     // Check if encryption key is available
     const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
@@ -154,9 +197,7 @@ const adminFetchUsers = onCall(
 const adminFetchGroups = onCall(
   { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
 
     // Check if encryption key is available
     const raw = process.env.DATA_ENCRYPTION_MASTER_KEY;
@@ -193,20 +234,26 @@ const adminFetchGroups = onCall(
 const adminUpdateUser = onCall(
   { region: 'asia-south1', secrets: ['DATA_ENCRYPTION_MASTER_KEY'] },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
     const { uid, displayName, isBeta, isCreator } = request.data || {};
     if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
 
     const updates = {};
-    if (displayName !== undefined) updates.displayName = displayName;
     if (isBeta !== undefined) updates.isBeta = isBeta;
     if (isCreator !== undefined) updates.isCreator = isCreator;
 
+    // Admin sends plaintext displayName — encrypt it before writing to Firestore
+    // so E2E encryption is preserved for the user's data.
     if (displayName !== undefined) {
       const key = deriveKey('user', uid);
-      if (key) updates.displayName = decryptData(key, displayName);
+      if (key) {
+        updates.displayName = encryptData(key, displayName);
+      } else {
+        throw new HttpsError(
+          'failed-precondition',
+          'Cannot update displayName: encryption key unavailable.'
+        );
+      }
     }
 
     await admin.firestore().collection('users').doc(uid).update(updates);
@@ -218,9 +265,7 @@ const adminUpdateUser = onCall(
 const adminBanUser = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
     const { uid, banned } = request.data || {};
     if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
 
@@ -237,9 +282,7 @@ const adminBanUser = onCall(
 const adminDeleteUser = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
     const { uid } = request.data || {};
     if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
     if (uid === CREATOR) throw new HttpsError('failed-precondition', 'Cannot delete the creator account.');
@@ -263,9 +306,7 @@ const adminDeleteUser = onCall(
 const adminDeleteGroup = onCall(
   { region: 'asia-south1' },
   async (request) => {
-    if (!request.auth || request.auth.uid !== CREATOR) {
-      throw new HttpsError('permission-denied', 'Admin access required.');
-    }
+    requireAdmin(request);
     const { groupId } = request.data || {};
     if (!groupId) throw new HttpsError('invalid-argument', 'groupId is required.');
 
@@ -295,8 +336,28 @@ const adminDeleteGroup = onCall(
   }
 );
 
+// ── Set Admin Custom Claim ──
+// Call once to migrate from hardcoded UID to Custom Claims.
+// Only the current CREATOR can grant or revoke admin.
+const setAdminClaim = onCall(
+  { region: 'asia-south1' },
+  async (request) => {
+    // Bootstrap: only the hardcoded CREATOR can set admin claims
+    if (!request.auth || request.auth.uid !== CREATOR) {
+      throw new HttpsError('permission-denied', 'Only the app creator can set admin claims.');
+    }
+    const { uid, isAdmin } = request.data || {};
+    if (!uid) throw new HttpsError('invalid-argument', 'uid is required.');
+
+    await admin.auth().setCustomUserClaims(uid, { admin: !!isAdmin });
+    return { success: true, uid, admin: !!isAdmin };
+  }
+);
+
 module.exports = {
   deriveKey,
+  encryptData,
+  requireAdmin,
   getUserEncryptionKey,
   getGroupEncryptionKey,
   adminFetchUsers,
@@ -305,4 +366,5 @@ module.exports = {
   adminBanUser,
   adminDeleteUser,
   adminDeleteGroup,
+  setAdminClaim,
 };

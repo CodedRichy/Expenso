@@ -10,7 +10,10 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return request.auth != null && request.auth.uid == '605oNyF1miUumLGMgEnaGGD0Lyh2';
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.uid == '605oNyF1miUumLGMgEnaGGD0Lyh2'
+      );
     }
 
     function isGroupMember(groupId) {

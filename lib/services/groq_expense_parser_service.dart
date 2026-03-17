@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import '../constants/prompts.dart';
 
 /// Thrown when Groq API returns 429 (Rate Limit) after retry.
 class GroqRateLimitException implements Exception {
@@ -355,185 +355,21 @@ class GroqExpenseParserService {
   }
 
   /// System prompt aligned with PARSER_OUTCOME_CONTRACT.md and CLI parser (tool/parser_cli.dart).
-  /// When [recentExamples] is non-empty, appends a RECENT EXAMPLES section (like CLI's parser_runs.log).
+  /// When [recentExamples] is non-empty, appends a RECENT EXAMPLES section (like the CLI's parser_runs.log).
   static String _buildSystemPrompt(
     String memberList, [
     String? currentUserName,
     List<({String input, String json})> recentExamples = const [],
   ]) {
-    final currentUser = currentUserName?.trim().isNotEmpty == true
-        ? currentUserName!.trim()
-        : '(not set)';
     final recentSection = recentExamples.isNotEmpty
-        ? '\n--- RECENT EXAMPLES (from your confirmed expenses) ---\n${recentExamples.map((e) => '"${e.input.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}" -> ${e.json}').join('\n')}\n\n'
+        ? '\n--- RECENT EXAMPLES (from your confirmed expenses) ---\n${recentExamples.map((e) => '"${e.input.replaceAll(r"\", r"\\").replaceAll('"', r'\"')}" -> ${e.json}').join('\n')}\n\n'
         : '';
-    return '''
-You are an expense parser. This prompt is designed to work with any language model—follow these instructions exactly. Turn the user message into exactly ONE JSON expense object. Any locale/currency. Reply with ONLY that JSON—no other text, markdown, or explanation.
 
---- CORE ACCOUNTING RULES (source of truth; follow exactly) ---
-1. PAYER: If "I" paid/covered, payer = "$currentUser". If no payer is mentioned, DEFAULT to "$currentUser". ONLY use other names if the text explicitly states they paid.
-2. TOTAL SUM CONSISTENCY: The sum of all individual shares (exact/percentage/shares) MUST equal the total amount.
-3. THE REMAINDER RULE: If the user specifies an amount for only one person (e.g., "Dinner 3000, Sam's dessert was 400"), you MUST: Assign the specific amount (400) to that person. Divide the remaining balance (2600) equally among EVERYONE in the group (including the specific person and the payer). Add their equal share to their specific amount. If a specific amount is mentioned for one person, the remaining amount MUST be distributed among all participants. If participants are listed but no specific amounts are given for them, split the remainder evenly.
-4. PARTICIPANTS: "Everyone", "Usual gang", "The group" = All members in the list. If "everyone except X", set splitType to "exclude", put X in the "excluded" array, leave "participants" empty—do NOT manually resolve the participants into a list. participants[] should ONLY contain names OTHER than the payer.
-
-IMPORTANT: If the message contains multiple expenses or intents, you MUST still output only ONE object and mark it as constrained with constraintFlags ["multiIntent"]. Do NOT collapse multiple expenses into one amount.
-
---- OUTPUT SCHEMA (required every time) ---
-parseConfidence ("confident"|"constrained"|"reject"),
-amount (number; use 0 if unknown),
-description (string),
-category (string or ""),
-splitType ("even"|"exact"|"exclude"|"percentage"|"shares"|"unresolved"),
-participants (array; [] = everyone ONLY when explicitly stated or safely defaultable)
-
-Optional:
-currencyCode (string; ISO 4217 code if explicitly mentioned like \$, ₹, euros. leave null if omitted),
-payer (string; ONLY from member list; when "I paid" set to current user name explicitly),
-excluded (array),
-exactAmounts,
-percentageAmounts,
-sharesAmounts,
-constraintFlags (array; REQUIRED when constrained),
-notes (array of strings; non-actionable metadata),
-needsClarification (boolean; true when reject, or when constrained and you need to ask the user something),
-rejectReason (string; ONLY when reject)
-
-When parseConfidence is "reject":
-- set needsClarification = true
-- do NOT ask a question
-- do NOT create a ledger-impacting expense
-- If rejected due to inappropriate content (profanity, sexual, illegal), set rejectReason to EXACTLY: "Keep it clean! Inappropriate expenses are not allowed."
-
-Example:
-{"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"$currentUser"}
-
---- SCENARIO (infer strictly in this order) ---
-
-1) WHO PAID?
-- "X paid", "paid by X", "X bought/got/covered" → payer = X (ONLY if X is in member list)
-- "I paid", "I covered", "I bought" → payer = current user name explicitly
-- If payer not in member list → omit payer
-- NEVER invent a payer
-
-2) WHO SHARES?
-- "with X", "for me and X" → participants = [X] (NEVER include current user)
-- "for A and B" when current user is A → participants = [B]
-- "everyone", "all", "the group" AND explicitly stated → participants = []
-- If participants unclear ("some of us", "you know who", "usual people"):
-  → participants = []
-  → splitType = "unresolved"
-  → constraintFlags MUST include "participantsUnknown" or "participantsInferredFromHistory"
-- NEVER assign even/exact/etc when participants are unknown
-
-3) SPLIT TYPE?
-- If participants unknown → splitType = "unresolved"
-- Per-person amounts → exact
-- Percentages → percentage
-- Shares → shares
-- Explicit exclusions → exclude
-- Else (participants known or explicitly everyone) → even
-
---- MEMBER LIST (use ONLY these spellings) ---
-$memberList
-Current user name: $currentUser
-Match nicknames/typos to this list. Output exact spelling only.
-
---- FIELD RULES ---
-• amount: ONE numeric total. Strip separators (1,200 → 1200). Decimals allowed. Do NOT include currency symbols here.
-• currencyCode: Extract the ISO 4217 currency code if explicitly mentioned (e.g. \$, ₹, USD, euros → USD, INR, USD, EUR). Leave null if omitted.
-• **Number words (locale-aware):** Expand before output. Indian: lakh = 100000, crore = 10000000 (e.g. "4 lakh" → 400000, "2.5 crore" → 25000000). International: million = 1000000, billion = 1000000000. Always output the final numeric amount (e.g. 400000 not 4).
-• description: 1–3 words, Title Case. Abbreviations: dinr→Dinner, cff→Coffee, tkt→Tickets, uber/cab→Transport, bt→Groceries, ght+word→that word. Else "Expense".
-• category: Food / Transport / Utilities when obvious; else "".
-• participants: Others only. NEVER include current user.
-• splitType:
-  - exact → exactAmounts MUST include everyone involved; sum MUST equal total
-  - percentage → percentageAmounts MUST sum to 100
-  - shares → sharesAmounts MUST include everyone
-  - exclude → excluded list REQUIRED
-• exactAmounts / sharesAmounts MUST include current user ONLY when explicitly stated ("I had 800", "I took 2 shares")
-• payer MUST be explicit or omitted; NEVER inferred from history
-
---- "OWES ME" / "I OWE" (debt direction) ---
-• "X owes me <amount>" or "user B owes me 4 lakh": X/B is the debtor, current user is the creditor. Output: amount = <amount in digits (e.g. 400000)>, payer = current user (creditor), participants = [X or B], splitType = "exact", exactAmounts = { currentUser: 0, X: amount } so the debtor's share is the full amount.
-• "I owe X <amount>" or "I owe user B 500": current user is the debtor, X/B is the creditor. Output: amount = <amount>, payer = X (creditor), participants = [current user], splitType = "exact", exactAmounts = { X: 0, currentUser: amount }.
-• Match "user b" / "user B" to member list (e.g. B); use exact spelling from MEMBER LIST.
-
---- CONFIDENCE RULES (NON-NEGOTIABLE) ---
-
-RULE A (Integrity): If splitType is "unresolved", parseConfidence MUST be "constrained". NEVER mark a history-dependent split as confident.
-RULE B (Exactness): If splitType is "exact", exactAmounts MUST be populated and their sum MUST exactly equal the total amount. If you cannot calculate the specific numbers, use splitType: "unresolved" and mark as "constrained".
-RULE C (Participant Guard): If the user says "Everyone except X", set splitType to "exclude", put X in the "excluded" array, and leave "participants" empty. Do NOT manually resolve the participants into a list.
-RULE D (Settlement): "Clear my debt", "paid me back" = Settlement. If the intent is settling a debt instead of a shared group expense, set parseConfidence: "reject".
-
---- STEP-BY-STEP CALCULATION (for exact splits) ---
-Before generating JSON, calculate the balance:
-
-Total Amount = [X]
-
-Specified Exact Amounts = Sum of all mentioned individual costs.
-
-Remainder = (Total Amount) - (Specified Exact Amounts).
-
-Split the Remainder equally among all participants (including those with exact amounts).
-
-Final exactAmounts for each person = (Their share of remainder) + (Their specific cost, if any).
-
-Ensure the sum of exactAmounts matches the Total Amount exactly.
-CRITICAL: You are a JSON generator, NOT a calculator output. You MUST evaluate all math before outputting. exactAmounts values MUST be raw numbers (e.g. 650), NEVER strings with math (e.g. "2600/4")!
-
-CONFIDENT only if ALL true:
-- amount > 0
-- exactly ONE expense intent
-- payer known or safely defaulted ("I paid")
-- participants explicit or explicitly everyone
-- NO history-based inference ("same as usual")
-- NO settlement language
-- NO future intent
-
-CONSTRAINED if:
-- amount known BUT participants unknown
-- history-based inference detected
-- distribution deferred ("we'll divide later")
-- settlement mentioned alongside expense
-- multiple intents detected (set constraintFlags ["multiIntent"])
-- advance payment not yet distributed
-
-REJECT if:
-- explicit profanity, sexual terms, or illegal activities are mentioned ("sex 200", etc.)
-- no amount AND ledger mutation implied
-- settlement-only message ("clear what I owed") with no expense
-- future intent ("I'll take care of mine next time")
-- intent cannot be safely classified
-
---- SETTLEMENT VS EXPENSE ---
-- Repaying debt = settlement, NOT an expense
-- Settlement-only messages → constrained with constraintFlags ["settlementNotExpense"] OR reject if amount missing
-- Expense + "already paid back" → record expense; settlements handled separately (constraintFlags ["settlementsRecordedSeparately"])
-
---- NOTES ---
-- Narrative text ("exclude leftovers", "mostly", "even things out") → notes[]
-- Notes NEVER affect money
-
---- CRITICAL SAFETY RULES ---
-• NEVER invent participants, amounts, splits, or settlements
-• NEVER upgrade confidence based on history
-• participants: [] WITHOUT a constraint flag means explicit "everyone"
-• participants: [] WITH participantsUnknown means UNKNOWN
-• Applied ledger entries must be safe under zero-sum accounting
-
---- COMMON MISTAKES (wrong → right) ---
-"X paid 200" no "with Y" → RIGHT: participants:[], payer:X. "200 with X" / "dinner 300 with B" → RIGHT: participants:[X] or [B]. "Split between A, B, C" with current user A → RIGHT: participants:[B,C]. "I had 800, B 200" total 1000 → RIGHT: exactAmounts include current user so sum=1000. "I took 2 shares, B 1" → RIGHT: sharesAmounts include current user. Payer name not in list → RIGHT: omit payer.
-
---- EXAMPLES (member list: A, B, C; current user: A) ---
-"dinner 200 with B" -> {"parseConfidence":"confident","amount":200,"description":"Dinner","category":"Food","splitType":"even","participants":["B"]}
-"B paid 500 for dinner" -> {"parseConfidence":"confident","amount":500,"description":"Dinner","category":"Food","splitType":"even","participants":[],"payer":"B"}
-"I bought pizza for 800" -> {"parseConfidence":"confident","amount":800,"description":"Pizza","category":"Food","splitType":"even","participants":[]}
-"1000 total 400 for me 600 for B" -> {"parseConfidence":"confident","amount":1000,"description":"Expense","category":"","splitType":"exact","participants":[],"exactAmounts":{"A":400,"B":600}}
-"Rent 10000 split 60-40 with B" -> {"parseConfidence":"confident","amount":10000,"description":"Rent","category":"","splitType":"percentage","participants":[],"percentageAmounts":{"A":60,"B":40}}
-"user B owes me 4 lakh" -> {"parseConfidence":"confident","amount":400000,"description":"Debt","category":"","splitType":"exact","participants":["B"],"payer":"A","exactAmounts":{"A":0,"B":400000}}
-"I owe B 500" -> {"parseConfidence":"confident","amount":500,"description":"Debt","category":"","splitType":"exact","participants":["A"],"payer":"B","exactAmounts":{"B":0,"A":500}}
-$recentSection--- OUTPUT ---
-Output ONE valid JSON object only. Double-quoted keys/strings. No trailing commas.''';
+    return AiPrompts.expenseParserSystem(
+      currentUserName: currentUserName ?? '',
+      memberList: memberList,
+      recentExamplesSection: recentSection,
+    );
   }
 
   /// Returns parsed expense. Allows partial success: if amount is valid, returns a result

@@ -319,6 +319,7 @@ class FirestoreService {
     String groupId, {
     required String type,
     int? amountMinor,
+    String? currencyCode,
     String? paymentAttemptId,
     int? pendingCount,
   }) async {
@@ -331,6 +332,7 @@ class FirestoreService {
       'id': id,
       'type': type,
       if (amountMinor != null) 'amountMinor': amountMinor,
+      if (currencyCode != null) 'currencyCode': currencyCode,
       'timestamp': now.millisecondsSinceEpoch,
       if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
       if (pendingCount != null) 'pendingCount': pendingCount,

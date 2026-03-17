@@ -502,7 +502,7 @@ class OptimizedRoute {
     required this.currencyCode,
   });
 
-  double get amountDisplay => amountMinor / 100;
+  double get amountDisplay => MoneyConversion.minorToDisplay(amountMinor, currencyCode);
 }
 
 class _BalanceEntry {

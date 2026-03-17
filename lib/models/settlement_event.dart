@@ -84,6 +84,7 @@ class SettlementEvent {
   final int timestamp;
   final String? paymentAttemptId;
   final int? pendingCount;
+  final String? currencyCode;
 
   const SettlementEvent({
     required this.id,
@@ -92,6 +93,7 @@ class SettlementEvent {
     required this.timestamp,
     this.paymentAttemptId,
     this.pendingCount,
+    this.currencyCode,
   });
 
   factory SettlementEvent.fromFirestore(Map<String, dynamic> data) {
@@ -102,6 +104,7 @@ class SettlementEvent {
       timestamp: data['timestamp'] as int? ?? 0,
       paymentAttemptId: data['paymentAttemptId'] as String?,
       pendingCount: data['pendingCount'] as int?,
+      currencyCode: data['currencyCode'] as String?,
     );
   }
 
@@ -113,28 +116,30 @@ class SettlementEvent {
       'timestamp': timestamp,
       if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
       if (pendingCount != null) 'pendingCount': pendingCount,
+      if (currencyCode != null) 'currencyCode': currencyCode,
     };
   }
 
   String get displayMessage {
+    final currency = currencyCode ?? 'INR';
     switch (type) {
       case SettlementEventType.cycleSettlementStarted:
         return 'Settlement started';
       case SettlementEventType.paymentInitiated:
         if (amountMinor != null) {
-          return '${formatMoney(amountMinor!)} payment initiated';
+          return '${formatMoneyWithCurrency(amountMinor!, currency)} payment initiated';
         }
         return 'Payment initiated';
       case SettlementEventType.paymentPending:
         if (amountMinor != null) {
-          return 'Payment pending: ${formatMoney(amountMinor!)}';
+          return 'Payment pending: ${formatMoneyWithCurrency(amountMinor!, currency)}';
         }
         return 'Payment pending';
       case SettlementEventType.paymentConfirmedByPayer:
         return 'Payment confirmed';
       case SettlementEventType.paymentConfirmedByReceiver:
         if (amountMinor != null) {
-          return '${formatMoney(amountMinor!)} payment received';
+          return '${formatMoneyWithCurrency(amountMinor!, currency)} payment received';
         }
         return 'Payment received';
       case SettlementEventType.paymentFailed:
@@ -143,12 +148,12 @@ class SettlementEvent {
         return 'Payment disputed';
       case SettlementEventType.cashConfirmationRequested:
         if (amountMinor != null) {
-          return 'Cash payment requested: ${formatMoney(amountMinor!)}';
+          return 'Cash payment requested: ${formatMoneyWithCurrency(amountMinor!, currency)}';
         }
         return 'Cash payment requested';
       case SettlementEventType.cashConfirmed:
         if (amountMinor != null) {
-          return 'Cash payment confirmed: ${formatMoney(amountMinor!)}';
+          return 'Cash payment confirmed: ${formatMoneyWithCurrency(amountMinor!, currency)}';
         }
         return 'Cash payment confirmed';
       case SettlementEventType.cycleFullySettled:

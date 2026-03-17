@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
+import '../utils/phone_utils.dart';
 
 class GlobalIdentity {
   final String phoneE164;
@@ -62,13 +63,7 @@ class IdentityService extends ChangeNotifier {
 
   final Map<String, GlobalIdentity> _identities = {};
 
-  static String normalizePhone(String phone) {
-    final digits = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    if (digits.startsWith('+')) return digits;
-    if (digits.length == 10) return '+91$digits';
-    if (digits.length == 12 && digits.startsWith('91')) return '+$digits';
-    return '+$digits';
-  }
+  static String normalizePhone(String phone) => PhoneUtils.formatE164(phone);
 
   GlobalIdentity? getIdentity(String phone) {
     final normalized = normalizePhone(phone);
@@ -191,14 +186,5 @@ class IdentityService extends ChangeNotifier {
 
   int get identityCount => _identities.length;
 
-  static String _formatPhone(String phone) {
-    final digits = phone.replaceAll(RegExp(r'[^\d]'), '');
-    if (digits.length == 10) {
-      return '${digits.substring(0, 5)} ${digits.substring(5)}';
-    }
-    if (digits.length == 12 && digits.startsWith('91')) {
-      return '+91 ${digits.substring(2, 7)} ${digits.substring(7)}';
-    }
-    return phone;
-  }
+  static String _formatPhone(String phone) => PhoneUtils.formatDisplay(phone);
 }

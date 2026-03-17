@@ -12,6 +12,7 @@ import '../../widgets/member_avatar.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/phone_utils.dart';
 
 class GroupMembers extends StatelessWidget {
   final Group? group;
@@ -409,7 +410,7 @@ void _showMemberProfileBottomSheet(
                 if (member.phone.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    _formatPhoneLabel(member.phone),
+                    PhoneUtils.formatDisplay(member.phone),
                     style: context.bodySecondary.copyWith(
                       letterSpacing: 0.5,
                       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -565,15 +566,4 @@ class _Badge extends StatelessWidget {
   }
 }
 
-String _formatPhoneLabel(String phone) {
-  final clean = phone.replaceAll(RegExp(r'\D'), '');
-  if (clean.length == 10) {
-    return '+91 ${clean.substring(0, 5)} ${clean.substring(5)}';
-  } else if (clean.length > 10) {
-    // Assuming it starts with 91 or similar
-    if (clean.startsWith('91')) {
-      return '+91 ${clean.substring(2, 7)} ${clean.substring(7)}';
-    }
-  }
-  return phone;
-}
+
