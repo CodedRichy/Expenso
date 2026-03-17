@@ -1134,7 +1134,7 @@ class CycleRepository extends ChangeNotifier {
 
   String getMemberDisplayName(String phoneOrUid) {
     if (phoneOrUid.isEmpty) return '';
-    if (_looksLikeUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
+    if (IdUtils.isFirebaseUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
     if (_normalizePhone(phoneOrUid) == _normalizePhone(_currentUserPhone)) {
       return _currentUserName.isNotEmpty ? _currentUserName : 'You';
     }
@@ -1149,11 +1149,6 @@ class CycleRepository extends ChangeNotifier {
       }
     }
     return _formatPhone(phoneOrUid);
-  }
-
-  static bool _looksLikeUid(String s) {
-    if (s.length < 20 || s.length > 128) return false;
-    return RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(s);
   }
 
   static String _formatPhone(String phone) => PhoneUtils.formatDisplay(phone);

@@ -970,43 +970,59 @@ class _DecisionClarityCard extends StatelessWidget {
             child: Container(
               constraints: const BoxConstraints(minHeight: _minHeight),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: context.colorPrimary.withValues(alpha: 0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
+                    color: context.colorPrimary.withValues(alpha: 0.08),
+                    blurRadius: 32,
+                    offset: const Offset(0, 8),
                   ),
                 ],
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.colorGradientStart,
-                    context.colorGradientEnd,
-                  ],
+                border: Border.all(
+                  color: (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black)
+                      .withValues(alpha: 0.08),
+                  width: 1,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.space2xl),
-                  child: isEmpty
-                      ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                      : _buildContent(
-                          context,
-                          currencyCode: currencyCode,
-                          cycleTotal: cycleTotal,
-                          youPaid: youPaid,
-                          settledPaid: settledPaid,
-                          myNet: myNet,
-                          myRemaining: myRemaining,
-                          hasPaymentProgress: hasPaymentProgress,
-                          isCredit: isCredit,
-                          isDebt: isDebt,
-                          isBalanceClear: isBalanceClear,
-                          isMuted: isMuted,
-                        ),
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Theme.of(context).brightness == Brightness.dark
+                              ? context.colorGradientStart.withValues(alpha: 0.85)
+                              : context.colorGradientStart.withValues(alpha: 0.9),
+                          Theme.of(context).brightness == Brightness.dark
+                              ? context.colorGradientEnd.withValues(alpha: 0.85)
+                              : context.colorGradientEnd.withValues(alpha: 0.95),
+                        ],
+                      ),
+                    ),
+                    padding: EdgeInsets.all(AppSpacing.space2xl),
+                    child: isEmpty
+                        ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                        : _buildContent(
+                            context,
+                            currencyCode: currencyCode,
+                            cycleTotal: cycleTotal,
+                            youPaid: youPaid,
+                            settledPaid: settledPaid,
+                            myNet: myNet,
+                            myRemaining: myRemaining,
+                            hasPaymentProgress: hasPaymentProgress,
+                            isCredit: isCredit,
+                            isDebt: isDebt,
+                            isBalanceClear: isBalanceClear,
+                            isMuted: isMuted,
+                          ),
+                  ),
                 ),
               ),
             ),

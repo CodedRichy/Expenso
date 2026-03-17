@@ -13,4 +13,10 @@ class IdUtils {
   static String generatePendingMemberId() {
     return 'p_${DateTime.now().millisecondsSinceEpoch}';
   }
+
+  /// Returns true if the given ID looks like a Firebase Auth UID.
+  /// UIDs are typically ~28 chars and do not start with our custom prefixes.
+  static bool isFirebaseUid(String id) {
+    return id.length >= 20 && !id.startsWith('p_') && !id.startsWith('c_');
+  }
 }
