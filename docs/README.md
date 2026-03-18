@@ -68,6 +68,7 @@
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) | Module structure |
+| [CODEBASE_ARCHITECTURE_EXPLAINED.md](architecture/CODEBASE_ARCHITECTURE_EXPLAINED.md) | Layered architecture walkthrough and data flow guide |
 | [DEVELOPMENT.md](architecture/DEVELOPMENT.md) | Dev timeline |
 | [BLUEPRINT_GAPS_VERIFICATION.md](architecture/BLUEPRINT_GAPS_VERIFICATION.md) | Blueprint vs implementation |
 

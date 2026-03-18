@@ -677,12 +677,6 @@ class CycleRepository extends BaseRepository {
     _deletedIdsByGroup[groupId] = ids;
   }
 
-  void _onPaymentAttemptsSnapshot(String groupId, List<DocView> attemptDocs) {
-    _paymentAttemptsByGroup[groupId] = attemptDocs
-        .map((d) => PaymentAttempt.fromFirestore(d.id, d.data()))
-        .toList();
-    _requestNotify();
-  }
 
   String _phoneForUid(String uid) {
     if (uid == _currentUserId) return _currentUserPhone;
@@ -823,7 +817,6 @@ class CycleRepository extends BaseRepository {
     }
   }
 
-  List<Group> get groups => List.unmodifiable(_groups);
 
   Future<void> addGroup(Group group, {String? settlementRhythm, int? settlementDay}) =>
       _groupsRepo.addGroup(group, settlementRhythm: settlementRhythm, settlementDay: settlementDay);
@@ -1621,7 +1614,7 @@ class CycleRepository extends BaseRepository {
 
   Future<void> loadPaymentAttempts(String groupId) async {
     final cycle = getActiveCycle(groupId);
-    await _settlementRepo.startListeningForPaymentAttempts(groupId, cycle.id);
+    _settlementRepo.startListening(groupId, cycle.id);
   }
 
   PaymentAttempt? getPaymentAttemptForRoute(String groupId, String fromId, String toId) {
@@ -2025,21 +2018,6 @@ class CycleRepository extends BaseRepository {
     notifyListeners();
   }
 
-  /// Automated Recking: System-enforced closure based on the weekly rhythm.
-  /// This is the "Villain" mode—the app shuts down spending when the week ends.
-  void _checkAutomatedClosure(String groupId, String rhythm, int settlementDay) {
-    if (rhythm != 'weekly') return;
-
-    final now = DateTime.now();
-    // Sunday=0, Monday=1, ..., Saturday=6
-    final currentDay = now.weekday % 7;
-
-    // RULE: If it is the Settlement Day (Default Sunday), the cycle moves to 'settling' mode.
-    // This blocks new expenses until the group creator archives and restarts.
-    if (currentDay == settlementDay) {
-      _automatedFreeze(groupId);
-    }
-  }
 
   void _automatedFreeze(String groupId) {
     final meta = _groupMeta[groupId];
@@ -2385,6 +2363,27 @@ class CycleRepository extends BaseRepository {
 
     return true;
   }
+
+  static String _formatDate(DateTime dt) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${months[dt.month - 1]} ${dt.day}';
+  }
+
+  static String _nextCycleId() =>
+      'c_${DateTime.now().millisecondsSinceEpoch}';
 }
 
 class _GroupMeta {
