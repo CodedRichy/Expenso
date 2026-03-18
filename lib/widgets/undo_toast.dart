@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../design/colors.dart';
@@ -82,9 +83,6 @@ class _UndoToastState extends State<UndoToast>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final toastBgColor = isDark
-        ? theme.colorScheme.surfaceContainerHighest
-        : context.colorPrimary;
     final toastTextColor = isDark
         ? theme.colorScheme.onSurface
         : context.colorSurface;
@@ -105,80 +103,91 @@ class _UndoToastState extends State<UndoToast>
               position: _slideAnimation,
               child: FadeTransition(
                 opacity: _fadeAnimation,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 430),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: toastBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Expense added',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.black : context.colorPrimary)
+                            .withValues(alpha: isDark ? 0.6 : 0.8),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Expense added',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: toastTextColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${widget.description} · ${formatMoneyFromMajor(widget.amount, widget.currencyCode)}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: toastSecondaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              value: progress,
+                              strokeWidth: 2,
+                              backgroundColor: toastTextColor.withValues(
+                                alpha: 0.2,
+                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                toastTextColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton.icon(
+                            onPressed: _onUndo,
+                            icon: Icon(
+                              Icons.refresh,
+                              size: 16,
+                              color: toastTextColor,
+                            ),
+                            label: Text(
+                              'Undo',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: toastTextColor,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${widget.description} · ${formatMoneyFromMajor(widget.amount, widget.currencyCode)}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: toastSecondaryColor,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 2,
-                          backgroundColor: toastTextColor.withValues(
-                            alpha: 0.2,
-                          ),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            toastTextColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton.icon(
-                        onPressed: _onUndo,
-                        icon: Icon(
-                          Icons.refresh,
-                          size: 16,
-                          color: toastTextColor,
-                        ),
-                        label: Text(
-                          'Undo',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: toastTextColor,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

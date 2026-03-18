@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
-
 import 'data_encryption_service.dart';
+import '../utils/app_logger.dart';
+import '../utils/firestore_runner.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/money_minor.dart';
 
 abstract class DocView {
   String get id;
@@ -79,46 +80,50 @@ class FirestoreService {
     String? upiId,
     String? currencyCode,
   }) async {
-    final ref = _firestore.collection(FirestorePaths.users).doc(uid);
-    
-    // Check if user exists to preserve joinedAt
-    final snap = await ref.get();
-    final data = <String, dynamic>{};
-    
-    if (!snap.exists) {
-      data['joinedAt'] = DateTime.now().millisecondsSinceEpoch;
-    }
-    
-    data['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
-    if (displayName != null) data['displayName'] = displayName;
-    if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
-    if (photoURL != null) data['photoURL'] = photoURL;
-    if (upiId != null) data['upiId'] = upiId;
-    if (currencyCode != null) data['currencyCode'] = currencyCode;
-    
-    if (data.isEmpty) return;
-    
-    if (_encryption != null) {
-      await _encryption!.ensureUserKey();
-    }
-    final toSet = _encryption != null
-        ? await _encryption!.encryptUserData(data)
-        : data;
-    await ref.set(toSet, SetOptions(merge: true));
+    return FirestoreRunner.run(() async {
+      final ref = _firestore.collection(FirestorePaths.users).doc(uid);
+      
+      // Check if user exists to preserve joinedAt
+      final snap = await ref.get();
+      final data = <String, dynamic>{};
+      
+      if (!snap.exists) {
+        data['joinedAt'] = DateTime.now().millisecondsSinceEpoch;
+      }
+      
+      data['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
+      if (displayName != null) data['displayName'] = displayName;
+      if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
+      if (photoURL != null) data['photoURL'] = photoURL;
+      if (upiId != null) data['upiId'] = upiId;
+      if (currencyCode != null) data['currencyCode'] = currencyCode;
+      
+      if (data.isEmpty) return;
+      
+      if (_encryption != null) {
+        await _encryption!.ensureUserKey();
+      }
+      final toSet = _encryption != null
+          ? await _encryption!.encryptUserData(data)
+          : data;
+      await ref.set(toSet, SetOptions(merge: true));
+    }, name: 'setUser', metadata: {'uid': uid});
   }
 
   /// Get user doc. Returns null if missing.
   Future<Map<String, dynamic>?> getUser(String uid) async {
-    final snap = await _firestore
-        .collection(FirestorePaths.users)
-        .doc(uid)
-        .get();
-    final raw = snap.exists ? snap.data() : null;
-    if (raw != null && _encryption != null) {
-      await _encryption!.ensureUserKey();
-      return _encryption!.decryptUserData(raw);
-    }
-    return raw;
+    return FirestoreRunner.run(() async {
+      final snap = await _firestore
+          .collection(FirestorePaths.users)
+          .doc(uid)
+          .get();
+      final raw = snap.exists ? snap.data() : null;
+      if (raw != null && _encryption != null) {
+        await _encryption!.ensureUserKey();
+        return _encryption!.decryptUserData(raw);
+      }
+      return raw;
+    }, name: 'getUser', metadata: {'uid': uid});
   }
 
   /// Stream of a single user (for display name / phone).
@@ -148,19 +153,21 @@ class FirestoreService {
     int? settlementDay,
     String? currencyCode,
   }) async {
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await ref.set({
-      'groupName': groupName,
-      'members': [creatorId],
-      'creatorId': creatorId,
-      'activeCycleId': activeCycleId ?? _nextCycleId(),
-      'cycleStatus': 'active',
-      'currencyCode': currencyCode ?? 'INR',
-      if (pendingMembers != null && pendingMembers.isNotEmpty)
-        'pendingMembers': pendingMembers,
-      if (settlementRhythm != null) 'settlementRhythm': settlementRhythm,
-      if (settlementDay != null) 'settlementDay': settlementDay,
-    });
+    return FirestoreRunner.run(() async {
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      await ref.set({
+        'groupName': groupName,
+        'members': [creatorId],
+        'creatorId': creatorId,
+        'activeCycleId': activeCycleId ?? _nextCycleId(),
+        'cycleStatus': 'active',
+        'currencyCode': currencyCode ?? 'INR',
+        if (pendingMembers != null && pendingMembers.isNotEmpty)
+          'pendingMembers': pendingMembers,
+        if (settlementRhythm != null) 'settlementRhythm': settlementRhythm,
+        if (settlementDay != null) 'settlementDay': settlementDay,
+      });
+    }, name: 'createGroup', metadata: {'groupId': groupId, 'creatorId': creatorId});
   }
 
   static String _nextCycleId() => 'c_${DateTime.now().millisecondsSinceEpoch}';
@@ -186,7 +193,7 @@ class FirestoreService {
                 final decrypted = await _encryption!.decryptGroupData(d.data(), d.id);
                 results.add(_DecryptedDocView(d.id, decrypted));
               } catch (e) {
-                debugPrint('groupsStream: decrypt failed for ${d.id}, skipping: $e');
+                AppLogger.error('groupsStream: decrypt failed', name: 'FirestoreService', metadata: {'groupId': d.id}, error: e);
                 // Skip undecryptable docs rather than returning corrupt data
               }
             }
@@ -200,7 +207,11 @@ class FirestoreService {
   Future<DocumentSnapshot<Map<String, dynamic>>> getGroup(
     String groupId,
   ) async {
-    return _firestore.doc(FirestorePaths.groupDoc(groupId)).get();
+    return FirestoreRunner.run(
+      () => _firestore.doc(FirestorePaths.groupDoc(groupId)).get(),
+      name: 'getGroup',
+      metadata: {'groupId': groupId},
+    );
   }
 
   /// Stream of groups where [phone] (normalized) is in pendingPhones - i.e. pending invitations.
@@ -223,48 +234,50 @@ class FirestoreService {
     String phone, {
     String? userName,
   }) async {
-    final normalizedPhone = _normalizePhone(phone);
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+    return FirestoreRunner.run(() async {
+      final normalizedPhone = _normalizePhone(phone);
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
 
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) return;
-      final data = snap.data()!;
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data()!;
 
-      final members = List<String>.from(data['members'] as List? ?? []);
-      if (members.contains(uid)) return;
+        final members = List<String>.from(data['members'] as List? ?? []);
+        if (members.contains(uid)) return;
 
-      List<String> pendingPhones = List<String>.from(
-        data['pendingPhones'] as List? ?? [],
-      );
-      pendingPhones.remove(normalizedPhone);
-      members.add(uid);
+        List<String> pendingPhones = List<String>.from(
+          data['pendingPhones'] as List? ?? [],
+        );
+        pendingPhones.remove(normalizedPhone);
+        members.add(uid);
 
-      final rawPending = data['pendingMembers'];
-      List<Map<String, dynamic>> pendingList = _extractPendingMembersList(
-        rawPending,
-      );
-      pendingList.removeWhere(
-        (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
-      );
+        final rawPending = data['pendingMembers'];
+        List<Map<String, dynamic>> pendingList = _extractPendingMembersList(
+          rawPending,
+        );
+        pendingList.removeWhere(
+          (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
+        );
 
-      final Map<String, dynamic> updates = {
-        'members': members,
-        'pendingPhones': pendingPhones,
-        'pendingMembers': pendingList,
-      };
+        final Map<String, dynamic> updates = {
+          'members': members,
+          'pendingPhones': pendingPhones,
+          'pendingMembers': pendingList,
+        };
 
-      tx.update(ref, updates);
-    });
+        tx.update(ref, updates);
+      });
 
-    if (userName != null && userName.isNotEmpty) {
-      await addSystemMessage(
-        groupId,
-        type: 'joined',
-        userName: userName,
-        odId: uid,
-      );
-    }
+      if (userName != null && userName.isNotEmpty) {
+        await addSystemMessage(
+          groupId,
+          type: 'joined',
+          userName: userName,
+          odId: uid,
+        );
+      }
+    }, name: 'acceptInvitation', metadata: {'groupId': groupId, 'uid': uid});
   }
 
   /// Decline an invitation: just remove from pendingMembers and add a system message.
@@ -288,20 +301,22 @@ class FirestoreService {
     String detail = '',
     String prefix = '',
   }) async {
-    final now = DateTime.now();
-    final id = 'sys_${now.millisecondsSinceEpoch}';
-    final ref = _firestore
-        .collection(FirestorePaths.groupSystemMessages(groupId))
-        .doc(id);
-    await ref.set({
-      'id': id,
-      'type': type,
-      'userId': odId,
-      'userName': userName,
-      'timestamp': now.millisecondsSinceEpoch,
-      if (detail.isNotEmpty) 'detail': detail,
-      if (prefix.isNotEmpty) 'prefix': prefix,
-    });
+    return FirestoreRunner.run(() async {
+      final now = DateTime.now();
+      final id = 'sys_${now.millisecondsSinceEpoch}';
+      final ref = _firestore
+          .collection(FirestorePaths.groupSystemMessages(groupId))
+          .doc(id);
+      await ref.set({
+        'id': id,
+        'type': type,
+        'userId': odId,
+        'userName': userName,
+        'timestamp': now.millisecondsSinceEpoch,
+        if (detail.isNotEmpty) 'detail': detail,
+        if (prefix.isNotEmpty) 'prefix': prefix,
+      });
+    }, name: 'addSystemMessage', metadata: {'groupId': groupId, 'type': type});
   }
 
   /// Stream of system messages for a group.
@@ -323,20 +338,22 @@ class FirestoreService {
     String? paymentAttemptId,
     int? pendingCount,
   }) async {
-    final now = DateTime.now();
-    final id = 'se_${now.millisecondsSinceEpoch}';
-    final ref = _firestore
-        .collection(FirestorePaths.groupSettlementEvents(groupId))
-        .doc(id);
-    await ref.set({
-      'id': id,
-      'type': type,
-      if (amountMinor != null) 'amountMinor': amountMinor,
-      if (currencyCode != null) 'currencyCode': currencyCode,
-      'timestamp': now.millisecondsSinceEpoch,
-      if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
-      if (pendingCount != null) 'pendingCount': pendingCount,
-    });
+    return FirestoreRunner.run(() async {
+      final now = DateTime.now();
+      final id = 'se_${now.millisecondsSinceEpoch}';
+      final ref = _firestore
+          .collection(FirestorePaths.groupSettlementEvents(groupId))
+          .doc(id);
+      await ref.set({
+        'id': id,
+        'type': type,
+        if (amountMinor != null) 'amountMinor': amountMinor,
+        if (currencyCode != null) 'currencyCode': currencyCode,
+        'timestamp': now.millisecondsSinceEpoch,
+        if (paymentAttemptId != null) 'paymentAttemptId': paymentAttemptId,
+        if (pendingCount != null) 'pendingCount': pendingCount,
+      });
+    }, name: 'addSettlementEvent', metadata: {'groupId': groupId, 'type': type});
   }
 
   /// Stream of settlement events for a group (most recent first).
@@ -351,12 +368,14 @@ class FirestoreService {
 
   /// Get settlement events for a group (one-time fetch).
   Future<List<Map<String, dynamic>>> getSettlementEvents(String groupId) async {
-    final snap = await _firestore
-        .collection(FirestorePaths.groupSettlementEvents(groupId))
-        .orderBy('timestamp', descending: true)
-        .limit(20)
-        .get();
-    return snap.docs.map((d) => d.data()).toList();
+    return FirestoreRunner.run(() async {
+      final snap = await _firestore
+          .collection(FirestorePaths.groupSettlementEvents(groupId))
+          .orderBy('timestamp', descending: true)
+          .limit(20)
+          .get();
+      return snap.docs.map((d) => d.data()).toList();
+    }, name: 'getSettlementEvents', metadata: {'groupId': groupId});
   }
 
   static const int _deleteBatchSize = 500;
@@ -384,48 +403,54 @@ class FirestoreService {
   /// (rules allow read/delete when group does not exist for cleanup).
   /// Only the creator should call this.
   Future<void> deleteGroup(String groupId) async {
-    final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    final settledSnap = await _firestore
-        .doc(FirestorePaths.groupDoc(groupId))
-        .collection(FirestorePaths.settledCycles)
-        .get();
-    await groupRef.delete();
-    await _deleteCollection(
-      _firestore.collection(FirestorePaths.groupExpenses(groupId)),
-    );
-    for (final cycleDoc in settledSnap.docs) {
+    return FirestoreRunner.run(() async {
+      final groupRef = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      final settledSnap = await _firestore
+          .doc(FirestorePaths.groupDoc(groupId))
+          .collection(FirestorePaths.settledCycles)
+          .get();
+      await groupRef.delete();
       await _deleteCollection(
-        _firestore.collection(
-          FirestorePaths.groupSettledCycleExpenses(groupId, cycleDoc.id),
-        ),
+        _firestore.collection(FirestorePaths.groupExpenses(groupId)),
       );
-      await cycleDoc.reference.delete();
-    }
+      for (final cycleDoc in settledSnap.docs) {
+        await _deleteCollection(
+          _firestore.collection(
+            FirestorePaths.groupSettledCycleExpenses(groupId, cycleDoc.id),
+          ),
+        );
+        await cycleDoc.reference.delete();
+      }
+    }, name: 'deleteGroup', metadata: {'groupId': groupId});
   }
 
   /// Update group fields (e.g. cycleStatus, activeCycleId).
   Future<void> updateGroup(String groupId, Map<String, dynamic> updates) async {
-    Map<String, dynamic> toWrite = updates;
-    if (_encryption != null && updates.isNotEmpty) {
-      await _encryption!.ensureGroupKey(groupId);
-      toWrite = await _encryption!.encryptGroupDataWithKey(groupId, updates);
-    }
-    await _firestore.doc(FirestorePaths.groupDoc(groupId)).update(toWrite);
+    return FirestoreRunner.run(() async {
+      Map<String, dynamic> toWrite = updates;
+      if (_encryption != null && updates.isNotEmpty) {
+        await _encryption!.ensureGroupKey(groupId);
+        toWrite = await _encryption!.encryptGroupDataWithKey(groupId, updates);
+      }
+      await _firestore.doc(FirestorePaths.groupDoc(groupId)).update(toWrite);
+    }, name: 'updateGroup', metadata: {'groupId': groupId});
   }
 
   /// Add [uid] to group.members if not already present.
   Future<void> addMemberToGroup(String groupId, String uid) async {
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) return;
-      final data = snap.data()!;
-      final members = List<String>.from(data['members'] as List? ?? []);
-      if (!members.contains(uid)) {
-        members.add(uid);
-        tx.update(ref, {'members': members});
-      }
-    });
+    return FirestoreRunner.run(() async {
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data()!;
+        final members = List<String>.from(data['members'] as List? ?? []);
+        if (!members.contains(uid)) {
+          members.add(uid);
+          tx.update(ref, {'members': members});
+        }
+      });
+    }, name: 'addMemberToGroup', metadata: {'groupId': groupId, 'uid': uid});
   }
 
   /// Add a pending member (phone + name) when inviting by phone (no UID yet).
@@ -436,38 +461,40 @@ class FirestoreService {
     String name, {
     String? invitedBy,
   }) async {
-    final normalizedPhone = _normalizePhone(phone);
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) return;
-      final data = snap.data()!;
+    return FirestoreRunner.run(() async {
+      final normalizedPhone = _normalizePhone(phone);
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data()!;
 
-      List<Map<String, dynamic>> list = _extractPendingMembersList(
-        data['pendingMembers'],
-      );
-      List<String> pendingPhones = List<String>.from(
-        data['pendingPhones'] as List? ?? [],
-      );
+        List<Map<String, dynamic>> list = _extractPendingMembersList(
+          data['pendingMembers'],
+        );
+        List<String> pendingPhones = List<String>.from(
+          data['pendingPhones'] as List? ?? [],
+        );
 
-      if (!list.any(
-        (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
-      )) {
-        list.add({
-          'phone': phone,
-          'name': name,
-          'invitedAt': DateTime.now().millisecondsSinceEpoch,
-          'invitedBy': invitedBy ?? '',
-        });
-        if (!pendingPhones.contains(normalizedPhone)) {
-          pendingPhones.add(normalizedPhone);
+        if (!list.any(
+          (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
+        )) {
+          list.add({
+            'phone': phone,
+            'name': name,
+            'invitedAt': DateTime.now().millisecondsSinceEpoch,
+            'invitedBy': invitedBy ?? '',
+          });
+          if (!pendingPhones.contains(normalizedPhone)) {
+            pendingPhones.add(normalizedPhone);
+          }
+          tx.update(ref, {
+            'pendingMembers': list,
+            'pendingPhones': pendingPhones,
+          });
         }
-        tx.update(ref, {
-          'pendingMembers': list,
-          'pendingPhones': pendingPhones,
-        });
-      }
-    });
+      });
+    }, name: 'addPendingMemberToGroup', metadata: {'groupId': groupId, 'phone': phone});
   }
 
   /// Extracts pendingMembers list, handling legacy encrypted data gracefully.
@@ -495,10 +522,12 @@ class FirestoreService {
 
   /// Remove a member UID from group.
   Future<void> removeMemberFromGroup(String groupId, String uid) async {
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await ref.update({
-      'members': FieldValue.arrayRemove([uid]),
-    });
+    return FirestoreRunner.run(() async {
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      await ref.update({
+        'members': FieldValue.arrayRemove([uid]),
+      });
+    }, name: 'removeMemberFromGroup', metadata: {'groupId': groupId, 'uid': uid});
   }
 
   /// Remove a pending member by phone.
@@ -507,27 +536,29 @@ class FirestoreService {
     String groupId,
     String phone,
   ) async {
-    final normalizedPhone = _normalizePhone(phone);
-    final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) return;
-      final data = snap.data()!;
+    return FirestoreRunner.run(() async {
+      final normalizedPhone = _normalizePhone(phone);
+      final ref = _firestore.doc(FirestorePaths.groupDoc(groupId));
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data()!;
 
-      List<Map<String, dynamic>> list = _extractPendingMembersList(
-        data['pendingMembers'],
-      );
-      List<String> pendingPhones = List<String>.from(
-        data['pendingPhones'] as List? ?? [],
-      );
+        List<Map<String, dynamic>> list = _extractPendingMembersList(
+          data['pendingMembers'],
+        );
+        List<String> pendingPhones = List<String>.from(
+          data['pendingPhones'] as List? ?? [],
+        );
 
-      list.removeWhere(
-        (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
-      );
-      pendingPhones.remove(normalizedPhone);
+        list.removeWhere(
+          (e) => _normalizePhone(e['phone'] ?? '') == normalizedPhone,
+        );
+        pendingPhones.remove(normalizedPhone);
 
-      tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
-    });
+        tx.update(ref, {'pendingMembers': list, 'pendingPhones': pendingPhones});
+      });
+    }, name: 'removePendingMemberFromGroup', metadata: {'groupId': groupId, 'phone': phone});
   }
 
   /// Add expense to group's current cycle (subcollection expenses).
@@ -535,18 +566,20 @@ class FirestoreService {
     String groupId,
     Map<String, dynamic> expenseData,
   ) async {
-    final id =
-        expenseData['id'] as String? ??
-        DateTime.now().millisecondsSinceEpoch.toString();
-    Map<String, dynamic> toWrite = {...expenseData, 'id': id};
-    if (_encryption != null) {
-      await _encryption!.ensureGroupKey(groupId);
-      toWrite = await _encryption!.encryptExpenseData(groupId, toWrite);
-    }
-    final ref = _firestore
-        .collection(FirestorePaths.groupExpenses(groupId))
-        .doc(id);
-    await ref.set(toWrite);
+    return FirestoreRunner.run(() async {
+      final id =
+          expenseData['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString();
+      Map<String, dynamic> toWrite = {...expenseData, 'id': id};
+      if (_encryption != null) {
+        await _encryption!.ensureGroupKey(groupId);
+        toWrite = await _encryption!.encryptExpenseData(groupId, toWrite);
+      }
+      final ref = _firestore
+          .collection(FirestorePaths.groupExpenses(groupId))
+          .doc(id);
+      await ref.set(toWrite);
+    }, name: 'addExpense', metadata: {'groupId': groupId, 'expenseId': expenseData['id']});
   }
 
   /// Update expense in current cycle.
@@ -555,15 +588,17 @@ class FirestoreService {
     String expenseId,
     Map<String, dynamic> updates,
   ) async {
-    Map<String, dynamic> toWrite = updates;
-    if (_encryption != null && updates.isNotEmpty) {
-      await _encryption!.ensureGroupKey(groupId);
-      toWrite = await _encryption!.encryptExpenseData(groupId, updates);
-    }
-    await _firestore
-        .collection(FirestorePaths.groupExpenses(groupId))
-        .doc(expenseId)
-        .update(toWrite);
+    return FirestoreRunner.run(() async {
+      Map<String, dynamic> toWrite = updates;
+      if (_encryption != null && updates.isNotEmpty) {
+        await _encryption!.ensureGroupKey(groupId);
+        toWrite = await _encryption!.encryptExpenseData(groupId, updates);
+      }
+      await _firestore
+          .collection(FirestorePaths.groupExpenses(groupId))
+          .doc(expenseId)
+          .update(toWrite);
+    }, name: 'updateExpense', metadata: {'groupId': groupId, 'expenseId': expenseId});
   }
 
   /// Soft-delete: marks expense as deleted with actor id for audit trail.
@@ -660,7 +695,7 @@ class FirestoreService {
                 final data = await _encryption!.decryptExpenseData(d.data(), groupId);
                 results.add(_DecryptedDocView(d.id, data));
               } catch (e) {
-                debugPrint('expensesStream: decrypt failed for ${d.id}, skipping: $e');
+                AppLogger.error('expensesStream: decrypt failed', name: 'FirestoreService', metadata: {'docId': d.id, 'groupId': groupId}, error: e);
                 // Skip undecryptable docs rather than passing encrypted strings downstream
               }
             }
@@ -762,12 +797,14 @@ class FirestoreService {
 
   /// List settled cycle docs for a group (for history). Ordered by endDate descending.
   Future<List<DocView>> getSettledCycles(String groupId) async {
-    final snap = await _firestore
-        .doc(FirestorePaths.groupDoc(groupId))
-        .collection(FirestorePaths.settledCycles)
-        .orderBy('endDate', descending: true)
-        .get();
-    return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+    return FirestoreRunner.run(() async {
+      final snap = await _firestore
+          .doc(FirestorePaths.groupDoc(groupId))
+          .collection(FirestorePaths.settledCycles)
+          .orderBy('endDate', descending: true)
+          .get();
+      return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+    }, name: 'getSettledCycles', metadata: {'groupId': groupId});
   }
 
   /// Get expenses for a settled cycle.
@@ -775,24 +812,26 @@ class FirestoreService {
     String groupId,
     String cycleId,
   ) async {
-    final snap = await _firestore
-        .collection(FirestorePaths.groupSettledCycleExpenses(groupId, cycleId))
-        .get();
-    final docs = snap.docs;
-    if (_encryption != null && docs.isNotEmpty) {
-      await _encryption!.ensureGroupKey(groupId);
-      final decrypted = await Future.wait(
-        docs.map((d) async {
-          final data = await _encryption!.decryptExpenseData(d.data(), groupId);
-          return _DecryptedDocView(d.id, data) as DocView;
-        }),
-      );
-      decrypted.sort((a, b) => _compareExpenseDocs(a, b));
-      return decrypted;
-    }
-    final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
-    list.sort((a, b) => _compareExpenseDocs(a, b));
-    return list;
+    return FirestoreRunner.run(() async {
+      final snap = await _firestore
+          .collection(FirestorePaths.groupSettledCycleExpenses(groupId, cycleId))
+          .get();
+      final docs = snap.docs;
+      if (_encryption != null && docs.isNotEmpty) {
+        await _encryption!.ensureGroupKey(groupId);
+        final decrypted = await Future.wait(
+          docs.map((d) async {
+            final data = await _encryption!.decryptExpenseData(d.data(), groupId);
+            return _DecryptedDocView(d.id, data) as DocView;
+          }),
+        );
+        decrypted.sort((a, b) => _compareExpenseDocs(a, b));
+        return decrypted;
+      }
+      final list = docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+      list.sort((a, b) => _compareExpenseDocs(a, b));
+      return list;
+    }, name: 'getSettledCycleExpenses', metadata: {'groupId': groupId, 'cycleId': cycleId});
   }
 
   // ============================================================
@@ -805,10 +844,46 @@ class FirestoreService {
     String attemptId,
     Map<String, dynamic> data,
   ) async {
-    final ref = _firestore
-        .collection(FirestorePaths.groupPaymentAttempts(groupId))
-        .doc(attemptId);
-    await ref.set(data, SetOptions(merge: true));
+    return FirestoreRunner.run(() async {
+      final ref = _firestore
+          .collection(FirestorePaths.groupPaymentAttempts(groupId))
+          .doc(attemptId);
+      await ref.set(data, SetOptions(merge: true));
+    }, name: 'setPaymentAttempt', metadata: {'groupId': groupId, 'attemptId': attemptId});
+  }
+
+  /// Create a new payment attempt.
+  Future<String> createPaymentAttempt({
+    required String groupId,
+    required String cycleId,
+    required double amount,
+    required String fromMemberId,
+    required String toMemberId,
+    required String currencyCode,
+    String? upiId,
+    required String createdById,
+  }) async {
+    return FirestoreRunner.run(() async {
+      final docRef = _firestore.collection(FirestorePaths.groupPaymentAttempts(groupId)).doc();
+      final attemptId = docRef.id;
+      final amountMinor = MoneyConversion.parseToMinor(amount, currencyCode).amountMinor;
+      
+      await docRef.set({
+        'id': attemptId,
+        'groupId': groupId,
+        'cycleId': cycleId,
+        'fromMemberId': fromMemberId,
+        'toMemberId': toMemberId,
+        'amount': amount,
+        'amountMinor': amountMinor,
+        'currencyCode': currencyCode,
+        'status': 'not_started',
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+        'createdById': createdById,
+        if (upiId != null) 'upiId': upiId,
+      });
+      return attemptId;
+    }, name: 'createPaymentAttempt', metadata: {'groupId': groupId, 'cycleId': cycleId});
   }
 
   /// Get all payment attempts for a group's current cycle.
@@ -816,11 +891,13 @@ class FirestoreService {
     String groupId,
     String cycleId,
   ) async {
-    final snap = await _firestore
-        .collection(FirestorePaths.groupPaymentAttempts(groupId))
-        .where('cycleId', isEqualTo: cycleId)
-        .get();
-    return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+    return FirestoreRunner.run(() async {
+      final snap = await _firestore
+          .collection(FirestorePaths.groupPaymentAttempts(groupId))
+          .where('cycleId', isEqualTo: cycleId)
+          .get();
+      return snap.docs.map((d) => _SnapshotDocView(d) as DocView).toList();
+    }, name: 'getPaymentAttempts', metadata: {'groupId': groupId, 'cycleId': cycleId});
   }
 
   /// Stream payment attempts for a group's current cycle.
@@ -845,36 +922,38 @@ class FirestoreService {
     String? upiTransactionId,
     String? upiResponseCode,
   }) async {
-    final ref = _firestore
-        .collection(FirestorePaths.groupPaymentAttempts(groupId))
-        .doc(attemptId);
+    return FirestoreRunner.run(() async {
+      final ref = _firestore
+          .collection(FirestorePaths.groupPaymentAttempts(groupId))
+          .doc(attemptId);
 
-    // We map the status to the field-level flags that the backend rules now expect.
-    // The rules explicitly deny direct writes to `status`.
-    final data = <String, dynamic>{};
+      // We map the status to the field-level flags that the backend rules now expect.
+      // The rules explicitly deny direct writes to `status`.
+      final data = <String, dynamic>{};
 
-    if (status == 'confirmed_by_payer') {
-      data['confirmedByPayer'] = true;
-      data['paidVia'] = 'upi';
-    } else if (status == 'confirmed_by_receiver') {
-      data['confirmedByReceiver'] = true;
-    } else if (status == 'cash_pending') {
-      data['confirmedByPayer'] = true;
-      data['paidVia'] = 'cash';
-    } else if (status == 'cash_confirmed') {
-      data['confirmedByReceiver'] = true;
-    } else if (status == 'disputed') {
-      data['disputed'] = true;
-    }
+      if (status == 'confirmed_by_payer') {
+        data['confirmedByPayer'] = true;
+        data['paidVia'] = 'upi';
+      } else if (status == 'confirmed_by_receiver') {
+        data['confirmedByReceiver'] = true;
+      } else if (status == 'cash_pending') {
+        data['confirmedByPayer'] = true;
+        data['paidVia'] = 'cash';
+      } else if (status == 'cash_confirmed') {
+        data['confirmedByReceiver'] = true;
+      } else if (status == 'disputed') {
+        data['disputed'] = true;
+      }
 
-    if (initiatedAt != null) data['initiatedAt'] = initiatedAt;
-    if (confirmedAt != null) data['confirmedAt'] = confirmedAt;
-    if (upiTransactionId != null) data['upiTransactionId'] = upiTransactionId;
-    if (upiResponseCode != null) data['upiResponseCode'] = upiResponseCode;
+      if (initiatedAt != null) data['initiatedAt'] = initiatedAt;
+      if (confirmedAt != null) data['confirmedAt'] = confirmedAt;
+      if (upiTransactionId != null) data['upiTransactionId'] = upiTransactionId;
+      if (upiResponseCode != null) data['upiResponseCode'] = upiResponseCode;
 
-    if (data.isNotEmpty) {
-      await ref.update(data);
-    }
+      if (data.isNotEmpty) {
+        await ref.update(data);
+      }
+    }, name: 'updatePaymentAttemptStatus', metadata: {'groupId': groupId, 'attemptId': attemptId, 'status': status});
   }
 
   /// Delete all payment attempts for a cycle (called when archiving).
@@ -950,12 +1029,14 @@ class FirestoreService {
   /// Generates a new invite-link token for [groupId] and enables invite links.
   /// Returns the generated token so the caller can build the link immediately.
   Future<String> generateInviteToken(String groupId) async {
-    final token = _generateToken();
-    await _firestore.collection(FirestorePaths.groups).doc(groupId).update({
-      'inviteLinkToken': token,
-      'inviteLinkEnabled': true,
-    });
-    return token;
+    return FirestoreRunner.run(() async {
+      final token = _generateToken();
+      await _firestore.collection(FirestorePaths.groups).doc(groupId).update({
+        'inviteLinkToken': token,
+        'inviteLinkEnabled': true,
+      });
+      return token;
+    }, name: 'generateInviteToken', metadata: {'groupId': groupId});
   }
 
   /// Revokes the current invite link by overwriting the token with a new one.
@@ -987,7 +1068,7 @@ class FirestoreService {
     String groupId,
     String token,
   ) async {
-    try {
+    return FirestoreRunner.run(() async {
       final doc = await _firestore
           .collection(FirestorePaths.groups)
           .doc(groupId)
@@ -1003,10 +1084,6 @@ class FirestoreService {
         'groupName': data['groupName'] as String? ?? 'Group',
         'creatorId': data['creatorId'] as String? ?? '',
       };
-    } catch (e, st) {
-      debugPrint('Error resolving invite link: $e');
-      debugPrint(st.toString());
-      rethrow;
-    }
+    }, name: 'resolveInviteLink', metadata: {'groupId': groupId});
   }
 }

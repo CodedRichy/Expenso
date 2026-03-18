@@ -390,73 +390,92 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: ctx.colorSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + MediaQuery.of(ctx).padding.bottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: ctx.colorBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _MagicActionTile(
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      final result = await Navigator.pushNamed(
-                        ctx,
-                        '/expense-input',
-                        arguments: widget.group,
-                      );
-                      if (!ctx.mounted) return;
-                      final map = result as Map<String, dynamic>?;
-                      if (map != null && map['groupId'] != null && map['expenseId'] != null) {
-                        _showUndoExpenseOverlay(
-                          ctx,
-                          groupId: map['groupId'] as String,
-                          expenseId: map['expenseId'] as String,
-                          description: CycleRepository.instance.lastAddedDescription ?? '',
-                          amount: CycleRepository.instance.lastAddedAmount ?? 0.0,
-                          currencyCode: CycleRepository.instance.getGroup(map['groupId'])?.currencyCode,
-                        );
-                      }
-                    },
-                    icon: Icons.keyboard_alt_outlined,
-                    label: 'Manual Entry',
-                    description: 'Type details yourself',
-                    color: Colors.blue,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.of(ctx).padding.bottom),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.5)
+                      : Colors.white.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                    width: 0.5,
                   ),
                 ),
-                const SizedBox(width: 12),
-                if (FeatureFlagService.instance.canUseOCR)
-                  Expanded(
-                    child: _MagicActionTile(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _scanReceipt();
-                      },
-                      icon: Icons.camera_alt_outlined,
-                      label: 'Scan Receipt',
-                      description: 'Auto-fill from photo',
-                      color: Colors.amber,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MagicActionTile(
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              final result = await Navigator.pushNamed(
+                                ctx,
+                                '/expense-input',
+                                arguments: widget.group,
+                              );
+                              if (!ctx.mounted) return;
+                              final map = result as Map<String, dynamic>?;
+                              if (map != null && map['groupId'] != null && map['expenseId'] != null) {
+                                _showUndoExpenseOverlay(
+                                  ctx,
+                                  groupId: map['groupId'] as String,
+                                  expenseId: map['expenseId'] as String,
+                                  description: CycleRepository.instance.lastAddedDescription ?? '',
+                                  amount: CycleRepository.instance.lastAddedAmount ?? 0.0,
+                                  currencyCode: CycleRepository.instance.getGroup(map['groupId'])?.currencyCode,
+                                );
+                              }
+                            },
+                            icon: Icons.keyboard_alt_outlined,
+                            label: 'Manual Entry',
+                            description: 'Type details yours',
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        if (FeatureFlagService.instance.canUseOCR)
+                          Expanded(
+                            child: _MagicActionTile(
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _scanReceipt();
+                              },
+                              icon: Icons.camera_alt_outlined,
+                              label: 'Scan Receipt',
+                              description: 'Auto-fill from photo',
+                              color: Colors.amber,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -906,105 +925,115 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       decoration: const BoxDecoration(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.shadow.withValues(
-                alpha: isDark ? 0.3 : 0.06,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: surfaceColor.withValues(alpha: isDark ? 0.7 : 0.8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: borderColor.withValues(alpha: 0.1),
+                width: 1,
               ),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            TapScale(
-              child: IconButton(
-                onPressed: _showMagicMenu,
-                icon: Icon(
-                  Icons.add_rounded,
-                  size: 24,
-                  color: iconColor,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.shadow.withValues(
+                    alpha: isDark ? 0.2 : 0.04,
+                  ),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
                 ),
-                style: IconButton.styleFrom(
-                  padding: const EdgeInsets.all(8),
-                  minimumSize: const Size(40, 40),
-                ),
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                enabled: !_loading && !_inCooldown,
-                onSubmitted: (_) => _submit(),
-                decoration: InputDecoration(
-                  hintText: _inCooldown
-                      ? 'AI cooling down — use keyboard for manual entry'
-                      : 'e.g. Dinner ${CurrencyRegistry.symbol(widget.group.currencyCode)}500 with Ash',
-                  hintStyle: TextStyle(color: hintColor, fontSize: 17),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  isDense: true,
-                ),
-                style: TextStyle(fontSize: 17, color: textColor),
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (_loading)
-              SizedBox(
-                width: 36,
-                height: 36,
-                child: Center(
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: textColor,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TapScale(
+                  child: IconButton(
+                    onPressed: _showMagicMenu,
+                    icon: Icon(
+                      Icons.add_rounded,
+                      size: 24,
+                      color: iconColor,
+                    ),
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
+                      minimumSize: const Size(40, 40),
                     ),
                   ),
                 ),
-              )
-            else
-              TapScale(
-                child: IconButton(
-                  onPressed:
-                      (_sendAllowed &&
-                          _controller.text.trim().isNotEmpty &&
-                          !_inCooldown)
-                      ? _submit
-                      : null,
-                  icon: Icon(
-                    Icons.arrow_upward_rounded,
-                    color:
-                        (_sendAllowed &&
-                            _controller.text.trim().isNotEmpty &&
-                            !_inCooldown)
-                        ? textColor
-                        : hintColor,
-                    size: 24,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: buttonBgColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    enabled: !_loading && !_inCooldown,
+                    onSubmitted: (_) => _submit(),
+                    decoration: InputDecoration(
+                      hintText: _inCooldown
+                          ? 'AI cooling down — use keyboard for manual entry'
+                          : 'e.g. Dinner ${CurrencyRegistry.symbol(widget.group.currencyCode)}500 with Ash',
+                      hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 8,
+                      ),
+                      isDense: true,
                     ),
+                    style: TextStyle(fontSize: 17, color: textColor),
                   ),
                 ),
-              ),
-          ],
+                const SizedBox(width: 8),
+                if (_loading)
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  TapScale(
+                    child: IconButton(
+                      onPressed: (_sendAllowed &&
+                              _controller.text.trim().isNotEmpty &&
+                              !_inCooldown)
+                          ? _submit
+                          : null,
+                      icon: Icon(
+                        Icons.arrow_upward_rounded,
+                        color: (_sendAllowed &&
+                                _controller.text.trim().isNotEmpty &&
+                                !_inCooldown)
+                            ? textColor
+                            : hintColor,
+                        size: 24,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: buttonBgColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1372,32 +1401,45 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        decoration: BoxDecoration(
-          color: dialogBgColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black)
+                    .withValues(alpha: 0.1),
+                width: 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
                 ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                   colors: [gradientStart, gradientEnd],
                 ),
               ),
@@ -1887,9 +1929,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
+    ),
+    ),
+    ),
+    ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../services/firestore_service.dart';
 import '../services/user_profile_cache.dart';
 import '../services/feature_flag_service.dart';
 import '../services/identity_service.dart';
+import '../utils/app_logger.dart';
 import './base_repository.dart';
 
 class AuthRepository extends BaseRepository {
@@ -50,7 +51,7 @@ class AuthRepository extends BaseRepository {
         _userCache[_currentUserId]!['currencyCode'] = currencyCode;
       }
       _writeCurrentUserProfile().catchError((e, st) {
-        debugPrint('AuthRepository.setGlobalProfile write failed: $e');
+        AppLogger.error('setGlobalProfile write failed', name: 'AuthRepository', error: e, stackTrace: st);
       });
       UserProfileCache.instance.save(
         userId: _currentUserId,
@@ -126,7 +127,7 @@ class AuthRepository extends BaseRepository {
     }
     FirestoreService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
-      debugPrint('AuthRepository.continueAuthFromFirebaseUser write failed: $e');
+      AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'AuthRepository', error: e, stackTrace: st);
     });
     _loadCurrentUserProfileFromFirestore();
     FeatureFlagService.instance.refresh();
@@ -153,8 +154,8 @@ class AuthRepository extends BaseRepository {
         );
         notify();
       }
-    } catch (e) {
-      debugPrint('AuthRepository._loadCurrentUserProfileFromFirestore failed: $e');
+    } catch (e, st) {
+      AppLogger.error('_loadCurrentUserProfileFromFirestore failed', name: 'AuthRepository', error: e, stackTrace: st);
     }
   }
 
@@ -179,10 +180,10 @@ class AuthRepository extends BaseRepository {
       await _writeCurrentUserProfile();
       UserProfileCache.instance.updatePhotoURL(photoURL);
       notify();
-    } catch (e) {
+    } catch (e, st) {
       _userCache[_currentUserId]!['photoURL'] = previous;
       notify();
-      debugPrint('AuthRepository.updateCurrentUserPhotoURL write failed: $e');
+      AppLogger.error('updateCurrentUserPhotoURL write failed', name: 'AuthRepository', error: e, stackTrace: st);
       rethrow;
     }
   }

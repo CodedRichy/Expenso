@@ -5,6 +5,7 @@ import '../services/firestore_service.dart';
 import '../services/sync_status_service.dart';
 import '../services/identity_service.dart';
 import '../utils/id_utils.dart';
+import '../utils/app_logger.dart';
 import './base_repository.dart';
 import './auth_repository.dart';
 import '../services/identity_service.dart';
@@ -64,7 +65,7 @@ class GroupRepository extends BaseRepository {
         .listen(
           _onGroupsSnapshot,
           onError: (e, st) {
-            debugPrint('GroupRepository groupsStream error: $e');
+            AppLogger.error('groupsStream error', name: 'GroupRepository', error: e, stackTrace: st);
             _groupsLoading = false;
             _streamError = e.toString();
             SyncStatusService.instance.markError(e.toString());
@@ -79,7 +80,7 @@ class GroupRepository extends BaseRepository {
           .listen(
             _onInvitationsSnapshot,
             onError: (e, st) {
-              debugPrint('GroupRepository invitationsStream error: $e');
+              AppLogger.error('invitationsStream error', name: 'GroupRepository', error: e, stackTrace: st);
               _invitationsLoading = false;
               notify();
             },
@@ -233,8 +234,8 @@ class GroupRepository extends BaseRepository {
             );
           }
         }
-      } catch (e) {
-        debugPrint('GroupRepository._loadUsersForMembers error for uid $uid: $e');
+      } catch (e, st) {
+        AppLogger.error('_loadUsersForMembers error', name: 'GroupRepository', error: e, stackTrace: st, metadata: {'uid': uid});
       }
     }
     notify();
@@ -271,8 +272,8 @@ class GroupRepository extends BaseRepository {
         settlementDay: settlementDay,
         currencyCode: group.currencyCode,
       );
-    } catch (e) {
-      debugPrint('GroupRepository.addGroup failed: $e');
+    } catch (e, st) {
+      AppLogger.error('addGroup failed', name: 'GroupRepository', error: e, stackTrace: st);
       rethrow;
     }
   }

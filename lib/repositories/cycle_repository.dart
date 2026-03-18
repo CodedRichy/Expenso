@@ -12,8 +12,8 @@ import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
 import '../utils/settlement_engine.dart';
 import '../services/feature_flag_service.dart';
-import '../utils/phone_utils.dart';
 import '../utils/id_utils.dart';
+import '../utils/app_logger.dart';
 import './auth_repository.dart';
 import './group_repository.dart';
 import './settlement_repository.dart';
@@ -24,10 +24,23 @@ class CycleRepository extends BaseRepository {
   static final CycleRepository _instance = CycleRepository._();
   static CycleRepository get instance => _instance;
 
-  // Use delegation for auth, group and settlement state
   AuthRepository get _auth => AuthRepository.instance;
   GroupRepository get _groupsRepo => GroupRepository.instance;
   SettlementRepository get _settlementRepo => SettlementRepository.instance;
+
+  String _currentUserId = '';
+  String _currentUserPhone = '';
+  String _currentUserName = '';
+  final Map<String, Map<String, dynamic>> _userCache = {};
+  bool _groupsLoading = false;
+  final List<GroupInvitation> _pendingInvitations = [];
+  StreamSubscription? _groupsSub;
+  StreamSubscription? _invitationsSub;
+  String? _streamError;
+  final List<Group> _groups = [];
+  final Map<String, Member> _membersById = {};
+  final Map<String, StreamSubscription> _paymentAttemptSubs = {};
+  final Map<String, String> _paymentAttemptCycleId = {};
 
   String get currentUserId => _auth.currentUserId;
   String get currentUserPhone => _auth.currentUserPhone;
@@ -38,31 +51,6 @@ class CycleRepository extends BaseRepository {
 
   bool isCurrentUserCreator(String groupId) =>
       isCreator(groupId, currentUserId);
-
-  void setGlobalProfile(String phone, String name, {String? authUserId, String? currencyCode}) {
-    _auth.setGlobalProfile(phone, name, authUserId: authUserId, currencyCode: currencyCode);
-    notify();
-  }
-
-  void loadFromLocalCache() {
-    _auth.loadFromLocalCache();
-    _groupsRepo.setGroupsLoading(true);
-    notify();
-  }
-
-  void setAuthFromFirebaseUserSync(String uid, String? phone, String? displayName, {String? photoURL}) {
-    _auth.setAuthFromFirebaseUserSync(uid, phone, displayName, photoURL: photoURL);
-  }
-
-  Future<void> continueAuthFromFirebaseUser() async {
-    await _auth.continueAuthFromFirebaseUser();
-    _startListening();
-    notify();
-  }
-
-  Future<void> refreshCurrentUserProfile() => _auth.refreshCurrentUserProfile();
-  Future<void> updateCurrentUserPhotoURL(String? photoURL) => _auth.updateCurrentUserPhotoURL(photoURL);
-  Future<void> updateCurrentUserUpiId(String? upiId) => _auth.updateCurrentUserUpiId(upiId);
 
   static int _dateStringToSortKey(String date) {
     final timestamp = int.tryParse(date);
@@ -114,30 +102,6 @@ class CycleRepository extends BaseRepository {
   }
 
 
-  /// Returns profile photo URL for a member (by uid). Null for pending members or when not set.
-  String? getMemberPhotoURL(String memberId) {
-    if (memberId.startsWith('p_')) return null;
-    return _auth.getUserCache(memberId)?['photoURL'] as String?;
-  }
-
-  /// Returns UPI ID for a member (by uid). Null for pending members or when not set.
-  String? getMemberUpiId(String memberId) {
-    if (memberId.startsWith('p_')) return null;
-    return _auth.getUserCache(memberId)?['upiId'] as String?;
-  }
-
-  /// Current user profile photo URL (from Firestore). Same value used for NLP display name matching.
-  String? get currentUserPhotoURL =>
-      _userCache[_currentUserId]?['photoURL'] as String?;
-
-  /// Current user UPI ID for payments.
-  String? get currentUserUpiId =>
-      _userCache[_currentUserId]?['upiId'] as String?;
-
-  /// Preferred currency from user profile (set at auth from country selection). Defaults to INR.
-  String get currentUserCurrencyCode =>
-      _userCache[_currentUserId]?['currencyCode'] as String? ?? 'INR';
-
   /// Updates the global profile (phone, name, and optionally auth user id and currency). Notifies listeners.
   /// Persists to Firestore and local cache when [_currentUserId] is set.
   void setGlobalProfile(
@@ -157,8 +121,7 @@ class CycleRepository extends BaseRepository {
         _userCache[_currentUserId]!['currencyCode'] = currencyCode;
       }
       _writeCurrentUserProfile().catchError((e, st) {
-        debugPrint('CycleRepository.setGlobalProfile write failed: $e');
-        if (kDebugMode) debugPrint(st.toString());
+        AppLogger.error('setGlobalProfile write failed', name: 'CycleRepository', error: e, stackTrace: st);
       });
       // Update local cache for instant load on next cold start
       UserProfileCache.instance.save(
@@ -240,16 +203,13 @@ class CycleRepository extends BaseRepository {
     _encryption = DataEncryptionService(region: 'asia-south1');
     try {
       await _encryption!.ensureUserKey();
-    } catch (e) {
-      debugPrint('CycleRepository encryption key fetch failed: $e');
+    } catch (e, st) {
+      AppLogger.error('encryption key fetch failed', name: 'CycleRepository', error: e, stackTrace: st);
       _encryption = null;
     }
     FirestoreService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
-      debugPrint(
-        'CycleRepository.continueAuthFromFirebaseUser write failed: $e',
-      );
-      if (kDebugMode) debugPrint(st.toString());
+      AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'CycleRepository', error: e, stackTrace: st);
     });
     _loadCurrentUserProfileFromFirestore();
     _startListening();
@@ -286,10 +246,7 @@ class CycleRepository extends BaseRepository {
         notifyListeners();
       }
     } catch (e, st) {
-      debugPrint(
-        'CycleRepository._loadCurrentUserProfileFromFirestore failed: $e',
-      );
-      if (kDebugMode) debugPrint(st.toString());
+      AppLogger.error('_loadCurrentUserProfileFromFirestore failed', name: 'CycleRepository', error: e, stackTrace: st);
     }
   }
 
@@ -320,8 +277,7 @@ class CycleRepository extends BaseRepository {
     } catch (e, st) {
       _userCache[_currentUserId]!['photoURL'] = previous;
       notifyListeners();
-      debugPrint('CycleRepository.updateCurrentUserPhotoURL write failed: $e');
-      if (kDebugMode) debugPrint(st.toString());
+      AppLogger.error('updateCurrentUserPhotoURL write failed', name: 'CycleRepository', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -518,12 +474,6 @@ class CycleRepository extends BaseRepository {
 
   /// Lazily subscribe to group details (expenses, messages, etc.) when the UI enters a group.
   void ensureGroupStreams(String groupId) {
-    if (_groupsRepo.groupsLoading) return;
-    final activeCycleId = _groupsRepo.getActiveCycleId(groupId);
-    if (activeCycleId.isEmpty) return;
-
-  /// Lazily subscribe to group details (expenses, messages, etc.) when the UI enters a group.
-  void ensureGroupStreams(String groupId) {
     if (_streamError != null || _groupsLoading) return;
     final meta = _groupMeta[groupId];
     if (meta == null) return;
@@ -535,8 +485,7 @@ class CycleRepository extends BaseRepository {
           .listen(
             (expDocs) => _onExpensesSnapshot(groupId, expDocs),
             onError: (e, st) {
-              debugPrint('CycleRepository expensesStream($groupId) error: $e');
-              if (kDebugMode && st != null) debugPrint(st.toString());
+              AppLogger.error('expensesStream error', name: 'CycleRepository', metadata: {'groupId': groupId}, error: e, stackTrace: st);
               _streamError = e.toString();
               notifyListeners();
             },
@@ -548,9 +497,7 @@ class CycleRepository extends BaseRepository {
           .listen(
             (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
             onError: (e, st) {
-              debugPrint(
-                'CycleRepository systemMessagesStream($groupId) error: $e',
-              );
+              AppLogger.error('systemMessagesStream error', name: 'CycleRepository', metadata: {'groupId': groupId}, error: e, stackTrace: st);
             },
           );
     }
@@ -560,9 +507,7 @@ class CycleRepository extends BaseRepository {
           .listen(
             (revs) => _onRevisionsSnapshot(groupId, revs),
             onError: (e, st) {
-              debugPrint(
-                'CycleRepository expenseRevisionsStream($groupId) error: $e',
-              );
+              AppLogger.error('expenseRevisionsStream error', name: 'CycleRepository', metadata: {'groupId': groupId}, error: e, stackTrace: st);
             },
           );
     }
@@ -572,9 +517,7 @@ class CycleRepository extends BaseRepository {
           .listen(
             (ids) => _onDeletedIdsSnapshot(groupId, ids),
             onError: (e, st) {
-              debugPrint(
-                'CycleRepository deletedExpenseIdsStream($groupId) error: $e',
-              );
+              AppLogger.error('deletedExpenseIdsStream error', name: 'CycleRepository', metadata: {'groupId': groupId}, error: e, stackTrace: st);
             },
           );
     }
@@ -618,10 +561,7 @@ class CycleRepository extends BaseRepository {
           }
         }
       } catch (e, st) {
-        debugPrint(
-          'CycleRepository._loadUsersForMembers error for uid $uid: $e',
-        );
-        if (kDebugMode) debugPrint(st.toString());
+        AppLogger.error('_loadUsersForMembers error', name: 'CycleRepository', metadata: {'uid': uid}, error: e, stackTrace: st);
       }
     }
     _rebuildGlobalIdentities();
@@ -659,10 +599,8 @@ class CycleRepository extends BaseRepository {
             changed = true;
           }
         }
-      } catch (e) {
-        debugPrint(
-          'CycleRepository.refreshGroupMemberProfiles error for uid $uid: $e',
-        );
+      } catch (e, st) {
+        AppLogger.error('refreshGroupMemberProfiles error', name: 'CycleRepository', metadata: {'uid': uid, 'groupId': groupId}, error: e, stackTrace: st);
       }
     }
 
@@ -678,8 +616,8 @@ class CycleRepository extends BaseRepository {
     for (final d in expDocs) {
       try {
         list.add(_expenseFromFirestore(d.data(), d.id, currencyCode: currencyCode));
-      } catch (e) {
-        debugPrint('CycleRepository._onExpensesSnapshot: skipping doc ${d.id}: $e');
+      } catch (e, st) {
+        AppLogger.error('_onExpensesSnapshot skipping doc', name: 'CycleRepository', metadata: {'docId': d.id, 'groupId': groupId}, error: e, stackTrace: st);
       }
     }
     _expensesByCycleId[cycleId] = list;
@@ -1104,6 +1042,7 @@ class CycleRepository extends BaseRepository {
         'No active cycle. Start a new cycle to add expenses.',
       );
     }
+
     final effectivePayerId = payerId.isNotEmpty ? payerId : _currentUserId;
     final members = getMembersForGroup(groupId);
     final allIds = members
@@ -1161,7 +1100,9 @@ class CycleRepository extends BaseRepository {
         MoneyConversion.parseToMinor(v, currencyCode).amountMinor,
       ),
     );
+
     final writtenParticipantIds = splits.keys.toList();
+
     final data = {
       'id': id,
       'groupId': groupId,
@@ -1178,17 +1119,13 @@ class CycleRepository extends BaseRepository {
       'createdById': _currentUserId,
       if (category.isNotEmpty) 'category': category,
     };
+
     await FirestoreService.instance.addExpense(groupId, data);
     _setLastAdded(groupId, id, description, amount);
   }
 
   /// Adds an expense from a NormalizedExpense (the canonical path).
-  ///
   /// This method takes an already-validated, ID-only NormalizedExpense and persists it.
-  /// No split calculation is needed - all amounts are already computed in the normalization layer.
-  ///
-  /// The splitType parameter indicates the original user intent for UI display purposes only.
-  /// The actual amounts are stored in participantSharesByMemberId.
   Future<void> addExpenseFromNormalized(
     String groupId, {
     required String id,
@@ -1213,12 +1150,12 @@ class CycleRepository extends BaseRepository {
       (memberId, money) => MapEntry(memberId, MoneyConversion.toDisplay(money)),
     );
     final participantIds = normalized.participantIds;
-
     final displayAmount = MoneyConversion.toDisplay(normalized.total);
 
     final splitsMinor = normalized.participantSharesByMemberId.map(
       (memberId, money) => MapEntry(memberId, money.amountMinor),
     );
+
     final data = {
       'id': id,
       'groupId': groupId,
@@ -1682,6 +1619,68 @@ class CycleRepository extends BaseRepository {
   List<PaymentAttempt> getPaymentAttempts(String groupId) =>
       _settlementRepo.getPaymentAttempts(groupId);
 
+  Future<void> loadPaymentAttempts(String groupId) async {
+    final cycle = getActiveCycle(groupId);
+    await _settlementRepo.startListeningForPaymentAttempts(groupId, cycle.id);
+  }
+
+  PaymentAttempt? getPaymentAttemptForRoute(String groupId, String fromId, String toId) {
+    final attempts = _paymentAttemptsByGroup[groupId] ?? [];
+    try {
+      return attempts.firstWhere(
+        (a) => a.fromMemberId == fromId && a.toMemberId == toId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<PaymentAttempt> getOrCreatePaymentAttempt({
+    required String groupId,
+    required String fromMemberId,
+    required String toMemberId,
+    required int amountMinor,
+    required String currencyCode,
+  }) async {
+    final existing = getPaymentAttemptForRoute(groupId, fromMemberId, toMemberId);
+    if (existing != null) return existing;
+
+    final cycle = getActiveCycle(groupId);
+    final id = await createPaymentAttempt(
+      groupId: groupId,
+      cycleId: cycle.id,
+      amount: MoneyConversion.minorToDisplay(amountMinor, currencyCode),
+      fromMemberId: fromMemberId,
+      toMemberId: toMemberId,
+      currencyCode: currencyCode,
+    );
+    
+    // Create local stub until snapshot arrives
+    return PaymentAttempt(
+      id: id,
+      groupId: groupId,
+      cycleId: cycle.id,
+      fromMemberId: fromMemberId,
+      toMemberId: toMemberId,
+      amountMinor: amountMinor,
+      currencyCode: currencyCode,
+      status: PaymentAttemptStatus.notStarted,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  double getGroupPendingAmount(String groupId) {
+    final cycle = getActiveCycle(groupId);
+    final members = getMembersForGroup(groupId);
+    final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+    final netBalances = SettlementEngine.computeNetBalances(cycle.expenses, members, currencyCode: currencyCode);
+    final myBalanceMinor = netBalances[currentUserId] ?? 0;
+    return myBalanceMinor < 0 
+        ? MoneyConversion.minorToDisplay(-myBalanceMinor, currencyCode) 
+        : 0.0;
+  }
+
+
   Future<String> createPaymentAttempt({
     required String groupId,
     required String cycleId,
@@ -1704,8 +1703,6 @@ class CycleRepository extends BaseRepository {
   Future<void> confirmPaymentReceived(String groupId, String attemptId) =>
       _settlementRepo.confirmPaymentReceived(groupId, attemptId);
 
-  Future<void> confirmCashReceived(String groupId, String attemptId) =>
-      _settlementRepo.confirmCashReceived(groupId, attemptId);
 
   Future<void> markAssetTransfer(String groupId, String attemptId) =>
       _settlementRepo.markAssetTransfer(groupId, attemptId);

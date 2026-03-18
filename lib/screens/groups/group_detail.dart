@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -829,7 +830,27 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(height: height, color: backgroundColor, child: child);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: backgroundColor.withValues(alpha: isDark ? 0.7 : 0.8),
+            border: Border(
+              bottom: BorderSide(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                width: 1,
+              ),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 
   @override

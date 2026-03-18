@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import '../constants/prompts.dart';
 
 /// Thrown when Groq API returns 429 (Rate Limit) after retry.

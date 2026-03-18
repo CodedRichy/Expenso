@@ -316,51 +316,73 @@ const adminGetAdvancedAnalytics = onCall(
     requireAdmin(request);
     adminLimiter.check(request.auth.uid);
 
-    const { timeRange = '30d' } = request.data || {};
+    const { timeRange = '30d', pageSize = 50, userCursor = null, groupCursor = null } = request.data || {};
     
     try {
-      // Simplified Advanced Analytics restricted to existing core collections:
-      // users, groups, and sub-collections (expenses, settled_cycles)
+      // 1. Aggregates (using count() for efficiency)
+      const totalUsersSnap = await db.collection('users').count().get();
+      const totalGroupsSnap = await db.collection('groups').count().get();
 
-      const usersSnapshot = await db.collection('users').get();
-      const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // 2. Paginated Details
+      let usersQuery = db.collection('users').limit(pageSize);
+      if (userCursor) {
+        const lastUserDoc = await db.collection('users').doc(userCursor).get();
+        if (lastUserDoc.exists) usersQuery = usersQuery.startAfter(lastUserDoc);
+      }
+      const usersSnapshot = await usersQuery.get();
+      const pagedUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const groupsSnapshot = await db.collection('groups').get();
-      const allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let groupsQuery = db.collection('groups').limit(pageSize);
+      if (groupCursor) {
+        const lastGroupDoc = await db.collection('groups').doc(groupCursor).get();
+        if (lastGroupDoc.exists) groupsQuery = groupsQuery.startAfter(lastGroupDoc);
+      }
+      const groupsSnapshot = await groupsQuery.get();
+      const pagedGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const expensesSnapshot = await db
         .collectionGroup('expenses')
         .where('createdAt', '>=', getTimeRangeStart(timeRange))
+        .orderBy('createdAt', 'desc')
+        .limit(pageSize * 2) // Get enough for a decent sample
         .get();
-      const allExpenses = expensesSnapshot.docs.map(doc => doc.data());
+      const sampleExpenses = expensesSnapshot.docs.map(doc => doc.data());
 
+      // Initialize result object
+      const result = {};
+
+      // Business Intelligence (Estimates or from Full scan if mandatory, 
+      // but for V2 we use the paged sample or separate counts)
       // Business Intelligence
       result.business = {
-        total: allUsers.length,
-        premium: allUsers.filter(u => u.isPremium).length,
-        active: allUsers.filter(u => u.lastSeenAt && 
+        total: totalUsersSnap.data().count,
+        totalGroups: totalGroupsSnap.data().count,
+        pagedUsers: pagedUsers.length,
+        nextUserCursor: pagedUsers.length === pageSize ? pagedUsers[pagedUsers.length - 1].id : null,
+        nextGroupCursor: pagedGroups.length === pageSize ? pagedGroups[pagedGroups.length - 1].id : null,
+        activeInPaged: pagedUsers.filter(u => u.lastSeenAt && 
           (Date.now() - u.lastSeenAt.toDate().getTime()) < 7 * 24 * 60 * 60 * 1000).length,
-        newThisMonth: allUsers.filter(u => u.createdAt && 
-          u.createdAt.toDate() >= getTimeRangeStart('30d')).length,
-        churned: calculateChurnedUsers(allUsers, timeRange)
+        newInPagedThisMonth: pagedUsers.filter(u => u.createdAt && 
+          u.createdAt.toDate() >= getTimeRangeStart('30d')).length
       };
 
       // Financial Analytics
       const categoryStats = {};
-      allExpenses.forEach(e => {
+      sampleExpenses.forEach(e => {
         const category = e.category || 'uncategorized';
         categoryStats[category] = (categoryStats[category] || 0) + (e.amountMinor || 0);
       });
 
       result.financial = {
         categoryBreakdown: categoryStats,
-        avgSettlementTime: 0, // settlements collection doesn't exist to track this accurately
+        sampleSize: sampleExpenses.length,
+        avgSettlementTime: 0, 
         settlementMethods: {}
       };
 
-      // Geographic data
+      // Geographic data (sample based)
       const geoData = {};
-      allUsers.forEach(user => {
+      pagedUsers.forEach(user => {
         if (user.lastLocation && user.lastLocation.country) {
           geoData[user.lastLocation.country] = (geoData[user.lastLocation.country] || 0) + 1;
         }
