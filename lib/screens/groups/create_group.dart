@@ -9,6 +9,7 @@ import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/tap_scale.dart';
+import '../../widgets/glass_card.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -118,37 +119,27 @@ class _CreateGroupState extends State<CreateGroup> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenPaddingH,
-                AppSpacing.screenHeaderPaddingTop,
-                AppSpacing.screenPaddingH,
-                AppSpacing.space3xl,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
                 children: [
-                  Semantics(
-                    label: 'Back',
-                    button: true,
-                    child: TapScale(
-                      child: IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.chevron_left, size: 24),
-                        color: context.colorTextPrimary,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                        constraints: const BoxConstraints(),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
+                  TapScale(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
                       ),
+                      child: const Icon(Icons.chevron_left, size: 20),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text('Create Group', style: context.screenTitle),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Create Group',
+                    style: context.headingMedium.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),
@@ -161,7 +152,13 @@ class _CreateGroupState extends State<CreateGroup> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('GROUP NAME', style: context.sectionLabel),
+                        Text(
+                          'GROUP NAME',
+                          style: context.labelSmall.copyWith(
+                            color: context.colorTextTertiary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         TextField(
                           autofocus: true,
@@ -173,7 +170,7 @@ class _CreateGroupState extends State<CreateGroup> {
                           decoration: const InputDecoration(
                             hintText: 'e.g. Roommates, Trip',
                           ),
-                          style: context.input,
+                          style: context.labelLarge,
                         ),
                       ],
                     ),
@@ -183,17 +180,15 @@ class _CreateGroupState extends State<CreateGroup> {
                       children: [
                         Text(
                           'SETTLEMENT RHYTHM',
-                          style: context.sectionLabel.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
+                          style: context.labelSmall.copyWith(
+                            color: context.colorTextTertiary,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: context.colorSurface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: context.colorBorder),
-                          ),
+                        GlassCard(
+                          padding: EdgeInsets.zero,
+                          borderRadius: AppSpacing.radiusMedium,
                           child: Column(
                             children: [
                               _buildRhythmOption(
@@ -228,31 +223,25 @@ class _CreateGroupState extends State<CreateGroup> {
                             rhythm == 'weekly'
                                 ? 'SETTLEMENT DAY'
                                 : 'SETTLEMENT DATE',
-                            style: context.sectionLabel.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
+                            style: context.labelSmall.copyWith(
+                              color: context.colorTextTertiary,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Container(
+                          GlassCard(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 4,
                             ),
-                            decoration: BoxDecoration(
-                              color: context.colorSurface,
-                              border: Border.all(
-                                color: context.colorBorderInput,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            borderRadius: AppSpacing.radiusMedium,
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: settlementDay,
                                 isExpanded: true,
-                                style: context.input.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
+                                dropdownColor: Theme.of(context).colorScheme.surface,
+                                style: context.labelLarge.copyWith(
+                                  color: context.colorTextPrimary,
                                 ),
                                 items: rhythm == 'weekly'
                                     ? _buildWeeklyOptions()
@@ -271,16 +260,20 @@ class _CreateGroupState extends State<CreateGroup> {
                       ),
                       const SizedBox(height: 32),
                     ],
-                    Container(
+                    GlassCard(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.colorSurface,
-                        border: Border.all(color: context.colorBorder),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        getPreviewText(),
-                        style: context.bodySecondary,
+                      borderRadius: AppSpacing.radiusSmall,
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: context.colorTextSecondary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              getPreviewText(),
+                              style: context.labelMedium.copyWith(color: context.colorTextSecondary),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -288,25 +281,36 @@ class _CreateGroupState extends State<CreateGroup> {
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Semantics(
-                label: 'Create group',
-                button: true,
-                child: TapScale(
-                  child: ElevatedButton(
-                    onPressed: name.trim().isNotEmpty ? handleCreate : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                      minimumSize: const Size(double.infinity, 0),
-                    ),
-                    child: const Text(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: TapScale(
+                onTap: name.trim().isNotEmpty ? handleCreate : null,
+                child: Container(
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: name.trim().isNotEmpty
+                        ? context.colorPrimary
+                        : context.colorPrimary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                    boxShadow: name.trim().isNotEmpty
+                        ? [
+                            BoxShadow(
+                              color: context.colorPrimary.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Center(
+                    child: Text(
                       'Create Group',
-                      style: AppTypography.button,
+                      style: context.labelLarge.copyWith(
+                        color: name.trim().isNotEmpty
+                            ? Colors.white
+                            : context.colorPrimary.withValues(alpha: 0.4),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -327,62 +331,58 @@ class _CreateGroupState extends State<CreateGroup> {
     final isSelected = rhythm == value;
     return TapScale(
       scaleDown: 0.99,
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            rhythm = value;
-            if (value == 'weekly') {
-              settlementDay = 0;
-            } else if (value == 'monthly') {
-              settlementDay = 0;
-            }
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            border: Border(
-              top: isFirst
-                  ? BorderSide.none
-                  : BorderSide(color: context.colorBorder, width: 1),
+      onTap: () {
+        setState(() {
+          rhythm = value;
+          if (value == 'weekly') {
+            settlementDay = 0;
+          } else if (value == 'monthly') {
+            settlementDay = 0;
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            top: isFirst
+                ? BorderSide.none
+                : BorderSide(color: Colors.black.withValues(alpha: 0.06), width: 1),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: context.labelLarge.copyWith(color: context.colorTextPrimary),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: context.bodyPrimary.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? context.colorPrimary
+                      : context.colorBorderInput,
+                  width: 2,
                 ),
               ),
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? context.colorPrimary
-                        : context.colorBorderInput,
-                    width: 2,
-                  ),
-                ),
-                child: isSelected
-                    ? Center(
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: context.colorPrimary,
-                          ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.colorPrimary,
                         ),
-                      )
-                    : null,
-              ),
-            ],
-          ),
+                      ),
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );

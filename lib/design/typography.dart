@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
+import 'colors.dart';
 
 extension ThemedTypography on BuildContext {
-  TextStyle get heroTitle => AppTypography.heroTitle.copyWith(
+  // Text styles from Material Design
+  TextStyle get displayLarge => AppTypography.displayLarge.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get displayMedium => AppTypography.displayMedium.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get headingLarge => AppTypography.headingLarge.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get headingMedium => AppTypography.headingMedium.copyWith(
     color: Theme.of(this).colorScheme.onSurface,
   );
-  TextStyle get screenTitle => AppTypography.screenTitle.copyWith(
-    color: Theme.of(this).colorScheme.onSurface,
+  TextStyle get headingSmall => AppTypography.headingSmall.copyWith(
+    color: colorTextPrimary,
   );
-  TextStyle get subheader => AppTypography.subheader.copyWith(
-    color: Theme.of(this).colorScheme.onSurface,
-  );
+  TextStyle get bodyLarge => AppTypography.bodyLarge.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get bodyMedium => AppTypography.bodyMedium.copyWith(
+        color: colorTextPrimary,
+      );
   TextStyle get bodyPrimary => AppTypography.bodyPrimary.copyWith(
     color: Theme.of(this).colorScheme.onSurface,
   );
@@ -19,6 +33,15 @@ extension ThemedTypography on BuildContext {
   TextStyle get listItemTitle => AppTypography.listItemTitle.copyWith(
     color: Theme.of(this).colorScheme.onSurface,
   );
+  TextStyle get labelLarge => AppTypography.labelLarge.copyWith(
+        color: colorTextSecondary,
+      );
+  TextStyle get labelMedium => AppTypography.labelMedium.copyWith(
+        color: colorTextSecondary,
+      );
+  TextStyle get labelSmall => AppTypography.labelSmall.copyWith(
+        color: colorTextTertiary,
+      );
   TextStyle get caption => AppTypography.caption.copyWith(
     color: Theme.of(this).colorScheme.onSurfaceVariant,
   );
@@ -42,31 +65,106 @@ extension ThemedTypography on BuildContext {
   );
   TextStyle get input =>
       AppTypography.input.copyWith(color: Theme.of(this).colorScheme.onSurface);
+
+  // Legacy styles for backwards compatibility
+  TextStyle get heroTitle => AppTypography.heroTitle.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get screenTitle => AppTypography.screenTitle.copyWith(
+        color: colorTextPrimary,
+      );
+  TextStyle get subheader => AppTypography.subheader.copyWith(
+        color: colorTextPrimary,
+      );
 }
 
 abstract final class AppTypography {
-  // Hero/Page Titles - no color = inherits from DefaultTextStyle/Theme
+  // Display (Amounts, Big Numbers)
+  static const displayLarge = TextStyle(
+    fontSize: 36,
+    fontWeight: FontWeight.w600,
+    height: 1.1,
+    letterSpacing: -0.8,
+  );
+
+  static const displayMedium = TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.w600,
+    height: 1.2,
+    letterSpacing: -0.5,
+  );
+
+  // Headings
+  static const headingLarge = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+  );
+
+  static const headingMedium = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+  );
+
+  static const headingSmall = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+  );
+
+  // Body
+  static const bodyLarge = TextStyle(
+    fontSize: 17,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+  );
+
+  static const bodyMedium = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+  );
+
+  // Labels
+  static const labelLarge = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
+
+  static const labelMedium = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+  );
+
+  static const labelSmall = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+    letterSpacing: 0.4,
+  );
+
+  // Legacy/Supporting styles (consider refactoring later)
   static const heroTitle = TextStyle(
     fontSize: 34,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.6,
   );
 
-  // Screen/Dialog Titles
   static const screenTitle = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
 
-  // Subheader
   static const subheader = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.4,
   );
 
-  // Amount Display - Extra Large
   static const amountXL = TextStyle(
     fontSize: 52,
     fontWeight: FontWeight.w600,
@@ -74,7 +172,6 @@ abstract final class AppTypography {
     height: 1.1,
   );
 
-  // Amount Display - Large
   static const amountLG = TextStyle(
     fontSize: 38,
     fontWeight: FontWeight.w600,
@@ -82,58 +179,45 @@ abstract final class AppTypography {
     height: 1.1,
   );
 
-  // Amount Display - Medium
   static const amountMD = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
 
-  // Amount Display - Small (inline amounts)
   static const amountSM = TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
 
-  // AppBar Title
   static const appBarTitle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.3,
   );
 
-  // List Item Title
   static const listItemTitle = TextStyle(
     fontSize: 19,
     fontWeight: FontWeight.w500,
     letterSpacing: -0.3,
   );
 
-  // Section Label (ALL CAPS)
   static const sectionLabel = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.3,
   );
 
-  // Body Primary
   static const bodyPrimary = TextStyle(fontSize: 17);
 
-  // Body Secondary
   static const bodySecondary = TextStyle(fontSize: 15, height: 1.5);
 
-  // Button Text
   static const button = TextStyle(fontSize: 17, fontWeight: FontWeight.w500);
 
-  // Caption
   static const caption = TextStyle(fontSize: 14);
 
-  // Caption Small
   static const captionSmall = TextStyle(fontSize: 12);
 
-  // Input Text
   static const input = TextStyle(fontSize: 17);
 
-  // Hint Text
   static const hint = TextStyle(fontSize: 17);
 
-  // Error Text
   static const errorText = TextStyle(fontSize: 13);
 }

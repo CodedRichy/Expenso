@@ -15,6 +15,7 @@ import '../../widgets/staggered_list_item.dart';
 import '../../widgets/upi_payment_card.dart';
 import '../../utils/money_format.dart';
 import '../../widgets/tap_scale.dart';
+import '../../widgets/glass_card.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   final Group? group;
@@ -208,7 +209,6 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
 
     final group = _group!;
     final repo = CycleRepository.instance;
-    final theme = Theme.of(context);
     final myPaymentRoutes = _getMyPaymentRoutes(group.id);
     final receivingRoutes = _getReceivingRoutes(group.id);
 
@@ -233,37 +233,26 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
               onRetry: () => ConnectivityService.instance.checkNow(),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenPaddingH,
-                AppSpacing.screenHeaderPaddingTop,
-                AppSpacing.screenPaddingH,
-                AppSpacing.space3xl,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
                 children: [
                   TapScale(
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.chevron_left, size: 24),
-                      color: theme.colorScheme.onSurface,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(32, 32),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
                       ),
+                      child: const Icon(Icons.chevron_left, size: 20),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(width: 12),
                   Text(
                     group.name,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
+                    style: context.headingMedium.copyWith(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -303,24 +292,16 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                                           size: 64,
                                           color: context.colorSuccess,
                                         ),
-                                        const SizedBox(
-                                          height: AppSpacing.spaceXl,
+                                        const SizedBox(height: 24),
+                                        Text(
+                                          'You\'re all settled!',
+                                          style: context.headingLarge.copyWith(fontWeight: FontWeight.w600),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        Semantics(
-                                          label:
-                                              "You're all settled. You have no payments to make this cycle.",
-                                          child: Text(
-                                            'You\'re all settled!',
-                                            style: context.screenTitle,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                        const SizedBox(
-                                          height: AppSpacing.spaceMd,
-                                        ),
+                                        const SizedBox(height: 12),
                                         Text(
                                           'You have no payments to make this cycle.',
-                                          style: context.bodySecondary,
+                                          style: context.bodyMedium.copyWith(color: context.colorTextSecondary),
                                           textAlign: TextAlign.center,
                                         ),
                                       ],
@@ -383,39 +364,31 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            color: context.colorAccentBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: context.colorAccent.withValues(alpha: 0.3),
-            ),
-          ),
+        GlassCard(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(
-                Icons.account_balance_wallet,
-                color: context.colorAccent,
-                size: 24,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: context.colorAccent.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.account_balance_wallet, color: context.colorAccent, size: 20),
               ),
-              const SizedBox(width: AppSpacing.spaceMd),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Incoming payments',
-                      style: context.bodyPrimary.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      'Incoming Payments',
+                      style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 2),
                     Text(
-                      '${routes.length} ${routes.length == 1 ? 'payment' : 'payments'} awaiting your confirmation',
-                      style: context.caption.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                      '${routes.length} awaiting confirmation',
+                      style: context.labelMedium.copyWith(color: context.colorTextSecondary),
                     ),
                   ],
                 ),
@@ -423,7 +396,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.spaceXl),
+        const SizedBox(height: 16),
         ...routes.asMap().entries.map((e) {
           final index = e.key;
           final route = e.value;
@@ -436,14 +409,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           );
           return StaggeredListItem(
             index: index,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.spaceMd),
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
+            child: GlassCard(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Container(
@@ -451,55 +419,46 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: isCash
-                          ? context.colorWarningBackground
-                          : context.colorAccentBackground,
+                          ? context.colorWarning.withValues(alpha: 0.1)
+                          : context.colorAccent.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isCash ? Icons.payments : Icons.phone_android,
                       size: 20,
-                      color: isCash
-                          ? context.colorWarning
-                          : context.colorAccent,
+                      color: isCash ? context.colorWarning : context.colorAccent,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.spaceMd),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           payerName,
-                          style: context.bodyPrimary.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        const SizedBox(height: 2),
                         Text(
-                          '$amountStr ${isCash ? 'cash' : 'UPI'} payment',
-                          style: context.bodySecondary,
+                          '$amountStr ${isCash ? 'cash' : 'UPI'}',
+                          style: context.labelMedium.copyWith(color: context.colorTextSecondary),
                         ),
                       ],
                     ),
                   ),
                   TapScale(
-                    child: ElevatedButton(
-                      onPressed: () => isCash
-                          ? _handleConfirmCashReceived(route)
-                          : _handleConfirmUpiReceived(route),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.colorSuccess,
-                        foregroundColor: context.colorSurface,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.spaceLg,
-                          vertical: AppSpacing.spaceMd,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
+                    onTap: () => isCash
+                        ? _handleConfirmCashReceived(route)
+                        : _handleConfirmUpiReceived(route),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: context.colorSuccess,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
                       ),
-                      child: const Text('Confirm'),
+                      child: Text(
+                        'Confirm',
+                        style: context.labelMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
@@ -602,31 +561,29 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
           child: Column(
             children: [
               if (allConfirmed) ...[
-                Icon(Icons.check_circle, size: 48, color: context.colorSuccess),
-                const SizedBox(height: AppSpacing.spaceLg),
+                Icon(Icons.check_circle, size: 56, color: context.colorSuccess),
+                const SizedBox(height: 16),
                 Text(
                   'All payments marked!',
-                  style: context.screenTitle.copyWith(
+                  style: context.headingLarge.copyWith(
                     color: context.colorSuccess,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ] else ...[
                 Text(
                   totalDisplay,
-                  style: TextStyle(
-                    fontSize: 48,
+                  style: context.displayLarge.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -1.2,
-                    height: 1.1,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.spaceMd),
+                const SizedBox(height: 8),
                 Text(
                   confirmedRoutes > 0
                       ? 'Remaining dues (${myRoutes.length - confirmedRoutes} of ${myRoutes.length})'
                       : 'Your total dues',
-                  style: context.bodySecondary,
+                  style: context.labelLarge.copyWith(color: context.colorTextSecondary),
                 ),
               ],
             ],
@@ -635,11 +592,9 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         const SizedBox(height: AppSpacing.space4xl),
         Text(
           allConfirmed ? 'COMPLETED PAYMENTS' : 'PAY INDIVIDUALLY',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
+          style: context.labelSmall.copyWith(
+            color: context.colorTextTertiary,
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: AppSpacing.spaceXl),
@@ -709,23 +664,26 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
   }
 
   Widget _buildBackButton(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: TapScale(
-        child: Semantics(
-          label: 'Back to group',
-          button: true,
-          child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        enableHaptic: true,
+        onTap: () => Navigator.pop(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: context.colorTextPrimary,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+          ),
+          child: Center(
+            child: Text(
+              'Back to Group',
+              style: context.labelLarge.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
-              minimumSize: const Size(double.infinity, 0),
-              elevation: 0,
             ),
-            child: const Text('Back to Group', style: AppTypography.button),
           ),
         ),
       ),

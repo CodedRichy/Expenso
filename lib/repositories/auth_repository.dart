@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/models.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
 import '../services/user_profile_cache.dart';

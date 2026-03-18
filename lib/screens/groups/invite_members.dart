@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -14,6 +14,7 @@ import '../../services/connectivity_service.dart';
 import '../../utils/route_args.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/tap_scale.dart';
+import '../../widgets/glass_card.dart';
 import '../../services/firestore_service.dart';
 
 class InviteMembers extends StatefulWidget {
@@ -354,36 +355,40 @@ class _InviteMembersState extends State<InviteMembers>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.screenHeaderPaddingTop,
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.space3xl,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
                     children: [
-                      Semantics(
-                        label: 'Back',
-                        button: true,
-                        child: TapScale(
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.chevron_left, size: 24),
-                            color: Theme.of(context).colorScheme.onSurface,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(32, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                      TapScale(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
                           ),
+                          child: const Icon(Icons.chevron_left, size: 20),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Text(displayGroupName, style: context.screenTitle),
-                      const SizedBox(height: 4),
-                      Text('Invite members', style: context.bodySecondary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayGroupName,
+                              style: context.headingMedium.copyWith(fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Invite members',
+                              style: context.labelMedium.copyWith(color: context.colorTextSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -402,58 +407,38 @@ class _InviteMembersState extends State<InviteMembers>
                           children: [
                             if (groupArg.inviteLinkEnabled &&
                                 groupArg.inviteLinkToken != null) ...[
-                              Text('SHARE LINK', style: context.sectionLabel),
+                              Text('SHARE LINK', style: context.labelSmall.copyWith(color: context.colorTextTertiary, letterSpacing: 0.5)),
                               const SizedBox(height: 12),
-                              Semantics(
-                                label: linkCopied
-                                    ? 'Link shared'
-                                    : 'Share invite link',
-                                button: true,
-                                child: TapScale(
-                                  child: InkWell(
-                                    onTap: () => handleShareLink(groupArg),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: context.colorSurface,
-                                        border: Border.all(
-                                          color: context.colorBorder,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                              TapScale(
+                                onTap: () => handleShareLink(groupArg),
+                                child: GlassCard(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.link,
-                                                size: 20,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                linkCopied
-                                                    ? 'Link shared'
-                                                    : 'Share invite link',
-                                                style: context.bodyPrimary,
-                                              ),
-                                            ],
-                                          ),
                                           Icon(
-                                            linkCopied ? Icons.check : Icons.share,
+                                            Icons.link,
                                             size: 20,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
+                                            color: context.colorPrimary,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            linkCopied
+                                                ? 'Link shared'
+                                                : 'Share invite link',
+                                            style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
                                           ),
                                         ],
                                       ),
-                                    ),
+                                      Icon(
+                                        linkCopied ? Icons.check : Icons.share,
+                                        size: 20,
+                                        color: context.colorTextSecondary,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -523,7 +508,7 @@ class _InviteMembersState extends State<InviteMembers>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('ADD BY PHONE', style: context.sectionLabel),
+                            Text('ADD BY PHONE', style: context.labelSmall.copyWith(color: context.colorTextTertiary, letterSpacing: 0.5)),
                             const SizedBox(height: 12),
                             TextField(
                               onChanged: (value) => setState(() {
@@ -532,14 +517,10 @@ class _InviteMembersState extends State<InviteMembers>
                               }),
                               decoration: InputDecoration(
                                 hintText: 'Name (optional)',
-                                helperText:
-                                    (_contactsPermissionGranted &&
-                                        name.trim().isNotEmpty)
-                                    ? 'Suggestions from contacts appear below'
-                                    : null,
-                                helperMaxLines: 1,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                helperStyle: context.labelSmall.copyWith(color: context.colorTextTertiary),
                               ),
-                              style: context.input,
+                              style: context.labelLarge,
                             ),
                             const SizedBox(height: 12),
                             if (!_contactsPermissionGranted &&
@@ -578,17 +559,17 @@ class _InviteMembersState extends State<InviteMembers>
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 SizedBox(
-                                  height: 56,
+                                  height: 52,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: context.colorSurface,
+                                      color: Colors.white.withValues(alpha: 0.2),
                                       border: Border.all(
-                                        color: context.colorBorderInput,
+                                        color: Colors.black.withValues(alpha: 0.08),
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
                                     ),
                                     alignment: Alignment.center,
                                     child: PopupMenuButton<String>(
@@ -597,7 +578,7 @@ class _InviteMembersState extends State<InviteMembers>
                                       ),
                                       offset: const Offset(0, 48),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
                                       ),
                                       itemBuilder: (context) =>
                                           countryCodesWithCurrency
@@ -606,7 +587,7 @@ class _InviteMembersState extends State<InviteMembers>
                                                   value: c.dialCode,
                                                   child: Text(
                                                     '${c.dialCode} ${c.countryCode}',
-                                                    style: context.input,
+                                                    style: context.labelMedium,
                                                   ),
                                                 ),
                                               )
@@ -616,15 +597,13 @@ class _InviteMembersState extends State<InviteMembers>
                                         children: [
                                           Text(
                                             _selectedCountryCode,
-                                            style: context.input,
+                                            style: context.labelMedium.copyWith(fontWeight: FontWeight.w600),
                                           ),
                                           const SizedBox(width: 4),
                                           Icon(
                                             Icons.arrow_drop_down,
-                                            size: 20,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
+                                            size: 18,
+                                            color: context.colorTextSecondary,
                                           ),
                                         ],
                                       ),

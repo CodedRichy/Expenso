@@ -4,15 +4,12 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../models/models.dart';
 import '../services/data_encryption_service.dart';
 import '../services/firestore_service.dart';
-import '../services/identity_service.dart';
 import '../utils/money_format.dart';
-import '../services/sync_status_service.dart';
 import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
 import '../utils/expense_validation.dart';
 import '../utils/settlement_engine.dart';
 import '../services/feature_flag_service.dart';
-import '../utils/id_utils.dart';
 import '../utils/app_logger.dart';
 import './auth_repository.dart';
 import './group_repository.dart';
@@ -34,13 +31,24 @@ class CycleRepository extends BaseRepository {
   final Map<String, Map<String, dynamic>> _userCache = {};
   bool _groupsLoading = false;
   final List<GroupInvitation> _pendingInvitations = [];
+  Map<String, String>? pendingInvitation; // For storing invite link while signed out
+  String? _streamError;
   StreamSubscription? _groupsSub;
   StreamSubscription? _invitationsSub;
-  String? _streamError;
   final List<Group> _groups = [];
   final Map<String, Member> _membersById = {};
   final Map<String, StreamSubscription> _paymentAttemptSubs = {};
   final Map<String, String> _paymentAttemptCycleId = {};
+  final Map<String, _GroupMeta> _groupMeta = {};
+  final Map<String, List<Expense>> _expensesByCycleId = {};
+  final Map<String, List<SystemMessage>> _systemMessagesByGroup = {};
+  final Map<String, StreamSubscription> _expenseSubs = {};
+  final Map<String, StreamSubscription> _systemMessageSubs = {};
+  final Map<String, List<ExpenseRevision>> _revisionsByGroup = {};
+  final Map<String, StreamSubscription> _revisionSubs = {};
+  final Map<String, Set<String>> _deletedIdsByGroup = {};
+  final Map<String, StreamSubscription> _deletedIdsSubs = {};
+  final Map<String, List<PaymentAttempt>> _paymentAttemptsByGroup = {};
 
   String get currentUserId => _auth.currentUserId;
   String get currentUserPhone => _auth.currentUserPhone;
@@ -348,29 +356,6 @@ class CycleRepository extends BaseRepository {
     _lastAddedAmount = null;
   }
 
-  void clearLastAdded() => _clearLastAdded();
-
-  List<Group> get groups => _groupsRepo.groups;
-  Map<String, Member> get membersById => _groupsRepo.membersById;
-
-  /// cycleId -> list of expenses for that cycle (current cycle per group).
-  final Map<String, List<Expense>> _expensesByCycleId = {};
-
-  /// groupId -> { activeCycleId, cycleStatus } from Firestore.
-  final Map<String, _GroupMeta> _groupMeta = {};
-
-  /// groupId -> list of expense revisions (for edit tracking).
-  final Map<String, List<ExpenseRevision>> _revisionsByGroup = {};
-
-  /// groupId -> set of deleted expense IDs.
-  final Map<String, Set<String>> _deletedIdsByGroup = {};
-
-  final Map<String, StreamSubscription<List<DocView>>> _expenseSubs = {};
-  final Map<String, StreamSubscription<List<Map<String, dynamic>>>>
-  _systemMessageSubs = {};
-  final Map<String, StreamSubscription<List<Map<String, dynamic>>>>
-  _revisionSubs = {};
-  final Map<String, StreamSubscription<Set<String>>> _deletedIdsSubs = {};
   bool _notifyDirty = false;
   bool _notifyScheduled = false;
 
@@ -389,14 +374,17 @@ class CycleRepository extends BaseRepository {
     }
   }
 
+  void clearLastAdded() => _clearLastAdded();
+
+  List<Group> get groups => _groupsRepo.groups;
+  Map<String, Member> get membersById => _groupsRepo.membersById;
+
   /// Pending group invitations for the current user.
   List<GroupInvitation> get pendingInvitations => _groupsRepo.pendingInvitations;
 
   /// True while waiting for the first invitations snapshot.
   bool get invitationsLoading => _groupsRepo.invitationsLoading;
 
-  /// System messages per group (groupId -> list of messages).
-  final Map<String, List<SystemMessage>> _systemMessagesByGroup = {};
   List<SystemMessage> getSystemMessages(String groupId) =>
       List.unmodifiable(_systemMessagesByGroup[groupId] ?? []);
 
@@ -537,39 +525,6 @@ class CycleRepository extends BaseRepository {
     _paymentAttemptSubs[groupId]?.cancel();
     _paymentAttemptSubs.remove(groupId);
     _paymentAttemptCycleId.remove(groupId);
-  }
-
-  Future<void> _loadUsersForMembers(List<DocView> docs) async {
-    final uids = <String>{};
-    for (final doc in docs) {
-      final members = List<String>.from(doc.data()['members'] as List? ?? []);
-      uids.addAll(members);
-    }
-    for (final uid in uids) {
-      if (_userCache.containsKey(uid)) continue;
-      try {
-        final u = await FirestoreService.instance.getUser(uid);
-        if (u != null) {
-          _userCache[uid] = u;
-          if (!_membersById.containsKey(uid)) {
-            _membersById[uid] = Member(
-              id: uid,
-              phone: u['phoneNumber'] as String? ?? '',
-              name: u['displayName'] as String? ?? '',
-              photoURL: u['photoURL'] as String?,
-            );
-          }
-        }
-      } catch (e, st) {
-        AppLogger.error('_loadUsersForMembers error', name: 'CycleRepository', metadata: {'uid': uid}, error: e, stackTrace: st);
-      }
-    }
-    _rebuildGlobalIdentities();
-    _requestNotify();
-  }
-
-  void _rebuildGlobalIdentities() {
-    IdentityService.instance.buildFromGroups(_groups, _membersById, _userCache);
   }
 
   /// Refreshes user profile data for all members of a group.
@@ -1329,42 +1284,26 @@ class CycleRepository extends BaseRepository {
       final actorName = _currentUserName.isNotEmpty
           ? _currentUserName
           : 'Someone';
-      final parts = <String>[];
-      if (existing.description != updatedExpense.description) {
-        parts.add(
-          '"${existing.description}" → "${updatedExpense.description}"',
-        );
+      final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
+      final fmtAmount = formatMoneyFromMajor(existing.amount, currencyCode);
+      final prefix = isAdminOverride
+          ? '$actorName (admin) edited'
+          : '$actorName edited';
+      String detail = '${existing.description} $fmtAmount';
+      if (isAdminOverride) {
+        detail +=
+            '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
       }
-      if ((existing.amount - updatedExpense.amount).abs() > 0.001) {
-        final fmtOld = formatMoneyFromMajor(existing.amount, currencyCode);
-        final fmtNew = formatMoneyFromMajor(
-          updatedExpense.amount,
-          currencyCode,
-        );
-        parts.add('$fmtOld → $fmtNew');
-      }
-      if (parts.isNotEmpty || isAdminOverride) {
-        final prefix = isAdminOverride
-            ? '$actorName (admin) edited'
-            : '$actorName edited';
-        String detail = parts.isNotEmpty
-            ? parts.join(', ')
-            : existing.description;
-        if (isAdminOverride) {
-          detail +=
-              '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
-        }
-        FirestoreService.instance
-            .addSystemMessage(
-              groupId,
-              type: 'expense_edited',
-              userName: actorName,
-              odId: _currentUserId,
-              detail: detail,
-              prefix: prefix,
-            )
-            .catchError((e) => debugPrint('Activity log write failed: $e'));
-      }
+      FirestoreService.instance
+          .addSystemMessage(
+            groupId,
+            type: 'expense_edited',
+            userName: actorName,
+            odId: _currentUserId,
+            detail: detail,
+            prefix: prefix,
+          )
+          .catchError((e) => debugPrint('Activity log write failed: $e'));
     }
   }
 
@@ -1606,8 +1545,6 @@ class CycleRepository extends BaseRepository {
   // ============================================================
   // PAYMENT ATTEMPTS
   // ============================================================
-
-  final Map<String, List<PaymentAttempt>> _paymentAttemptsByGroup = {};
 
   List<PaymentAttempt> getPaymentAttempts(String groupId) =>
       _settlementRepo.getPaymentAttempts(groupId);
@@ -2015,25 +1952,6 @@ class CycleRepository extends BaseRepository {
     );
     _refreshGroupAmounts();
     _logSettlementEvent(groupId, SettlementEventType.cycleSettlementStarted);
-    notifyListeners();
-  }
-
-
-  void _automatedFreeze(String groupId) {
-    final meta = _groupMeta[groupId];
-    if (meta == null || meta.cycleStatus == 'settling') return;
-
-    // We bypass the isCreator check here because this is a system-enforced rule.
-    FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
-    
-    // We update local state immediately for snappy UI
-    _groupMeta[groupId] = _GroupMeta(
-      activeCycleId: meta.activeCycleId,
-      cycleStatus: 'settling',
-      settlementRhythm: meta.settlementRhythm,
-      settlementDay: meta.settlementDay,
-    );
-    _refreshGroupAmounts();
     notifyListeners();
   }
 

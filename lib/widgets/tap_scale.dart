@@ -1,57 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Wraps [child] and scales to [scaleDown] on tap down, back to 1 on tap up.
 class TapScale extends StatefulWidget {
   final Widget child;
-  final double scaleDown;
   final VoidCallback? onTap;
+  final double targetScale;
+  final double? scaleDown; // Alias for targetScale for backwards compatibility
+  final Duration duration;
+  final bool enableHaptic;
 
   const TapScale({
-    super.key,
+    Key? key,
     required this.child,
-    this.scaleDown = 0.98,
     this.onTap,
-  });
+    this.targetScale = 0.96,
+    this.scaleDown,
+    this.duration = const Duration(milliseconds: 100),
+    this.enableHaptic = false,
+  }) : super(key: key);
 
   @override
   State<TapScale> createState() => _TapScaleState();
 }
 
-class _TapScaleState extends State<TapScale>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
+class _TapScaleState extends State<TapScale> {
+  bool _isPressed = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 80),
-    );
-    _scale = Tween<double>(
-      begin: 1,
-      end: widget.scaleDown,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  double get _effectiveScale => widget.scaleDown ?? widget.targetScale;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Listener(
-        onPointerDown: (_) => _controller.forward(),
-        onPointerUp: (_) => _controller.reverse(),
-        onPointerCancel: (_) => _controller.reverse(),
-        child: ScaleTransition(scale: _scale, child: widget.child),
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        if (widget.enableHaptic) {
+          HapticFeedback.lightImpact();
+        }
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? _effectiveScale : 1.0,
+        duration: widget.duration,
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }
 }
+

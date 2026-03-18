@@ -32,23 +32,22 @@ class GradientScaffold extends StatelessWidget {
       bottomNavigationBar: bottomNavigationBar,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? LinearGradient(
+      backgroundColor: isDark ? context.colorBackground : context.colorBackground,
+      body: isDark
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColorsDark.backgroundGradientStart,
-                    AppColorsDark.backgroundGradientEnd,
+                    context.colorBackground,
+                    context.colorBackgroundGradientEnd,
                   ],
-                )
-              : null,
-          color: isDark ? null : AppColors.background,
-        ),
-        child: body,
-      ),
+                ),
+              ),
+              child: body,
+            )
+          : body,
     );
   }
 }

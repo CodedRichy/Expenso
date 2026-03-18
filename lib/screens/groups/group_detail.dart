@@ -27,6 +27,8 @@ import '../../widgets/staggered_list_item.dart';
 import '../../widgets/undo_toast.dart';
 import '../common/empty_states.dart';
 import '../../widgets/tap_scale.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/animated_number.dart';
 
 part 'group_detail_smart_bar.dart';
 class _StyledDescription {
@@ -141,7 +143,6 @@ class _GroupDetailState extends State<GroupDetail> {
             activeCycle.status == CycleStatus.closed ||
             defaultGroup.status == 'settled';
         final hasExpenses = expenses.isNotEmpty || systemMessages.isNotEmpty;
-        final theme = Theme.of(context);
 
         return GradientScaffold(
           body: SafeArea(
@@ -157,66 +158,59 @@ class _GroupDetailState extends State<GroupDetail> {
                       SliverPersistentHeader(
                         pinned: true,
                         delegate: _StickyHeaderDelegate(
-                          height: 52,
-                          backgroundColor: theme.brightness == Brightness.dark
-                              ? AppColorsDark.backgroundGradientStart
-                              : AppColors.background,
+                          height: 76,
+                          backgroundColor: context.colorBackground,
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TapScale(
-                                  child: IconButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    icon: const Icon(
-                                      Icons.chevron_left,
-                                      size: 24,
+                                  duration: const Duration(milliseconds: 100),
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.6),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
                                     ),
-                                    color: theme.colorScheme.onSurface,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(32, 32),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
+                                    child: const Icon(Icons.arrow_back, size: 20),
                                   ),
                                 ),
+                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    defaultGroup.name,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.onSurface,
-                                      letterSpacing: -0.3,
-                                    ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        defaultGroup.name,
+                                        style: context.headingMedium.copyWith(fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${activeCycle.status == CycleStatus.active ? 'Active' : 'Settling'} · ${repo.getMembersForGroup(groupId).length} members',
+                                        style: context.labelSmall.copyWith(color: context.colorTextSecondary),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 TapScale(
-                                  child: IconButton(
-                                    onPressed: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/group-members',
-                                        arguments: defaultGroup,
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.people_outline,
-                                      size: 24,
+                                  enableHaptic: true,
+                                  onTap: () => Navigator.pushNamed(context, '/group-members', arguments: defaultGroup),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                                      border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
                                     ),
-                                    color: theme.colorScheme.onSurface,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(32, 32),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
+                                    child: Text(
+                                      'Members',
+                                      style: context.labelLarge.copyWith(fontWeight: FontWeight.w600, color: context.colorTextPrimary),
                                     ),
                                   ),
                                 ),
@@ -257,347 +251,148 @@ class _GroupDetailState extends State<GroupDetail> {
                             ),
                           ),
                         ),
-                      if (!isSettled &&
-                          (repo.getGroupPendingAmount(groupId) > 0 ||
-                              isPassive))
+                      if (!isSettled && (repo.getGroupPendingAmount(groupId) > 0 || isPassive))
                         SliverToBoxAdapter(
-                          child: Builder(
-                            builder: (context) {
-                              final fullySettled =
-                                  isPassive && repo.isFullySettled(groupId);
-                              final isCreator = repo.isCurrentUserCreator(
-                                groupId,
-                              );
-
-                              return Padding(
-                                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TapScale(
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/settlement-confirmation',
-                                            arguments: {
-                                              'group': defaultGroup,
-                                              'method': 'upi',
-                                            },
-                                          );
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TapScale(
+                                    enableHaptic: true,
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/settlement-confirmation',
+                                        arguments: {
+                                          'group': defaultGroup,
+                                          'method': 'upi',
                                         },
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          elevation: 0,
-                                          minimumSize: const Size(
-                                            double.infinity,
-                                            0,
-                                          ),
+                                      );
+                                    },
+                                    child: ElevatedButton(
+                                      onPressed: null, // TapScale handles it
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: context.colorPrimary,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
                                         ),
-                                        child: const Text(
-                                          'Settlement',
-                                          style: AppTypography.button,
-                                        ),
+                                        elevation: 0,
+                                        disabledBackgroundColor: context.colorPrimary,
+                                        disabledForegroundColor: Colors.white,
                                       ),
+                                      child: const Text('Settle up', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
                                     ),
-                                    if (isCreator) ...[
-                                      const SizedBox(height: 10),
-                                      TapScale(
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            if (isPassive) {
-                                              final confirmed = await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => AlertDialog(
-                                                  title: const Text(
-                                                    'Start new cycle?',
-                                                  ),
-                                                  content: Text(
-                                                    fullySettled
-                                                        ? 'All payments are complete. Ready to start a fresh cycle.'
-                                                        : 'This will archive current expenses and start a fresh cycle.',
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                            ctx,
-                                                            false,
-                                                          ),
-                                                      child: const Text(
-                                                        'Cancel',
-                                                      ),
-                                                    ),
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                            ctx,
-                                                            true,
-                                                          ),
-                                                      child: const Text(
-                                                        'Confirm',
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                              if (confirmed != true ||
-                                                  !context.mounted) {
-                                                return;
-                                              }
-                                            } else {
-                                              _showSettleConfirmDialog(
-                                                context,
-                                                repo,
-                                                groupId,
-                                              );
-                                              return;
-                                            }
-                                            if (ConnectivityService
-                                                .instance
-                                                .isOffline) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Cannot start new cycle while offline',
-                                                    ),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                  ),
-                                                );
-                                              }
-                                              return;
-                                            }
-                                            try {
-                                              await repo.archiveAndRestart(
-                                                groupId,
-                                              );
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'New cycle started.',
-                                                    ),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                  ),
-                                                );
-                                              }
-                                            } catch (e) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Could not start new cycle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}',
-                                                    ),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                  ),
-                                                );
-                                              }
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 14,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            elevation: 0,
-                                            minimumSize: const Size(
-                                              double.infinity,
-                                              0,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            isPassive
-                                                ? (fullySettled
-                                                      ? 'Start New Cycle ✓'
-                                                      : 'Start New Cycle')
-                                                : 'Close cycle',
-                                            style: AppTypography.button,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                                  ),
                                 ),
-                              );
-                            },
+                                const SizedBox(width: 10),
+                                TapScale(
+                                  onTap: () {
+                                    // Placeholder for payment methods/cards
+                                  },
+                                  child: Container(
+                                    width: 52,
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                                      border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
+                                    ),
+                                    child: const Center(child: Text('💳', style: TextStyle(fontSize: 20))),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ...(hasExpenses
                           ? <Widget>[
                               SliverPadding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  24,
-                                  16,
-                                  24,
-                                  16,
-                                ),
+                                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                                 sliver: SliverToBoxAdapter(
                                   child: Text(
-                                    'EXPENSE LOG',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                      letterSpacing: 0.3,
-                                    ),
+                                    'RECENT EXPENSES',
+                                    style: context.labelSmall.copyWith(color: context.colorTextTertiary),
                                   ),
                                 ),
                               ),
-                              SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final expense = expenses[index];
-                                  return StaggeredListItem(
-                                    index: index,
-                                    child: TapScale(
-                                      scaleDown: 0.99,
-                                      child: InkWell(
-                                        onTap: isPassive
-                                            ? null
-                                            : () {
-                                                Navigator.pushNamed(
-                                                  context,
-                                                  '/edit-expense',
-                                                  arguments: {
-                                                    'expenseId': expense.id,
-                                                    'groupId': defaultGroup.id,
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                sliver: SliverToBoxAdapter(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                                      border: Border.all(color: Colors.black.withValues(alpha: 0.06), width: 1),
+                                    ),
+                                    child: ListView.separated(
+                                      shrinkWrap: true,
+                                      padding: EdgeInsets.zero,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: expenses.length,
+                                      separatorBuilder: (context, index) => Container(
+                                        height: 1,
+                                        color: Colors.black.withValues(alpha: 0.04),
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final expense = expenses[index];
+                                        final desc = _buildViewerRelativeDescription(
+                                          expense: expense,
+                                          repo: repo,
+                                        );
+                                        return StaggeredListItem(
+                                          index: index,
+                                          child: TapScale(
+                                            onTap: isPassive
+                                                ? null
+                                                : () {
+                                                    HapticFeedback.lightImpact();
+                                                    Navigator.pushNamed(
+                                                      context,
+                                                      '/edit-expense',
+                                                      arguments: {
+                                                        'expenseId': expense.id,
+                                                        'groupId': defaultGroup.id,
+                                                      },
+                                                    );
                                                   },
-                                                );
-                                              },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 14,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                              top: index > 0
-                                                  ? BorderSide(
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).dividerColor,
-                                                      width: 1,
-                                                    )
-                                                  : BorderSide.none,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                              color: Colors.white,
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          desc.main,
+                                                          style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+                                                        ),
+                                                        const SizedBox(height: 4),
+                                                        Text(
+                                                          'Paid by ${repo.getMemberDisplayNameById(expense.paidById)} ${desc.suffix ?? ''}',
+                                                          style: context.labelSmall.copyWith(color: context.colorTextSecondary),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  AnimatedNumber(
+                                                    value: expense.amount,
+                                                    prefix: defaultGroup.currencyCode == 'INR' ? '₹' : '',
+                                                    style: context.bodyLarge.copyWith(fontWeight: FontWeight.w500),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Builder(
-                                                      builder: (context) {
-                                                        final desc =
-                                                            _buildViewerRelativeDescription(
-                                                              expense: expense,
-                                                              repo: repo,
-                                                            );
-                                                        return Text.rich(
-                                                          TextSpan(
-                                                            children: [
-                                                              TextSpan(
-                                                                text: desc.main,
-                                                                style: TextStyle(
-                                                                  fontSize: 17,
-                                                                  color: Theme.of(
-                                                                    context,
-                                                                  ).colorScheme.onSurface,
-                                                                ),
-                                                              ),
-                                                              if (desc.suffix !=
-                                                                  null) ...[
-                                                                const TextSpan(
-                                                                  text: '  ',
-                                                                ),
-                                                                TextSpan(
-                                                                  text: desc
-                                                                      .suffix,
-                                                                  style: TextStyle(
-                                                                    fontSize:
-                                                                        14,
-                                                                    color: Theme.of(
-                                                                      context,
-                                                                    ).colorScheme.onSurfaceVariant,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      expense.displayDate,
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Text(
-                                                formatMoneyFromMajor(
-                                                  expense.amount,
-                                                  defaultGroup.currencyCode,
-                                                  LocaleService
-                                                      .instance
-                                                      .localeCode,
-                                                ),
-                                                style: TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurface,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                }, childCount: expenses.length),
+                                  ),
+                                ),
                               ),
                               SliverList(
                                 delegate: SliverChildBuilderDelegate((
@@ -688,121 +483,38 @@ class _GroupDetailState extends State<GroupDetail> {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showSettleConfirmDialog(
-    BuildContext context,
-    CycleRepository repo,
-    String groupId,
-  ) {
-    final theme = Theme.of(context);
-    final instructions = repo.getSettlementInstructions(groupId);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Settle & Restart',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                instructions.isEmpty
-                    ? 'No balances to settle.'
-                    : 'The following will close this cycle:',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (instructions.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ...instructions.map(
-                  (s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      s,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: theme.colorScheme.onSurface,
-                      ),
+          floatingActionButton: isPassive || isSettled
+              ? null
+              : TapScale(
+                  targetScale: 0.9,
+                  enableHaptic: true,
+                  onTap: () {
+                    HapticFeedback.heavyImpact();
+                    Navigator.pushNamed(
+                      context,
+                      '/expense-input',
+                      arguments: {'group': defaultGroup},
+                    );
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: context.colorPrimary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
+                    child: const Icon(Icons.add, size: 24, color: Colors.white),
                   ),
                 ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (ConnectivityService.instance.isOffline) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cannot settle while offline'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-                return;
-              }
-              try {
-                await repo.archiveAndRestart(groupId);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cycle settled. New cycle started.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Could not settle: ${e.toString().replaceFirst(RegExp(r'^Exception:?\s*'), '')}',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text(
-              'Confirm',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -890,8 +602,6 @@ class _DecisionClarityCard extends StatelessWidget {
     required this.isSettled,
     required this.isPassive,
   });
-
-  static const double _minHeight = 132.0;
 
   void _showSettlementDetails(BuildContext context) {
     final members = repo.getMembersForGroup(groupId);
@@ -984,69 +694,27 @@ class _DecisionClarityCard extends StatelessWidget {
       button: !isEmpty,
       child: GestureDetector(
         onTap: isEmpty ? null : () => _showSettlementDetails(context),
-        child: TapScale(
-          scaleDown: 0.98,
-          child: Opacity(
-            opacity: isMuted ? 0.6 : 1.0,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: _minHeight),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.colorPrimary.withValues(alpha: 0.08),
-                    blurRadius: 32,
-                    offset: const Offset(0, 8),
+        child: Opacity(
+          opacity: isMuted ? 0.6 : 1.0,
+          child: GlassCard(
+            padding: const EdgeInsets.all(24),
+            borderRadius: 16,
+            child: isEmpty
+                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                : _buildContent(
+                    context,
+                    currencyCode: currencyCode,
+                    cycleTotal: cycleTotal,
+                    youPaid: youPaid,
+                    settledPaid: settledPaid,
+                    myNet: myNet,
+                    myRemaining: myRemaining,
+                    hasPaymentProgress: hasPaymentProgress,
+                    isCredit: isCredit,
+                    isDebt: isDebt,
+                    isBalanceClear: isBalanceClear,
+                    isMuted: isMuted,
                   ),
-                ],
-                border: Border.all(
-                  color: (Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black)
-                      .withValues(alpha: 0.08),
-                  width: 1,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).brightness == Brightness.dark
-                              ? context.colorGradientStart.withValues(alpha: 0.85)
-                              : context.colorGradientStart.withValues(alpha: 0.9),
-                          Theme.of(context).brightness == Brightness.dark
-                              ? context.colorGradientEnd.withValues(alpha: 0.85)
-                              : context.colorGradientEnd.withValues(alpha: 0.95),
-                        ],
-                      ),
-                    ),
-                    padding: EdgeInsets.all(AppSpacing.space2xl),
-                    child: isEmpty
-                        ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
-                        : _buildContent(
-                            context,
-                            currencyCode: currencyCode,
-                            cycleTotal: cycleTotal,
-                            youPaid: youPaid,
-                            settledPaid: settledPaid,
-                            myNet: myNet,
-                            myRemaining: myRemaining,
-                            hasPaymentProgress: hasPaymentProgress,
-                            isCredit: isCredit,
-                            isDebt: isDebt,
-                            isBalanceClear: isBalanceClear,
-                            isMuted: isMuted,
-                          ),
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
       ),
@@ -1067,37 +735,45 @@ class _DecisionClarityCard extends StatelessWidget {
     required bool isBalanceClear,
     required bool isMuted,
   }) {
-    final onDark = Theme.of(context).brightness == Brightness.dark
-        ? context.colorPrimary
-        : context.colorSurface;
-    final statusColor = isBalanceClear
-        ? onDark.withValues(alpha: 0.7)
-        : isCredit
-        ? context.colorSuccessLight
-        : context.colorDebtRed;
-
-    final statusText = isMuted
-        ? 'Cycle settled — pending restart'
-        : isBalanceClear
-        ? 'All clear'
-        : '${isCredit ? '+' : '-'}${_formatAmount(myRemaining.abs(), currencyCode)}';
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Cycle Total',
-          style: AppTypography.sectionLabel.copyWith(
-            color: onDark.withValues(alpha: 0.7),
+          'YOUR STATUS',
+          style: context.labelSmall.copyWith(
+            color: context.colorTextTertiary,
           ),
         ),
-        SizedBox(height: AppSpacing.spaceXs),
-        Text(
-          _formatAmount(cycleTotal, currencyCode),
-          style: AppTypography.amountLG.copyWith(color: onDark),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            AnimatedNumber(
+              value: myRemaining,
+              prefix: currencyCode == 'INR' ? '₹' : '',
+              style: context.displayMedium.copyWith(
+                color: isBalanceClear
+                    ? context.colorTextPrimary
+                    : isCredit
+                        ? context.colorSuccess
+                        : context.colorError,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isBalanceClear ? 'clear' : (isCredit ? 'credit' : 'debt'),
+              style: context.bodyMedium.copyWith(color: context.colorTextSecondary),
+            ),
+          ],
         ),
-        SizedBox(height: AppSpacing.spaceXl),
+        const SizedBox(height: 16),
+        Container(
+          height: 1,
+          color: Colors.black.withValues(alpha: 0.06),
+        ),
+        const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
@@ -1105,36 +781,15 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'You Paid',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: onDark.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
+                    'Cycle total',
+                    style: context.labelSmall.copyWith(color: context.colorTextTertiary),
                   ),
-                  SizedBox(height: AppSpacing.space2xs),
-                  Text(
-                    _formatAmount(youPaid, currencyCode),
-                    style: AppTypography.amountSM.copyWith(
-                      color: onDark.withValues(alpha: 0.95),
-                    ),
+                  const SizedBox(height: 4),
+                  AnimatedNumber(
+                    value: cycleTotal,
+                    prefix: currencyCode == 'INR' ? '₹' : '',
+                    style: context.bodyLarge.copyWith(fontWeight: FontWeight.w500),
                   ),
-                  if (settledPaid > 0.01) ...[
-                    SizedBox(height: AppSpacing.spaceXs),
-                    Text(
-                      'Settled',
-                      style: AppTypography.captionSmall.copyWith(
-                        color: onDark.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.space2xs),
-                    Text(
-                      _formatAmount(settledPaid, currencyCode),
-                      style: AppTypography.amountSM.copyWith(
-                        color: onDark.withValues(alpha: 0.95),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -1143,16 +798,14 @@ class _DecisionClarityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your Status',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: onDark.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
+                    'You spent',
+                    style: context.labelSmall.copyWith(color: context.colorTextTertiary),
                   ),
-                  SizedBox(height: AppSpacing.space2xs),
-                  Text(
-                    statusText,
-                    style: AppTypography.amountSM.copyWith(color: statusColor),
+                  const SizedBox(height: 4),
+                  AnimatedNumber(
+                    value: youPaid,
+                    prefix: currencyCode == 'INR' ? '₹' : '',
+                    style: context.bodyLarge.copyWith(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),

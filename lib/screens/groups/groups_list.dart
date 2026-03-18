@@ -13,6 +13,7 @@ import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/skeleton_placeholders.dart';
+import '../../widgets/glass_card.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
 import '../../utils/money_format.dart';
@@ -71,16 +72,6 @@ class _GroupsListState extends State<GroupsList> {
     CycleRepository repo,
     int index,
   ) {
-    final colors = [
-      context.colorGradientStart,
-      context.colorPrimaryVariant,
-      context.colorGradientMid,
-      context.colorGradientEnd,
-    ];
-    final bgColor = colors[index % colors.length];
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onDarkGradient = isDark ? context.colorPrimary : context.colorSurface;
-
     final alreadyAnimated = _animatedInvitations.contains(invitation.groupId);
     if (!alreadyAnimated) {
       _animatedInvitations.add(invitation.groupId);
@@ -89,67 +80,47 @@ class _GroupsListState extends State<GroupsList> {
     final card = TapScale(
       child: GestureDetector(
         onTap: () => _showInvitationSheet(context, invitation, repo),
-        child: Container(
-          width: 140,
+        child: GlassCard(
+          width: 160,
           margin: const EdgeInsets.only(right: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [bgColor, bgColor.withValues(alpha: 0.8)],
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Stack(
+          padding: const EdgeInsets.all(16),
+          borderRadius: AppSpacing.radiusMedium,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: onDarkGradient.withValues(alpha: 0.1),
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: context.colorPrimary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.group_add, size: 16, color: context.colorPrimary),
                   ),
-                ),
+                  const Spacer(),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: context.colorPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      invitation.groupName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: onDarkGradient,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.group_add_outlined,
-                          size: 14,
-                          color: onDarkGradient.withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Tap to view',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: onDarkGradient.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 12),
+              Text(
+                invitation.groupName,
+                style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                'New Invitation',
+                style: context.labelSmall.copyWith(color: context.colorTextSecondary),
               ),
             ],
           ),
@@ -467,21 +438,23 @@ class _GroupsListState extends State<GroupsList> {
           floatingActionButton:
               !loading &&
                   (groups.isNotEmpty || repo.pendingInvitations.isNotEmpty)
-              ? Semantics(
-                  label: 'Create new group',
-                  button: true,
-                  child: TapScale(
-                    child: FloatingActionButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/create-group'),
-                      backgroundColor: context.colorPrimary,
-                      foregroundColor: context.colorSurface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                      child: const Icon(Icons.add),
+              ? TapScale(
+                  onTap: () => Navigator.pushNamed(context, '/create-group'),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: context.colorPrimary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colorPrimary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 28),
                   ),
                 )
               : null,
@@ -509,29 +482,21 @@ class _GroupsListState extends State<GroupsList> {
                                 AppSpacing.space4xl,
                               ),
                               child: Row(
-                                children: [
-                                  Expanded(
+                                children: [                                  Expanded(
                                     child: Text(
                                       'Groups',
-                                      style: context.heroTitle,
+                                      style: context.displayLarge.copyWith(fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                   TapScale(
-                                    child: GestureDetector(
-                                      onTap: () => Navigator.pushNamed(
-                                        context,
-                                        '/profile',
-                                      ),
-                                      child: MemberAvatar(
-                                        displayName:
-                                            repo.currentUserName.isEmpty
-                                            ? 'You'
-                                            : repo.currentUserName,
-                                        photoURL: repo.currentUserPhotoURL,
-                                        size: 40,
-                                      ),
+                                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                                    child: MemberAvatar(
+                                      displayName: repo.currentUserName.isEmpty ? 'You' : repo.currentUserName,
+                                      photoURL: repo.currentUserPhotoURL,
+                                      size: 40,
                                     ),
                                   ),
+
                                 ],
                               ),
                             ),
@@ -560,7 +525,6 @@ class _GroupsListState extends State<GroupsList> {
                                   itemBuilder: (context, index) {
                                     final group = groups[index];
                                     final isSettled = group.status == 'settled';
-                                    final isClosing = group.status == 'closing';
                                     final isPinned = pinService.isPinned(
                                       group.id,
                                     );
@@ -568,219 +532,111 @@ class _GroupsListState extends State<GroupsList> {
                                       group.id,
                                     );
 
-                                    return StaggeredListItem(
-                                      index: index,
-                                      child: Slidable(
-                                        key: ValueKey(group.id),
-                                        startActionPane: ActionPane(
-                                          motion: const DrawerMotion(),
-                                          extentRatio: 0.25,
-                                          children: [
-                                            SlidableAction(
-                                              onPressed: (_) async {
-                                                HapticFeedback.lightImpact();
-                                                if (!isPinned &&
-                                                    !pinService.canPinMore) {
-                                                  if (context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          'You can pin up to 3 groups. Unpin one first.',
-                                                        ),
-                                                        behavior:
-                                                            SnackBarBehavior
-                                                                .floating,
-                                                      ),
-                                                    );
-                                                  }
-                                                  return;
-                                                }
-                                                await pinService.togglePin(
-                                                  group.id,
-                                                );
-                                              },
-                                              backgroundColor:
-                                                  context.colorWarning,
-                                              foregroundColor:
-                                                  context.colorSurface,
-                                              icon: isPinned
-                                                  ? Icons.push_pin
-                                                  : Icons.push_pin_outlined,
-                                              label: isPinned ? 'Unpin' : 'Pin',
+                                      return StaggeredListItem(
+                                        index: index,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
+                                          child: Slidable(
+                                            key: ValueKey(group.id),
+                                            startActionPane: ActionPane(
+                                              motion: const DrawerMotion(),
+                                              extentRatio: 0.25,
+                                              children: [
+                                                SlidableAction(
+                                                  onPressed: (_) async {
+                                                    HapticFeedback.lightImpact();
+                                                    if (!isPinned && !pinService.canPinMore) {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(
+                                                            content: Text('Max 3 pins allowed.'),
+                                                            behavior: SnackBarBehavior.floating,
+                                                          ),
+                                                        );
+                                                      }
+                                                      return;
+                                                    }
+                                                    await pinService.togglePin(group.id);
+                                                  },
+                                                  backgroundColor: context.colorWarning,
+                                                  foregroundColor: Colors.white,
+                                                  icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                                                  label: isPinned ? 'Unpin' : 'Pin',
+                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        endActionPane: isCreator
-                                            ? ActionPane(
-                                                motion: const DrawerMotion(),
-                                                extentRatio: 0.25,
-                                                children: [
-                                                  SlidableAction(
-                                                    onPressed: (_) {
-                                                      HapticFeedback.lightImpact();
-                                                      _confirmDeleteGroup(
-                                                        context,
-                                                        group,
-                                                      );
-                                                    },
-                                                    backgroundColor:
-                                                        context.colorError,
-                                                    foregroundColor:
-                                                        context.colorSurface,
-                                                    icon: Icons.delete_outline,
-                                                    label: 'Delete',
-                                                  ),
-                                                ],
-                                              )
-                                            : null,
-                                        child: TapScale(
-                                          scaleDown: 0.99,
-                                          child: InkWell(
-                                            onTap: () {
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/group-detail',
-                                                arguments: group,
-                                              );
-                                            },
-                                            child: Opacity(
-                                              opacity: isSettled ? 0.5 : 1.0,
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 24,
-                                                  vertical: isSettled ? 18 : 22,
+                                            endActionPane: isCreator ? ActionPane(
+                                              motion: const DrawerMotion(),
+                                              extentRatio: 0.25,
+                                              children: [
+                                                SlidableAction(
+                                                  onPressed: (_) {
+                                                    HapticFeedback.lightImpact();
+                                                    _confirmDeleteGroup(context, group);
+                                                  },
+                                                  backgroundColor: context.colorError,
+                                                  foregroundColor: Colors.white,
+                                                  icon: Icons.delete_outline,
+                                                  label: 'Delete',
+                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                                                 ),
-                                                decoration: BoxDecoration(
-                                                  border: Border(
-                                                    top: BorderSide(
-                                                      color:
-                                                          context.colorBorder,
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                ),
+                                              ],
+                                            ) : null,
+                                            child: TapScale(
+                                              onTap: () => Navigator.pushNamed(context, '/group-detail', arguments: group),
+                                              child: GlassCard(
+                                                padding: const EdgeInsets.all(20),
+                                                borderRadius: AppSpacing.radiusMedium,
                                                 child: Row(
                                                   children: [
                                                     Expanded(
                                                       child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
                                                         children: [
-                                                          Text(
-                                                            group.name,
-                                                            style: context
-                                                                .listItemTitle
-                                                                .copyWith
-                                                                .call(
-                                                                  fontWeight:
-                                                                      isClosing
-                                                                      ? FontWeight
-                                                                            .w600
-                                                                      : FontWeight
-                                                                            .w500,
-                                                                ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 8,
-                                                          ),
-                                                          if (!isSettled) ...[
-                                                            Row(
-                                                              children: [
-                                                                Text(
-                                                                  formatMoneyFromMajor(
-                                                                    repo.getGroupPendingAmount(
-                                                                      group.id,
-                                                                    ),
-                                                                    group
-                                                                        .currencyCode,
-                                                                    LocaleService
-                                                                        .instance
-                                                                        .localeCode,
-                                                                  ),
-                                                                  style: context
-                                                                      .amountSM
-                                                                      .copyWith(
-                                                                        color: Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.onSurface,
-                                                                      ),
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 8,
-                                                                ),
-                                                                Text(
-                                                                  'in cycle',
-                                                                  style: context
-                                                                      .bodySecondary,
-                                                                ),
+                                                          Row(
+                                                            children: [
+                                                              if (isPinned) ...[
+                                                                Icon(Icons.push_pin, size: 14, color: context.colorWarning),
+                                                                const SizedBox(width: 6),
                                                               ],
+                                                              Text(
+                                                                group.name,
+                                                                style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(height: 8),
+                                                          if (!isSettled) ...[
+                                                            Text(
+                                                              formatMoneyFromMajor(
+                                                                repo.getGroupPendingAmount(group.id),
+                                                                group.currencyCode,
+                                                                LocaleService.instance.localeCode,
+                                                              ),
+                                                              style: context.headingSmall.copyWith(fontWeight: FontWeight.w600),
                                                             ),
-                                                            const SizedBox(
-                                                              height: 6,
-                                                            ),
+                                                            const SizedBox(height: 4),
                                                             Text(
                                                               group.statusLine,
-                                                              style: context.bodySecondary.copyWith(
-                                                                color: isClosing
-                                                                    ? Theme.of(
-                                                                        context,
-                                                                      ).colorScheme.onSurface
-                                                                    : Theme.of(
-                                                                        context,
-                                                                      ).colorScheme.onSurfaceVariant,
-                                                                fontWeight:
-                                                                    isClosing
-                                                                    ? FontWeight
-                                                                          .w500
-                                                                    : FontWeight
-                                                                          .w400,
-                                                              ),
+                                                              style: context.labelMedium.copyWith(color: context.colorTextSecondary),
                                                             ),
                                                           ] else
                                                             Text(
-                                                              'All balances cleared',
-                                                              style: context
-                                                                  .bodySecondary
-                                                                  .copyWith(
-                                                                    color: Theme.of(
-                                                                      context,
-                                                                    ).colorScheme.onSurfaceVariant,
-                                                                  ),
+                                                              'All settled',
+                                                              style: context.labelMedium.copyWith(color: context.colorSuccess),
                                                             ),
                                                         ],
                                                       ),
                                                     ),
-                                                    if (isPinned)
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              right: 8,
-                                                            ),
-                                                        child: Icon(
-                                                          Icons.push_pin,
-                                                          size: 18,
-                                                          color: context
-                                                              .colorWarning,
-                                                        ),
-                                                      ),
-                                                    const SizedBox(width: 16),
-                                                    Icon(
-                                                      Icons.chevron_right,
-                                                      size: 20,
-                                                      color: context
-                                                          .colorTextDisabled,
-                                                    ),
+                                                    Icon(Icons.chevron_right, size: 20, color: context.colorTextTertiary),
                                                   ],
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    );
+                                      );
                                   },
                                 ),
                               ),

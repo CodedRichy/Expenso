@@ -16,12 +16,21 @@ abstract final class AppSpacing {
   static const double space9xl = 96;
 
   // Semantic spacing
-  static const double screenPaddingH = 24;
-  static const double screenPaddingTop = 40;
+  static const double screenPaddingH = 20.0;
+  static const double screenPaddingTop = 16.0;
   static const double screenHeaderPaddingTop = 16;
   static const double inputPadding = 16;
-  static const double buttonPaddingV = 14;
-  static const double cardPadding = 16;
+  static const double buttonPaddingV = 16.0;
+  static const double buttonPaddingH = 24.0;
+  static const double cardPadding = 20.0;
+  static const double cardGap = 16.0;
   static const double sectionGap = 24;
   static const double bottomNavClearance = 88;
+
+  // Border Radius
+  static const double radiusSmall = 8.0;
+  static const double radiusMedium = 12.0;
+  static const double radiusLarge = 16.0;
+  static const double radiusXL = 20.0;
+  static const double radiusFull = 999.0;
 }

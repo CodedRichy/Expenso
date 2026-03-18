@@ -408,7 +408,7 @@ class _SmartBarSectionState extends State<_SmartBarSection> {
                   borderRadius: BorderRadius.circular(32),
                   border: Border.all(
                     color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-                    width: 0.5,
+                    width: 1,
                   ),
                 ),
                 child: Column(
@@ -1929,15 +1929,13 @@ class _ExpenseConfirmDialogState extends State<_ExpenseConfirmDialog> {
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     ),
-    ),
-    ),
-    ),
-    );
-  }
+  ),
+  );
+}
 }
 
 class _MagicActionTile extends StatelessWidget {
