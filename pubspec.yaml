@@ -64,6 +64,7 @@ dependencies:
   share_plus: ^10.1.4
   http: ^1.2.2
   supabase_flutter: any
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -99,6 +100,7 @@ flutter:
     - assets/app_icon_transparent.png
     - assets/app_icon_light.png
     - assets/app_icon_dark.png
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

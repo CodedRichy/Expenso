@@ -33,15 +33,17 @@ import 'services/locale_service.dart';
 import 'screens/groups/invite_resolver.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase. Read credentials from --dart-define or use placeholders for now.
+  // Load .env explicitly
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Supabase. Read credentials from .env
   await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL',
-        defaultValue: 'https://YOUR_PROJECT_ID.supabase.co'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY',
-        defaultValue: 'YOUR_SUPABASE_ANON_KEY'),
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   // Load local profile cache FIRST (instant, before any network)
