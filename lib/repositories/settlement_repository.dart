@@ -10,7 +10,7 @@ class SettlementRepository extends BaseRepository {
   static SettlementRepository get instance => _instance;
 
   final Map<String, List<PaymentAttempt>> _paymentAttemptsByGroup = {};
-  final Map<String, StreamSubscription<List<DocView>>> _paymentAttemptSubs = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _paymentAttemptSubs = {};
   final Map<String, String> _paymentAttemptCycleId = {};
   final Set<String> _fullySettledEmitted = {};
 
@@ -27,7 +27,7 @@ class SettlementRepository extends BaseRepository {
     _paymentAttemptSubs[groupId] = SupabaseService.instance
         .paymentAttemptsStream(groupId, cycleId)
         .listen((docs) {
-      final attempts = docs.map((doc) => PaymentAttempt.fromFirestore(doc.id, doc.data())).toList();
+      final attempts = docs.map((doc) => PaymentAttempt.fromFirestore(doc['id'], doc)).toList();
       _paymentAttemptsByGroup[groupId] = attempts;
       notify();
     });

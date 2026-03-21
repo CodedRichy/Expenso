@@ -1,6 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/money_minor.dart';
-import '../utils/app_logger.dart';
 import 'data_encryption_service.dart';
 
 abstract class DocView {
@@ -350,7 +348,7 @@ class SupabaseService {
   }
 
   Stream<List<Map<String, dynamic>>> paymentAttemptsStream(String groupId, String cycleId) {
-    return _db.from('payment_attempts').stream(primaryKey: ['id']).eq('group_id', groupId).eq('cycle_id', cycleId);
+    return _db.from('payment_attempts').stream(primaryKey: ['id']).eq('group_id', groupId).map((list) => list.where((e) => e['cycle_id'] == cycleId).toList());
   }
 
   Future<List<DocView>> getSettledCycleExpenses(String groupId, String cycleId) async {
