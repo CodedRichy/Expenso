@@ -1,14 +1,10 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ReceiptScannerService {
   final ImagePicker _picker = ImagePicker();
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'asia-south1');
   final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<String?> scanReceipt() async {
@@ -21,19 +17,17 @@ class ReceiptScannerService {
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final String storagePath = 'temp/ocr_uploads/$uid/$timestamp.jpg';
 
-      // 1. Upload to Firebase Storage
-      final Reference ref = _storage.ref().child(storagePath);
-      await ref.putFile(file);
+      // 1. Upload to Supabase Storage
+      await _supabase.storage.from('receipts').upload(storagePath, file, fileOptions: const FileOptions(upsert: true));
 
-      // 2. Call Cloud Function for OCR
-      final HttpsCallable callable = _functions.httpsCallable('callOcrScanner');
-      final result = await callable.call({
+      // 2. Call Supabase Edge Function for OCR
+      final result = await _supabase.functions.invoke('callOcrScanner', body: {
         'storagePath': storagePath,
       });
 
       // 3. Cleanup: Delete temp image
       try {
-        await ref.delete();
+        await _supabase.storage.from('receipts').remove([storagePath]);
       } catch (e) {
         debugPrint('Error deleting temp OCR image: $e');
       }

@@ -1,16 +1,8 @@
 import 'dart:async';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'design/theme.dart';
-import 'firebase_app.dart';
-import 'firebase_options.dart';
 import 'repositories/cycle_repository.dart';
 import 'services/user_profile_cache.dart';
 import 'screens/groups/groups_list.dart';
@@ -52,62 +44,6 @@ void main() async {
     LocaleService.instance.load(),
   ]);
   CycleRepository.instance.loadFromLocalCache();
-
-  // Check if we should use mock auth (for development/emulator testing)
-  const useMockAuth = bool.fromEnvironment('USE_MOCK_AUTH', defaultValue: false);
-  
-  if (!useMockAuth) {
-    // Only initialize Firebase if NOT using mock auth
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    if (DefaultFirebaseOptions.currentPlatform.apiKey.isEmpty ||
-        DefaultFirebaseOptions.currentPlatform.appId.isEmpty) {
-      throw StateError(
-        'Firebase configuration is missing! Ensure environment variables are set '
-        'via --dart-define or run flutterfire configure for development.',
-      );
-    }
-
-    // Initialize Firebase App Check
-    // AFTER (non-blocking, safe on emulator):
-await FirebaseAppCheck.instance.activate(
-  androidProvider: kDebugMode
-      ? AndroidProvider.debug
-      : AndroidProvider.playIntegrity,
-  appleProvider: AppleProvider.deviceCheck,
-);
-if (kDebugMode) {
-  // Don't await — this hangs on emulators if the debug token
-  // isn't registered in Firebase Console yet
-  FirebaseAppCheck.instance.getToken().then((token) {
-    debugPrint('App Check token: ${token != null ? 'success' : 'null'}');
-  }).catchError((e) {
-    debugPrint('App Check token error (non-fatal): $e');
-  });
-}
-
-    setFirebaseAuthAvailable(true);
-    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
-
-    // --- Crashlytics setup ---
-    // Pass all Flutter framework errors to Crashlytics.
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    // Pass all async/platform errors that Flutter doesn't catch internally.
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-
-    // --- Performance monitoring ---
-    await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-
-    debugPrint('Firebase initialized (Crashlytics + Performance enabled).');
-  } else {
-    debugPrint('Mock authentication enabled - Firebase skipped');
-    setFirebaseAuthAvailable(false);
-  }
 
   runApp(const MyApp());
 }
@@ -185,7 +121,7 @@ class _MyAppState extends State<MyApp> {
 
     if (groupId != null && token != null) {
       final repo = CycleRepository.instance;
-      if (FirebaseAuth.instance.currentUser == null) {
+      if (Supabase.instance.client.auth.currentUser == null) {
         repo.pendingInvitation = {'groupId': groupId, 'token': token};
         debugPrint('Stored pending invitation: ${repo.pendingInvitation}');
         return;
@@ -213,11 +149,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Only use FirebaseAnalyticsObserver if Firebase is available
     final observers = <NavigatorObserver>[];
-    if (firebaseAuthAvailable) {
-      observers.add(FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance));
-    }
     
     return MaterialApp(
       navigatorKey: globalNavigatorKey,

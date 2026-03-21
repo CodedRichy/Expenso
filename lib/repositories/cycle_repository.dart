@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../services/data_encryption_service.dart';
 import '../services/supabase_service.dart';
@@ -1971,10 +1971,7 @@ class CycleRepository extends BaseRepository {
 
     // Call Cloud Function to perform the settlement atomically
     try {
-      final callable = FirebaseFunctions.instanceFor(
-        region: 'asia-south1',
-      ).httpsCallable('settleAndRestart');
-      final result = await callable.call({'groupId': groupId});
+      final result = await Supabase.instance.client.functions.invoke('settleAndRestart', body: {'groupId': groupId});
 
       final newCycleId = result.data['newCycleId'] as String;
 

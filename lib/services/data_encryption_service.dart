@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 
@@ -53,9 +53,7 @@ class DataEncryptionService {
 
   Future<void> ensureUserKey() async {
     if (_userKey != null) return;
-    final result = await FirebaseFunctions.instanceFor(
-      region: region,
-    ).httpsCallable('getUserEncryptionKey').call();
+    final result = await Supabase.instance.client.functions.invoke('getUserEncryptionKey');
     final key = result.data['key'] as String?;
     if (key == null || key.isEmpty) return;
     _userKey = _decodeKey(key);
@@ -63,9 +61,7 @@ class DataEncryptionService {
 
   Future<void> ensureGroupKey(String groupId) async {
     if (_groupKeys.containsKey(groupId)) return;
-    final result = await FirebaseFunctions.instanceFor(
-      region: region,
-    ).httpsCallable('getGroupEncryptionKey').call({'groupId': groupId});
+    final result = await Supabase.instance.client.functions.invoke('getGroupEncryptionKey', body: {'groupId': groupId});
     final key = result.data['key'] as String?;
     if (key == null || key.isEmpty) return;
     _groupKeys[groupId] = _decodeKey(key);

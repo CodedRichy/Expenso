@@ -1,4 +1,4 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RazorpayOrderResult {
   final String orderId;
@@ -11,10 +11,7 @@ Future<RazorpayOrderResult> createRazorpayOrder({
   required int amountPaise,
   String? receipt,
 }) async {
-  final callable = FirebaseFunctions.instanceFor(
-    region: 'asia-south1',
-  ).httpsCallable('createRazorpayOrder');
-  final result = await callable.call({
+  final result = await Supabase.instance.client.functions.invoke('createRazorpayOrder', body: {
     'amountPaise': amountPaise,
     if (receipt != null) 'receipt': receipt,
   });

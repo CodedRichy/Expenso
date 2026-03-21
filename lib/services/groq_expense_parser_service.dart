@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/prompts.dart';
 
@@ -404,10 +404,7 @@ class GroqExpenseParserService {
       await _throttleForRateLimit();
       _inFlight = true;
       try {
-        final callable = FirebaseFunctions.instanceFor(
-          region: 'asia-south1',
-        ).httpsCallable('callGroqParser');
-        final response = await callable.call({'messages': messages});
+        final response = await Supabase.instance.client.functions.invoke('callGroqParser', body: {'messages': messages});
         _markRequestDone();
 
         final map = response.data;
@@ -537,8 +534,8 @@ class GroqExpenseParserService {
       }
     } on GroqRateLimitException {
       rethrow;
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') {
+    } on FunctionException catch (e) {
+      if (e.reason == 'resource-exhausted') {
         throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
       }
       final fallback = _fallbackParse(
