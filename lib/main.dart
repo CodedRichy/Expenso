@@ -60,23 +60,29 @@ void main() async {
     }
 
     // Initialize Firebase App Check
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: kDebugMode
-          ? AndroidProvider.debug
-          : AndroidProvider.playIntegrity,
-      appleProvider: AppleProvider.deviceCheck,
-    );
-    debugPrint('Firebase App Check initialized (${kDebugMode ? 'Debug' : 'Play Integrity'} provider)');
-    
-    // Force token retrieval to trigger debug token logging
-    if (kDebugMode) {
-      try {
-        final token = await FirebaseAppCheck.instance.getToken();
-        debugPrint('App Check token retrieved: ${token != null ? 'success' : 'null'}');
-      } catch (e) {
-        debugPrint('App Check token error: $e');
-      }
-    }
+    // AFTER (non-blocking, safe on emulator):
+await FirebaseAppCheck.instance.activate(
+  androidProvider: kDebugMode
+      ? AndroidProvider.debug
+      : AndroidProvider.playIntegrity,
+  appleProvider: AppleProvider.deviceCheck,
+);
+if (kDebugMode) {
+  // Don't await — this hangs on emulators if the debug token
+  // isn't registered in Firebase Console yet
+  FirebaseAppCheck.instance.getToken().then((token) {
+    debugPrint('App Check token: ${token != null ? 'success' : 'null'}');
+  }).catchError((e) {
+    debugPrint('App Check token error (non-fatal): $e');
+  });
+}
+```
+
+Make that change, hot restart, and the app should get past the black screen.
+
+**If it's still black after that**, the second thing to check is whether your debug App Check token is registered. In your console you'll see a line like:
+```
+D/FirebaseAppCheck: Debug token: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 
     setFirebaseAuthAvailable(true);
     FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
