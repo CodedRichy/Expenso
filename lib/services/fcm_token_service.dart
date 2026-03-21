@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'package:flutter/foundation.dart';
 import 'supabase_service.dart';
 
@@ -9,7 +9,6 @@ class FcmTokenService {
   static final FcmTokenService _instance = FcmTokenService._internal();
   static FcmTokenService get instance => _instance;
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   String? _currentToken;
   String? _userId;
 
@@ -23,46 +22,15 @@ class FcmTokenService {
   }
 
   Future<void> _requestPermission() async {
-    try {
-      final currentSettings = await _messaging.getNotificationSettings();
-      if (currentSettings.authorizationStatus != AuthorizationStatus.notDetermined) {
-        debugPrint('FCM: Permission already decided or ignored. Status: ${currentSettings.authorizationStatus}');
-        return;
-      }
-
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-      debugPrint('FCM: Permission status: ${settings.authorizationStatus}');
-    } catch (e) {
-      debugPrint('FCM: Permission request failed: $e');
-    }
+    // Stubbed until Supabase FCM replaces it
   }
 
   Future<void> _getAndStoreToken() async {
-    try {
-      final token = await _messaging.getToken();
-      if (token != null && token != _currentToken) {
-        _currentToken = token;
-        await _storeToken(token);
-        debugPrint('FCM: Token registered');
-      }
-    } catch (e) {
-      debugPrint('FCM: Get token failed: $e');
-    }
+    // Stubbed
   }
 
   void _listenForTokenRefresh() {
-    _messaging.onTokenRefresh.listen((token) async {
-      if (token != _currentToken) {
-        _currentToken = token;
-        await _storeToken(token);
-        debugPrint('FCM: Token refreshed');
-      }
-    });
+    // Stubbed
   }
 
   Future<void> _storeToken(String token) async {
@@ -86,7 +54,6 @@ class FcmTokenService {
           _currentToken!,
         );
       }
-      await _messaging.deleteToken();
       _currentToken = null;
       debugPrint('FCM: Token deleted');
     } catch (e) {

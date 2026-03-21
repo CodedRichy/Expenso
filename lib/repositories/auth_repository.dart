@@ -80,7 +80,7 @@ class AuthRepository extends BaseRepository {
     FeatureFlagService.instance.refresh();
   }
 
-  void setAuthFromFirebaseUserSync(
+  void setAuthUserSync(
     String uid,
     String? phone,
     String? displayName, {
@@ -115,7 +115,7 @@ class AuthRepository extends BaseRepository {
     }
   }
 
-  Future<void> continueAuthFromFirebaseUser() async {
+  Future<void> continueAuth() async {
     if (_currentUserId.isEmpty) return;
     _encryption = DataEncryptionService(region: 'asia-south1');
     try {
@@ -126,7 +126,7 @@ class AuthRepository extends BaseRepository {
     }
     SupabaseService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
-      AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'AuthRepository', error: e, stackTrace: st);
+      AppLogger.error('continueAuth write failed', name: 'AuthRepository', error: e, stackTrace: st);
     });
     _loadCurrentUserProfileFromFirestore();
     FeatureFlagService.instance.refresh();

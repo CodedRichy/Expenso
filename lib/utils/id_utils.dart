@@ -14,9 +14,9 @@ class IdUtils {
     return 'p_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Returns true if the given ID looks like a Firebase Auth UID.
-  /// UIDs are typically ~28 chars and do not start with our custom prefixes.
-  static bool isFirebaseUid(String id) {
+  /// Returns true if the given ID looks like an Auth UID.
+  /// UIDs are typically UUIDs and do not start with our custom prefixes.
+  static bool isAuthUid(String id) {
     return id.length >= 20 && !id.startsWith('p_') && !id.startsWith('c_');
   }
 }

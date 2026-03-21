@@ -88,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Upload failed. Enable Firebase Storage in Console (Build → Storage) for profile photos.',
+              'Upload failed. Enable Supabase Storage in Dashboard (Storage) for profile photos.',
             ),
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 5),

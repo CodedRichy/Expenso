@@ -168,9 +168,9 @@ class CycleRepository extends BaseRepository {
     FeatureFlagService.instance.refresh();
   }
 
-  /// Sets in-memory identity from Firebase user. Call during build; does not notify.
-  /// Use _continueAuthFromFirebaseUser() after the frame for Firestore write/listen.
-  void setAuthFromFirebaseUserSync(
+  /// Sets in-memory identity from Auth user. Call during build; does not notify.
+  /// Use _continueAuth() after the frame for database write/listen.
+  void setAuthUserSync(
     String uid,
     String? phone,
     String? displayName, {
@@ -206,7 +206,7 @@ class CycleRepository extends BaseRepository {
   }
 
   /// Runs Firestore write, profile load, and listeners. Call after build (e.g. addPostFrameCallback).
-  Future<void> continueAuthFromFirebaseUser() async {
+  Future<void> continueAuth() async {
     if (_currentUserId.isEmpty) return;
     _encryption = DataEncryptionService(region: 'asia-south1');
     try {
@@ -217,7 +217,7 @@ class CycleRepository extends BaseRepository {
     }
     SupabaseService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
-      AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'CycleRepository', error: e, stackTrace: st);
+      AppLogger.error('continueAuth write failed', name: 'CycleRepository', error: e, stackTrace: st);
     });
     _loadCurrentUserProfileFromFirestore();
     _startListening();

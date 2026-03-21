@@ -369,7 +369,7 @@ class GroupRepository extends BaseRepository {
   String getMemberDisplayName(String phoneOrUid) {
     final auth = AuthRepository.instance;
     if (phoneOrUid.isEmpty) return '';
-    if (IdUtils.isFirebaseUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
+    if (IdUtils.isAuthUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
     
     if (PhoneUtils.normalizeTo10Digits(phoneOrUid) == PhoneUtils.normalizeTo10Digits(auth.currentUserPhone)) {
       return auth.currentUserName.isNotEmpty ? auth.currentUserName : 'You';

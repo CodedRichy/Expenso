@@ -535,7 +535,7 @@ class GroqExpenseParserService {
     } on GroqRateLimitException {
       rethrow;
     } on FunctionException catch (e) {
-      if (e.reason == 'resource-exhausted') {
+      if (e.toString().contains('resource-exhausted')) {
         throw GroqRateLimitException('Rate limit exceeded. Try again in a moment.');
       }
       final fallback = _fallbackParse(

@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../utils/country_codes.dart';
 import '../../design/colors.dart';
 import '../../design/typography.dart';
-import '../../firebase_app.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/phone_auth_service.dart';
 import '../../widgets/tap_scale.dart';
@@ -53,11 +52,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
     _clearError();
     final e164 = _e164(_selectedCountryCode, digits);
     if (e164.isEmpty) return;
-    if (!firebaseAuthAvailable) {
-      debugPrint('PhoneAuth: Firebase not available, using mock OTP step');
-      setState(() => step = 'otp');
-      return;
-    }
+
     setState(() {
       _loading = true;
       _errorMessage = null;
@@ -139,17 +134,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
   void handleOtpSubmit() async {
     if (otp.length != 6) return;
     _clearError();
-    final formattedPhone = _formatPhone(_selectedCountryCode, phone);
-    if (!firebaseAuthAvailable) {
-      final currencyCode =
-          currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
-      CycleRepository.instance.setGlobalProfile(
-        formattedPhone,
-        '',
-        currencyCode: currencyCode,
-      );
-      return;
-    }
+
     await _verifyAndSignIn(otp);
     if (!mounted) return;
     setState(() => _loading = false);

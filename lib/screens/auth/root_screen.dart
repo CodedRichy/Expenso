@@ -21,7 +21,7 @@ class RootScreen extends StatelessWidget {
   }
   
   Widget _buildBody() {
-    // Wrap in try-catch to handle Firebase initialization failures
+    // Wrap in try-catch to handle Supabase initialization failures
     try {
       return StreamBuilder<User?>(
         initialData: Supabase.instance.client.auth.currentUser,
@@ -49,7 +49,7 @@ class RootScreen extends StatelessWidget {
             return const PhoneAuth();
           }
 
-          repo.setAuthFromFirebaseUserSync(
+          repo.setAuthUserSync(
             user.id,
             user.phone,
             user.userMetadata?['display_name'] as String?,
@@ -57,7 +57,7 @@ class RootScreen extends StatelessWidget {
           );
 
           WidgetsBinding.instance.addPostFrameCallback((_) async {
-            await repo.continueAuthFromFirebaseUser();
+            await repo.continueAuth();
             FcmTokenService.instance.initialize(user.id);
           });
 
@@ -89,7 +89,7 @@ class RootScreen extends StatelessWidget {
         },
       );
     } catch (e) {
-      debugPrint('RootScreen: Firebase initialization failed: $e');
+      debugPrint('RootScreen: Supabase Auth failed: $e');
       // Show login screen if Firebase fails
       return const PhoneAuth();
     }
