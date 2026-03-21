@@ -26,25 +26,72 @@ import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env explicitly
-  await dotenv.load(fileName: ".env");
+    // Load .env explicitly
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (e) {
+      debugPrint('Warning: Could not load .env file: $e');
+    }
 
-  // Initialize Supabase. Read credentials from .env
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
-  // Load local profile cache FIRST (instant, before any network)
-  await Future.wait([
-    UserProfileCache.instance.load(),
-    LocaleService.instance.load(),
-  ]);
-  CycleRepository.instance.loadFromLocalCache();
+    if (supabaseUrl == null || supabaseAnonKey == null) {
+      throw Exception('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env file');
+    }
 
-  runApp(const MyApp());
+    // Initialize Supabase.
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+
+    // Load local profile cache FIRST (instant, before any network)
+    await Future.wait([
+      UserProfileCache.instance.load(),
+      LocaleService.instance.load(),
+    ]).timeout(const Duration(seconds: 5), onTimeout: () => []);
+
+    CycleRepository.instance.loadFromLocalCache();
+
+    runApp(const MyApp());
+  } catch (e, stack) {
+    debugPrint('FATAL INITIALIZATION ERROR: $e');
+    debugPrint(stack.toString());
+    
+    // Fallback app to show the error instead of a black screen
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                const SizedBox(height: 24),
+                const Text(
+                  'Failed to start Expenso',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  e.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final GlobalKey<NavigatorState> globalNavigatorKey =

@@ -371,10 +371,41 @@ class SupabaseService {
 
   Future<List<String>> getMemberFcmTokens(String uid) async { return []; }
 
-  Future<void> generateInviteToken(String groupId) async {}
+  Future<Map<String, String>?> resolveInviteLink(String groupId, String token) async {
+    try {
+      // Find group where id and invite_token match, and links are enabled
+      final res = await _db.from('groups')
+          .select('id, name')
+          .eq('id', groupId)
+          .eq('invite_link_token', token)
+          .eq('invite_link_enabled', true)
+          .maybeSingle();
 
-  Future<Map<String, String>?> resolveInviteLink(String groupId, String token) async { return null; }
+      if (res == null) return null;
 
-  Future<void> revokeInviteToken(String groupId) async {}
+      return {
+        'groupId': res['id'] as String,
+        'groupName': res['name'] as String,
+      };
+    } catch (e) {
+      debugPrint('resolveInviteLink error: $e');
+      return null;
+    }
+  }
+
+  Future<void> revokeInviteToken(String groupId) async {
+    await _db.from('groups').update({
+      'invite_link_enabled': false,
+      'invite_link_token': null,
+    }).eq('id', groupId);
+  }
+
+  Future<void> generateInviteToken(String groupId) async {
+    final token = DateTime.now().millisecondsSinceEpoch.toString();
+    await _db.from('groups').update({
+      'invite_link_enabled': true,
+      'invite_link_token': token,
+    }).eq('id', groupId);
+  }
 
 }
