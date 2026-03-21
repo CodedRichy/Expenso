@@ -16,7 +16,7 @@ async function generateKey(id: string, masterKey: string): Promise<string> {
   return encodeBase64(new Uint8Array(signature))
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -54,6 +54,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('getUserEncryptionKey Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })

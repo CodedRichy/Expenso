@@ -3,7 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { encodeBase64 } from "jsr:@std/encoding/base64"
 import { corsHeaders } from '../_shared/cors.ts'
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -85,6 +85,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('callOcrScanner Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })
