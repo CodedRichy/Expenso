@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'firestore_service.dart';
+import 'supabase_service.dart';
 
 class FcmTokenService {
   FcmTokenService._internal();
@@ -72,7 +72,7 @@ class FcmTokenService {
       final platform = Platform.isAndroid
           ? 'android'
           : (Platform.isIOS ? 'ios' : 'unknown');
-      await FirestoreService.instance.storeFcmToken(_userId!, token, platform);
+      await SupabaseService.instance.storeFcmToken(_userId!, token, platform);
     } catch (e) {
       debugPrint('FCM: Store token failed: $e');
     }
@@ -81,7 +81,7 @@ class FcmTokenService {
   Future<void> deleteToken() async {
     try {
       if (_currentToken != null && _userId != null) {
-        await FirestoreService.instance.deleteFcmToken(
+        await SupabaseService.instance.deleteFcmToken(
           _userId!,
           _currentToken!,
         );

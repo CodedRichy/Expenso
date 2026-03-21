@@ -15,7 +15,7 @@ import '../../utils/route_args.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/glass_card.dart';
-import '../../services/firestore_service.dart';
+import '../../services/supabase_service.dart';
 
 class InviteMembers extends StatefulWidget {
   final Group? group;
@@ -210,7 +210,7 @@ class _InviteMembersState extends State<InviteMembers>
     }
     setState(() => _isGeneratingLink = true);
     try {
-      await FirestoreService.instance.generateInviteToken(group.id);
+      await SupabaseService.instance.generateInviteToken(group.id);
     } finally {
       if (mounted) setState(() => _isGeneratingLink = false);
     }
@@ -223,7 +223,7 @@ class _InviteMembersState extends State<InviteMembers>
     }
     setState(() => _isRevokingLink = true);
     try {
-      await FirestoreService.instance.revokeInviteToken(group.id);
+      await SupabaseService.instance.revokeInviteToken(group.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

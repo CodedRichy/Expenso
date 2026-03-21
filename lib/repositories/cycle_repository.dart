@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/models.dart';
 import '../services/data_encryption_service.dart';
-import '../services/firestore_service.dart';
+import '../services/supabase_service.dart';
 import '../utils/money_format.dart';
 import '../services/user_profile_cache.dart';
 import '../utils/expense_revision.dart';
@@ -215,7 +215,7 @@ class CycleRepository extends BaseRepository {
       AppLogger.error('encryption key fetch failed', name: 'CycleRepository', error: e, stackTrace: st);
       _encryption = null;
     }
-    FirestoreService.instance.setEncryptionService(_encryption);
+    SupabaseService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
       AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'CycleRepository', error: e, stackTrace: st);
     });
@@ -233,7 +233,7 @@ class CycleRepository extends BaseRepository {
 
   Future<void> _loadCurrentUserProfileFromFirestore() async {
     try {
-      final u = await FirestoreService.instance.getUser(_currentUserId);
+      final u = await SupabaseService.instance.getUser(_currentUserId);
       if (u != null && _userCache.containsKey(_currentUserId)) {
         final cur = Map<String, dynamic>.from(_userCache[_currentUserId]!);
         if (u['photoURL'] != null) cur['photoURL'] = u['photoURL'];
@@ -260,7 +260,7 @@ class CycleRepository extends BaseRepository {
 
   Future<void> _writeCurrentUserProfile() async {
     final cache = _userCache[_currentUserId];
-    await FirestoreService.instance.setUser(
+    await SupabaseService.instance.setUser(
       _currentUserId,
       displayName: _currentUserName,
       phoneNumber: _currentUserPhone,
@@ -468,7 +468,7 @@ class CycleRepository extends BaseRepository {
     final activeCycleId = meta.activeCycleId;
 
     if (!_expenseSubs.containsKey(groupId)) {
-      _expenseSubs[groupId] = FirestoreService.instance
+      _expenseSubs[groupId] = SupabaseService.instance
           .expensesStream(groupId)
           .listen(
             (expDocs) => _onExpensesSnapshot(groupId, expDocs),
@@ -480,7 +480,7 @@ class CycleRepository extends BaseRepository {
           );
     }
     if (!_systemMessageSubs.containsKey(groupId)) {
-      _systemMessageSubs[groupId] = FirestoreService.instance
+      _systemMessageSubs[groupId] = SupabaseService.instance
           .systemMessagesStream(groupId)
           .listen(
             (msgs) => _onSystemMessagesSnapshot(groupId, msgs),
@@ -490,7 +490,7 @@ class CycleRepository extends BaseRepository {
           );
     }
     if (!_revisionSubs.containsKey(groupId)) {
-      _revisionSubs[groupId] = FirestoreService.instance
+      _revisionSubs[groupId] = SupabaseService.instance
           .expenseRevisionsStream(groupId)
           .listen(
             (revs) => _onRevisionsSnapshot(groupId, revs),
@@ -500,7 +500,7 @@ class CycleRepository extends BaseRepository {
           );
     }
     if (!_deletedIdsSubs.containsKey(groupId)) {
-      _deletedIdsSubs[groupId] = FirestoreService.instance
+      _deletedIdsSubs[groupId] = SupabaseService.instance
           .deletedExpenseIdsStream(groupId)
           .listen(
             (ids) => _onDeletedIdsSnapshot(groupId, ids),
@@ -539,7 +539,7 @@ class CycleRepository extends BaseRepository {
 
     for (final uid in uids) {
       try {
-        final u = await FirestoreService.instance.getUser(uid);
+        final u = await SupabaseService.instance.getUser(uid);
         if (u != null) {
           _userCache[uid] = u;
           final existing = _membersById[uid];
@@ -955,7 +955,7 @@ class CycleRepository extends BaseRepository {
       'createdById': _currentUserId,
       if (expense.category.isNotEmpty) 'category': expense.category,
     };
-    await FirestoreService.instance.addExpense(groupId, data);
+    await SupabaseService.instance.addExpense(groupId, data);
     _setLastAdded(groupId, expense.id, expense.description, expense.amount);
   }
 
@@ -1068,7 +1068,7 @@ class CycleRepository extends BaseRepository {
       if (category.isNotEmpty) 'category': category,
     };
 
-    await FirestoreService.instance.addExpense(groupId, data);
+    await SupabaseService.instance.addExpense(groupId, data);
     _setLastAdded(groupId, id, description, amount);
   }
 
@@ -1121,7 +1121,7 @@ class CycleRepository extends BaseRepository {
       if (normalized.category.isNotEmpty) 'category': normalized.category,
     };
 
-    await FirestoreService.instance.addExpense(groupId, data);
+    await SupabaseService.instance.addExpense(groupId, data);
     _setLastAdded(groupId, id, normalized.description, displayAmount);
   }
 
@@ -1264,7 +1264,7 @@ class CycleRepository extends BaseRepository {
         MoneyConversion.parseToMinor(v, currencyCode).amountMinor,
       ),
     );
-    FirestoreService.instance.updateExpense(groupId, updatedExpense.id, {
+    SupabaseService.instance.updateExpense(groupId, updatedExpense.id, {
       'amount': updatedExpense.amount,
       'amountMinor': amountMinor,
       'splitsMinor': splitsMinor,
@@ -1294,7 +1294,7 @@ class CycleRepository extends BaseRepository {
         detail +=
             '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
       }
-      FirestoreService.instance
+      SupabaseService.instance
           .addSystemMessage(
             groupId,
             type: 'expense_edited',
@@ -1333,7 +1333,7 @@ class CycleRepository extends BaseRepository {
         existing.createdById != _currentUserId &&
         isCreator(groupId, _currentUserId);
 
-    await FirestoreService.instance.markExpenseDeleted(
+    await SupabaseService.instance.markExpenseDeleted(
       groupId,
       expenseId,
       deletedById: _currentUserId,
@@ -1358,7 +1358,7 @@ class CycleRepository extends BaseRepository {
         detail +=
             '. Settlement plan recalculated. Any pending payments may need to be re-initiated.';
       }
-      FirestoreService.instance
+      SupabaseService.instance
           .addSystemMessage(
             groupId,
             type: 'expense_deleted',
@@ -1374,7 +1374,7 @@ class CycleRepository extends BaseRepository {
   /// Hard-deletes an expense (removes from Firestore completely).
   /// Use for undo operations within the undo window only.
   void hardDeleteExpense(String groupId, String expenseId) {
-    FirestoreService.instance.deleteExpense(groupId, expenseId);
+    SupabaseService.instance.deleteExpense(groupId, expenseId);
     if (_lastAddedGroupId == groupId && _lastAddedExpenseId == expenseId) {
       _clearLastAdded();
     }
@@ -1394,7 +1394,7 @@ class CycleRepository extends BaseRepository {
     _paymentAttemptSubs.remove(groupId);
     _paymentAttemptCycleId.remove(groupId);
     try {
-      await FirestoreService.instance.deleteGroup(groupId);
+      await SupabaseService.instance.deleteGroup(groupId);
     } catch (e) {
       // Treat NOT_FOUND as success — the group is already gone.
       // Only rethrow if the group is still present in our local state,
@@ -1666,7 +1666,7 @@ class CycleRepository extends BaseRepository {
       );
       return; // idempotent — already past this state
     }
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.initiated.firestoreValue,
@@ -1722,7 +1722,7 @@ class CycleRepository extends BaseRepository {
         'Invalid transition: cannot move from ${current.status.firestoreValue} to confirmedByPayer.',
       );
     }
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.confirmedByPayer.firestoreValue,
@@ -1781,7 +1781,7 @@ class CycleRepository extends BaseRepository {
         'Payer must confirm first (confirmedByPayer).',
       );
     }
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.confirmedByReceiver.firestoreValue,
@@ -1817,7 +1817,7 @@ class CycleRepository extends BaseRepository {
   }
 
   Future<void> markPaymentDisputed(String groupId, String attemptId) async {
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.disputed.firestoreValue,
@@ -1837,7 +1837,7 @@ class CycleRepository extends BaseRepository {
 
   Future<void> markPaymentAsCash(String groupId, String attemptId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.cashPending.firestoreValue,
@@ -1875,7 +1875,7 @@ class CycleRepository extends BaseRepository {
 
   Future<void> confirmCashReceived(String groupId, String attemptId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       PaymentAttemptStatus.cashConfirmed.firestoreValue,
@@ -1943,7 +1943,7 @@ class CycleRepository extends BaseRepository {
     if (!isCreator(groupId, _currentUserId)) return;
     final meta = _groupMeta[groupId];
     if (meta == null) return;
-    FirestoreService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
+    SupabaseService.instance.updateGroup(groupId, {'cycleStatus': 'settling'});
     _groupMeta[groupId] = _GroupMeta(
       activeCycleId: meta.activeCycleId,
       cycleStatus: 'settling',
@@ -1998,7 +1998,7 @@ class CycleRepository extends BaseRepository {
   /// Returns all closed cycles for the group, newest first (from Firestore settled_cycles).
   Future<List<Cycle>> getHistory(String groupId) async {
     try {
-      final settledDocs = await FirestoreService.instance.getSettledCycles(
+      final settledDocs = await SupabaseService.instance.getSettledCycles(
         groupId,
       );
       final List<Cycle> closed = [];
@@ -2007,7 +2007,7 @@ class CycleRepository extends BaseRepository {
         final cycleId = doc.id;
         final startDate = data['startDate'] as String? ?? '';
         final endDate = data['endDate'] as String? ?? '';
-        final expenseDocs = await FirestoreService.instance
+        final expenseDocs = await SupabaseService.instance
             .getSettledCycleExpenses(groupId, cycleId);
         final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';
         final expenses = expenseDocs
@@ -2039,7 +2039,7 @@ class CycleRepository extends BaseRepository {
 
   /// Stream of settlement events for a group (most recent first).
   Stream<List<SettlementEvent>> settlementEventsStream(String groupId) {
-    return FirestoreService.instance
+    return SupabaseService.instance
         .settlementEventsStream(groupId)
         .map(
           (list) =>
@@ -2049,7 +2049,7 @@ class CycleRepository extends BaseRepository {
 
   /// Get settlement events for a group (one-time fetch).
   Future<List<SettlementEvent>> getSettlementEvents(String groupId) async {
-    final data = await FirestoreService.instance.getSettlementEvents(groupId);
+    final data = await SupabaseService.instance.getSettlementEvents(groupId);
     return data.map((d) => SettlementEvent.fromFirestore(d)).toList();
   }
 
@@ -2112,7 +2112,7 @@ class CycleRepository extends BaseRepository {
     int? pendingCount,
   }) {
     final currencyCode = getGroup(groupId)?.currencyCode;
-    FirestoreService.instance
+    SupabaseService.instance
         .addSettlementEvent(
           groupId,
           type: type.firestoreValue,
@@ -2145,7 +2145,7 @@ class CycleRepository extends BaseRepository {
       return;
     }
 
-    final events = await FirestoreService.instance.getSettlementEvents(groupId);
+    final events = await SupabaseService.instance.getSettlementEvents(groupId);
     for (final data in events) {
       if (data['type'] == 'pending_reminder') {
         final ts = data['timestamp'] as int? ?? 0;

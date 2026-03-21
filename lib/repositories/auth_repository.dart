@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/data_encryption_service.dart';
-import '../services/firestore_service.dart';
+import '../services/supabase_service.dart';
 import '../services/user_profile_cache.dart';
 import '../services/feature_flag_service.dart';
 import '../services/identity_service.dart';
@@ -124,7 +124,7 @@ class AuthRepository extends BaseRepository {
       debugPrint('AuthRepository encryption key fetch failed: $e');
       _encryption = null;
     }
-    FirestoreService.instance.setEncryptionService(_encryption);
+    SupabaseService.instance.setEncryptionService(_encryption);
     _writeCurrentUserProfile().catchError((e, st) {
       AppLogger.error('continueAuthFromFirebaseUser write failed', name: 'AuthRepository', error: e, stackTrace: st);
     });
@@ -135,7 +135,7 @@ class AuthRepository extends BaseRepository {
 
   Future<void> _loadCurrentUserProfileFromFirestore() async {
     try {
-      final u = await FirestoreService.instance.getUser(_currentUserId);
+      final u = await SupabaseService.instance.getUser(_currentUserId);
       if (u != null && _userCache.containsKey(_currentUserId)) {
         final cur = Map<String, dynamic>.from(_userCache[_currentUserId]!);
         if (u['photoURL'] != null) cur['photoURL'] = u['photoURL'];
@@ -160,7 +160,7 @@ class AuthRepository extends BaseRepository {
 
   Future<void> _writeCurrentUserProfile() async {
     final cache = _userCache[_currentUserId];
-    await FirestoreService.instance.setUser(
+    await SupabaseService.instance.setUser(
       _currentUserId,
       displayName: _currentUserName,
       phoneNumber: _currentUserPhone,
@@ -199,7 +199,7 @@ class AuthRepository extends BaseRepository {
   void clearAuth() {
     _encryption?.clearKeys();
     _encryption = null;
-    FirestoreService.instance.setEncryptionService(null);
+    SupabaseService.instance.setEncryptionService(null);
     _currentUserId = '';
     _currentUserPhone = '';
     _currentUserName = '';

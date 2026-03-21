@@ -59,12 +59,12 @@ class FirestorePaths {
 
 /// Low-level Firestore access for users, groups, and expenses.
 /// All writes must use the authenticated User.uid (e.g. test number +91 79022 03218).
-class FirestoreService {
-  FirestoreService._();
+class SupabaseService {
+  SupabaseService._();
 
-  static final FirestoreService _instance = FirestoreService._();
+  static final SupabaseService _instance = SupabaseService._();
 
-  static FirestoreService get instance => _instance;
+  static SupabaseService get instance => _instance;
 
   DataEncryptionService? _encryption;
   void setEncryptionService(DataEncryptionService? s) => _encryption = s;

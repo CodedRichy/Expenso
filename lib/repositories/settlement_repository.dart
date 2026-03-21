@@ -1,6 +1,6 @@
 import 'dart:async';
 import '../models/models.dart';
-import '../services/firestore_service.dart';
+import '../services/supabase_service.dart';
 import './base_repository.dart';
 import './auth_repository.dart';
 
@@ -24,7 +24,7 @@ class SettlementRepository extends BaseRepository {
     }
 
     _paymentAttemptCycleId[groupId] = cycleId;
-    _paymentAttemptSubs[groupId] = FirestoreService.instance
+    _paymentAttemptSubs[groupId] = SupabaseService.instance
         .paymentAttemptsStream(groupId, cycleId)
         .listen((docs) {
       final attempts = docs.map((doc) => PaymentAttempt.fromFirestore(doc.id, doc.data())).toList();
@@ -61,7 +61,7 @@ class SettlementRepository extends BaseRepository {
     String? upiId,
   }) async {
     final auth = AuthRepository.instance;
-    return await FirestoreService.instance.createPaymentAttempt(
+    return await SupabaseService.instance.createPaymentAttempt(
       groupId: groupId,
       cycleId: cycleId,
       amount: amount,
@@ -74,7 +74,7 @@ class SettlementRepository extends BaseRepository {
   }
 
   Future<void> confirmPaymentReceived(String groupId, String attemptId) async {
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       'confirmed_by_receiver',
@@ -82,7 +82,7 @@ class SettlementRepository extends BaseRepository {
   }
 
   Future<void> confirmCashReceived(String groupId, String attemptId) async {
-    await FirestoreService.instance.updatePaymentAttemptStatus(
+    await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       'cash_confirmed',
@@ -90,7 +90,7 @@ class SettlementRepository extends BaseRepository {
   }
 
   Future<void> markAssetTransfer(String groupId, String attemptId) async {
-     await FirestoreService.instance.updatePaymentAttemptStatus(
+     await SupabaseService.instance.updatePaymentAttemptStatus(
       groupId,
       attemptId,
       'asset_transfer_pending',

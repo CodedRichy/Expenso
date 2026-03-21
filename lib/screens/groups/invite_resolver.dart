@@ -4,7 +4,7 @@ import '../../design/colors.dart';
 import '../../design/spacing.dart';
 import '../../design/typography.dart';
 import '../../repositories/cycle_repository.dart';
-import '../../services/firestore_service.dart';
+import '../../services/supabase_service.dart';
 import '../../widgets/expenso_loader.dart';
 import '../../widgets/gradient_scaffold.dart';
 
@@ -63,7 +63,7 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
 
     Map<String, String>? result;
     try {
-      result = await FirestoreService.instance.resolveInviteLink(
+      result = await SupabaseService.instance.resolveInviteLink(
         widget.groupId,
         widget.token,
       );

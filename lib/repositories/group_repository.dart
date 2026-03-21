@@ -1,6 +1,6 @@
 import 'dart:async';
 import '../models/models.dart';
-import '../services/firestore_service.dart';
+import '../services/supabase_service.dart';
 import '../services/sync_status_service.dart';
 import '../services/identity_service.dart';
 import '../utils/id_utils.dart';
@@ -58,7 +58,7 @@ class GroupRepository extends BaseRepository {
     _groupsLoading = true;
     notify();
 
-    _groupsSub = FirestoreService.instance
+    _groupsSub = SupabaseService.instance
         .groupsStream(auth.currentUserId)
         .listen(
           _onGroupsSnapshot,
@@ -73,7 +73,7 @@ class GroupRepository extends BaseRepository {
 
     if (auth.currentUserPhone.isNotEmpty) {
       _invitationsLoading = true;
-      _invitationsSub = FirestoreService.instance
+      _invitationsSub = SupabaseService.instance
           .pendingInvitationsStream(auth.currentUserPhone)
           .listen(
             _onInvitationsSnapshot,
@@ -220,7 +220,7 @@ class GroupRepository extends BaseRepository {
       final auth = AuthRepository.instance;
       if (auth.getUserCache(uid) != null) continue;
       try {
-        final u = await FirestoreService.instance.getUser(uid);
+        final u = await SupabaseService.instance.getUser(uid);
         if (u != null) {
           auth.updateUserCache(uid, u);
           if (!_membersById.containsKey(uid)) {
@@ -262,7 +262,7 @@ class GroupRepository extends BaseRepository {
     if (nameError != null) throw ArgumentError(nameError);
     
     try {
-      await FirestoreService.instance.createGroup(
+      await SupabaseService.instance.createGroup(
         group.id,
         groupName: group.name,
         creatorId: auth.currentUserId,
@@ -279,14 +279,14 @@ class GroupRepository extends BaseRepository {
   void addMemberToGroup(String groupId, Member member) {
     final auth = AuthRepository.instance;
     if (member.id.startsWith('p_') || (member.id.startsWith('m_') && member.id.length < 28)) {
-      FirestoreService.instance.addPendingMemberToGroup(
+      SupabaseService.instance.addPendingMemberToGroup(
         groupId,
         member.phone,
         member.name,
         invitedBy: auth.currentUserId,
       );
     } else {
-      FirestoreService.instance.addMemberToGroup(groupId, member.id);
+      SupabaseService.instance.addMemberToGroup(groupId, member.id);
       auth.updateUserCache(member.id, {
         'displayName': member.name,
         'phoneNumber': member.phone,
@@ -299,7 +299,7 @@ class GroupRepository extends BaseRepository {
   Future<void> acceptInvitation(String groupId) async {
     final auth = AuthRepository.instance;
     if (auth.currentUserId.isEmpty || auth.currentUserPhone.isEmpty) return;
-    await FirestoreService.instance.acceptInvitation(
+    await SupabaseService.instance.acceptInvitation(
       groupId,
       auth.currentUserId,
       auth.currentUserPhone,
@@ -312,7 +312,7 @@ class GroupRepository extends BaseRepository {
   Future<void> declineInvitation(String groupId) async {
     final auth = AuthRepository.instance;
     if (auth.currentUserPhone.isEmpty) return;
-    await FirestoreService.instance.declineInvitation(
+    await SupabaseService.instance.declineInvitation(
       groupId,
       auth.currentUserPhone,
       userName: auth.currentUserName.isNotEmpty ? auth.currentUserName : 'Someone',
@@ -324,12 +324,12 @@ class GroupRepository extends BaseRepository {
   void removeMemberFromGroup(String groupId, String memberId) {
     if (memberId.startsWith('p_')) {
       final phone = memberId.substring(2);
-      FirestoreService.instance.removePendingMemberFromGroup(groupId, phone);
+      SupabaseService.instance.removePendingMemberFromGroup(groupId, phone);
       _membersById.remove(memberId);
       // Local removal from the specific group model instance should be handled by the stream or delegated call
       notify();
     } else {
-      FirestoreService.instance.removeMemberFromGroup(groupId, memberId);
+      SupabaseService.instance.removeMemberFromGroup(groupId, memberId);
       notify();
     }
   }

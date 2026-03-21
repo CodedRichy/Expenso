@@ -16,7 +16,7 @@ import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/skeleton_placeholders.dart';
 import '../../widgets/staggered_list_item.dart';
-import '../../services/firestore_service.dart';
+import '../../services/supabase_service.dart';
 import '../../utils/phone_utils.dart';
 import '../../utils/money_format.dart';
 
@@ -580,7 +580,7 @@ void _showMemberProfileBottomSheet(
                   const SizedBox(height: 24),
                   if (!isPending)
                     FutureBuilder<Map<String, dynamic>?>(
-                      future: FirestoreService.instance.getUser(member.id),
+                      future: SupabaseService.instance.getUser(member.id),
                       builder: (context, snapshot) {
                         final data = snapshot.data;
                         final isBeta = data?['isBeta'] == true;

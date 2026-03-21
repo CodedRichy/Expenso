@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../repositories/cycle_repository.dart';
 
@@ -44,10 +44,9 @@ class FeatureFlagService extends ChangeNotifier {
     _isCreator = _creatorUserIds.contains(uid);
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (doc.exists) {
-        final data = doc.data();
-        _isBeta = data?['isBeta'] == true;
+      final data = await Supabase.instance.client.from('users').select('is_beta').eq('id', uid).maybeSingle();
+      if (data != null) {
+        _isBeta = data['is_beta'] == true;
       } else {
         _isBeta = false;
       }
