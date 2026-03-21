@@ -1,9 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Centralized auth: phone (OTP) only.
-/// Handles [codeSent] (OTP screen), [verificationCompleted] (instant sign-in),
-/// and specific error handling for invalid-verification-code and too-many-requests.
+/// Centralized auth: phone (OTP) only using Supabase.
 class PhoneAuthService {
   PhoneAuthService._();
 
@@ -11,19 +10,19 @@ class PhoneAuthService {
 
   static PhoneAuthService get instance => _instance;
 
-  /// Test number registered in Firebase Console; show dev code hint when used.
   static const String testPhoneDigits = '7902203218';
   static const String devTestCode = '123456';
 
-  FirebaseAuth get _auth => FirebaseAuth.instance;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
-  /// Stream of auth state. Use for routing: null → login; non-null → app (ledger).
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  /// Stream of auth state.
+  Stream<User?> get authStateChanges =>
+      _supabase.auth.onAuthStateChange.map((event) => event.session?.user);
 
-  /// Current Firebase user; null if signed out.
-  User? get currentUser => _auth.currentUser;
+  /// Current Supabase user; null if signed out.
+  User? get currentUser => _supabase.auth.currentUser;
 
-  /// E.164 for Firebase: +91 and 10 digits, no spaces.
+  /// E.164 for Supabase: +91 and 10 digits, no spaces.
   static String toE164(String digits) {
     final clean = digits.replaceAll(RegExp(r'\D'), '');
     if (clean.length == 10) return '+91$clean';
@@ -33,91 +32,51 @@ class PhoneAuthService {
   static const String _genericMessage =
       'Something went wrong. Please try again.';
 
-  /// User-friendly message for Firebase auth errors. Debug: test hint + raw details. Release: production copy only.
   static String messageForError(dynamic error) {
-    if (error is FirebaseAuthException) {
-      final String production;
-      switch (error.code) {
-        case 'invalid-verification-code':
-          return 'Invalid code. Please try again.';
-        case 'invalid-verification-id':
-          production =
-              'Verification expired. Please start again from the phone screen.';
-          break;
-        case 'too-many-requests':
-          production = 'Too many attempts. Please try again later.';
-          break;
-        case 'invalid-phone-number':
-          production = 'Please enter a valid phone number.';
-          break;
-        case 'quota-exceeded':
-          production = 'Temporarily unavailable. Please try again later.';
-          break;
-        case 'network-request-failed':
-          production = 'Check your connection and try again.';
-          break;
-        case 'captcha-check-failed':
-        case 'internal-error':
-          production = _genericMessage;
-          break;
-        default:
-          return _genericMessage;
+    if (error is AuthException) {
+      if (error.message.toLowerCase().contains('invalid')) {
+        return 'Invalid code or phone number. Please try again.';
+      } else if (error.message.toLowerCase().contains('rate limit')) {
+        return 'Too many attempts. Please try again later.';
       }
-      return production;
+      return error.message;
     }
     return _genericMessage;
   }
 
-  /// Whether the given phone (10 digits or E.164) is the registered test number.
   static bool isTestNumber(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
     return digits.endsWith(testPhoneDigits) || digits == testPhoneDigits;
   }
 
-  /// Starts phone verification. Callbacks drive UI: [onCodeSent] → show OTP screen; [onVerificationCompleted] → sign-in done.
-  void verifyPhoneNumber({
+  Future<void> sendOtp({
     required String phoneNumber,
-    required void Function(String verificationId, int? resendToken) onCodeSent,
-    required void Function(PhoneAuthCredential credential)
-    onVerificationCompleted,
+    required void Function() onCodeSent,
     required void Function(String message) onError,
-    int? resendToken,
-  }) {
+  }) async {
     final e164 = phoneNumber.length == 10 ? toE164(phoneNumber) : phoneNumber;
-    debugPrint('PhoneAuth: verifyPhoneNumber called with E.164=$e164');
-    _auth.verifyPhoneNumber(
-      phoneNumber: e164,
-      verificationCompleted: (PhoneAuthCredential credential) {
-        debugPrint('PhoneAuth: verificationCompleted (auto sign-in)');
-        onVerificationCompleted(credential);
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        debugPrint(
-          'PhoneAuth: verificationFailed code=${e.code} message=${e.message}',
-        );
-        onError(messageForError(e));
-      },
-      codeSent: (String verificationId, int? token) {
-        debugPrint(
-          'PhoneAuth: codeSent verificationId=${verificationId.substring(0, 20)}...',
-        );
-        onCodeSent(verificationId, token);
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        debugPrint('PhoneAuth: codeAutoRetrievalTimeout');
-      },
-      timeout: const Duration(seconds: 120),
-      forceResendingToken: resendToken,
-    );
+    debugPrint('PhoneAuth: sendOtp called with E.164=$e164');
+    try {
+      await _supabase.auth.signInWithOtp(phone: e164);
+      onCodeSent();
+    } on AuthException catch (e) {
+      debugPrint('PhoneAuth error: ${e.message}');
+      onError(messageForError(e));
+    } catch (e) {
+      debugPrint('PhoneAuth generic error: $e');
+      onError(messageForError(e));
+    }
   }
 
-  /// Sign in with OTP credential (from manual OTP entry or auto-retrieval).
-  Future<void> signInWithCredential(PhoneAuthCredential credential) async {
-    await _auth.signInWithCredential(credential);
+  Future<void> verifyOtp({
+    required String phoneNumber,
+    required String token,
+  }) async {
+    final e164 = phoneNumber.length == 10 ? toE164(phoneNumber) : phoneNumber;
+    await _supabase.auth.verifyOTP(phone: e164, token: token, type: OtpType.sms);
   }
 
-  /// Sign out. Auth state stream will emit null; app should show login.
   Future<void> signOut() async {
-    await _auth.signOut();
+    await _supabase.auth.signOut();
   }
 }

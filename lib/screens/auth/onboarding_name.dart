@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../design/typography.dart';
@@ -28,7 +28,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     HapticFeedback.lightImpact();
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
-    FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+    Supabase.instance.client.auth.updateUser(UserAttributes(data: {'display_name': name}));
   }
 
   @override

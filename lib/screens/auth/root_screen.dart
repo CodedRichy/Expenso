@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/phone_auth_service.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../widgets/expenso_loader.dart';
@@ -24,7 +24,7 @@ class RootScreen extends StatelessWidget {
     // Wrap in try-catch to handle Firebase initialization failures
     try {
       return StreamBuilder<User?>(
-        initialData: FirebaseAuth.instance.currentUser,
+        initialData: Supabase.instance.client.auth.currentUser,
         stream: PhoneAuthService.instance.authStateChanges,
         builder: (context, snapshot) {
           // Handle errors in stream
@@ -50,15 +50,15 @@ class RootScreen extends StatelessWidget {
           }
 
           repo.setAuthFromFirebaseUserSync(
-            user.uid,
-            user.phoneNumber,
-            user.displayName,
-            photoURL: user.photoURL,
+            user.id,
+            user.phone,
+            user.userMetadata?['display_name'] as String?,
+            photoURL: user.userMetadata?['avatar_url'] as String?,
           );
 
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             await repo.continueAuthFromFirebaseUser();
-            FcmTokenService.instance.initialize(user.uid);
+            FcmTokenService.instance.initialize(user.id);
           });
 
           return ListenableBuilder(

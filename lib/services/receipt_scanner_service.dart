@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ class ReceiptScannerService {
   final ImagePicker _picker = ImagePicker();
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'asia-south1');
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<String?> scanReceipt() async {
     try {
@@ -17,7 +17,7 @@ class ReceiptScannerService {
       if (image == null) return null;
 
       final File file = File(image.path);
-      final String uid = _auth.currentUser?.uid ?? 'anonymous';
+      final String uid = _supabase.auth.currentUser?.id ?? 'anonymous';
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final String storagePath = 'temp/ocr_uploads/$uid/$timestamp.jpg';
 

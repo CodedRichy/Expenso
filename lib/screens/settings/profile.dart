@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +9,7 @@ import '../../design/spacing.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/profile_service.dart';
+import '../../services/phone_auth_service.dart';
 import '../../services/locale_service.dart';
 import '../../design/typography.dart';
 import '../../widgets/glass_card.dart';
@@ -124,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     final repo = CycleRepository.instance;
     repo.setGlobalProfile(repo.currentUserPhone, name);
-    FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+    Supabase.instance.client.auth.updateUser(UserAttributes(data: {'display_name': name}));
     setState(() => _nameDirty = false);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -496,7 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   );
                                   if (confirmed == true && context.mounted) {
-                                    await FirebaseAuth.instance.signOut();
+                                    await PhoneAuthService.instance.signOut();
                                     CycleRepository.instance.clearAuth();
                                     if (context.mounted) {
                                       Navigator.of(

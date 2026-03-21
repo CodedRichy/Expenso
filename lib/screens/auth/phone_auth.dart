@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../utils/country_codes.dart';
@@ -21,8 +21,6 @@ class _PhoneAuthState extends State<PhoneAuth> {
   String phone = '';
   String otp = '';
   String step = 'phone'; // 'phone' or 'otp'
-  String? _verificationId;
-  int? _resendToken;
   bool _loading = false;
   String? _errorMessage;
   String _selectedCountryCode = '+91';
@@ -64,12 +62,8 @@ class _PhoneAuthState extends State<PhoneAuth> {
       _loading = true;
       _errorMessage = null;
     });
-    PhoneAuthService.instance.verifyPhoneNumber(
+    PhoneAuthService.instance.sendOtp(
       phoneNumber: e164,
-      onVerificationCompleted: (PhoneAuthCredential credential) {
-        if (!mounted) return;
-        _signInWithCredential(credential);
-      },
       onError: (String message) {
         if (!mounted) return;
         setState(() {
@@ -77,18 +71,15 @@ class _PhoneAuthState extends State<PhoneAuth> {
           _errorMessage = message;
         });
       },
-      onCodeSent: (String verificationId, int? resendToken) {
+      onCodeSent: () {
         if (!mounted) return;
         setState(() {
-          _verificationId = verificationId;
-          _resendToken = resendToken;
           step = 'otp';
           _loading = false;
           _errorMessage = null;
         });
         _startResendTimer();
       },
-      resendToken: _resendToken,
     );
   }
 
@@ -115,18 +106,25 @@ class _PhoneAuthState extends State<PhoneAuth> {
     super.dispose();
   }
 
-  Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
+  Future<void> _verifyAndSignIn(String code) async {
     try {
-      await PhoneAuthService.instance.signInWithCredential(credential);
+      final formattedPhone = _formatPhone(_selectedCountryCode, phone);
+      await PhoneAuthService.instance.verifyOtp(
+        phoneNumber: formattedPhone,
+        token: code,
+      );
       final user = PhoneAuthService.instance.currentUser;
       if (!mounted || user == null) return;
-      final formattedPhone = _formatPhone(_selectedCountryCode, phone);
       final currencyCode =
           currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
+          
+      // Extract display name from metadata if it exists
+      final displayName = user.userMetadata?['display_name'] as String? ?? '';
+      
       CycleRepository.instance.setGlobalProfile(
         formattedPhone,
-        user.displayName ?? '',
-        authUserId: user.uid,
+        displayName,
+        authUserId: user.id,
         currencyCode: currencyCode,
       );
     } catch (e) {
@@ -152,24 +150,7 @@ class _PhoneAuthState extends State<PhoneAuth> {
       );
       return;
     }
-    final verificationId = _verificationId;
-    if (verificationId == null) {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(
-        '/error-states',
-        arguments: {'type': 'session-expired'},
-      );
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _errorMessage = null;
-    });
-    final credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: otp,
-    );
-    await _signInWithCredential(credential);
+    await _verifyAndSignIn(otp);
     if (!mounted) return;
     setState(() => _loading = false);
   }
@@ -198,8 +179,6 @@ class _PhoneAuthState extends State<PhoneAuth> {
     setState(() {
       step = 'phone';
       otp = '';
-      _verificationId = null;
-      _resendToken = null;
       _errorMessage = null;
     });
   }

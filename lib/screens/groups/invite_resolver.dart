@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../design/colors.dart';
 import '../../design/spacing.dart';
 import '../../design/typography.dart';
@@ -52,7 +52,7 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
   Future<void> _resolve() async {
     // Must be authenticated — RootScreen handles unauthenticated redirect,
     // so if we arrive here the user is signed in.
-    final user = FirebaseAuth.instance.currentUser;
+    final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       // Fallback: shouldn't happen but guard anyway.
       if (mounted) {
@@ -88,7 +88,7 @@ class _InviteResolverScreenState extends State<InviteResolverScreen> {
     // Check if already a member (local cache).
     final repo = CycleRepository.instance;
     final existing = repo.getGroup(widget.groupId);
-    if (existing != null && existing.memberIds.contains(user.uid)) {
+    if (existing != null && existing.memberIds.contains(user.id)) {
       setState(() => _state = _ResolveState.alreadyMember);
       return;
     }
