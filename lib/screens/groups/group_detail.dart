@@ -25,7 +25,7 @@ import '../../widgets/settlement_activity_feed.dart';
 import '../../widgets/settlement_progress_indicator.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/undo_toast.dart';
-import '../common/empty_states.dart';
+import '../../widgets/empty_state_widget.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/animated_number.dart';
@@ -467,9 +467,7 @@ class _GroupDetailState extends State<GroupDetail> {
                           : [
                               SliverFillRemaining(
                                 hasScrollBody: false,
-                                child: EmptyStates(
-                                  type: 'no-expenses-new-cycle',
-                                ),
+                                child: EmptyStateWidget(type: 'no-expenses-new-cycle'),
                               ),
                             ]),
                       const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -700,7 +698,7 @@ class _DecisionClarityCard extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             borderRadius: 16,
             child: isEmpty
-                ? EmptyStates(type: 'zero-waste-cycle', forDarkCard: true)
+                ? EmptyStateWidget(type: 'zero-waste-cycle', forDarkCard: true)
                 : _buildContent(
                     context,
                     currencyCode: currencyCode,

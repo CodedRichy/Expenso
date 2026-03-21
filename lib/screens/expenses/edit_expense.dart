@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../design/colors.dart';
 import '../../design/spacing.dart';
 import '../../design/typography.dart';
 import '../../models/models.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../utils/money_format.dart';
+import '../../widgets/glass_card.dart';
 import '../../widgets/gradient_scaffold.dart';
+import '../../widgets/success_checkmark.dart';
 import '../../widgets/tap_scale.dart';
+import '../../services/locale_service.dart';
 
 class EditExpense extends StatefulWidget {
   const EditExpense({super.key});
@@ -27,6 +31,7 @@ class _EditExpenseState extends State<EditExpense> {
   bool _canEdit = true;
   bool _hasInitialized = false;
   bool _expenseNotFound = false;
+  bool _showingSaved = false;
 
   String get _selectedDateDisplay {
     final expenseDate = DateTime.fromMillisecondsSinceEpoch(_selectedTimestamp);
@@ -41,18 +46,8 @@ class _EditExpenseState extends State<EditExpense> {
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     final month = months[expenseDate.month - 1];
     if (expenseDate.year == now.year) return '$month ${expenseDate.day}';
@@ -72,51 +67,6 @@ class _EditExpenseState extends State<EditExpense> {
         _selectedTimestamp = picked.millisecondsSinceEpoch;
       });
     }
-  }
-
-  Widget _buildDateChip(String label, bool canEdit, ThemeData theme) {
-    final isSelected = _selectedDateDisplay == label;
-    final isDark = theme.brightness == Brightness.dark;
-    return TapScale(
-      child: GestureDetector(
-        onTap: canEdit
-            ? () {
-                final now = DateTime.now();
-                final today = DateTime(now.year, now.month, now.day);
-                setState(() {
-                  if (label == 'Today') {
-                    _selectedTimestamp = today.millisecondsSinceEpoch;
-                  } else if (label == 'Yesterday') {
-                    _selectedTimestamp = today
-                        .subtract(const Duration(days: 1))
-                        .millisecondsSinceEpoch;
-                  }
-                });
-              }
-            : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : (isDark
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : Colors.white),
-            border: Border.all(color: theme.dividerColor),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              color: isSelected
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurface,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -177,7 +127,7 @@ class _EditExpenseState extends State<EditExpense> {
     super.dispose();
   }
 
-  void handleSave() {
+  Future<void> handleSave() async {
     final groupId = _groupId;
     final expenseId = _expenseId;
     if (groupId == null || expenseId == null) return;
@@ -242,6 +192,12 @@ class _EditExpenseState extends State<EditExpense> {
         splitType: existing.splitType,
       );
       repo.updateExpense(groupId, updatedExpense);
+      HapticFeedback.mediumImpact();
+      // Flash success overlay then pop
+      if (!mounted) return;
+      setState(() => _showingSaved = true);
+      await Future.delayed(const Duration(milliseconds: 650));
+      if (!mounted) return;
       Navigator.pop(context);
     } on ArgumentError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -272,6 +228,7 @@ class _EditExpenseState extends State<EditExpense> {
     }
     try {
       CycleRepository.instance.deleteExpense(groupId, expenseId);
+      HapticFeedback.mediumImpact();
       Navigator.pop(context);
     } on StateError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -286,7 +243,9 @@ class _EditExpenseState extends State<EditExpense> {
       return _buildErrorScreen(context);
     }
     final canEdit = _canEdit;
-    return GradientScaffold(
+    return Stack(
+      children: [
+        GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -294,40 +253,45 @@ class _EditExpenseState extends State<EditExpense> {
             _buildHeader(context, canEdit ? 'Edit Expense' : 'Expense'),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildDescriptionField(readOnly: !canEdit),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
                     _buildAmountField(readOnly: !canEdit),
                     if (_expense != null) ...[
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
                       _buildDateField(canEdit),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
                       _buildPayerField(canEdit),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
                       _buildSplitAndPeopleSection(),
                     ],
                     if (canEdit) ...[
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 20),
                       TapScale(
-                        child: OutlinedButton.icon(
-                          onPressed: handleDelete,
-                          icon: const Icon(Icons.delete_outline, size: 20),
-                          label: const Text('Delete Expense'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            side: BorderSide(
-                              color: Theme.of(context).dividerColor,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            minimumSize: const Size(double.infinity, 0),
+                        onTap: handleDelete,
+                        child: GlassCard(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: AppSpacing.radiusSmall,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: context.colorError,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Delete Expense',
+                                style: context.labelLarge.copyWith(
+                                  color: context.colorError,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -340,33 +304,49 @@ class _EditExpenseState extends State<EditExpense> {
           ],
         ),
       ),
+        ),
+        // ── Success overlay ──────────────────────────────────────────────
+        if (_showingSaved)
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: _showingSaved ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Container(
+                color: context.colorBackground.withValues(alpha: 0.82),
+                child: Center(
+                  child: SuccessCheckmark(
+                    size: 88,
+                    color: context.colorSuccess,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   Widget _buildErrorScreen(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenPaddingH,
-                AppSpacing.screenHeaderPaddingTop,
-                AppSpacing.screenPaddingH,
-                AppSpacing.space3xl,
-              ),
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.chevron_left, size: 24),
-                color: theme.colorScheme.onSurface,
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
-                constraints: const BoxConstraints(),
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(32, 32),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: TapScale(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: const Icon(Icons.chevron_left, size: 20),
                 ),
               ),
             ),
@@ -385,44 +365,45 @@ class _EditExpenseState extends State<EditExpense> {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: context.colorTextSecondary,
                         ),
                         const SizedBox(height: 24),
                         Text(
                           'Expense not found',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: context.headingMedium.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'This expense may have been removed or the link is invalid. Go back and try again.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: theme.colorScheme.onSurfaceVariant,
+                          style: context.bodyPrimary.copyWith(
+                            color: context.colorTextSecondary,
                             height: 1.5,
                           ),
                         ),
                         const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: TapScale(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
+                        TapScale(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: double.infinity,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: context.colorPrimary,
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusMedium,
                               ),
-                              child: const Text('Go back'),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Go back',
+                                style: context.labelLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -439,40 +420,32 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildHeader(BuildContext context, String title) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.screenPaddingH,
-        AppSpacing.screenHeaderPaddingTop,
-        AppSpacing.screenPaddingH,
-        AppSpacing.space3xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
         children: [
           TapScale(
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.chevron_left, size: 24),
-              color: theme.colorScheme.onSurface,
-              padding: EdgeInsets.zero,
-              alignment: Alignment.centerLeft,
-              constraints: const BoxConstraints(),
-              style: IconButton.styleFrom(
-                minimumSize: const Size(32, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.08),
+                ),
               ),
+              child: const Icon(Icons.chevron_left, size: 20),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(width: 12),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
-              letterSpacing: -0.5,
-            ),
+            style: context.headingMedium.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -480,222 +453,198 @@ class _EditExpenseState extends State<EditExpense> {
   }
 
   Widget _buildDescriptionField({required bool readOnly}) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'DESCRIPTION',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
+        Text('DESCRIPTION', style: context.sectionLabel),
+        const SizedBox(height: 10),
+        GlassCard(
+          padding: EdgeInsets.zero,
+          borderRadius: AppSpacing.radiusSmall,
+          child: TextField(
+            controller: descriptionController,
+            readOnly: readOnly,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'What was this expense?',
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+            ),
+            style: context.labelLarge,
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: descriptionController,
-          readOnly: readOnly,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: isDark
-                ? theme.colorScheme.surfaceContainerHighest
-                : Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.colorScheme.primary),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          style: TextStyle(fontSize: 17, color: theme.colorScheme.onSurface),
         ),
       ],
     );
   }
 
   Widget _buildAmountField({required bool readOnly}) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currencyCode = _groupId != null
         ? (CycleRepository.instance.getGroup(_groupId!)?.currencyCode ?? 'INR')
         : 'INR';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'AMOUNT',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
+        Text('AMOUNT', style: context.sectionLabel),
+        const SizedBox(height: 10),
+        GlassCard(
+          padding: EdgeInsets.zero,
+          borderRadius: AppSpacing.radiusSmall,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                child: Text(
+                  CurrencyRegistry.symbol(currencyCode),
+                  style: context.labelLarge.copyWith(
+                    color: context.colorTextSecondary,
+                  ),
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 24,
+                color: Colors.black.withValues(alpha: 0.08),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: amountController,
+                  readOnly: readOnly,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                  ),
+                  style: context.labelLarge,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? theme.colorScheme.surfaceContainerHighest
-                    : Colors.white,
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                CurrencyRegistry.symbol(currencyCode),
-                style: TextStyle(
-                  fontSize: 17,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: amountController,
-                readOnly: readOnly,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: isDark
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.dividerColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.colorScheme.primary),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                ),
-                style: TextStyle(
-                  fontSize: 17,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );
   }
 
   Widget _buildDateField(bool canEdit) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isCustomDate = !['Today', 'Yesterday'].contains(_selectedDateDisplay);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'DATE',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 12),
+        Text('DATE', style: context.sectionLabel),
+        const SizedBox(height: 10),
         if (canEdit)
           Row(
             children: [
-              _buildDateChip('Today', canEdit, theme),
+              _buildDateChip('Today', canEdit),
               const SizedBox(width: 8),
-              _buildDateChip('Yesterday', canEdit, theme),
+              _buildDateChip('Yesterday', canEdit),
               const SizedBox(width: 8),
               TapScale(
-                child: GestureDetector(
-                  onTap: _pickDate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isCustomDate
-                          ? theme.colorScheme.primary
-                          : (isDark
-                                ? theme.colorScheme.surfaceContainerHighest
-                                : Colors.white),
-                      border: Border.all(color: theme.dividerColor),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: isCustomDate
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        if (isCustomDate) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            _selectedDateDisplay,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: theme.colorScheme.onPrimary,
-                            ),
+                onTap: _pickDate,
+                child: GlassCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  borderRadius: AppSpacing.radiusSmall,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: isCustomDate
+                            ? context.colorPrimary
+                            : context.colorTextSecondary,
+                      ),
+                      if (isCustomDate) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _selectedDateDisplay,
+                          style: context.labelMedium.copyWith(
+                            color: context.colorPrimary,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
             ],
           )
         else
-          Container(
+          GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? theme.colorScheme.surfaceContainerHighest
-                  : Colors.white,
-              border: Border.all(color: theme.dividerColor),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            borderRadius: AppSpacing.radiusSmall,
             child: Text(
               _selectedDateDisplay,
-              style: TextStyle(
-                fontSize: 17,
-                color: theme.colorScheme.onSurface,
-              ),
+              style: context.labelLarge,
             ),
           ),
       ],
     );
   }
 
-  // Matches expense_input.dart: inline ElevatedButton (selected) / OutlinedButton (unselected) row.
+  Widget _buildDateChip(String label, bool canEdit) {
+    final isSelected = _selectedDateDisplay == label;
+    return TapScale(
+      onTap: canEdit
+          ? () {
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              setState(() {
+                if (label == 'Today') {
+                  _selectedTimestamp = today.millisecondsSinceEpoch;
+                } else if (label == 'Yesterday') {
+                  _selectedTimestamp = today
+                      .subtract(const Duration(days: 1))
+                      .millisecondsSinceEpoch;
+                }
+              });
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.colorPrimary
+              : Colors.white.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+          border: Border.all(
+            color: isSelected
+                ? context.colorPrimary
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Text(
+          label,
+          style: context.labelMedium.copyWith(
+            color: isSelected ? Colors.white : context.colorTextPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPayerField(bool canEdit) {
     if (_groupId == null) return const SizedBox.shrink();
     final repo = CycleRepository.instance;
@@ -703,20 +652,11 @@ class _EditExpenseState extends State<EditExpense> {
         .getMembersForGroup(_groupId!)
         .where((m) => !m.id.startsWith('p_'))
         .toList();
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'PAID BY',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 12),
+        Text('PAID BY', style: context.sectionLabel),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -724,35 +664,37 @@ class _EditExpenseState extends State<EditExpense> {
             final isSelected = _selectedPayerId == member.id;
             final displayName = repo.getMemberDisplayNameById(member.id);
             return TapScale(
-              child: isSelected
-                  ? ElevatedButton(
-                      onPressed: canEdit
-                          ? () => setState(() => _selectedPayerId = member.id)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(displayName, style: AppTypography.button),
-                    )
-                  : OutlinedButton(
-                      onPressed: canEdit
-                          ? () => setState(() => _selectedPayerId = member.id)
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(displayName),
-                    ),
+              onTap: canEdit
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedPayerId = member.id);
+                    }
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.colorPrimary
+                      : Colors.white.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+                  border: Border.all(
+                    color: isSelected
+                        ? context.colorPrimary
+                        : Colors.black.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Text(
+                  displayName,
+                  style: context.labelMedium.copyWith(
+                    color: isSelected ? Colors.white : context.colorTextPrimary,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ),
             );
           }).toList(),
         ),
@@ -766,7 +708,7 @@ class _EditExpenseState extends State<EditExpense> {
     final currencyCode = _groupId != null
         ? (repo.getGroup(_groupId!)?.currencyCode ?? 'INR')
         : 'INR';
-    final theme = Theme.of(context);
+    final locale = LocaleService.instance.localeCode;
     final isExact =
         expense.splitAmountsById != null &&
         expense.splitAmountsById!.isNotEmpty;
@@ -787,91 +729,98 @@ class _EditExpenseState extends State<EditExpense> {
               )
               .toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'SPLIT',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          splitLabel,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'PEOPLE INVOLVED',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...participants.map((e) {
-          final name = repo.getMemberDisplayNameById(e.key);
-          final amt = e.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: theme.colorScheme.onSurface,
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      borderRadius: AppSpacing.radiusSmall,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('SPLIT', style: context.sectionLabel),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: context.colorPrimary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  splitLabel,
+                  style: context.caption.copyWith(
+                    color: context.colorPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(
-                  formatMoneyFromMajor(amt, currencyCode),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('PEOPLE INVOLVED', style: context.sectionLabel),
+          const SizedBox(height: 8),
+          ...participants.map((e) {
+            final name = repo.getMemberDisplayNameById(e.key);
+            final amt = e.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(name, style: context.labelMedium),
+                  Text(
+                    formatMoneyFromMajor(amt, currencyCode, locale),
+                    style: context.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
   Widget _buildSaveButton() {
     if (!_canEdit) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
-      ),
-      child: ElevatedButton(
-        onPressed:
-            descriptionController.text.trim().isNotEmpty &&
-                amountController.text.isNotEmpty
-            ? handleSave
-            : null,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 0,
-        ),
-        child: const Text(
-          'Save Changes',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+    final isEnabled = descriptionController.text.trim().isNotEmpty &&
+        amountController.text.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      child: TapScale(
+        onTap: isEnabled ? handleSave : null,
+        child: Container(
+          height: 54,
+          decoration: BoxDecoration(
+            color: isEnabled
+                ? context.colorPrimary
+                : context.colorPrimary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: context.colorPrimary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              'Save Changes',
+              style: context.labelLarge.copyWith(
+                color: isEnabled
+                    ? Colors.white
+                    : context.colorPrimary.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ),
     );

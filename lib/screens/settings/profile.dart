@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../design/colors.dart';
+import '../../design/spacing.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/locale_service.dart';
 import '../../design/typography.dart';
+import '../../widgets/glass_card.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/tap_scale.dart';
@@ -160,8 +162,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // theme is kept for colorScheme usage within builder
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
 
     return ListenableBuilder(
       listenable: CycleRepository.instance,
@@ -178,37 +181,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       TapScale(
-                        child: IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.chevron_left, size: 24),
-                          color: Theme.of(context).colorScheme.onSurface,
-                          padding: EdgeInsets.zero,
-                          style: IconButton.styleFrom(
-                            minimumSize: const Size(32, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Profile',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.08),
                             ),
                           ),
+                          child: const Icon(Icons.chevron_left, size: 20),
                         ),
                       ),
-                      // Mirror the back button width so the title is truly centred
-                      const SizedBox(width: 32),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Profile',
+                        style: context.headingMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -218,267 +218,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.zero,
-                          child: Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.shadow.withValues(
-                                    alpha: isDark ? 0.3 : 0.12,
-                                  ),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  context.colorGradientStart,
-                                  context.colorGradientEnd,
-                                ],
-                              ),
-                            ),
-                            child: FadeIn(
-                              duration: const Duration(milliseconds: 400),
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: _uploadingPhoto
-                                        ? null
-                                        : _pickAndUploadPhoto,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        MemberAvatar(
-                                          displayName: displayName,
-                                          photoURL: photoURL,
-                                          size: 88,
-                                        ),
-                                        if (_uploadingPhoto)
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: theme.colorScheme.scrim
-                                                    .withValues(alpha: 0.5),
-                                                borderRadius:
-                                                    BorderRadius.circular(44),
-                                              ),
-                                              child: Center(
-                                                child: SizedBox(
-                                                  width: 28,
-                                                  height: 28,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: theme
-                                                            .colorScheme
-                                                            .surface,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          Positioned(
-                                            right: 0,
-                                            bottom: 0,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.camera_alt,
-                                                size: 16,
-                                                color:
-                                                    theme.colorScheme.onPrimary,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Display name',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark
-                                          ? theme.colorScheme.onSurfaceVariant
-                                          : context.colorSurface.withValues(
-                                              alpha: 0.7,
-                                            ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                        GlassCard(
+                          padding: const EdgeInsets.all(24),
+                          borderRadius: AppSpacing.radiusMedium,
+                          child: FadeIn(
+                            duration: const Duration(milliseconds: 400),
+                            child: Column(
+                              children: [
+                                GestureDetector(
+                                  onTap: _uploadingPhoto
+                                      ? null
+                                      : _pickAndUploadPhoto,
+                                  child: Stack(
+                                    alignment: Alignment.center,
                                     children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _nameController,
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark
-                                                ? theme.colorScheme.onSurface
-                                                : context.colorSurface,
-                                          ),
-                                          decoration: InputDecoration(
-                                            isDense: true,
-                                            filled: true,
-                                            fillColor: isDark
-                                                ? theme
-                                                      .colorScheme
-                                                      .surfaceContainerLow
-                                                : context.colorSurface
-                                                      .withValues(alpha: 0.12),
-                                            border: OutlineInputBorder(
+                                      MemberAvatar(
+                                        displayName: displayName,
+                                        photoURL: photoURL,
+                                        size: 88,
+                                      ),
+                                      if (_uploadingPhoto)
+                                        Positioned.fill(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: theme.colorScheme.scrim
+                                                  .withValues(alpha: 0.5),
                                               borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
+                                                  BorderRadius.circular(44),
                                             ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 12,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      TapScale(
-                                        child: TextButton(
-                                          onPressed:
-                                              _nameDirty &&
-                                                  _nameController.text
-                                                      .trim()
-                                                      .isNotEmpty
-                                              ? _saveName
-                                              : null,
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 12,
+                                            child: Center(
+                                              child: SizedBox(
+                                                width: 28,
+                                                height: 28,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primary,
+                                                    ),
+                                              ),
                                             ),
-                                            minimumSize: const Size(0, 44),
-                                            alignment: Alignment.center,
                                           ),
-                                          child: Text(
-                                            'Save',
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
-                                              color: _nameDirty
-                                                  ? (isDark
-                                                        ? theme
-                                                              .colorScheme
-                                                              .primary
-                                                        : context.colorSurface)
-                                                  : (isDark
-                                                        ? theme
-                                                              .colorScheme
-                                                              .onSurfaceVariant
-                                                        : context.colorSurface
-                                                              .withValues(
-                                                                alpha: 0.54,
-                                                              )),
+                                        )
+                                      else
+                                        Positioned(
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: context.colorPrimary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.camera_alt,
+                                              size: 16,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'This name is used in groups and for Magic Bar matching.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark
-                                          ? theme.colorScheme.onSurfaceVariant
-                                          : context.colorSurface.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: EdgeInsets.zero,
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.shadow.withValues(
-                                    alpha: isDark ? 0.2 : 0.08,
-                                  ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
                                 ),
-                              ],
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  context.colorGradientStart,
-                                  context.colorGradientEnd,
-                                ],
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.payment,
-                                      size: 20,
-                                      color: isDark
-                                          ? theme.colorScheme.onSurface
-                                                .withValues(alpha: 0.9)
-                                          : context.colorSurface.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Payment Settings',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark
-                                            ? theme.colorScheme.onSurface
-                                            : context.colorSurface.withValues(
-                                                alpha: 0.95,
-                                              ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Text(
-                                  'UPI ID',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark
-                                        ? theme.colorScheme.onSurfaceVariant
-                                        : Colors.white.withValues(alpha: 0.7),
+                                  'Display name',
+                                  style: context.labelSmall.copyWith(
+                                    color: context.colorTextSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -487,40 +294,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   children: [
                                     Expanded(
                                       child: TextField(
-                                        controller: _upiController,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        autocorrect: false,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: isDark
-                                              ? theme.colorScheme.onSurface
-                                              : context.colorSurface,
+                                        controller: _nameController,
+                                        style: context.labelLarge.copyWith(
+                                          fontWeight: FontWeight.w600,
                                         ),
                                         decoration: InputDecoration(
-                                          hintText: 'e.g. name@upi',
-                                          hintStyle: TextStyle(
-                                            color: isDark
-                                                ? theme
-                                                      .colorScheme
-                                                      .onSurfaceVariant
-                                                : context.colorSurface
-                                                      .withValues(alpha: 0.5),
-                                            fontSize: 16,
-                                          ),
                                           isDense: true,
                                           filled: true,
-                                          fillColor: isDark
-                                              ? theme
-                                                    .colorScheme
-                                                    .surfaceContainerLow
-                                              : context.colorSurface.withValues(
-                                                  alpha: 0.12,
-                                                ),
+                                          fillColor: Colors.black.withValues(
+                                            alpha: 0.04,
+                                          ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             borderSide: BorderSide.none,
                                           ),
                                           contentPadding:
@@ -532,40 +318,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    TextButton(
-                                      onPressed: _upiDirty ? _saveUpi : null,
-                                      style: TextButton.styleFrom(
+                                    TapScale(
+                                      onTap: _nameDirty &&
+                                              _nameController.text
+                                                  .trim()
+                                                  .isNotEmpty
+                                          ? _saveName
+                                          : null,
+                                      child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 16,
-                                          vertical: 12,
+                                          vertical: 10,
                                         ),
-                                        minimumSize: const Size(0, 44),
-                                        alignment: Alignment.center,
-                                      ),
-                                      child: Text(
-                                        'Save',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: _upiDirty
-                                              ? (isDark
-                                                    ? theme.colorScheme.primary
-                                                    : context.colorSurface)
-                                              : (isDark
-                                                    ? theme
-                                                          .colorScheme
-                                                          .onSurfaceVariant
-                                                    : context.colorSurface
-                                                          .withValues(
-                                                            alpha: 0.54,
-                                                          )),
+                                        decoration: BoxDecoration(
+                                          color: _nameDirty
+                                              ? context.colorPrimary
+                                              : context.colorPrimary
+                                                    .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusSmall,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Save',
+                                          style: context.labelMedium.copyWith(
+                                            color: _nameDirty
+                                                ? Colors.white
+                                                : context.colorPrimary
+                                                      .withValues(alpha: 0.5),
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'This name is used in groups and for Magic Bar matching.',
+                                  style: context.caption.copyWith(
+                                    color: context.colorTextSecondary,
+                                  ),
+                                ),
                               ],
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        GlassCard(
+                          padding: const EdgeInsets.all(20),
+                          borderRadius: AppSpacing.radiusMedium,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.payment,
+                                    size: 20,
+                                    color: context.colorPrimary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Payment Settings',
+                                    style: context.labelLarge.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'UPI ID',
+                                style: context.labelSmall.copyWith(
+                                  color: context.colorTextSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _upiController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      autocorrect: false,
+                                      style: context.labelLarge,
+                                      decoration: InputDecoration(
+                                        hintText: 'e.g. name@upi',
+                                        isDense: true,
+                                        filled: true,
+                                        fillColor: Colors.black.withValues(
+                                          alpha: 0.04,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 12,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TapScale(
+                                    onTap: _upiDirty ? _saveUpi : null,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _upiDirty
+                                            ? context.colorPrimary
+                                            : context.colorPrimary.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppSpacing.radiusSmall,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Save',
+                                        style: context.labelMedium.copyWith(
+                                          color: _upiDirty
+                                              ? Colors.white
+                                              : context.colorPrimary
+                                                    .withValues(alpha: 0.5),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -648,8 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _LocaleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
     return ListenableBuilder(
       listenable: LocaleService.instance,
       builder: (context, _) {
@@ -697,22 +587,16 @@ class _LocaleTile extends StatelessWidget {
                 ),
               );
             },
-            child: Container(
+            child: GlassCard(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? theme.colorScheme.surfaceContainerLow
-                    : context.colorSurfaceVariant,
-                border: Border.all(color: context.colorBorder),
-                borderRadius: BorderRadius.circular(12),
-              ),
+              borderRadius: AppSpacing.radiusMedium,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.numbers,
                     size: 22,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: context.colorTextSecondary,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -732,7 +616,7 @@ class _LocaleTile extends StatelessWidget {
                   Icon(
                     Icons.chevron_right,
                     size: 22,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: context.colorTextTertiary,
                   ),
                 ],
               ),
@@ -772,62 +656,35 @@ class _PrivacyPolicyTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Semantics(
       label: 'Privacy policy',
       button: true,
-      child: InkWell(
+      child: TapScale(
         onTap: () => _openUrl(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: GlassCard(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withValues(
-                  alpha: isDark ? 0.2 : 0.08,
-                ),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [context.colorGradientStart, context.colorGradientEnd],
-            ),
-          ),
+          borderRadius: AppSpacing.radiusMedium,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
                 Icons.privacy_tip_outlined,
                 size: 20,
-                color: isDark
-                    ? theme.colorScheme.onSurface.withValues(alpha: 0.9)
-                    : context.colorSurface.withValues(alpha: 0.9),
+                color: context.colorPrimary,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Privacy policy',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: context.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? theme.colorScheme.onSurface
-                        : context.colorSurface.withValues(alpha: 0.95),
                   ),
                 ),
               ),
               Icon(
                 Icons.open_in_new,
                 size: 18,
-                color: isDark
-                    ? theme.colorScheme.onSurfaceVariant
-                    : context.colorSurface.withValues(alpha: 0.7),
+                color: context.colorTextTertiary,
               ),
             ],
           ),
@@ -840,22 +697,15 @@ class _PrivacyPolicyTile extends StatelessWidget {
 class _BetaAccessTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+
     final repo = CycleRepository.instance;
     final flags = FeatureFlagService.instance;
     final isBeta = flags.isBetaTester;
     final uid = repo.currentUserId;
 
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerLow
-            : context.colorSurfaceVariant,
-        border: Border.all(color: context.colorBorder),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      borderRadius: AppSpacing.radiusMedium,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -864,16 +714,12 @@ class _BetaAccessTile extends StatelessWidget {
               Icon(
                 isBeta ? Icons.verified_user : Icons.science_outlined,
                 size: 20,
-                color: isBeta ? Colors.green : theme.colorScheme.onSurfaceVariant,
+                color: isBeta ? Colors.green : context.colorTextSecondary,
               ),
               const SizedBox(width: 8),
               Text(
                 isBeta ? 'Beta Tester' : 'Experimental Features',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                ),
+                style: context.labelLarge.copyWith(fontWeight: FontWeight.w600),
               ),
               if (isBeta) ...[
                 const SizedBox(width: 8),
@@ -901,14 +747,10 @@ class _BetaAccessTile extends StatelessWidget {
             isBeta
                 ? 'You have access to experimental features before they release to everyone.'
                 : 'Share your User ID with the creator to join the beta program.',
-            style: TextStyle(
-              fontSize: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
+            style: context.bodySecondary.copyWith(height: 1.4),
           ),
           const SizedBox(height: 16),
-          InkWell(
+          TapScale(
             onTap: () {
               Clipboard.setData(ClipboardData(text: uid));
               ScaffoldMessenger.of(context).showSnackBar(
@@ -921,9 +763,11 @@ class _BetaAccessTile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: Colors.black.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.dividerColor),
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.08),
+                ),
               ),
               child: Row(
                 children: [
@@ -933,20 +777,16 @@ class _BetaAccessTile extends StatelessWidget {
                       children: [
                         Text(
                           'YOUR USER ID',
-                          style: TextStyle(
-                            fontSize: 10,
+                          style: context.caption.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           uid.isEmpty ? 'Not logged in' : uid,
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: context.caption.copyWith(
                             fontFamily: 'monospace',
-                            color: theme.colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -957,7 +797,7 @@ class _BetaAccessTile extends StatelessWidget {
                   Icon(
                     Icons.copy,
                     size: 16,
-                    color: theme.colorScheme.primary,
+                    color: context.colorPrimary,
                   ),
                 ],
               ),

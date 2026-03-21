@@ -9,6 +9,7 @@ import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/locale_service.dart';
 import '../../services/pinned_groups_service.dart';
+import '../../widgets/animated_number.dart';
 import '../../widgets/gradient_scaffold.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/offline_banner.dart';
@@ -16,8 +17,9 @@ import '../../widgets/skeleton_placeholders.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/staggered_list_item.dart';
 import '../../widgets/tap_scale.dart';
+import '../../widgets/error_state_widget.dart';
 import '../../utils/money_format.dart';
-import '../common/empty_states.dart';
+import '../../widgets/empty_state_widget.dart';
 
 class GroupsList extends StatefulWidget {
   const GroupsList({super.key});
@@ -430,7 +432,7 @@ class _GroupsListState extends State<GroupsList> {
             CycleRepository.instance.clearStreamError();
             await Navigator.of(
               context,
-            ).pushNamed('/error-states', arguments: {'type': 'network'});
+            ).push(MaterialPageRoute(builder: (_) => Scaffold(body: Center(child: ErrorStateWidget(type: 'network')))));
             if (mounted) setState(() => _navigatingToError = false);
           });
         }
@@ -500,12 +502,17 @@ class _GroupsListState extends State<GroupsList> {
                                 ],
                               ),
                             ),
+                            // ── Dashboard summary card ─────────────────────
+                            if (groups.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                                child: _DashboardHeroCard(groups: groups, repo: repo),
+                              ),
                             if (groups.isEmpty &&
                                 repo.pendingInvitations.isEmpty)
                               Expanded(
-                                child: EmptyStates(
+                                child: EmptyStateWidget(
                                   type: 'no-groups',
-                                  wrapInScaffold: false,
                                   onActionPressed: () => Navigator.pushNamed(
                                     context,
                                     '/create-group',
@@ -757,6 +764,219 @@ class _BoundedGroupsLoading extends StatelessWidget {
                 SkeletonGroupCard(),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _DashboardHeroCard
+//
+// Shows a compact financial summary across all active groups:
+//   - Net position headline (animated, colour-coded)
+//   - Two breakdown pills: owed to you / you owe
+//   - Group count + settled count
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DashboardHeroCard extends StatelessWidget {
+  final List<Group> groups;
+  final CycleRepository repo;
+
+  const _DashboardHeroCard({required this.groups, required this.repo});
+
+  // Aggregate balances across active (non-settled) groups.
+  // Returns (totalOwedToMe, totalIOwe, primaryCurrency).
+  (double, double, String) _computeBalances() {
+    try {
+      double owedToMe = 0;
+      double iOwe = 0;
+      final uid = repo.currentUserId;
+      if (uid.isEmpty) return (0, 0, 'INR');
+      String currency = 'INR';
+      for (final g in groups) {
+        if (g.status == 'settled') continue;
+        currency = g.currencyCode;
+        final bal = repo.getRemainingBalance(g.id, uid);
+        if (!bal.isFinite) continue;
+        if (bal > 0.005) {
+          owedToMe += bal;
+        } else if (bal < -0.005) {
+          iOwe += bal.abs();
+        }
+      }
+      return (owedToMe, iOwe, currency);
+    } catch (e) {
+      debugPrint('DashboardHeroCard._computeBalances error: $e');
+      return (0, 0, 'INR');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (owedToMe, iOwe, currency) = _computeBalances();
+    final locale = LocaleService.instance.localeCode;
+    final net = owedToMe - iOwe;
+    final isPositive = net > 0.005;
+    final isNegative = net < -0.005;
+    final netColor = isPositive
+        ? context.colorSuccess
+        : isNegative
+            ? context.colorWarning
+            : context.colorTextSecondary;
+    final settledCount = groups.where((g) => g.status == 'settled').length;
+    final activeCount = groups.length - settledCount;
+
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      borderRadius: AppSpacing.radiusMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label + group count
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your Net Position',
+                  style: context.labelMedium.copyWith(
+                    color: context.colorTextSecondary,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: context.colorPrimary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$activeCount active · $settledCount settled',
+                  style: context.caption.copyWith(
+                    color: context.colorPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Animated net headline
+          AnimatedNumber(
+            value: net.abs(),
+            currencyCode: currency,
+            locale: locale,
+            duration: const Duration(milliseconds: 800),
+            style: context.displayLarge.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1.5,
+              height: 1.05,
+              color: netColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isPositive
+                ? 'overall you are owed'
+                : isNegative
+                    ? 'overall you owe'
+                    : 'all settled up',
+            style: context.bodySecondary.copyWith(
+              color: netColor.withValues(alpha: 0.75),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          // Breakdown pills — only when there's mixed debt/credit
+          if (owedToMe > 0.005 && iOwe > 0.005) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _StatPill(
+                  label: 'Owed to you',
+                  amount: formatMoneyFromMajor(owedToMe, currency, locale),
+                  color: context.colorSuccess,
+                  icon: Icons.arrow_downward_rounded,
+                ),
+                const SizedBox(width: 10),
+                _StatPill(
+                  label: 'You owe',
+                  amount: formatMoneyFromMajor(iOwe, currency, locale),
+                  color: context.colorWarning,
+                  icon: Icons.arrow_upward_rounded,
+                ),
+              ],
+            ),
+          ] else if (owedToMe > 0.005) ...[
+            const SizedBox(height: 10),
+            _StatPill(
+              label: 'Owed to you',
+              amount: formatMoneyFromMajor(owedToMe, currency, locale),
+              color: context.colorSuccess,
+              icon: Icons.arrow_downward_rounded,
+            ),
+          ] else if (iOwe > 0.005) ...[
+            const SizedBox(height: 10),
+            _StatPill(
+              label: 'You owe',
+              amount: formatMoneyFromMajor(iOwe, currency, locale),
+              color: context.colorWarning,
+              icon: Icons.arrow_upward_rounded,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final IconData icon;
+
+  const _StatPill({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: context.caption.copyWith(
+                  color: color.withValues(alpha: 0.85),
+                  fontSize: 10,
+                ),
+              ),
+              Text(
+                amount,
+                style: context.labelMedium.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ],
       ),

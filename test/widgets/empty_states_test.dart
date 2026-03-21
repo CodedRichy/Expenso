@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:expenso/design/typography.dart';
-import 'package:expenso/screens/common/empty_states.dart';
+import 'package:expenso/widgets/empty_state_widget.dart';
 
 void main() {
   Widget wrap(Widget child) {
@@ -25,10 +25,10 @@ void main() {
     );
   }
 
-  group('EmptyStates', () {
+  group('EmptyStateWidget', () {
     testWidgets('no-expenses shows "No expenses yet"', (tester) async {
       await tester.pumpWidget(
-        wrap(const EmptyStates(type: 'no-expenses', wrapInScaffold: false)),
+        wrap(const EmptyStateWidget(type: 'no-expenses')),
       );
       expect(find.text('No expenses yet'), findsOneWidget);
     });
@@ -37,7 +37,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: false)),
+        wrap(const EmptyStateWidget(type: 'no-groups')),
       );
       expect(find.text('No groups yet'), findsOneWidget);
       expect(find.text('Create Group'), findsOneWidget);
@@ -45,25 +45,16 @@ void main() {
 
     testWidgets('new-cycle shows "New cycle started"', (tester) async {
       await tester.pumpWidget(
-        wrap(const EmptyStates(type: 'new-cycle', wrapInScaffold: false)),
+        wrap(const EmptyStateWidget(type: 'new-cycle')),
       );
       expect(find.text('New cycle started'), findsOneWidget);
     });
 
     testWidgets('zero-waste-cycle shows "Zero-Waste Cycle"', (tester) async {
       await tester.pumpWidget(
-        wrap(
-          const EmptyStates(type: 'zero-waste-cycle', wrapInScaffold: false),
-        ),
+        wrap(const EmptyStateWidget(type: 'zero-waste-cycle')),
       );
       expect(find.text('No expenses yet ...'), findsOneWidget);
-    });
-
-    testWidgets('no-groups with wrapInScaffold has Scaffold', (tester) async {
-      await tester.pumpWidget(
-        wrap(const EmptyStates(type: 'no-groups', wrapInScaffold: true)),
-      );
-      expect(find.byType(Scaffold), findsWidgets);
     });
   });
 }

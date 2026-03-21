@@ -1,10 +1,12 @@
-import 'dart:ui' show PlatformDispatcher;
+import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_performance/firebase_performance.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'design/theme.dart';
 import 'firebase_app.dart';
@@ -17,23 +19,18 @@ import 'models/models.dart';
 import 'screens/groups/invite_members.dart';
 import 'screens/groups/group_detail.dart';
 import 'screens/expenses/expense_input.dart';
-import 'screens/expenses/undo_expense.dart';
 import 'screens/expenses/edit_expense.dart';
 import 'screens/groups/group_members.dart';
-import 'screens/groups/member_change.dart';
 import 'screens/settlement/settlement_confirmation.dart';
 import 'screens/settlement/payment_result.dart';
 import 'screens/settlement/cycle_settled.dart';
 import 'screens/settlement/cycle_history.dart';
 import 'screens/settlement/cycle_history_detail.dart';
-import 'screens/common/empty_states.dart';
-import 'screens/common/error_states.dart';
 import 'screens/settings/profile.dart';
 import 'screens/auth/root_screen.dart';
 
 import 'services/locale_service.dart';
 import 'screens/groups/invite_resolver.dart';
-import 'dart:async';
 import 'package:app_links/app_links.dart';
 
 void main() async {
@@ -46,34 +43,63 @@ void main() async {
   ]);
   CycleRepository.instance.loadFromLocalCache();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  if (DefaultFirebaseOptions.currentPlatform.apiKey.isEmpty ||
-      DefaultFirebaseOptions.currentPlatform.appId.isEmpty) {
-    throw StateError(
-      'Firebase configuration is missing! Ensure environment variables are set '
-      'via --dart-define or run flutterfire configure for development.',
+  // Check if we should use mock auth (for development/emulator testing)
+  const useMockAuth = bool.fromEnvironment('USE_MOCK_AUTH', defaultValue: false);
+  
+  if (!useMockAuth) {
+    // Only initialize Firebase if NOT using mock auth
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
+    if (DefaultFirebaseOptions.currentPlatform.apiKey.isEmpty ||
+        DefaultFirebaseOptions.currentPlatform.appId.isEmpty) {
+      throw StateError(
+        'Firebase configuration is missing! Ensure environment variables are set '
+        'via --dart-define or run flutterfire configure for development.',
+      );
+    }
+
+    // Initialize Firebase App Check
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+    debugPrint('Firebase App Check initialized (${kDebugMode ? 'Debug' : 'Play Integrity'} provider)');
+    
+    // Force token retrieval to trigger debug token logging
+    if (kDebugMode) {
+      try {
+        final token = await FirebaseAppCheck.instance.getToken();
+        debugPrint('App Check token retrieved: ${token != null ? 'success' : 'null'}');
+      } catch (e) {
+        debugPrint('App Check token error: $e');
+      }
+    }
+
+    setFirebaseAuthAvailable(true);
+    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+
+    // --- Crashlytics setup ---
+    // Pass all Flutter framework errors to Crashlytics.
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    // Pass all async/platform errors that Flutter doesn't catch internally.
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+    // --- Performance monitoring ---
+    await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+
+    debugPrint('Firebase initialized (Crashlytics + Performance enabled).');
+  } else {
+    debugPrint('Mock authentication enabled - Firebase skipped');
+    setFirebaseAuthAvailable(false);
   }
 
-  setFirebaseAuthAvailable(true);
-  FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
-
-  // --- Crashlytics setup ---
-  // Pass all Flutter framework errors to Crashlytics.
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  // Pass all async/platform errors that Flutter doesn’t catch internally.
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
-  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-
-  // --- Performance monitoring ---
-  await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-
-  debugPrint('Firebase initialized (Crashlytics + Performance enabled).');
   runApp(const MyApp());
 }
 
@@ -178,6 +204,12 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Only use FirebaseAnalyticsObserver if Firebase is available
+    final observers = <NavigatorObserver>[];
+    if (firebaseAuthAvailable) {
+      observers.add(FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance));
+    }
+    
     return MaterialApp(
       navigatorKey: globalNavigatorKey,
       title: 'Expenso',
@@ -185,9 +217,7 @@ class _MyAppState extends State<MyApp> {
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
       themeMode: ThemeMode.system,
-      navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-      ],
+      navigatorObservers: observers,
       initialRoute: '/',
       routes: {
         '/': (context) => const RootScreen(),
@@ -205,23 +235,11 @@ class _MyAppState extends State<MyApp> {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;
           return ExpenseInput(group: group);
         },
-        '/undo-expense': (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments
-                  as Map<String, dynamic>?;
-          return UndoExpense(
-            groupId: args?['groupId'] as String?,
-            expenseId: args?['expenseId'] as String?,
-            description: args?['description'] as String?,
-            amount: (args?['amount'] as num?)?.toDouble(),
-          );
-        },
         '/edit-expense': (context) => const EditExpense(),
         '/group-members': (context) {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;
           return GroupMembers(group: group);
         },
-        '/member-change': (context) => const MemberChange(),
         '/settlement-confirmation': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           final group = args is Group
@@ -259,13 +277,6 @@ class _MyAppState extends State<MyApp> {
           return CycleHistory(group: group);
         },
         '/cycle-history-detail': (context) => const CycleHistoryDetail(),
-        '/empty-states': (context) => const EmptyStates(),
-        '/error-states': (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments
-                  as Map<String, dynamic>?;
-          return ErrorStates(type: args?['type'] as String? ?? 'generic');
-        },
         '/profile': (context) => const ProfileScreen(),
       },
     );

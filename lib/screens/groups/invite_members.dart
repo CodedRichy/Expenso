@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -478,26 +478,43 @@ class _InviteMembersState extends State<InviteMembers>
                             ] else if (_isCreator(groupArg)) ...[
                               Text('SHARE LINK', style: context.sectionLabel),
                               const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: _isGeneratingLink
-                                      ? null
-                                      : () => _generateLink(groupArg),
-                                  icon: _isGeneratingLink
-                                      ? const SizedBox(
+                              TapScale(
+                                onTap: _isGeneratingLink
+                                    ? null
+                                    : () => _generateLink(groupArg),
+                                child: GlassCard(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      if (_isGeneratingLink)
+                                        SizedBox(
                                           width: 18,
                                           height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
+                                            color: context.colorPrimary,
                                           ),
                                         )
-                                      : const Icon(Icons.add_link),
-                                  label: const Text('Generate Invite Link'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
+                                      else
+                                        Icon(
+                                          Icons.add_link,
+                                          size: 20,
+                                          color: context.colorPrimary,
+                                        ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Generate Invite Link',
+                                        style: context.labelLarge.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: context.colorPrimary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
