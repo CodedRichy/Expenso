@@ -97,6 +97,8 @@ class SupabaseService {
       'creator_id': creatorId,
       'status': 'active',
       'currency_code': currencyCode ?? 'INR',
+      'settlement_rhythm': settlementRhythm ?? 'weekly',
+      'settlement_day': settlementDay ?? 0,
     });
     await addMemberToGroup(groupId, creatorId);
   }
@@ -115,6 +117,8 @@ class SupabaseService {
           'creatorId': g['creator_id'],
           'cycleStatus': g['status'],
           'currencyCode': g['currency_code'],
+          'settlementRhythm': g['settlement_rhythm'],
+          'settlementDay': g['settlement_day'],
           'members': members.map((e) => e['user_id']).toList(), // Simple mock
         });
       }).toList();
@@ -130,19 +134,45 @@ class SupabaseService {
           'creatorId': data['creator_id'],
           'cycleStatus': data['status'],
           'currencyCode': data['currency_code'],
+          'settlementRhythm': data['settlement_rhythm'],
+          'settlementDay': data['settlement_day'],
         });
   }
 
   Stream<List<DocView>> pendingInvitationsStream(String phone) {
-    // Stub
-    return Stream.value([]);
+    return _db.from('group_invitations')
+        .stream(primaryKey: ['id'])
+        .eq('invitee_phone', phone)
+        .eq('status', 'pending')
+        .asyncMap((invites) async {
+          if (invites.isEmpty) return [];
+          final groupIds = invites.map((e) => e['group_id']).toList();
+          final groups = await _db.from('groups').select('id, name, creator_id').inFilter('id', groupIds);
+          return groups.map((g) => _SupabaseRowView({
+            'id': g['id'],
+            'groupName': g['name'],
+            'creatorId': g['creator_id'],
+          })).toList();
+        });
   }
 
   Future<void> acceptInvitation(String groupId, String uid, String phone, {String? userName}) async {
+    await _db.from('group_invitations')
+        .update({'status': 'accepted'})
+        .eq('group_id', groupId)
+        .eq('invitee_phone', phone);
     await addMemberToGroup(groupId, uid);
+    if (userName != null) {
+      await addSystemMessage(groupId, type: 'join', userName: userName, odId: uid);
+    }
   }
 
-  Future<void> declineInvitation(String groupId, String phone, {String? userName}) async {}
+  Future<void> declineInvitation(String groupId, String phone, {String? userName}) async {
+    await _db.from('group_invitations')
+        .update({'status': 'declined'})
+        .eq('group_id', groupId)
+        .eq('invitee_phone', phone);
+  }
 
   Future<void> addSystemMessage(String groupId, {required String type, String userName = '', String odId = '', String detail = '', String prefix = ''}) async {
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -199,7 +229,14 @@ class SupabaseService {
     await _db.from('group_members').upsert({'group_id': groupId, 'user_id': uid});
   }
 
-  Future<void> addPendingMemberToGroup(String groupId, String phone, String name, {String? invitedBy}) async {}
+  Future<void> addPendingMemberToGroup(String groupId, String phone, String name, {String? invitedBy}) async {
+    await _db.from('group_invitations').upsert({
+      'group_id': groupId,
+      'invitee_phone': phone,
+      'inviter_id': invitedBy,
+      'status': 'pending',
+    });
+  }
 
   Future<void> removeMemberFromGroup(String groupId, String uid) async {
     await _db.from('group_members').delete().eq('group_id', groupId).eq('user_id', uid);
