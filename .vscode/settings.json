@@ -1,3 +1,7 @@
 {
+    "deno.enable": true,
+    "deno.enablePaths": [
+        "supabase"
+    ],
     "java.configuration.updateBuildConfiguration": "interactive"
 }
