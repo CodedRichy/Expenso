@@ -32,9 +32,17 @@ import 'screens/auth/root_screen.dart';
 import 'services/locale_service.dart';
 import 'screens/groups/invite_resolver.dart';
 import 'package:app_links/app_links.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase. Read credentials from --dart-define or use placeholders for now.
+  await Supabase.initialize(
+    url: const String.fromEnvironment('SUPABASE_URL',
+        defaultValue: 'https://YOUR_PROJECT_ID.supabase.co'),
+    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY',
+        defaultValue: 'YOUR_SUPABASE_ANON_KEY'),
+  );
 
   // Load local profile cache FIRST (instant, before any network)
   await Future.wait([
@@ -76,13 +84,6 @@ if (kDebugMode) {
     debugPrint('App Check token error (non-fatal): $e');
   });
 }
-```
-
-Make that change, hot restart, and the app should get past the black screen.
-
-**If it's still black after that**, the second thing to check is whether your debug App Check token is registered. In your console you'll see a line like:
-```
-D/FirebaseAppCheck: Debug token: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 
     setFirebaseAuthAvailable(true);
     FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);

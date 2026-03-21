@@ -59,10 +59,11 @@ dependencies:
   url_launcher: ^6.3.2
   qr_flutter: ^4.1.0
   intl: ^0.19.0
-  app_links: ^7.0.0
+  app_links: any
   fl_chart: ^1.1.1
   share_plus: ^10.1.4
   http: ^1.2.2
+  supabase_flutter: any
 
 dev_dependencies:
   flutter_test:
