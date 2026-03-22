@@ -13,8 +13,6 @@ import 'screens/expenses/expense_input.dart';
 import 'screens/expenses/edit_expense.dart';
 import 'screens/groups/group_members.dart';
 import 'screens/settlement/settlement_confirmation.dart';
-import 'screens/settlement/payment_result.dart';
-import 'screens/settlement/cycle_settled.dart';
 import 'screens/settlement/cycle_history.dart';
 import 'screens/settlement/cycle_history_detail.dart';
 import 'screens/settings/profile.dart';
@@ -239,31 +237,6 @@ class _MyAppState extends State<MyApp> {
               ? args
               : (args is Map<String, dynamic> ? args['group'] as Group? : null);
           return SettlementConfirmation(group: group);
-        },
-        '/payment-result': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          Group? group;
-          String status = 'success';
-          double? amount;
-          String? transactionId;
-          if (args is Group) {
-            group = args;
-          } else if (args is Map<String, dynamic>) {
-            group = args['group'] as Group?;
-            status = args['status'] as String? ?? status;
-            amount = (args['amount'] as num?)?.toDouble();
-            transactionId = args['transactionId'] as String?;
-          }
-          return PaymentResult(
-            group: group,
-            status: status,
-            amount: amount,
-            transactionId: transactionId,
-          );
-        },
-        '/cycle-settled': (context) {
-          final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return CycleSettled(group: group);
         },
         '/cycle-history': (context) {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;
