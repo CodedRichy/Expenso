@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'data_encryption_service.dart';
 
 abstract class DocView {
@@ -142,11 +143,13 @@ class SupabaseService {
   Stream<List<DocView>> pendingInvitationsStream(String phone) {
     return _db.from('group_invitations')
         .stream(primaryKey: ['id'])
-        .eq('invitee_phone', phone)
-        .eq('status', 'pending')
         .asyncMap((invites) async {
-          if (invites.isEmpty) return [];
-          final groupIds = invites.map((e) => e['group_id']).toList();
+          // Filter by phone and status locally since SupabaseStreamBuilder doesn't support .eq()
+          final pendingInvites = invites.where((i) =>
+            i['invitee_phone'] == phone && i['status'] == 'pending'
+          ).toList();
+          if (pendingInvites.isEmpty) return [];
+          final groupIds = pendingInvites.map((e) => e['group_id']).toList();
           final groups = await _db.from('groups').select('id, name, creator_id').inFilter('id', groupIds);
           return groups.map((g) => _SupabaseRowView({
             'id': g['id'],

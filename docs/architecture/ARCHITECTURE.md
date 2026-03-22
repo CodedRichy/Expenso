@@ -55,7 +55,8 @@ lib/
 
   services/
     phone_auth_service.dart    # Firebase phone OTP auth
-    firestore_service.dart     # All Firestore access (single choke-point for encryption)
+    firestore_service.dart     # Firestore access (legacy, migrating to Supabase)
+    supabase_service.dart      # Supabase client wrapper (active backend)
     pinned_groups_service.dart # Pin preference (SharedPreferences, max 3)
     user_profile_cache.dart    # Local cache for cold-start instant profile
     groq_expense_parser_service.dart  # AI NL parser (Groq, Llama-4-Scout)
@@ -213,7 +214,7 @@ docs/
 | Decision | Rationale |
 |---|---|
 | **Singleton `CycleRepository`** | Single source of truth for all in-memory state; Firestore streams kept in one place. Simpler than multiple providers but limits testability. |
-| **Firestore-first (no offline write queue)** | All writes require network; Firestore offline read cache is used for display only. Acceptable for the target use case. |
+| **Dual Backend (Firebase + Supabase)** | Firebase for Auth, Storage, FCM, and Cloud Functions; Supabase for primary data persistence (Postgres). Migration in progress—repositories use SupabaseService, FirestoreService maintained for compatibility. |
 | **Settlement archive via Cloud Function** | `settleAndRestart` runs in a Firestore transaction server-side — client cannot skip balance validation, partial-archive, or corrupt cycle state. |
 | **AES-GCM field-level encryption** | Encrypts sensitive Firestore fields before write. Single choke-point in `FirestoreService`; optional (backward-compatible when key not set). |
 | **Integer minor-unit amounts** | `MoneyMinor` + `MoneySplitter` for all accounting math (no floating-point). Bridge path writes `amountMinor`/`splitsMinor` alongside double fields for backward compatibility. |

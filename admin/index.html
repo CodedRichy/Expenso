@@ -689,22 +689,16 @@
 
 <div id="toast"></div>
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getFirestore, collection, collectionGroup, getDocs, doc, updateDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const cfg = {apiKey:'AIzaSyAp9g83dmX1-XgNkFPzDVQo2orY9OvuLbQ',authDomain:'expenso-e138a.firebaseapp.com',
-  projectId:'expenso-e138a',storageBucket:'expenso-e138a.firebasestorage.app',
-  messagingSenderId:'211875033656',appId:'1:211875033656:web:2f8174003c25c7ada5eccd'};
-const CREATOR='605oNyF1miUumLGMgEnaGGD0Lyh2';
+const SUPABASE_URL = 'https://crbpnsflofqychzczcsm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYnBuc2Zsb2ZxeWNoemN6Y3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwODQ3MzYsImV4cCI6MjA4OTY2MDczNn0.OdDa1UnbDkrUK9LKfQDUfVuVqDQY93Sj5wbOgyQzCs0';
 
-const app=initializeApp(cfg), auth=getAuth(app), db=getFirestore(app), functions=getFunctions(app, 'asia-south1');
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── State ──
 let users=[], groups=[], disputes=[], pendingInvites=[], devStats={ios:0,android:0};
-let ufilt='all', gfilt='all', usrch='', gsrch='', editUID=null, confirmRes=null;
+let ufilt='all', gfilt='all', usrch='', gsrch='', editUID=null, confirmPhone=null;
 
 // ── DOM helpers ──
 const $=id=>document.getElementById(id);
@@ -719,21 +713,15 @@ const nameOf=uid=>{const u=users.find(x=>x.uid===uid);return u?.displayName||u?.
 const avHtml=(u,size=32)=>`<div class="av" style="width:${size}px;height:${size}px;font-size:${size*0.38}px">${u?.photoURL?`<img src="${u.photoURL}" onerror="this.style.display='none'"/>`:''}${ini(u?.displayName||u?.phoneNumber)}</div>`;
 
 // ── Auth ──
-auth.onAuthStateChanged(u=>{if(u){if(u.uid!==CREATOR){showStep('sd');signOut(auth);return}loadAll(u)}});
-
-function setupRC(){
-  if(window._rc) {
-    try { window._rc.clear(); } catch(e){}
-    window._rc = null;
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session && session.user) {
+    loadAll(session.user);
+  } else {
+    $('dash').style.display='none';
+    $('login').style.display='flex';
+    showStep('sp');
   }
-  // Using 'rc-container' instead of the button itself to avoid conflict with disabled state
-  window._rc = new RecaptchaVerifier(auth, 'rc-container', {
-    'size': 'invisible',
-    'callback': (response) => { 
-      console.log('reCAPTCHA solved');
-    }
-  });
-}
+});
 
 $('sbtn').onclick=async()=>{
   const raw=$('ph').value.replace(/\D/g,'');
@@ -741,19 +729,19 @@ $('sbtn').onclick=async()=>{
   const btn=$('sbtn'); btn.disabled=true; btn.textContent='Sending…';
   
   try {
-    setupRC();
-    const verifier = window._rc;
-    confirmRes = await signInWithPhoneNumber(auth, '+91' + raw, verifier);
+    confirmPhone = '+91' + raw;
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: confirmPhone,
+    });
     
+    if (error) throw error;
+
     $('osub').querySelector('strong').textContent=`+91 ${raw.slice(0,5)} ${raw.slice(5)}`;
     showStep('so');
     setTimeout(() => boxes[0].focus(), 100);
   } catch(e) {
-    console.error('SMS Error:', e);
-    let msg = e.message || 'Failed to send code';
-    if(e.code === 'auth/internal-error') msg = 'Firebase Internal Error. Check if "localhost" is added to Authorized Domains in Firebase Console.';
-    showErr('pe', msg);
-    if(window._rc) { try { window._rc.clear(); } catch(i){} window._rc = null; }
+    console.error('OTP Error:', e);
+    showErr('pe', e.message || 'Failed to send code');
   } finally {
     btn.disabled=false; btn.textContent='Send Code';
   }
@@ -770,135 +758,85 @@ const otpVal=()=>[...boxes].map(b=>b.value).join('');
 const updVbtn=()=>$('vbtn').disabled=otpVal().length<6;
 
 $('vbtn').onclick=async()=>{
-  const code=otpVal();if(code.length<6||!confirmRes)return;
+  const code=otpVal();if(code.length<6||!confirmPhone)return;
   const btn=$('vbtn');btn.disabled=true;btn.textContent='Verifying…';
-  try{const cr=await confirmRes.confirm(code);if(cr.user.uid!==CREATOR){showStep('sd');await signOut(auth)}}
-  catch(e){showErr('oe','Invalid code');boxes.forEach(b=>b.value='');boxes[0].focus()}
+  try{
+    const { error } = await supabase.auth.verifyOtp({
+      phone: confirmPhone,
+      token: code,
+      type: 'sms',
+    });
+    if (error) throw error;
+  }
+  catch(e){showErr('oe', e.message || 'Invalid code');boxes.forEach(b=>b.value='');boxes[0].focus()}
   finally{btn.disabled=false;btn.textContent='Verify'}
 };
 $('bbtn').onclick=()=>{boxes.forEach(b=>b.value='');showStep('sp')};
 $('tabtn').onclick=()=>{$('ph').value='';showStep('sp')};
 
-$('lgbtn').onclick=async()=>{await signOut(auth);$('dash').style.display='none';$('login').style.display='flex';showStep('sp')};
+$('lgbtn').onclick=async()=>{await supabase.auth.signOut()};
 
 // ── Load all data ──
 async function loadAll(user){
   $('login').style.display='none';
   $('dash').style.display='flex';
   $('cdot').classList.add('on');
-  $('hulbl').textContent=user.phoneNumber||'';
+  $('hulbl').textContent=user.phone||'';
   
   try {
-    // Stage 1: Load main users and groups via Cloud Functions (Decrypted)
-    console.log('Fetching decrypted users and groups...');
-    const fetchUsers = httpsCallable(functions, 'adminFetchUsers');
-    const fetchGroups = httpsCallable(functions, 'adminFetchGroups');
-
-    const [uRes, gRes] = await Promise.all([
-      fetchUsers(),
-      fetchGroups()
+    console.log('Fetching admin data from Supabase...');
+    const [uRes, gRes, aRes] = await Promise.all([
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchUsers' } }),
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchGroups' } }),
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchAnalytics' } })
     ]);
-    
-    users = uRes.data.users || [];
-    groups = gRes.data.groups || [];
-    
-    // Check for encryption warnings
-    if (uRes.data.warning || gRes.data.warning) {
-      console.warn('Encryption warning:', uRes.data.warning || gRes.data.warning);
-      toast('⚠️ Encryption key missing - some data may not be readable', 'er');
+
+    if (uRes.error || gRes.error || aRes.error) {
+       throw new Error(uRes.error?.message || gRes.error?.message || aRes.error?.message || 'Admin API error');
     }
+
+    users = uRes.data?.users || [];
+    groups = gRes.data?.groups || [];
     
-    // Calculate initial group counts
-    users.forEach(u => {
-      u._groups = groups.filter(g => (g.members || []).includes(u.uid)).length;
-    });
+    const stats = aRes.data || {};
+    $('ov-tu').textContent = (stats.totalUsers || 0).toLocaleString();
+    $('ov-tg').textContent = (stats.totalGroups || 0).toLocaleString();
+    $('total-expenses').textContent = rupee(stats.totalVolume || 0);
+    $('engagement-rate').textContent = (stats.activeUsers && stats.totalUsers ? Math.round(stats.activeUsers/stats.totalUsers*100) : 0) + '%';
     
-    // Render first pass
-    console.log('First pass render...');
     renderAll();
-    
-    // Stage 2: Background loads
     loadAlertsBackground();
-    loadDeviceStatsBackground();
-    loadAdvancedAnalytics(); // Load advanced analytics
-    
   } catch (e) {
     console.error('Load Error:', e);
-    // Fallback to direct Firestore if functions fail (will be encrypted)
-    toast('Cloud Fetch failed: ' + e.message, 'er');
+    toast('Fetch failed: ' + e.message, 'er');
   }
 }
 
 async function loadAlertsBackground() {
-  console.log('Fetching disputes and invites...');
+  console.log('Fetching disputes...');
   try {
-    // Load disputes with specific error handling for indexes
-    try {
-      const q = query(collectionGroup(db, 'payment_attempts'), where('disputed', '==', true));
-      const snap = await getDocs(q);
-      disputes = snap.docs.map(d => ({ ...d.data(), _gid: d.ref.parent.parent.id }));
-    } catch (e) {
-      console.warn('Disputes fetch failed:', e);
-      if (e.message.includes('index')) {
-        console.error('MISSING INDEX! Click the link in your console to create it.');
-        toast('⚠️ Missing Index: Check Console', 'er');
-      }
-    }
+    const { data: disputesData } = await supabase.from('payment_attempts').select('*, groups(name)').eq('disputed', true);
+    disputes = (disputesData || []).map(d => ({
+       ...d,
+       _gid: d.group_id,
+       fromMemberId: d.payer_id,
+       toMemberId: d.payee_id,
+       amountMinor: d.amount_minor,
+       currencyCode: d.currency
+    }));
 
-    // Load pending invites from groups we already have
-    pendingInvites = [];
-    groups.forEach(g => {
-      const pm = g.pendingMembers || [];
-      if (Array.isArray(pm)) {
-        pm.forEach(p => pendingInvites.push({ gid: g.gid, gname: g.groupName, ...p }));
-      }
-    });
-
-    // Update UI bits that depend on alerts
+    // Update alerts badge
     const total = disputes.length;
     const badge = $('altbadge');
     if (total > 0) { badge.style.display = 'inline'; badge.textContent = total; }
     else { badge.style.display = 'none'; }
     
     renderAlerts();
-    renderOv(); // update dispute stat
+    renderOv();
   } catch (e) {
-    console.warn('Alerts background fetch error:', e);
+    console.warn('Alerts fetch error:', e);
   }
 }
-
-async function loadDeviceStatsBackground() {
-  console.log('Fetching device stats...');
-  devStats = { ios: 0, android: 0 };
-  let fetchedCount = 0;
-  
-  for (const u of users) {
-    try {
-      const ts = await getDocs(collection(db, 'users', u.uid, 'fcmTokens'));
-      const platforms = ts.docs.map(d => d.data().platform || '');
-      u._ios = platforms.some(p => p === 'ios');
-      u._android = platforms.some(p => p === 'android');
-      
-      if (u._ios) devStats.ios++;
-      if (u._android && !u._ios) devStats.android++;
-      
-      fetchedCount++;
-      // Periodically update the OVERVIEW if we are on it
-      if (fetchedCount % 5 === 0 || fetchedCount === users.length) {
-        renderOv();
-        renderUsers();
-      }
-    } catch (e) {
-      console.warn(`Device fetch failed for ${u.uid}:`, e);
-    }
-  }
-}
-
-async function loadUsers(){ /* Replaced by logic in loadAll */ }
-
-async function loadGroups(){ /* Replaced by logic in loadAll */ }
-
-async function loadDisputes(){ /* Replaced by logic in loadAlertsBackground */ }
 
 function renderAll(){
   renderOv();renderUsers();renderGroups();renderAlerts();
@@ -906,10 +844,8 @@ function renderAll(){
 
 // ── Overview ──
 function renderOv(){
-  const now=Date.now(),W=7*864e5,D=864e5;
-  $('ov-tu').textContent=users.length;
+  const now=Date.now(),W=7*864e5;
   $('ov-bt').textContent=users.filter(u=>u.isBeta).length;
-  $('ov-tg').textContent=groups.length;
   $('ov-ac').textContent=groups.filter(g=>g.cycleStatus==='active').length;
   $('ov-dp').textContent=disputes.length;
   $('ov-wk').textContent=users.filter(u=>u.joinedAt&&(now-u.joinedAt)<W).length;
@@ -1062,25 +998,9 @@ function renderEnhancedDashboard(){
   $('mrr').textContent = '$' + mrr.toLocaleString();
   $('arr').textContent = '$' + (mrr * 12).toLocaleString();
   
-  // Calculate real expense growth
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-  const recentExpenses = groups && groups.length > 0 ? groups.reduce((sum, g) => {
-    return sum + (g.cycles?.reduce((cycleSum, c) => {
-      const cycleExpenses = c.expenses?.filter(e => e.createdAt && e.createdAt.toDate().getTime() > thirtyDaysAgo) || [];
-      return cycleSum + cycleExpenses.reduce((expSum, e) => expSum + (e.amountMinor || 0), 0);
-    }, 0) || 0);
-  }, 0) : 0;
-  const expenseGrowthRate = totalExpenses > 0 ? Math.round((recentExpenses / totalExpenses) * 100) : 0;
-  $('expense-growth').textContent = `+${expenseGrowthRate}%`;
-  
-  // Calculate real group growth
-  const newGroupsThisWeek = groups && groups.length > 0 ? 
-    groups.filter(g => g.createdAt && g.createdAt.toDate().getTime() > oneWeekAgo).length : 0;
-  const totalGroups = groups ? groups.length : 0;
-  const groupGrowthRate = totalGroups > 0 ? Math.round((newGroupsThisWeek / totalGroups) * 100) : 0;
-  $('group-growth').textContent = `+${groupGrowthRate}%`;
-  
-  // Render activity feed with real data
+// ── Enhanced Dashboard Functions ──
+function renderEnhancedDashboard(){
+  // Math is now done in admin-api mostly, or we can do simple sums here
   renderActivityFeed();
 }
 
@@ -1094,7 +1014,7 @@ function renderActivityFeed(){
         type: 'user_join',
         title: 'New user joined',
         desc: `${user.displayName || user.phoneNumber || 'A new user'} registered`,
-        time: fmt(user.createdAt),
+        time: ago(user.joinedAt),
         icon: '👤',
         color: 'var(--gr)'
       });
@@ -1107,33 +1027,17 @@ function renderActivityFeed(){
       activities.push({
         type: 'group_create',
         title: 'New group created',
-        desc: `${group.groupName || 'Unnamed group'} by ${nameOf(group.createdBy)}`,
-        time: fmt(group.createdAt),
+        desc: `${group.groupName || 'Unnamed group'} by ${nameOf(group.creatorId)}`,
+        time: ago(group.createdAt),
         icon: '🗂',
         color: 'var(--bl)'
       });
     });
   }
   
-  // Add recent disputes
-  if (disputes && disputes.length > 0) {
-    disputes.slice(-2).reverse().forEach(dispute => {
-      const groupName = groups && groups.find(g => g.gid === dispute._gid)?.groupName || dispute._gid;
-      activities.push({
-        type: 'dispute',
-        title: 'Payment disputed',
-        desc: `${rupee(dispute.amountMinor)} in ${groupName}`,
-        time: fmt(dispute.createdAt),
-        icon: '⚠️',
-        color: 'var(--rd)'
-      });
-    });
-  }
-  
   // Sort by time and render
   if (activities.length > 0) {
-    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
-    $('activity-feed').innerHTML = activities.slice(0, 10).map(activity => `
+    $('activity-feed').innerHTML = activities.map(activity => `
       <div class="activity-item">
         <div class="activity-icon" style="background: ${activity.color}20; color: ${activity.color}">
           ${activity.icon}
@@ -1334,150 +1238,22 @@ document.querySelectorAll('[data-range]').forEach(btn => {
 
 // ── Analytics Functions ──
 function renderAnalytics(){
-  // Calculate analytics metrics from real data
   const now = Date.now();
-  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-  
-  // Real Daily Active Users
-  const dau = users && users.length > 0 ? 
-    users.filter(u => u.lastSeenAt && 
-      (now - u.lastSeenAt.toDate().getTime()) < 24 * 60 * 60 * 1000).length : 0;
-  
-  // Real Monthly Active Users
-  const mau = users && users.length > 0 ? 
-    users.filter(u => u.lastSeenAt && 
-      (now - u.lastSeenAt.toDate().getTime()) < 30 * 24 * 60 * 60 * 1000).length : 0;
+  const dau = users.filter(u => u.lastSeen > now - 864e5).length;
+  const mau = users.filter(u => u.lastSeen > now - 30*864e5).length;
   
   $('dau-count').textContent = dau.toLocaleString();
   $('mau-count').textContent = mau.toLocaleString();
   
-  // Calculate real average session duration from user data
-  if (users && users.length > 0) {
-    const sessionDurations = users
-      .filter(u => u.avgSessionDuration)
-      .map(u => u.avgSessionDuration);
-    const avgSession = sessionDurations.length > 0 ? 
-      Math.round(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length / 1000 / 60) : 0;
-    $('avg-session').textContent = avgSession > 0 ? `${Math.floor(avgSession)}m ${Math.round((avgSession % 1) * 60)}s` : 'No data';
-  } else {
-    $('avg-session').textContent = 'No data';
-  }
+  // Basic financial stats from group data
+  const totalGroups = groups.length;
+  const activeGroups = groups.filter(g => g.cycleStatus === 'active').length;
+  const avgMembers = totalGroups > 0 ? Math.round(groups.reduce((s, g) => s + (g.members || 0), 0) / totalGroups) : 0;
   
-  // Real financial metrics
-  const allExpenses = [];
-  if (groups && groups.length > 0) {
-    groups.forEach(g => {
-      if (g.cycles) {
-        g.cycles.forEach(c => {
-          if (c.expenses) {
-            c.expenses.forEach(e => {
-              allExpenses.push(e);
-            });
-          }
-        });
-      }
-    });
-  }
-  
-  const totalTransactions = allExpenses.length;
-  const totalVolume = allExpenses.reduce((sum, e) => sum + (e.amountMinor || 0), 0);
-  const avgExpense = totalTransactions > 0 ? Math.round(totalVolume / totalTransactions / 100) : 0;
-  
-  $('transaction-volume').textContent = totalTransactions.toLocaleString();
-  $('avg-expense').textContent = '₹' + avgExpense;
-  
-  // Calculate real settlement rate
-  const settledExpenses = allExpenses.filter(e => e.settlementStatus === 'settled').length;
-  const settlementRate = totalTransactions > 0 ? Math.round((settledExpenses / totalTransactions) * 100) : 0;
-  $('settlement-rate').textContent = settlementRate + '%';
-  
-  // Calculate real retention metrics from user creation dates
-  if (users && users.length > 0) {
-    const day1Retention = calculateRetention(users, 1);
-    const day7Retention = calculateRetention(users, 7);
-    const day30Retention = calculateRetention(users, 30);
-    
-    $('retention-d1').textContent = day1Retention + '%';
-    $('retention-d7').textContent = day7Retention + '%';
-    $('retention-d30').textContent = day30Retention + '%';
-  } else {
-    $('retention-d1').textContent = '0%';
-    $('retention-d7').textContent = '0%';
-    $('retention-d30').textContent = '0%';
-  }
-  
-  // Real group statistics
-  if (groups && groups.length > 0) {
-    const groupSizes = groups.map(g => g.members ? g.members.length : 0);
-    const avgGroupSize = groupSizes.length > 0 ? 
-      Math.round(groupSizes.reduce((a, b) => a + b, 0) / groupSizes.length) : 0;
-    const largeGroups = groupSizes.filter(size => size > 10).length;
-    
-    // Find most common group size
-    const sizeFrequency = {};
-    groupSizes.forEach(size => {
-      sizeFrequency[size] = (sizeFrequency[size] || 0) + 1;
-    });
-    const mostCommonSize = Object.keys(sizeFrequency).length > 0 ? 
-      Object.keys(sizeFrequency).reduce((a, b) => 
-        sizeFrequency[a] > sizeFrequency[b] ? a : b, '2') : '2';
-    
-    $('avg-group-size').textContent = avgGroupSize;
-    $('common-group-size').textContent = `${mostCommonSize}-${parseInt(mostCommonSize) + 1} members`;
-    $('large-groups').textContent = largeGroups;
-  } else {
-    $('avg-group-size').textContent = '0';
-    $('common-group-size').textContent = '0 members';
-    $('large-groups').textContent = '0';
-  }
-  
-  // Real feature usage from actual data
-  const expensesCount = allExpenses.length;
-  const settlementsCount = allExpenses.filter(e => e.settlementStatus === 'settled').length;
-  const invitesCount = (pendingInvites ? pendingInvites.length : 0) + 
-    (groups ? groups.reduce((sum, g) => sum + (g.invitations?.length || 0), 0) : 0);
-  const scansCount = users ? users.reduce((sum, u) => sum + (u.receiptScanCount || 0), 0) : 0;
-  
-  $('feature-expenses').textContent = expensesCount.toLocaleString();
-  $('feature-settlements').textContent = settlementsCount.toLocaleString();
-  $('feature-invites').textContent = invitesCount.toLocaleString();
-  $('feature-scans').textContent = scansCount.toLocaleString();
+  $('avg-group-size').textContent = avgMembers;
+  $('transaction-volume').textContent = '—'; // Would need transaction log sync
+  $('avg-expense').textContent = '—';
 }
-
-function calculateRetention(users, days) {
-  const cutoffDate = Date.now() - (days * 24 * 60 * 60 * 1000);
-  const eligibleUsers = users.filter(u => u.createdAt && u.createdAt.toDate().getTime() < cutoffDate);
-  
-  if (eligibleUsers.length === 0) return 0;
-  
-  const retainedUsers = eligibleUsers.filter(u => 
-    u.lastSeenAt && u.lastSeenAt.toDate().getTime() > cutoffDate
-  ).length;
-  
-  return Math.round((retainedUsers / eligibleUsers.length) * 100);
-}
-
-// Time range selector for analytics
-document.querySelectorAll('[data-range]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('[data-range]').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    renderAnalytics(); // Re-render with new time range
-  };
-});
-
-// ── Filters ──
-document.querySelectorAll('[data-flt]').forEach(b=>{
-  b.onclick=()=>{document.querySelectorAll('[data-flt]').forEach(x=>x.classList.remove('on'));b.classList.add('on');ufilt=b.dataset.flt;renderUsers()}
-});
-document.querySelectorAll('[data-gflt]').forEach(b=>{
-  b.onclick=()=>{document.querySelectorAll('[data-gflt]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gfilt=b.dataset.gflt;renderGroups()}
-});
-$('usearch').oninput=e=>{usrch=e.target.value;renderUsers()};
-$('gsearch').oninput=e=>{gsrch=e.target.value;renderGroups()};
-$('uref').onclick=async()=>{await loadUsers();await loadGroups();renderUsers();renderOv();toast('Refreshed','ok')};
-$('gref').onclick=async()=>{await loadGroups();renderGroups();renderOv();toast('Refreshed','ok')};
 
 // ── Tab Nav ──
 document.querySelectorAll('.ntab').forEach(t=>{
@@ -1485,65 +1261,36 @@ document.querySelectorAll('.ntab').forEach(t=>{
     document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('on'));
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');$('pg-'+t.dataset.pg).classList.add('on');
-    
-    // Render analytics when analytics tab is clicked
-    if(t.dataset.pg === 'analytics') {
-      renderAnalytics();
-    }
+    if(t.dataset.pg === 'analytics') renderAnalytics();
+    if(t.dataset.pg === 'dashboard') renderEnhancedDashboard();
   }
 });
 
-// ── Edit modal ──
-window.openEdit=uid=>{
-  const u=users.find(x=>x.uid===uid);if(!u)return;
-  editUID=uid;
-  $('mttl').textContent=u.displayName||u.phoneNumber||'Edit User';
-  $('en').value=u.displayName||'';
-  $('eb').checked=!!u.isBeta;
-  $('ec').checked=!!u.isCreator;
-  // Update ban button label
-  const isBanned=!!u.isBanned;
-  $('mban').textContent=isBanned?'Unban User':'Ban User';
-  $('mban').style.borderColor=isBanned?'rgba(52,211,153,.4)':'rgba(248,113,113,.4)';
-  $('mban').style.color=isBanned?'var(--gr)':'var(--rd)';
-  // Hide ban/delete for creator
-  const isC=uid===CREATOR;
-  $('mban').style.display=isC?'none':'block';
-  $('mdelete').style.display=isC?'none':'block';
-  $('modal').style.display='flex';
-};
-const closeModal=()=>$('modal').style.display='none';
-$('mx').onclick=$('mcan').onclick=closeModal;
-$('modal').onclick=e=>{if(e.target===$('modal'))closeModal()};
-
+// ── Auth Actions ──
 $('mban').onclick=async()=>{
   const u=users.find(x=>x.uid===editUID);if(!u)return;
   const isBanned=!!u.isBanned;
-  const action=isBanned?'unban':'ban';
-  if(!confirm(`${action==='ban'?'Ban':'Unban'} ${u.displayName||u.phoneNumber}? ${action==='ban'?'They will be signed out immediately.':'They will be able to log in again.'}`))return;
+  if(!confirm(`${isBanned?'Unban':'Ban'} ${u.displayName || u.phoneNumber}?`)) return;
   const btn=$('mban');btn.disabled=true;
   try{
-    const fn=httpsCallable(functions,'adminBanUser');
-    await fn({uid:editUID,banned:!isBanned});
-    const i=users.findIndex(x=>x.uid===editUID);
-    if(i!==-1)users[i].isBanned=!isBanned;
-    toast(`✓ User ${action==='ban'?'banned':'unbanned'}`,'ok');
+    await supabase.functions.invoke('admin-api', { body: { action: 'manageUser', uid: editUID, updates: { isBanned: !isBanned } } });
+    u.isBanned = !isBanned;
+    toast(`✓ User ${isBanned?'unbanned':'banned'}`,'ok');
     closeModal();renderUsers();
-  }catch(e){toast('Failed: '+e.message,'er')}
+  }catch(e){toast('Error: '+e.message,'er')}
   finally{btn.disabled=false}
 };
 
 $('mdelete').onclick=async()=>{
   const u=users.find(x=>x.uid===editUID);if(!u)return;
-  if(!confirm(`Permanently delete ${u.displayName||u.phoneNumber}?\n\nThis removes their account from Firebase Auth and Firestore. Cannot be undone.`))return;
+  if(!confirm(`Permanently delete ${u.displayName || u.phoneNumber}?`)) return;
   const btn=$('mdelete');btn.disabled=true;
   try{
-    const fn=httpsCallable(functions,'adminDeleteUser');
-    await fn({uid:editUID});
-    users=users.filter(x=>x.uid!==editUID);
+    await supabase.functions.invoke('admin-api', { body: { action: 'manageUser', uid: editUID, updates: { deleted: true } } });
+    users = users.filter(x => x.uid !== editUID);
     toast('✓ User deleted','ok');
     closeModal();renderUsers();renderOv();
-  }catch(e){toast('Failed: '+e.message,'er')}
+  }catch(e){toast('Error: '+e.message,'er')}
   finally{btn.disabled=false}
 };
 
@@ -1551,14 +1298,13 @@ $('msav').onclick=async()=>{
   if(!editUID)return;
   const btn=$('msav');btn.disabled=true;btn.textContent='Saving…';
   try{
-    const fn=httpsCallable(functions,'adminUpdateUser');
-    const up={uid:editUID,displayName:$('en').value.trim(),isBeta:$('eb').checked,isCreator:$('ec').checked};
-    await fn(up);
-    const i=users.findIndex(u=>u.uid===editUID);
-    if(i!==-1)users[i]={...users[i],...up};
+    const up={displayName:$('en').value.trim(),isBeta:$('eb').checked};
+    await supabase.functions.invoke('admin-api', { body: { action: 'manageUser', uid: editUID, updates: up } });
+    const u=users.find(x=>x.uid===editUID);
+    if(u) Object.assign(u, up);
     renderUsers();renderOv();
     closeModal();toast('✓ Updated','ok');
-  }catch(e){toast('Failed: '+e.message,'er')}
+  }catch(e){toast('Error: '+e.message,'er')}
   finally{btn.disabled=false;btn.textContent='Save Changes'}
 };
 
@@ -1571,17 +1317,15 @@ window.openDeleteGroup=(gid,name)=>{
 };
 const closeGdel=()=>{$('gdel-modal').style.display='none';deleteGroupId=null};
 $('gdelmx').onclick=$('gdel-cancel').onclick=closeGdel;
-$('gdel-modal').onclick=e=>{if(e.target===$('gdel-modal'))closeGdel()};
 $('gdel-confirm').onclick=async()=>{
   if(!deleteGroupId)return;
   const btn=$('gdel-confirm');btn.disabled=true;btn.textContent='Deleting…';
   try{
-    const fn=httpsCallable(functions,'adminDeleteGroup');
-    await fn({groupId:deleteGroupId});
+    await supabase.functions.invoke('admin-api', { body: { action: 'deleteGroup', groupId: deleteGroupId } });
     groups=groups.filter(g=>g.gid!==deleteGroupId);
     toast('✓ Group deleted','ok');
     closeGdel();renderGroups();renderOv();
-  }catch(e){toast('Failed: '+e.message,'er')}
+  }catch(e){toast('Error: '+e.message,'er')}
   finally{btn.disabled=false;btn.textContent='Yes, Delete Group'}
 };
 </script>
