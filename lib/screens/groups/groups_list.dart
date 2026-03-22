@@ -20,6 +20,7 @@ import '../../widgets/tap_scale.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../utils/money_format.dart';
 import '../../widgets/empty_state_widget.dart';
+import '../../widgets/delete_group_sheet.dart';
 
 class GroupsList extends StatefulWidget {
   const GroupsList({super.key});
@@ -352,67 +353,52 @@ class _GroupsListState extends State<GroupsList> {
       return;
     }
     final repo = CycleRepository.instance;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Group'),
-        content: Text(
-          'Permanently delete "${group.name}" and all expense history?',
-          style: context.bodySecondary.copyWith(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final netBalance = repo.getNetBalanceMinorOfMember(group.id, repo.currentUserId);
+    
+    await DeleteGroupSheet.show(
+      context,
+      groupName: group.name,
+      hasPendingBalance: netBalance != 0,
+      pendingAmount: netBalance.abs().toDouble() / 100.0,
+      currencyCode: group.currencyCode,
+      onDelete: () async {
+        final wasPinned = PinnedGroupsService.instance.isPinned(group.id);
+        try {
+          await repo.deleteGroup(group.id);
+          if (context.mounted) {
+            if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Group deleted'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } catch (e) {
+          if (!context.mounted) return;
+          final groupStillExists = repo.getGroup(group.id) != null;
+          if (!groupStillExists) {
+            if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Group deleted'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Could not delete group. Check your connection and try again.',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      },
     );
-    if (confirmed != true || !context.mounted) return;
-    final wasPinned = PinnedGroupsService.instance.isPinned(group.id);
-    try {
-      await repo.deleteGroup(group.id);
-      if (context.mounted) {
-        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Group deleted'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      // Post-condition check: if the group is no longer in the list, deletion
-      // actually succeeded — the Firestore stream already removed it, or the
-      // repository confirmed idempotent removal. Show success, not an error.
-      final groupStillExists = repo.getGroup(group.id) != null;
-      if (!groupStillExists) {
-        if (wasPinned) PinnedGroupsService.instance.togglePin(group.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Group deleted'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Could not delete group. Check your connection and try again.',
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    return;
   }
 
   @override

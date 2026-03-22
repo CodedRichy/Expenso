@@ -16,6 +16,8 @@ import '../../widgets/upi_payment_card.dart';
 import '../../utils/money_format.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/payment_result_sheet.dart';
+import '../../widgets/cycle_settled_sheet.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   final Group? group;
@@ -103,15 +105,12 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       // it does NOT mean the bank transfer completed or the receiver got funds.
       // Never auto-call markPaymentConfirmedByReceiver from the payer's device.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              transactionId != null && transactionId.isNotEmpty
-                  ? 'Payment sent. Waiting for ${repo.getMemberDisplayNameById(route.toMemberId)} to confirm receipt.'
-                  : 'Marked as paid. Waiting for receiver to confirm.',
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
+        PaymentResultSheet.show(
+          context,
+          group: _group,
+          status: 'success',
+          amount: route.amountMinor.toDouble() / 100.0,
+          transactionId: transactionId,
         );
         setState(() {});
       }
@@ -180,11 +179,11 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
     if (attempt != null && attempt.status == PaymentAttemptStatus.cashPending) {
       await repo.confirmCashReceived(_group!.id, attempt.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cash payment confirmed'),
-            behavior: SnackBarBehavior.floating,
-          ),
+        PaymentResultSheet.show(
+          context,
+          group: _group,
+          status: 'success',
+          amount: route.amountMinor.toDouble() / 100.0,
         );
         setState(() {});
       }
@@ -484,11 +483,11 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
         attempt.status == PaymentAttemptStatus.confirmedByPayer) {
       await repo.markPaymentConfirmedByReceiver(_group!.id, attempt.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment confirmed as received'),
-            behavior: SnackBarBehavior.floating,
-          ),
+        PaymentResultSheet.show(
+          context,
+          group: _group,
+          status: 'success',
+          amount: route.amountMinor.toDouble() / 100.0,
         );
         setState(() {});
       }
