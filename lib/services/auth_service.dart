@@ -67,12 +67,16 @@ class AuthService {
       email: email,
       password: password,
       data: {'display_name': name},
+      emailRedirectTo: 'expenso://login-callback',
     );
   }
 
   /// Send a password reset email.
   Future<void> sendPasswordReset(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'expenso://login-callback',
+    );
   }
 
   // ── PHONE OTP (Legacy) ──
