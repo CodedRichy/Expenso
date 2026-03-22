@@ -155,10 +155,16 @@ class _MyAppState extends State<MyApp> {
           token = segments[1];
         }
       }
-    } else if (uri.scheme == 'https' &&
-        (uri.host == 'expenso-e138a.web.app' ||
-            uri.host == 'expenso-e138a.firebaseapp.com')) {
-      // format: https://expenso-e138a.web.app/invite/groupId/token
+    } else if (uri.scheme == 'https') {
+      final host = uri.host.toLowerCase();
+      final looksLikeExpensoHost =
+          host.contains('expenso') ||
+          host.endsWith('.web.app') ||
+          host.endsWith('.firebaseapp.com');
+      if (!looksLikeExpensoHost) {
+        return;
+      }
+      // format: https://<host>/invite/groupId/token
       if (uri.pathSegments.length >= 3 && uri.pathSegments[0] == 'invite') {
         groupId = uri.pathSegments[1];
         token = uri.pathSegments[2];

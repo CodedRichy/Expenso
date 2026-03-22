@@ -249,6 +249,9 @@ class GroupRepository extends BaseRepository {
 
   String getActiveCycleId(String groupId) => _groupMeta[groupId]?.activeCycleId ?? '';
   String getCycleStatus(String groupId) => _groupMeta[groupId]?.cycleStatus ?? 'active';
+  String getSettlementRhythm(String groupId) =>
+      _groupMeta[groupId]?.settlementRhythm ?? 'weekly';
+  int getSettlementDay(String groupId) => _groupMeta[groupId]?.settlementDay ?? 0;
   
   Future<void> addGroup(
     Group group, {

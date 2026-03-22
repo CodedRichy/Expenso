@@ -1059,9 +1059,6 @@ function renderEnhancedDashboard(){
   $('mrr').textContent = '$' + mrr.toLocaleString();
   $('arr').textContent = '$' + (mrr * 12).toLocaleString();
   
-// ── Enhanced Dashboard Functions ──
-function renderEnhancedDashboard(){
-  // Math is now done in admin-api mostly, or we can do simple sums here
   renderActivityFeed();
 }
 
@@ -1115,188 +1112,6 @@ function renderActivityFeed(){
   }
 }
 
-// ── Advanced Analytics Functions ──
-async function loadAdvancedAnalytics() {
-  console.log('Fetching advanced analytics...');
-  try {
-    const fetchAdvancedAnalytics = httpsCallable(functions, 'adminGetAdvancedAnalytics');
-    const result = await fetchAdvancedAnalytics({ timeRange: '30d' });
-    
-    // Update advanced analytics display
-    updateAdvancedAnalyticsDisplay(result.data);
-    
-  } catch (error) {
-    console.error('Advanced analytics error:', error);
-    toast('Failed to load advanced analytics: ' + error.message, 'er');
-  }
-}
-
-function updateAdvancedAnalyticsDisplay(data) {
-  // Update session analytics
-  if (data.sessions) {
-    const avgSessionMinutes = Math.round(data.sessions.avgDuration / 1000 / 60);
-    $('avg-session').textContent = avgSessionMinutes > 0 ? 
-      `${avgSessionMinutes}m ${Math.round((data.sessions.avgDuration / 1000 % 1) * 60)}s` : 'No data';
-  }
-  
-  // Update financial insights
-  if (data.financial) {
-    // Update settlement time
-    const avgSettlementHours = Math.round(data.financial.avgSettlementTime / (1000 * 60 * 60));
-    $('settlement-time').textContent = avgSettlementHours > 0 ? 
-      `${avgSettlementHours}h` : 'No data';
-    
-    // Update category breakdown (could be displayed in a chart)
-    console.log('Category breakdown:', data.financial.categoryBreakdown);
-  }
-  
-  // Update geographic data
-  if (data.geographic) {
-    const topCountries = Object.entries(data.geographic)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    
-    console.log('Top countries:', topCountries);
-  }
-  
-  // Update performance metrics
-  if (data.performance) {
-    $('api-latency').textContent = Math.round(data.performance.avgResponseTime) + 'ms';
-    $('error-rate').textContent = data.performance.errorRate.toFixed(1) + '%';
-    $('uptime').textContent = data.performance.uptime.toFixed(1) + '%';
-  }
-  
-  // Update business intelligence
-  if (data.business) {
-    const conversionRate = data.business.total > 0 ? 
-      Math.round((data.business.premium / data.business.total) * 100) : 0;
-    
-    $('conversion-rate').textContent = conversionRate + '%';
-    $('churn-rate').textContent = data.business.total > 0 ? 
-      Math.round((data.business.churned / data.business.total) * 100) + '%' : '0%';
-  }
-}
-
-async function loadUserBehavior(userId) {
-  console.log('Fetching user behavior for:', userId);
-  try {
-    const fetchUserBehavior = httpsCallable(functions, 'adminGetUserBehavior');
-    const result = await fetchUserBehavior({ userId, timeRange: '30d' });
-    
-    // Display user behavior in a modal or detailed view
-    displayUserBehavior(userId, result.data);
-    
-  } catch (error) {
-    console.error('User behavior error:', error);
-    toast('Failed to load user behavior: ' + error.message, 'er');
-  }
-}
-
-function displayUserBehavior(userId, data) {
-  // Create or update a modal to show detailed user behavior
-  const modal = $('user-behavior-modal');
-  if (!modal) {
-    // Create modal if it doesn't exist
-    const modalHtml = `
-      <div class="ov" id="user-behavior-modal" style="display:none">
-        <div class="modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
-          <div class="mhdr">
-            <div class="mttl">User Behavior Analytics</div>
-            <button class="mx" onclick="closeUserBehaviorModal()">✕</button>
-          </div>
-          <div id="user-behavior-content">
-            <!-- Content will be populated here -->
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-  }
-  
-  // Populate with user behavior data
-  const content = $('user-behavior-content');
-  content.innerHTML = `
-    <div style="margin-bottom:20px">
-      <h3 style="font-size:16px;margin-bottom:12px">📊 Expense Analytics</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <div style="font-size:12px;color:var(--tx3);margin-bottom:4px">Total Expenses</div>
-          <div style="font-size:20px;font-weight:700">${data.expenses?.total || 0}</div>
-        </div>
-        <div>
-          <div style="font-size:12px;color:var(--tx3);margin-bottom:4px">Total Amount</div>
-          <div style="font-size:20px;font-weight:700">${rupee(data.expenses?.totalAmount || 0)}</div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="margin-bottom:20px">
-      <h3 style="font-size:16px;margin-bottom:12px">⏱️ Engagement Metrics</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <div style="font-size:12px;color:var(--tx3);margin-bottom:4px">Session Count</div>
-          <div style="font-size:20px;font-weight:700">${data.engagement?.sessionCount || 0}</div>
-        </div>
-        <div>
-          <div style="font-size:12px;color:var(--tx3);margin-bottom:4px">Avg Session Duration</div>
-          <div style="font-size:20px;font-weight:700">${Math.round((data.engagement?.avgSessionDuration || 0) / 1000 / 60)}m</div>
-        </div>
-      </div>
-    </div>
-    
-    <div>
-      <h3 style="font-size:16px;margin-bottom:12px">📈 Activity Patterns</h3>
-      <div style="background:var(--s2);padding:16px;border-radius:8px">
-        <p style="margin-bottom:8px"><strong>Spending by Day of Week:</strong></p>
-        <div style="font-size:12px;color:var(--tx2)">
-          ${Object.entries(data.patterns?.spendingPatterns || {}).map(([day, amount]) => 
-            `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
-              <span>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]}</span>
-              <span>${rupee(amount)}</span>
-            </div>`
-          ).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Show modal
-  $('user-behavior-modal').style.display = 'flex';
-}
-
-function closeUserBehaviorModal() {
-  const modal = $('user-behavior-modal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-}
-
-// Add click handlers for user behavior
-document.addEventListener('DOMContentLoaded', () => {
-  // Add click handlers to user rows for detailed behavior
-  setTimeout(() => {
-    document.querySelectorAll('tr[data-user-id]').forEach(row => {
-      row.style.cursor = 'pointer';
-      row.onclick = () => {
-        const userId = row.dataset.userId;
-        loadUserBehavior(userId);
-      };
-    });
-  }, 1000);
-});
-
-// Time range selector for analytics
-document.querySelectorAll('[data-range]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('[data-range]').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    
-    // Reload analytics with new time range
-    renderAnalytics();
-    loadAdvancedAnalytics();
-  };
-});
-
 // ── Analytics Functions ──
 function renderAnalytics(){
   const now = Date.now();
@@ -1308,11 +1123,10 @@ function renderAnalytics(){
   
   // Basic financial stats from group data
   const totalGroups = groups.length;
-  const activeGroups = groups.filter(g => g.cycleStatus === 'active').length;
   const avgMembers = totalGroups > 0 ? Math.round(groups.reduce((s, g) => s + (g.members || 0), 0) / totalGroups) : 0;
   
   $('avg-group-size').textContent = avgMembers;
-  $('transaction-volume').textContent = '—'; // Would need transaction log sync
+  $('transaction-volume').textContent = '—';
   $('avg-expense').textContent = '—';
 }
 
@@ -1323,7 +1137,7 @@ document.querySelectorAll('.ntab').forEach(t=>{
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');$('pg-'+t.dataset.pg).classList.add('on');
     if(t.dataset.pg === 'analytics') renderAnalytics();
-    if(t.dataset.pg === 'dashboard') renderEnhancedDashboard();
+    if(t.dataset.pg === 'dashboard') renderActivityFeed();
   }
 });
 

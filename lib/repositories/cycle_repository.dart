@@ -121,6 +121,13 @@ class CycleRepository extends BaseRepository {
     String? authUserId,
     String? currencyCode,
   }) {
+    _auth.setGlobalProfile(
+      name,
+      phone: phone,
+      email: email,
+      authUserId: authUserId,
+      currencyCode: currencyCode,
+    );
     if (phone != null) _currentUserPhone = phone;
     if (email != null) _currentUserEmail = email;
     _currentUserName = name.trim();
@@ -154,14 +161,17 @@ class CycleRepository extends BaseRepository {
   /// Sets _groupsLoading = true when a userId is cached so that GroupsList shows
   /// skeleton immediately instead of the empty state before the first Firestore snapshot.
   void loadFromLocalCache() {
+    _auth.loadFromLocalCache();
     final cached = UserProfileCache.instance.getCachedProfile();
     if (cached == null) return;
     _currentUserId = cached.userId;
     _currentUserName = cached.displayName;
     _currentUserPhone = cached.phone;
+    _currentUserEmail = cached.email;
     _userCache[cached.userId] = {
       'displayName': cached.displayName,
       'phoneNumber': cached.phone,
+      'email': cached.email,
       if (cached.photoURL != null) 'photoURL': cached.photoURL,
       if (cached.upiId != null) 'upiId': cached.upiId,
       if (cached.currencyCode != null) 'currencyCode': cached.currencyCode,
@@ -178,11 +188,20 @@ class CycleRepository extends BaseRepository {
   void setAuthUserSync(
     String uid,
     String? phone,
+    String? email,
     String? displayName, {
     String? photoURL,
   }) {
+    _auth.setAuthUserSync(
+      uid,
+      phone,
+      email,
+      displayName,
+      photoURL: photoURL,
+    );
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
+    if (email != null && email.isNotEmpty) _currentUserEmail = email;
     if (displayName != null && displayName.isNotEmpty) {
       _currentUserName = displayName.trim();
     }
@@ -197,6 +216,7 @@ class CycleRepository extends BaseRepository {
     _userCache[uid] = {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
+      'email': _currentUserEmail,
       if (usePhoto != null) 'photoURL': usePhoto,
     };
     if (cached != null && cached.userId == uid) {
@@ -213,6 +233,7 @@ class CycleRepository extends BaseRepository {
   /// Runs Firestore write, profile load, and listeners. Call after build (e.g. addPostFrameCallback).
   Future<void> continueAuth() async {
     if (_currentUserId.isEmpty) return;
+    await _auth.continueAuth();
     _encryption = DataEncryptionService(region: 'asia-south1');
     try {
       await _encryption!.ensureUserKey();
@@ -414,7 +435,7 @@ class CycleRepository extends BaseRepository {
   void _onGroupsChanged() {
     final groups = _groupsRepo.groups;
     final newIds = groups.map((g) => g.id).toSet();
-    
+
     // Clean up streams for removed groups
     for (final id in _expenseSubs.keys.toList()) {
       if (!newIds.contains(id)) {
@@ -422,13 +443,33 @@ class CycleRepository extends BaseRepository {
         _expenseSubs.remove(id);
       }
     }
-    // ... similarly for other group-bound streams ...
-    
+
+    for (final id in _groupMeta.keys.toList()) {
+      if (!newIds.contains(id)) {
+        _groupMeta.remove(id);
+      }
+    }
+
+    for (final group in groups) {
+      final existing = _groupMeta[group.id];
+      final repoCycleId = _groupsRepo.getActiveCycleId(group.id);
+      final activeCycleId = repoCycleId.isNotEmpty
+          ? repoCycleId
+          : (existing?.activeCycleId ?? _nextCycleId());
+      _groupMeta[group.id] = _GroupMeta(
+        activeCycleId: activeCycleId,
+        cycleStatus: _groupsRepo.getCycleStatus(group.id),
+        settlementRhythm: _groupsRepo.getSettlementRhythm(group.id),
+        settlementDay: _groupsRepo.getSettlementDay(group.id),
+      );
+    }
+
     notify();
   }
 
 
   void _stopListening() {
+    _groupsRepo.removeListener(_onGroupsChanged);
     _groupsSub?.cancel();
     _groupsSub = null;
     _invitationsSub?.cancel();

@@ -52,6 +52,7 @@ class RootScreen extends StatelessWidget {
           repo.setAuthUserSync(
             user.id,
             user.phone,
+            user.email,
             user.userMetadata?['display_name'] as String?,
             photoURL: user.userMetadata?['avatar_url'] as String?,
           );
@@ -90,7 +91,7 @@ class RootScreen extends StatelessWidget {
       );
     } catch (e) {
       debugPrint('RootScreen: Supabase Auth failed: $e');
-      // Show login screen if Firebase fails
+      // Show login screen if Supabase auth setup fails.
       return const PhoneAuth();
     }
   }
