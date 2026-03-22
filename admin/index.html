@@ -257,18 +257,41 @@
     <div class="llogo">
       <div class="lico">💸</div>
       <h1>Expenso Admin</h1>
-      <p>Sign in with your registered number</p>
+      <p>Management & Analytics Portal</p>
     </div>
     <div class="lbox">
       <div id="sp" class="lstep on">
         <div class="sttl">Welcome back</div>
-        <div class="ssub">Enter your phone number to receive a verification code.</div>
+        <div class="ssub">Sign in to access the admin dashboard.</div>
+        
+        <button class="bprim" id="gbtn" style="background:#4285f4;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="currentColor" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.24h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="currentColor" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.24c-.8.54-1.84.85-3.05.85-2.34 0-4.32-1.58-5.03-3.71H1.04v2.32A8.99 8.99 0 0 0 9 18z"/><path fill="currentColor" d="M3.97 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.96H1.04A8.99 8.99 0 0 0 0 9c0 1.45.35 2.82 1.04 4.04l2.93-2.32z"/><path fill="currentColor" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02 1.04 4.96l2.93 2.32C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+          Sign in with Google
+        </button>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;color:var(--tx3);font-size:11px;text-transform:uppercase;font-weight:700">
+          <div style="flex:1;height:1px;background:var(--bd)"></div>
+          <span>or use email</span>
+          <div style="flex:1;height:1px;background:var(--bd)"></div>
+        </div>
+
         <div class="lerr" id="pe"></div>
+        <div class="iw"><input type="email" id="em" placeholder="Email Address"/></div>
+        <div class="iw"><input type="password" id="pw" placeholder="Password"/></div>
+        <button class="bprim" id="ebtn">Sign In with Email</button>
+        
+        <button class="bghost" id="sw-ph" style="margin-top:20px">Login with Phone instead</button>
+      </div>
+
+      <div id="sph" class="lstep">
+        <div class="sttl">Phone Login</div>
+        <div class="ssub">Enter your phone number to receive a verification code.</div>
+        <div class="lerr" id="phe"></div>
         <div class="iw"><span class="ipfx">+91</span><input type="text" id="ph" class="pfx" placeholder="Enter Number" maxlength="10" inputmode="numeric"/></div>
         <button class="bprim" id="sbtn">Send Code</button>
-        <div id="rc-container"></div>
-        <p class="rnote">Protected by Firebase. Only the app creator can access this.</p>
+        <button class="bghost" id="sw-em" style="margin-top:20px">← Back to Email</button>
       </div>
+
       <div id="so" class="lstep">
         <div class="sttl">Enter the code</div>
         <div class="ssub" id="osub">We sent a 6-digit code to <strong></strong></div>
@@ -723,9 +746,42 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// Google Sign In
+$('gbtn').onclick=async()=>{
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + window.location.pathname
+    }
+  });
+  if(error) showErr('pe', error.message);
+};
+
+// Email Sign In
+$('ebtn').onclick=async()=>{
+  const email = $('em').value.trim();
+  const password = $('pw').value;
+  if(!email || !password){ showErr('pe', 'Enter email and password'); return; }
+  
+  const btn=$('ebtn'); btn.disabled=true; btn.textContent='Signing in…';
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+  } catch(e) {
+    showErr('pe', e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='Sign In with Email';
+  }
+};
+
+// Step switching
+$('sw-ph').onclick=()=>showStep('sph');
+$('sw-em').onclick=()=>showStep('sp');
+
+// Phone OTP logic
 $('sbtn').onclick=async()=>{
   const raw=$('ph').value.replace(/\D/g,'');
-  if(raw.length!==10){showErr('pe','Enter a valid 10-digit number');return}
+  if(raw.length!==10){showErr('phe','Enter a valid 10-digit number');return}
   const btn=$('sbtn'); btn.disabled=true; btn.textContent='Sending…';
   
   try {
@@ -741,7 +797,7 @@ $('sbtn').onclick=async()=>{
     setTimeout(() => boxes[0].focus(), 100);
   } catch(e) {
     console.error('OTP Error:', e);
-    showErr('pe', e.message || 'Failed to send code');
+    showErr('phe', e.message || 'Failed to send code');
   } finally {
     btn.disabled=false; btn.textContent='Send Code';
   }
@@ -775,13 +831,11 @@ $('bbtn').onclick=()=>{boxes.forEach(b=>b.value='');showStep('sp')};
 $('tabtn').onclick=()=>{$('ph').value='';showStep('sp')};
 
 $('lgbtn').onclick=async()=>{await supabase.auth.signOut()};
-
-// ── Load all data ──
 async function loadAll(user){
   $('login').style.display='none';
   $('dash').style.display='flex';
   $('cdot').classList.add('on');
-  $('hulbl').textContent=user.phone||'';
+  $('hulbl').textContent=user.email||user.phone||'Admin';
   
   try {
     console.log('Fetching admin data from Supabase...');
@@ -792,8 +846,22 @@ async function loadAll(user){
     ]);
 
     if (uRes.error || gRes.error || aRes.error) {
-       throw new Error(uRes.error?.message || gRes.error?.message || aRes.error?.message || 'Admin API error');
+       const err = uRes.error || gRes.error || aRes.error;
+       if (err.status === 403 || err.status === 401 || err.message?.includes('Unauthorized') || err.message?.includes('Forbidden')) {
+          $('dash').style.display='none';
+          $('login').style.display='flex';
+          showStep('sd'); // Show "Access denied"
+          return;
+       }
+       throw new Error(err.message || 'Admin API error');
     }
+    console.log('Fetching admin data from Supabase...');
+    const [uRes, gRes, aRes] = await Promise.all([
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchUsers' } }),
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchGroups' } }),
+      supabase.functions.invoke('admin-api', { body: { action: 'fetchAnalytics' } })
+    ]);
+
 
     users = uRes.data?.users || [];
     groups = gRes.data?.groups || [];
