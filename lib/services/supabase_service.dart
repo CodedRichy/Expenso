@@ -679,9 +679,9 @@ class SupabaseService {
         .from('expenses')
         .stream(primaryKey: ['id'])
         .eq('group_id', groupId)
-        .eq('cycle_id', cycleId)
         .map(
           (rows) => rows
+              .where((row) => (row['cycle_id'] ?? '').toString() == cycleId)
               .map((e) => _SupabaseRowView(_mapExpenseRow(e)))
               .toList(),
         );
@@ -752,8 +752,12 @@ class SupabaseService {
         .from('payment_attempts')
         .stream(primaryKey: ['id'])
         .eq('group_id', groupId)
-        .eq('cycle_id', cycleId)
-        .map((rows) => rows.map(_mapPaymentAttemptRow).toList());
+        .map(
+          (rows) => rows
+              .where((row) => (row['cycle_id'] ?? '').toString() == cycleId)
+              .map(_mapPaymentAttemptRow)
+              .toList(),
+        );
   }
 
   Future<List<DocView>> getSettledCycleExpenses(String groupId, String cycleId) async {

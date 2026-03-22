@@ -31,7 +31,7 @@ class RootScreen extends StatelessWidget {
           if (snapshot.hasError) {
             debugPrint('RootScreen: Auth stream error: ${snapshot.error}');
             // Fall back to login screen on error
-            return const PhoneAuth();
+            return const AuthScreen();
           }
           
           if (snapshot.connectionState == ConnectionState.waiting &&
@@ -46,7 +46,7 @@ class RootScreen extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => repo.clearAuth(),
             );
-            return const PhoneAuth();
+            return const AuthScreen();
           }
 
           repo.setAuthUserSync(
@@ -92,7 +92,7 @@ class RootScreen extends StatelessWidget {
     } catch (e) {
       debugPrint('RootScreen: Supabase Auth failed: $e');
       // Show login screen if Supabase auth setup fails.
-      return const PhoneAuth();
+      return const AuthScreen();
     }
   }
 }

@@ -195,7 +195,7 @@ class CycleHistoryDetail extends StatelessWidget {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                       itemCount: listExpenses.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final expense = listExpenses[index];
                         return StaggeredListItem(

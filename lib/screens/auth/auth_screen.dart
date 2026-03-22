@@ -251,7 +251,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 else ...[
                   Image.network('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg', height: 24, 
-                    errorBuilder: (_, __, ___) => const Icon(Icons.account_circle, size: 24)),
+                    errorBuilder: (_, error, stackTrace) => const Icon(Icons.account_circle, size: 24)),
                   const SizedBox(width: 12),
                   Text('Continue with Google', style: context.labelLarge.copyWith(fontWeight: FontWeight.bold)),
                 ],

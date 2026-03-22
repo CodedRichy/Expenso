@@ -194,7 +194,7 @@ class _CycleHistoryState extends State<CycleHistory> {
                         child: ListView.separated(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                           itemCount: cycles.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (context, index) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final cycle = cycles[index];

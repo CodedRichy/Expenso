@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'supabase_service.dart';
 
@@ -31,19 +29,6 @@ class FcmTokenService {
 
   void _listenForTokenRefresh() {
     // Stubbed
-  }
-
-  Future<void> _storeToken(String token) async {
-    if (_userId == null || _userId!.isEmpty) return;
-
-    try {
-      final platform = Platform.isAndroid
-          ? 'android'
-          : (Platform.isIOS ? 'ios' : 'unknown');
-      await SupabaseService.instance.storeFcmToken(_userId!, token, platform);
-    } catch (e) {
-      debugPrint('FCM: Store token failed: $e');
-    }
   }
 
   Future<void> deleteToken() async {
