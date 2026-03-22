@@ -239,10 +239,17 @@ class _InviteMembersState extends State<InviteMembers>
 
   Future<void> handleShareLink(Group group) async {
     if (!group.inviteLinkEnabled || group.inviteLinkToken == null) return;
-    final link =
-        'https://expenso-e138a.web.app/invite/${group.id}/${group.inviteLinkToken}';
+    final token = group.inviteLinkToken!;
+    final appLink = 'expenso://invite/${group.id}/$token';
+    const inviteLinkBaseUrl = String.fromEnvironment(
+      'INVITE_LINK_BASE_URL',
+      defaultValue: 'https://expenso.app',
+    );
+    final webLink = '$inviteLinkBaseUrl/invite/${group.id}/$token';
     final shareMessage =
-        'Join my group "${group.name}" on Expenso to manage shared expenses together!\n\n$link';
+        'Join my group "${group.name}" on Expenso to manage shared expenses together!\n\n'
+        'App: $appLink\n'
+        'Web: $webLink';
 
     await Share.share(shareMessage, subject: 'Invite to join ${group.name}');
 
