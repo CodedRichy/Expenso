@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/phone_auth_service.dart';
+import '../../services/auth_service.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../widgets/expenso_loader.dart';
 import 'phone_auth.dart';
@@ -25,7 +25,7 @@ class RootScreen extends StatelessWidget {
     try {
       return StreamBuilder<User?>(
         initialData: Supabase.instance.client.auth.currentUser,
-        stream: PhoneAuthService.instance.authStateChanges,
+        stream: AuthService.instance.authStateChanges,
         builder: (context, snapshot) {
           // Handle errors in stream
           if (snapshot.hasError) {

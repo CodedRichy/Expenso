@@ -855,14 +855,6 @@ async function loadAll(user){
        }
        throw new Error(err.message || 'Admin API error');
     }
-    console.log('Fetching admin data from Supabase...');
-    const [uRes, gRes, aRes] = await Promise.all([
-      supabase.functions.invoke('admin-api', { body: { action: 'fetchUsers' } }),
-      supabase.functions.invoke('admin-api', { body: { action: 'fetchGroups' } }),
-      supabase.functions.invoke('admin-api', { body: { action: 'fetchAnalytics' } })
-    ]);
-
-
     users = uRes.data?.users || [];
     groups = gRes.data?.groups || [];
     

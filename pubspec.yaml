@@ -53,6 +53,8 @@ dependencies:
   share_plus: ^10.1.4
   http: ^1.2.2
   supabase_flutter: any
+  google_sign_in: ^6.2.1
+  crypto: ^3.0.3
   flutter_dotenv: ^6.0.0
 
 dev_dependencies:

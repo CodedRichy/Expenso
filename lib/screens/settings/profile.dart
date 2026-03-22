@@ -9,7 +9,7 @@ import '../../design/spacing.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/profile_service.dart';
-import '../../services/phone_auth_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/locale_service.dart';
 import '../../design/typography.dart';
 import '../../widgets/glass_card.dart';
@@ -480,7 +480,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     builder: (ctx) => AlertDialog(
                                       title: const Text('Log out?'),
                                       content: const Text(
-                                        'You will need to sign in again with your phone number.',
+                                        'You will need to sign in again to access your account.',
                                       ),
                                       actions: [
                                         TextButton(
@@ -497,7 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   );
                                   if (confirmed == true && context.mounted) {
-                                    await PhoneAuthService.instance.signOut();
+                                    await AuthService.instance.signOut();
                                     CycleRepository.instance.clearAuth();
                                     if (context.mounted) {
                                       Navigator.of(
