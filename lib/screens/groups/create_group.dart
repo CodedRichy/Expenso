@@ -101,9 +101,9 @@ class _CreateGroupState extends State<CreateGroup> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Error: ${e.toString()}',
+            'Could not create group. Check your connection and try again.',
           ),
           behavior: SnackBarBehavior.floating,
         ),
