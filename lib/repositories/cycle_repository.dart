@@ -285,15 +285,20 @@ class CycleRepository extends BaseRepository {
   }
 
   Future<void> _writeCurrentUserProfile() async {
-    final cache = _userCache[_currentUserId];
-    await SupabaseService.instance.setUser(
-      _currentUserId,
-      displayName: _currentUserName,
-      phoneNumber: _currentUserPhone,
-      photoURL: cache?['photoURL'] as String?,
-      upiId: cache?['upiId'] as String?,
-      currencyCode: cache?['currencyCode'] as String?,
-    );
+    try {
+      await SupabaseService.instance.setUser(
+        _currentUserId,
+        displayName: _currentUserName,
+        phoneNumber: _currentUserPhone.isEmpty ? null : _currentUserPhone,
+        email: _currentUserEmail.isEmpty ? null : _currentUserEmail,
+        photoURL: currentUserPhotoURL,
+        upiId: currentUserUpiId,
+        currencyCode: currentUserCurrencyCode,
+      );
+    } catch (e, st) {
+      AppLogger.error('_writeCurrentUserProfile', name: 'CycleRepository', error: e, stackTrace: st);
+      rethrow;
+    }
   }
 
   /// Updates current user photo URL (e.g. after upload). Persists to Firestore and local cache.

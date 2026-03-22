@@ -174,7 +174,8 @@ class AuthRepository extends BaseRepository {
     await SupabaseService.instance.setUser(
       _currentUserId,
       displayName: _currentUserName,
-      phoneNumber: _currentUserPhone,
+      phoneNumber: _currentUserPhone.isEmpty ? null : _currentUserPhone,
+      email: _currentUserEmail.isEmpty ? null : _currentUserEmail,
       photoURL: cache?['photoURL'] as String?,
       upiId: cache?['upiId'] as String?,
       currencyCode: cache?['currencyCode'] as String?,
