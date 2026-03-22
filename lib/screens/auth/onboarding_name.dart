@@ -95,12 +95,12 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                         textAlign: TextAlign.center,
                         onChanged: (_) => setState(() {}),
                         onSubmitted: (_) => handleGetStarted(),
-                        style: context.displaySmall.copyWith(
+                        style: context.displayMedium.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Your Name',
-                          hintStyle: context.displaySmall.copyWith(
+                          hintStyle: context.displayMedium.copyWith(
                             color: context.colorTextTertiary.withValues(alpha: 0.3),
                             fontWeight: FontWeight.w600,
                           ),

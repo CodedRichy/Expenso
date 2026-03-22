@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../design/colors.dart';
-import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../utils/money_format.dart';
 import '../services/locale_service.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/tap_scale.dart';
 import './cycle_settled_sheet.dart';
 
@@ -23,6 +21,26 @@ class PaymentResultSheet extends StatefulWidget {
     this.amount,
     this.transactionId,
   });
+
+  static Future<void> show(
+    BuildContext context, {
+    required Group group,
+    String status = 'success',
+    double? amount,
+    String? transactionId,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => PaymentResultSheet(
+        group: group,
+        status: status,
+        amount: amount,
+        transactionId: transactionId,
+      ),
+    );
+  }
 
   @override
   State<PaymentResultSheet> createState() => _PaymentResultSheetState();
@@ -140,7 +158,11 @@ class _PaymentResultSheetState extends State<PaymentResultSheet>
           
           if (isSuccess && widget.amount != null) ...[
             Text(
-              '${formatMoneyFromMajor(widget.amount!, widget.group.currencyCode, LocaleService.instance.localeCode)}',
+              formatMoneyFromMajor(
+                widget.amount!,
+                widget.group.currencyCode,
+                LocaleService.instance.localeCode,
+              ),
               textAlign: TextAlign.center,
               style: context.amountSM.copyWith(
                 color: theme.colorScheme.onSurface,
@@ -196,6 +218,7 @@ class _PaymentResultSheetState extends State<PaymentResultSheet>
               if (isSuccess) {
                 // Show the settled sheet after short delay if successful
                 Future.delayed(const Duration(milliseconds: 300), () {
+                  if (!mounted) return;
                   CycleSettledSheet.show(context, group: widget.group);
                 });
               }
@@ -232,23 +255,4 @@ class _PaymentResultSheetState extends State<PaymentResultSheet>
     );
   }
 
-  static Future<void> show(
-    BuildContext context, {
-    required Group group,
-    String status = 'success',
-    double? amount,
-    String? transactionId,
-  }) {
-    return showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => PaymentResultSheet(
-        group: group,
-        status: status,
-        amount: amount,
-        transactionId: transactionId,
-      ),
-    );
-  }
 }

@@ -10,14 +10,14 @@ class TapScale extends StatefulWidget {
   final bool enableHaptic;
 
   const TapScale({
-    Key? key,
+    super.key,
     required this.child,
     this.onTap,
     this.targetScale = 0.96,
     this.scaleDown,
     this.duration = const Duration(milliseconds: 100),
     this.enableHaptic = false,
-  }) : super(key: key);
+  });
 
   @override
   State<TapScale> createState() => _TapScaleState();

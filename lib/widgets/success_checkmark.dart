@@ -8,11 +8,11 @@ class SuccessCheckmark extends StatefulWidget {
   final VoidCallback? onComplete;
 
   const SuccessCheckmark({
-    Key? key,
+    super.key,
     this.size = 80,
     this.color,
     this.onComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<SuccessCheckmark> createState() => _SuccessCheckmarkState();

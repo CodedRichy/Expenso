@@ -678,9 +678,9 @@ class SupabaseService {
     return _db
         .from('expenses')
         .stream(primaryKey: ['id'])
-        .eq('group_id', groupId)
         .map(
           (rows) => rows
+              .where((row) => (row['group_id'] ?? '').toString() == groupId)
               .where((row) => (row['cycle_id'] ?? '').toString() == cycleId)
               .map((e) => _SupabaseRowView(_mapExpenseRow(e)))
               .toList(),
@@ -751,9 +751,9 @@ class SupabaseService {
     return _db
         .from('payment_attempts')
         .stream(primaryKey: ['id'])
-        .eq('group_id', groupId)
         .map(
           (rows) => rows
+              .where((row) => (row['group_id'] ?? '').toString() == groupId)
               .where((row) => (row['cycle_id'] ?? '').toString() == cycleId)
               .map(_mapPaymentAttemptRow)
               .toList(),

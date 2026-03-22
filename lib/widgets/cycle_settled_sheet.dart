@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
-import '../design/spacing.dart';
 import '../design/typography.dart';
 import '../models/models.dart';
 import '../utils/money_format.dart';
 import '../services/locale_service.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/tap_scale.dart';
 
 class CycleSettledSheet extends StatelessWidget {

@@ -12,7 +12,7 @@ class GlassCard extends StatelessWidget {
   final EdgeInsets? margin;
 
   const GlassCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding,
     this.borderRadius,
@@ -20,7 +20,7 @@ class GlassCard extends StatelessWidget {
     this.blur,
     this.width,
     this.margin,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

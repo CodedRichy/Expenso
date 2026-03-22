@@ -6,6 +6,8 @@ import '../../models/models.dart';
 import '../../utils/money_format.dart';
 import '../../utils/route_args.dart';
 import '../../widgets/fade_in.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/gradient_scaffold.dart';
 
 class CycleSettled extends StatelessWidget {
   final Group? group;
@@ -21,22 +23,21 @@ class CycleSettled extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => Navigator.of(context).maybePop(),
       );
-      return const Scaffold(body: SizedBox.shrink());
+      return const GradientScaffold(body: SizedBox.shrink());
     }
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenPaddingH,
                 AppSpacing.screenHeaderPaddingTop,
                 AppSpacing.screenPaddingH,
-                AppSpacing.space3xl,
+                AppSpacing.spaceXl,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
                   IconButton(
                     onPressed: () {
@@ -44,16 +45,16 @@ class CycleSettled extends StatelessWidget {
                     },
                     icon: const Icon(Icons.chevron_left, size: 24),
                     color: theme.colorScheme.onSurface,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    constraints: const BoxConstraints(),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: AppSpacing.spaceMd),
+                  Expanded(
+                    child: Text(
+                      resolvedGroup.name,
+                      style: context.headingMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(resolvedGroup.name, style: context.screenTitle),
                 ],
               ),
             ),
@@ -62,11 +63,12 @@ class CycleSettled extends StatelessWidget {
                 child: FadeIn(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 96,
+                      horizontal: AppSpacing.screenPaddingH,
+                      vertical: AppSpacing.space4xl,
                     ),
-                    child: SizedBox(
-                      width: 320,
+                    child: GlassCard(
+                      width: 360,
+                      borderRadius: AppSpacing.radiusLarge,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -75,7 +77,7 @@ class CycleSettled extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: context.amountLG,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.spaceLg),
                           Semantics(
                             label:
                                 '${formatMoneyFromMajor(resolvedGroup.amount, resolvedGroup.currencyCode)} settled',
@@ -87,7 +89,7 @@ class CycleSettled extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.spaceMd),
                           Text(
                             'All balances cleared. The next cycle has begun.',
                             textAlign: TextAlign.center,
@@ -100,8 +102,13 @@ class CycleSettled extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.spaceXl,
+                AppSpacing.screenPaddingH,
+                AppSpacing.spaceLg,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -118,9 +125,11 @@ class CycleSettled extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.buttonPaddingV,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                         ),
                         elevation: 0,
                         minimumSize: const Size(double.infinity, 0),
@@ -128,7 +137,7 @@ class CycleSettled extends StatelessWidget {
                       child: const Text('Continue', style: AppTypography.button),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.spaceLg),
                   Semantics(
                     label: 'View settlement history',
                     button: true,
@@ -146,9 +155,11 @@ class CycleSettled extends StatelessWidget {
                             : context.colorSurface,
                         foregroundColor: theme.colorScheme.onSurface,
                         side: BorderSide(color: theme.dividerColor),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.buttonPaddingV,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                         ),
                         minimumSize: const Size(double.infinity, 0),
                       ),

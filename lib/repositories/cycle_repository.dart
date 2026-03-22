@@ -1518,6 +1518,11 @@ class CycleRepository extends BaseRepository {
     );
   }
 
+  int getNetBalanceMinorOfMember(String groupId, String memberId) {
+    final netMinor = getNetBalancesAfterSettlementsMinor(groupId);
+    return netMinor[memberId] ?? 0;
+  }
+
   List<String> getSettlementInstructions(String groupId) {
     final balances = calculateBalances(groupId);
     final currencyCode = getGroup(groupId)?.currencyCode ?? 'INR';

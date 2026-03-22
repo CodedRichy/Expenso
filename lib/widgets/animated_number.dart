@@ -17,7 +17,7 @@ class AnimatedNumber extends StatelessWidget {
   final int decimalDigits;
 
   const AnimatedNumber({
-    Key? key,
+    super.key,
     required this.value,
     this.style,
     this.prefix = '',
@@ -26,7 +26,7 @@ class AnimatedNumber extends StatelessWidget {
     this.currencyCode,
     this.locale,
     this.decimalDigits = 0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

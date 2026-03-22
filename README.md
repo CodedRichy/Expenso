@@ -5,9 +5,35 @@
 [![License](https://img.shields.io/badge/License-Proprietary-red)](#)
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 
+## MVP Quickstart (Current Stack)
+
+The app currently runs on **Supabase** (not Firebase).  
+Use this setup for a working local MVP:
+
+1. Create `.env` in project root:
+   ```env
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   GROQ_API_KEY=your_groq_api_key
+   ```
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+3. Run:
+   ```bash
+   flutter run
+   ```
+4. Optional (if using edge functions locally/deploy):
+   ```bash
+   supabase functions deploy settleAndRestart
+   supabase functions deploy callGroqParser
+   supabase functions deploy callOcrScanner
+   ```
+
 ## Overview
 
-Expenso is a premium group expense tracking application built with Flutter and Firebase. It addresses the friction of shared financial management for friends, roommates, and travel groups by enforcing a structured "Cycle" model. Unlike simple ledger apps, Expenso manages expenses through a discrete lifecycle: an active tracking phase, a "frozen" settlement phase, and an atomic archive-and-restart flow.
+Expenso is a premium group expense tracking application built with Flutter and Supabase. It addresses the friction of shared financial management for friends, roommates, and travel groups by enforcing a structured "Cycle" model. Unlike simple ledger apps, Expenso manages expenses through a discrete lifecycle: an active tracking phase, a "frozen" settlement phase, and an atomic archive-and-restart flow.
 
 The standout feature is the **Magic Bar**, an AI-powered input field that uses Natural Language Processing (NLP) to parse complex group expenses (e.g., *"Dinner 1200 with Ash excluding Rishi"*) into structured ledger entries automatically.
 
@@ -18,7 +44,7 @@ The standout feature is the **Magic Bar**, an AI-powered input field that uses N
 - **Decision Clarity Card**: A real-time net-balance visualization showing exactly who owes what.
 - **Integrated Payments**: Native deep-linking to UPI apps (GPay, PhonePe, Paytm) and dynamic QR fallback.
 - **Premium UX**: High-fidelity interface with Material 3, glassmorphism elements, and custom micro-animations (TapScale, StaggeredListItem).
-- **Offline Reliability**: Optimistic UI updates with real-time Firestore synchronization.
+- **Offline Reliability**: Optimistic UI updates with real-time Supabase synchronization.
 - **Security**: Optional end-to-end encryption for sensitive group data at rest.
 
 ## Architecture
@@ -26,7 +52,7 @@ The standout feature is the **Magic Bar**, an AI-powered input field that uses N
 Expenso follows a **Repository-driven Architecture** with a clear separation between UI, logic, and persistence.
 
 - **Main Components**:
-  - `CycleRepository`: The central state manager and single source of truth; subscribes to real-time Firestore streams.
+  - `CycleRepository`: The central state manager and single source of truth; subscribes to real-time Supabase streams.
   - `SettlementEngine`: A dedicated utility for complex balance math and debt minimization.
   - `GroqExpenseParserService`: Orchestrates AI parsing with few-shot example learning and local fallback logic.
 - **Data Flow**:
@@ -37,7 +63,7 @@ Expenso follows a **Repository-driven Architecture** with a clear separation bet
 ## Tech Stack
 
 - **Client**: Flutter (Dart), Material 3
-- **Backend**: Firebase (Firestore, Auth, Functions, Storage, Messaging)
+- **Backend**: Supabase (Postgres, Auth, Realtime, Edge Functions)
 - **AI**: Groq API (`meta-llama/llama-4-scout-17b-16e-instruct`)
 - **Payments**: `upi_india` (Intent launch), `qr_flutter`, `razorpay`
 - **Infrastructure**: GitHub Actions (CI), CodeQL

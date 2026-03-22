@@ -17,7 +17,6 @@ import '../../utils/money_format.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/payment_result_sheet.dart';
-import '../../widgets/cycle_settled_sheet.dart';
 
 class SettlementConfirmation extends StatefulWidget {
   final Group? group;

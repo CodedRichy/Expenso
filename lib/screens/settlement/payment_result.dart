@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../design/typography.dart';
+import '../../design/spacing.dart';
 import '../../models/models.dart';
 import '../../utils/route_args.dart';
 import '../../utils/money_format.dart';
+import '../../widgets/gradient_scaffold.dart';
+import '../../widgets/glass_card.dart';
 import '../../widgets/tap_scale.dart';
 
 class PaymentResult extends StatefulWidget {
@@ -57,7 +60,7 @@ class _PaymentResultState extends State<PaymentResult>
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => Navigator.of(context).maybePop(),
       );
-      return const Scaffold(body: SizedBox.shrink());
+      return const GradientScaffold(body: SizedBox.shrink());
     }
     final statusLabel = widget.status == 'success'
         ? 'Payment successful'
@@ -66,16 +69,17 @@ class _PaymentResultState extends State<PaymentResult>
         : 'Payment cancelled';
     final isSuccess = widget.status == 'success';
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: 320,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+                  child: GlassCard(
+                    width: 360,
+                    borderRadius: AppSpacing.radiusLarge,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -108,7 +112,7 @@ class _PaymentResultState extends State<PaymentResult>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.space4xl),
                         Column(
                           children: [
                             Text(
@@ -158,15 +162,20 @@ class _PaymentResultState extends State<PaymentResult>
                               ),
                           ],
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: AppSpacing.space3xl),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                AppSpacing.spaceXl,
+                AppSpacing.screenPaddingH,
+                AppSpacing.spaceLg,
+              ),
               child: TapScale(
                 child: Semantics(
                   label: isSuccess ? 'Done' : 'Close',
@@ -181,9 +190,11 @@ class _PaymentResultState extends State<PaymentResult>
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.buttonPaddingV,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                       ),
                       elevation: 0,
                       minimumSize: const Size(double.infinity, 0),
