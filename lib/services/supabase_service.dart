@@ -553,7 +553,6 @@ class SupabaseService {
       'expense_id': expenseId,
       'group_id': groupId,
       'deleted_by_id': deletedById,
-      'deleted_at': DateTime.now().millisecondsSinceEpoch,
     });
   }
 
@@ -736,12 +735,6 @@ class SupabaseService {
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
       if (upiTransactionId != null) 'upi_transaction_id': upiTransactionId,
       if (upiResponseCode != null) 'upi_response_code': upiResponseCode,
-      if (status == 'confirmed_by_payer' || status == 'cash_pending')
-        'confirmed_by_payer': true,
-      if (status == 'confirmed_by_receiver' || status == 'cash_confirmed')
-        'confirmed_by_receiver': true,
-      if (status == 'disputed') 'disputed': true,
-      if (status == 'cash_pending' || status == 'cash_confirmed') 'paid_via': 'cash',
       'updated_at': DateTime.now().millisecondsSinceEpoch,
     };
     await _db
