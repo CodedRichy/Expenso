@@ -27,6 +27,7 @@ class CycleRepository extends BaseRepository {
 
   String _currentUserId = '';
   String _currentUserPhone = '';
+  String _currentUserEmail = '';
   String _currentUserName = '';
   final Map<String, Map<String, dynamic>> _userCache = {};
   bool _groupsLoading = false;
@@ -52,6 +53,7 @@ class CycleRepository extends BaseRepository {
 
   String get currentUserId => _auth.currentUserId;
   String get currentUserPhone => _auth.currentUserPhone;
+  String get currentUserEmail => _auth.currentUserEmail;
   String get currentUserName => _auth.currentUserName;
   String? get currentUserPhotoURL => _auth.currentUserPhotoURL;
   String? get currentUserUpiId => _auth.currentUserUpiId;
@@ -113,12 +115,14 @@ class CycleRepository extends BaseRepository {
   /// Updates the global profile (phone, name, and optionally auth user id and currency). Notifies listeners.
   /// Persists to Firestore and local cache when [_currentUserId] is set.
   void setGlobalProfile(
-    String phone,
     String name, {
+    String? phone,
+    String? email,
     String? authUserId,
     String? currencyCode,
   }) {
-    _currentUserPhone = phone;
+    if (phone != null) _currentUserPhone = phone;
+    if (email != null) _currentUserEmail = email;
     _currentUserName = name.trim();
     if (authUserId != null && authUserId.isNotEmpty) {
       _currentUserId = authUserId;
@@ -138,6 +142,7 @@ class CycleRepository extends BaseRepository {
         photoURL: currentUserPhotoURL,
         upiId: currentUserUpiId,
         phone: _currentUserPhone,
+        email: _currentUserEmail,
         currencyCode: currentUserCurrencyCode,
       );
     }

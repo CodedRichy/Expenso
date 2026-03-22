@@ -27,7 +27,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     if (name.isEmpty) return;
     HapticFeedback.lightImpact();
     final repo = CycleRepository.instance;
-    repo.setGlobalProfile(repo.currentUserPhone, name);
+    repo.setGlobalProfile(name, phone: repo.currentUserPhone, email: repo.currentUserEmail);
     Supabase.instance.client.auth.updateUser(UserAttributes(data: {'display_name': name}));
   }
 

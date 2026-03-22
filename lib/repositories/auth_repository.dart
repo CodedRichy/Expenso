@@ -15,12 +15,14 @@ class AuthRepository extends BaseRepository {
 
   String _currentUserId = '';
   String _currentUserPhone = '';
+  String _currentUserEmail = '';
   String _currentUserName = '';
   DataEncryptionService? _encryption;
   final Map<String, Map<String, dynamic>> _userCache = {};
 
   String get currentUserId => _currentUserId;
   String get currentUserPhone => _currentUserPhone;
+  String get currentUserEmail => _currentUserEmail;
   String get currentUserName => _currentUserName;
   DataEncryptionService? get encryption => _encryption;
 
@@ -34,12 +36,14 @@ class AuthRepository extends BaseRepository {
       _userCache[_currentUserId]?['currencyCode'] as String? ?? 'INR';
 
   void setGlobalProfile(
-    String phone,
     String name, {
+    String? phone,
+    String? email,
     String? authUserId,
     String? currencyCode,
   }) {
-    _currentUserPhone = phone;
+    if (phone != null) _currentUserPhone = phone;
+    if (email != null) _currentUserEmail = email;
     _currentUserName = name.trim();
     if (authUserId != null && authUserId.isNotEmpty) {
       _currentUserId = authUserId;
@@ -58,6 +62,7 @@ class AuthRepository extends BaseRepository {
         photoURL: currentUserPhotoURL,
         upiId: currentUserUpiId,
         phone: _currentUserPhone,
+        email: _currentUserEmail,
         currencyCode: currentUserCurrencyCode,
       );
     }
@@ -70,9 +75,11 @@ class AuthRepository extends BaseRepository {
     _currentUserId = cached.userId;
     _currentUserName = cached.displayName;
     _currentUserPhone = cached.phone;
+    _currentUserEmail = cached.email;
     _userCache[cached.userId] = {
       'displayName': cached.displayName,
       'phoneNumber': cached.phone,
+      'email': cached.email,
       if (cached.photoURL != null) 'photoURL': cached.photoURL,
       if (cached.upiId != null) 'upiId': cached.upiId,
       if (cached.currencyCode != null) 'currencyCode': cached.currencyCode,
@@ -83,11 +90,13 @@ class AuthRepository extends BaseRepository {
   void setAuthUserSync(
     String uid,
     String? phone,
+    String? email,
     String? displayName, {
     String? photoURL,
   }) {
     if (uid.isNotEmpty) _currentUserId = uid;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
+    if (email != null && email.isNotEmpty) _currentUserEmail = email;
     if (displayName != null && displayName.isNotEmpty) {
       _currentUserName = displayName.trim();
     }
@@ -102,6 +111,7 @@ class AuthRepository extends BaseRepository {
     _userCache[uid] = {
       'displayName': _currentUserName,
       'phoneNumber': _currentUserPhone,
+      'email': _currentUserEmail,
       if (usePhoto != null) 'photoURL': usePhoto,
     };
     if (cached != null && cached.userId == uid) {
@@ -149,6 +159,7 @@ class AuthRepository extends BaseRepository {
           photoURL: u['photoURL'] as String?,
           upiId: u['upiId'] as String?,
           phone: _currentUserPhone,
+          email: _currentUserEmail,
           currencyCode: cur['currencyCode'] as String?,
         );
         notify();
@@ -202,6 +213,7 @@ class AuthRepository extends BaseRepository {
     SupabaseService.instance.setEncryptionService(null);
     _currentUserId = '';
     _currentUserPhone = '';
+    _currentUserEmail = '';
     _currentUserName = '';
     _userCache.clear();
     UserProfileCache.instance.clear();

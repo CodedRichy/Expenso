@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../widgets/expenso_loader.dart';
-import 'phone_auth.dart';
+import 'auth_screen.dart';
 import 'onboarding_name.dart';
 import '../groups/groups_list.dart';
 import '../groups/invite_resolver.dart';

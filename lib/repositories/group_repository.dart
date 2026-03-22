@@ -71,10 +71,10 @@ class GroupRepository extends BaseRepository {
           },
         );
 
-    if (auth.currentUserPhone.isNotEmpty) {
+    if (auth.currentUserPhone.isNotEmpty || auth.currentUserEmail.isNotEmpty) {
       _invitationsLoading = true;
       _invitationsSub = SupabaseService.instance
-          .pendingInvitationsStream(auth.currentUserPhone)
+          .pendingInvitationsStream(phone: auth.currentUserPhone, email: auth.currentUserEmail)
           .listen(
             _onInvitationsSnapshot,
             onError: (e, st) {
@@ -302,7 +302,8 @@ class GroupRepository extends BaseRepository {
     await SupabaseService.instance.acceptInvitation(
       groupId,
       auth.currentUserId,
-      auth.currentUserPhone,
+      phone: auth.currentUserPhone,
+      email: auth.currentUserEmail,
       userName: auth.currentUserName.isNotEmpty ? auth.currentUserName : 'Someone',
     );
     _pendingInvitations.removeWhere((i) => i.groupId == groupId);
@@ -314,7 +315,8 @@ class GroupRepository extends BaseRepository {
     if (auth.currentUserPhone.isEmpty) return;
     await SupabaseService.instance.declineInvitation(
       groupId,
-      auth.currentUserPhone,
+      phone: auth.currentUserPhone,
+      email: auth.currentUserEmail,
       userName: auth.currentUserName.isNotEmpty ? auth.currentUserName : 'Someone',
     );
     _pendingInvitations.removeWhere((i) => i.groupId == groupId);
@@ -347,10 +349,10 @@ class GroupRepository extends BaseRepository {
     }
     
     final m = _membersById[uid];
-    if (m != null && m.phone.isNotEmpty) {
-      final identity = IdentityService.instance.getIdentity(m.phone);
+    if (m != null) {
+      final identity = IdentityService.instance.getIdentity(m.email ?? m.phone);
       if (identity != null && identity.displayName.isNotEmpty) return identity.displayName;
-      return m.name.isNotEmpty ? m.name : PhoneUtils.formatDisplay(m.phone);
+      return m.name.isNotEmpty ? m.name : (m.email ?? PhoneUtils.formatDisplay(m.phone));
     }
 
     final cached = auth.getUserCache(uid);
@@ -371,7 +373,8 @@ class GroupRepository extends BaseRepository {
     if (phoneOrUid.isEmpty) return '';
     if (IdUtils.isAuthUid(phoneOrUid)) return getMemberDisplayNameById(phoneOrUid);
     
-    if (PhoneUtils.normalizeTo10Digits(phoneOrUid) == PhoneUtils.normalizeTo10Digits(auth.currentUserPhone)) {
+    if (phoneOrUid == auth.currentUserEmail || 
+        (phoneOrUid.isNotEmpty && PhoneUtils.normalizeTo10Digits(phoneOrUid) == PhoneUtils.normalizeTo10Digits(auth.currentUserPhone))) {
       return auth.currentUserName.isNotEmpty ? auth.currentUserName : 'You';
     }
 

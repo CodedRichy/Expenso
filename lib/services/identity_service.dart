@@ -3,7 +3,7 @@ import '../models/models.dart';
 import '../utils/phone_utils.dart';
 
 class GlobalIdentity {
-  final String phoneE164;
+  final String identifier;
   final String displayName;
   final String? photoURL;
   final String? upiId;
@@ -11,7 +11,7 @@ class GlobalIdentity {
   final int lastUpdated;
 
   const GlobalIdentity({
-    required this.phoneE164,
+    required this.identifier,
     required this.displayName,
     this.photoURL,
     this.upiId,
@@ -27,7 +27,7 @@ class GlobalIdentity {
     int? lastUpdated,
   }) {
     return GlobalIdentity(
-      phoneE164: phoneE164,
+      identifier: identifier,
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
       upiId: upiId ?? this.upiId,
@@ -39,7 +39,7 @@ class GlobalIdentity {
   GlobalIdentity merge(GlobalIdentity other) {
     final useOther = other.lastUpdated > lastUpdated;
     return GlobalIdentity(
-      phoneE164: phoneE164,
+      identifier: identifier,
       displayName: useOther && other.displayName.isNotEmpty
           ? other.displayName
           : (displayName.isNotEmpty ? displayName : other.displayName),
@@ -63,33 +63,33 @@ class IdentityService extends ChangeNotifier {
 
   final Map<String, GlobalIdentity> _identities = {};
 
-  static String normalizePhone(String phone) => PhoneUtils.formatE164(phone);
+  static String normalizeIdentifier(String input) => PhoneUtils.formatE164(input);
 
-  GlobalIdentity? getIdentity(String phone) {
-    final normalized = normalizePhone(phone);
+  GlobalIdentity? getIdentity(String identifier) {
+    final normalized = normalizeIdentifier(identifier);
     return _identities[normalized];
   }
 
   List<GlobalIdentity> get allIdentities => _identities.values.toList();
 
-  Set<String> getGroupsForPhone(String phone) {
-    return _identities[normalizePhone(phone)]?.groupIds ?? {};
+  Set<String> getGroupsForIdentifier(String identifier) {
+    return _identities[normalizeIdentifier(identifier)]?.groupIds ?? {};
   }
 
   void registerMember({
-    required String phone,
+    required String identifier,
     required String groupId,
     String displayName = '',
     String? photoURL,
     String? upiId,
     int? timestamp,
   }) {
-    final normalized = normalizePhone(phone);
-    if (normalized.length < 5) return;
+    final normalized = normalizeIdentifier(identifier);
+    if (normalized.length < 3) return;
 
     final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     final incoming = GlobalIdentity(
-      phoneE164: normalized,
+      identifier: normalized,
       displayName: displayName,
       photoURL: photoURL,
       upiId: upiId,
@@ -111,9 +111,10 @@ class IdentityService extends ChangeNotifier {
     String? photoURL,
     String? upiId,
   }) {
-    if (member.phone.isEmpty) return;
+    final identifier = member.email ?? member.phone;
+    if (identifier.isEmpty) return;
     registerMember(
-      phone: member.phone,
+      identifier: identifier,
       groupId: groupId,
       displayName: member.name,
       photoURL: photoURL ?? member.photoURL,
@@ -122,12 +123,12 @@ class IdentityService extends ChangeNotifier {
   }
 
   void updateIdentity({
-    required String phone,
+    required String identifier,
     String? displayName,
     String? photoURL,
     String? upiId,
   }) {
-    final normalized = normalizePhone(phone);
+    final normalized = normalizeIdentifier(identifier);
     final existing = _identities[normalized];
     if (existing == null) return;
 
@@ -140,20 +141,20 @@ class IdentityService extends ChangeNotifier {
     notifyListeners();
   }
 
-  String getDisplayName(String phone) {
-    final identity = getIdentity(phone);
+  String getDisplayName(String identifier) {
+    final identity = getIdentity(identifier);
     if (identity != null && identity.displayName.isNotEmpty) {
       return identity.displayName;
     }
-    return _formatPhone(phone);
+    return _formatIdentifier(identifier);
   }
 
-  String? getPhotoURL(String phone) {
-    return getIdentity(phone)?.photoURL;
+  String? getPhotoURL(String identifier) {
+    return getIdentity(identifier)?.photoURL;
   }
 
-  String? getUpiId(String phone) {
-    return getIdentity(phone)?.upiId;
+  String? getUpiId(String identifier) {
+    return getIdentity(identifier)?.upiId;
   }
 
   void buildFromGroups(
@@ -168,7 +169,7 @@ class IdentityService extends ChangeNotifier {
 
         final userData = userCache[memberId];
         registerMember(
-          phone: member.phone,
+          identifier: member.email ?? member.phone,
           groupId: group.id,
           displayName: member.name,
           photoURL: userData?['photoURL'] as String? ?? member.photoURL,
@@ -186,5 +187,6 @@ class IdentityService extends ChangeNotifier {
 
   int get identityCount => _identities.length;
 
-  static String _formatPhone(String phone) => PhoneUtils.formatDisplay(phone);
+  static String _formatIdentifier(String input) => 
+    input.contains('@') ? input : PhoneUtils.formatDisplay(input);
 }

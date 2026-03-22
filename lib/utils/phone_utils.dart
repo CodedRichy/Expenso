@@ -33,12 +33,14 @@ class PhoneUtils {
   }
 
   /// Formats a phone number as E.164 (roughly) for database keys.
-  static String formatE164(String phone) {
-    if (phone.startsWith('+')) {
-      final digits = normalize(phone);
+  /// Returns as-is if it appears to be an email address.
+  static String formatE164(String input) {
+    if (input.contains('@')) return input.trim();
+    if (input.startsWith('+')) {
+      final digits = normalize(input);
       return '+$digits';
     }
-    final digits = normalize(phone);
+    final digits = normalize(input);
     if (digits.length == 10) return '+91$digits';
     if (digits.length == 12 && digits.startsWith('91')) return '+$digits';
     return '+$digits';

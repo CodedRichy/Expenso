@@ -124,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     final repo = CycleRepository.instance;
-    repo.setGlobalProfile(repo.currentUserPhone, name);
+    repo.setGlobalProfile(name, phone: repo.currentUserPhone, email: repo.currentUserEmail);
     Supabase.instance.client.auth.updateUser(UserAttributes(data: {'display_name': name}));
     setState(() => _nameDirty = false);
     if (mounted) {

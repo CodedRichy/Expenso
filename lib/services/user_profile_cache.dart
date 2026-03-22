@@ -13,6 +13,7 @@ class UserProfileCache {
   static const String _keyPhotoURL = 'cached_photo_url';
   static const String _keyUpiId = 'cached_upi_id';
   static const String _keyPhone = 'cached_phone';
+  static const String _keyEmail = 'cached_email';
   static const String _keyCurrencyCode = 'cached_currency_code';
 
   SharedPreferences? _prefs;
@@ -23,6 +24,7 @@ class UserProfileCache {
   String? _photoURL;
   String? _upiId;
   String? _phone;
+  String? _email;
   String? _currencyCode;
 
   String? get userId => _userId;
@@ -30,6 +32,7 @@ class UserProfileCache {
   String? get photoURL => _photoURL;
   String? get upiId => _upiId;
   String? get phone => _phone;
+  String? get email => _email;
   String? get currencyCode => _currencyCode;
 
   bool get hasCache => _userId != null && _userId!.isNotEmpty;
@@ -43,6 +46,7 @@ class UserProfileCache {
     _photoURL = _prefs!.getString(_keyPhotoURL);
     _upiId = _prefs!.getString(_keyUpiId);
     _phone = _prefs!.getString(_keyPhone);
+    _email = _prefs!.getString(_keyEmail);
     _currencyCode = _prefs!.getString(_keyCurrencyCode);
     _loaded = true;
   }
@@ -56,6 +60,7 @@ class UserProfileCache {
       photoURL: _photoURL,
       upiId: _upiId,
       phone: _phone ?? '',
+      email: _email ?? '',
       currencyCode: _currencyCode,
     );
   }
@@ -67,6 +72,7 @@ class UserProfileCache {
     String? photoURL,
     String? upiId,
     String? phone,
+    String? email,
     String? currencyCode,
   }) async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -75,6 +81,7 @@ class UserProfileCache {
     _photoURL = photoURL;
     _upiId = upiId;
     _phone = phone;
+    _email = email;
     _currencyCode = currencyCode;
 
     await Future.wait([
@@ -92,6 +99,10 @@ class UserProfileCache {
         _prefs!.setString(_keyPhone, phone)
       else
         _prefs!.remove(_keyPhone),
+      if (email != null)
+        _prefs!.setString(_keyEmail, email)
+      else
+        _prefs!.remove(_keyEmail),
       if (currencyCode != null)
         _prefs!.setString(_keyCurrencyCode, currencyCode)
       else
@@ -129,6 +140,7 @@ class UserProfileCache {
     _photoURL = null;
     _upiId = null;
     _phone = null;
+    _email = null;
     _currencyCode = null;
     await Future.wait([
       _prefs!.remove(_keyUserId),
@@ -136,6 +148,7 @@ class UserProfileCache {
       _prefs!.remove(_keyPhotoURL),
       _prefs!.remove(_keyUpiId),
       _prefs!.remove(_keyPhone),
+      _prefs!.remove(_keyEmail),
       _prefs!.remove(_keyCurrencyCode),
     ]);
   }
@@ -147,6 +160,7 @@ class CachedUserProfile {
   final String? photoURL;
   final String? upiId;
   final String phone;
+  final String email;
   final String? currencyCode;
 
   CachedUserProfile({
@@ -155,6 +169,7 @@ class CachedUserProfile {
     this.photoURL,
     this.upiId,
     required this.phone,
+    required this.email,
     this.currencyCode,
   });
 }
