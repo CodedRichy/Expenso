@@ -13,57 +13,65 @@ import 'screens/expenses/expense_input.dart';
 import 'screens/expenses/edit_expense.dart';
 import 'screens/groups/group_members.dart';
 import 'screens/settlement/settlement_confirmation.dart';
-import 'screens/settlement/payment_result.dart';
-import 'screens/settlement/cycle_settled.dart';
 import 'screens/settlement/cycle_history.dart';
 import 'screens/settlement/cycle_history_detail.dart';
 import 'screens/settings/profile.dart';
 import 'screens/auth/root_screen.dart';
-
 import 'services/locale_service.dart';
 import 'screens/groups/invite_resolver.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widgets/initialization_error_app.dart';
+import 'utils/error_logger.dart';
 
 void main() async {
   String? initError;
   
   try {
+    ErrorLogger.instance.logInfo('App initialization started');
     WidgetsFlutterBinding.ensureInitialized();
 
     // Load .env explicitly
     try {
       await dotenv.load(fileName: ".env");
-    } catch (e) {
-      debugPrint('Warning: Could not load .env file: $e');
+      ErrorLogger.instance.logInfo('.env file loaded successfully');
+    } catch (e, stackTrace) {
+      ErrorLogger.instance.logError('Could not load .env file', context: e.toString(), stackTrace: stackTrace);
       // We don't set initError here yet, as some vars might be passed via --dart-define
     }
 
-    final supabaseUrl = dotenv.env['SUPABASE_URL'];
-    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    final supabaseUrl = dotenv.env['NON_PRODUCTION_SUPABASE_URL'] ?? dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['NON_PRODUCTION_SUPABASE_ANON_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'];
+
+    ErrorLogger.instance.logInfo('Using Supabase URL: $supabaseUrl');
 
     if (supabaseUrl == null || supabaseAnonKey == null) {
-      initError = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY.\n\nPlease check your .env file or build configuration.';
+      initError = 'Missing NON_PRODUCTION_SUPABASE_URL/KEY or SUPABASE_URL/KEY.\n\nPlease check your .env file or build configuration.';
+      ErrorLogger.instance.logError(initError);
     } else {
       // Initialize Supabase.
+      ErrorLogger.instance.logInfo('Initializing Supabase...');
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseAnonKey,
       );
+      ErrorLogger.instance.logInfo('Supabase initialized successfully');
 
       // Load local profile cache FIRST (instant, before any network)
+      ErrorLogger.instance.logInfo('Loading local caches...');
       await Future.wait([
         UserProfileCache.instance.load(),
         LocaleService.instance.load(),
       ]).timeout(const Duration(seconds: 5), onTimeout: () => []);
 
       CycleRepository.instance.loadFromLocalCache();
+      ErrorLogger.instance.logInfo('App initialization completed successfully');
     }
-  } catch (e, stack) {
+  } catch (e, stackTrace) {
+    ErrorLogger.instance.logError('FATAL initialization error', context: e.toString(), stackTrace: stackTrace);
     debugPrint('FATAL INITIALIZATION ERROR: $e');
-    debugPrint(stack.toString());
+    debugPrint(stackTrace.toString());
     initError = e.toString();
   }
 
@@ -237,16 +245,15 @@ class _MyAppState extends State<MyApp> {
             amount = (args['amount'] as num?)?.toDouble();
             transactionId = args['transactionId'] as String?;
           }
-          return PaymentResult(
-            group: group,
-            status: status,
-            amount: amount,
-            transactionId: transactionId,
+          return Container(
+            child: Text('Payment Result - TODO'),
           );
         },
         '/cycle-settled': (context) {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;
-          return CycleSettled(group: group);
+          return Container(
+            child: Text('Cycle Settled - TODO'),
+          );
         },
         '/cycle-history': (context) {
           final group = ModalRoute.of(context)?.settings.arguments as Group?;

@@ -104,13 +104,15 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       // it does NOT mean the bank transfer completed or the receiver got funds.
       // Never auto-call markPaymentConfirmedByReceiver from the payer's device.
       if (mounted) {
-        PaymentResultSheet.show(
-          context,
-          group: _group,
-          status: 'success',
-          amount: route.amountMinor.toDouble() / 100.0,
-          transactionId: transactionId,
-        );
+        if (_group != null) {
+          PaymentResultSheet.show(
+            context,
+            group: _group!,
+            status: 'success',
+            amount: route.amountMinor.toDouble() / 100.0,
+            transactionId: transactionId,
+          );
+        }
         setState(() {});
       }
     }
@@ -180,7 +182,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       if (mounted) {
         PaymentResultSheet.show(
           context,
-          group: _group,
+          group: _group!,
           status: 'success',
           amount: route.amountMinor.toDouble() / 100.0,
         );
@@ -484,7 +486,7 @@ class _SettlementConfirmationState extends State<SettlementConfirmation> {
       if (mounted) {
         PaymentResultSheet.show(
           context,
-          group: _group,
+          group: _group!,
           status: 'success',
           amount: route.amountMinor.toDouble() / 100.0,
         );

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/country_codes.dart';
 import '../../design/colors.dart';
 import '../../design/typography.dart';
 import '../../repositories/cycle_repository.dart';
 import '../../services/auth_service.dart';
+import '../../utils/error_logger.dart';
 import '../../widgets/tap_scale.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gradient_scaffold.dart';
@@ -20,12 +22,13 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  AuthMethod _method = AuthMethod.google;
+  AuthMethod _method = AuthMethod.phone;
   bool _isLogin = true; // For Email method
   
   // Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
@@ -41,6 +44,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
@@ -78,10 +82,12 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _handleEmailAuth() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final name = _nameController.text.trim();
+    var name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) return;
-    if (!_isLogin && name.isEmpty) return;
+    if (!_isLogin && name.isEmpty) {
+      name = email.split('@').first;
+    }
 
     setState(() => _loading = true);
     _clearError();
@@ -117,24 +123,19 @@ class _AuthScreenState extends State<AuthScreen> {
     final e164 = '$_selectedCountryCode$digits';
     setState(() => _loading = true);
     
-    AuthService.instance.sendOtp(
-      phoneNumber: e164,
-      onCodeSent: () {
-        if (!mounted) return;
+    // For testing: Always accept any phone number and show OTP screen
+    ErrorLogger.instance.logInfo('Testing phone auth for: $e164');
+    
+    // Simulate OTP sending delay
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
         setState(() {
           _step = 'otp';
           _loading = false;
         });
         _startResendTimer();
-      },
-      onError: (msg) {
-        if (!mounted) return;
-        setState(() {
-          _loading = false;
-          _errorMessage = msg;
-        });
-      },
-    );
+      }
+    });
   }
 
   void _handleOtpSubmit() async {
@@ -144,22 +145,41 @@ class _AuthScreenState extends State<AuthScreen> {
     _clearError();
 
     try {
-      final digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-      final e164 = '$_selectedCountryCode$digits';
-      await AuthService.instance.verifyOtp(phoneNumber: e164, token: otp);
-      
-      final user = AuthService.instance.currentUser;
-      if (user != null && mounted) {
-        final currency = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
-        final name = user.userMetadata?['display_name'] as String? ?? '';
-        CycleRepository.instance.setGlobalProfile(
-          name,
+      // Check for dummy OTP
+      if (otp == '123456') {
+        final digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+        final e164 = '$_selectedCountryCode$digits';
+        
+        ErrorLogger.instance.logInfo('Dummy OTP verification successful for: $e164');
+        
+        // Create dummy user in Supabase
+        final response = await Supabase.instance.client.auth.signUp(
           phone: e164,
-          authUserId: user.id,
-          currencyCode: currency,
+          password: 'dummy_password_${DateTime.now().millisecondsSinceEpoch}',
         );
+
+        if (response.user != null && mounted) {
+          final currency = currencyCodeForDialCode(_selectedCountryCode) ?? 'INR';
+          final name = 'Test User';
+          
+          // Set user profile
+          CycleRepository.instance.setGlobalProfile(
+            name,
+            phone: e164,
+            authUserId: response.user!.id,
+            currencyCode: currency,
+          );
+          
+          // Navigate to main app
+          Navigator.of(context).pushReplacementNamed('/root');
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Invalid OTP. Use 123456 for testing';
+        });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      ErrorLogger.instance.logError('OTP verification failed', context: e.toString(), stackTrace: stackTrace);
       if (mounted) setState(() => _errorMessage = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -195,41 +215,381 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GradientScaffold(
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width >= 980;
+    final compactCardWidth = (width - 32).clamp(280.0, 360.0).toDouble();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFE9E9E9),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              Text('Welcome to', style: context.bodyLarge.copyWith(color: context.colorTextSecondary)),
-              Text('Expenso', style: context.heroTitle.copyWith(fontSize: 40, height: 1.1)),
-              const SizedBox(height: 8),
-              Text('Track expenses together, seamlessly.', style: context.bodySecondary),
-              const SizedBox(height: 48),
-              
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
+            child: isWide
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_method == AuthMethod.google) _buildGoogleUI(),
-                      if (_method == AuthMethod.email) _buildEmailUI(),
-                      if (_method == AuthMethod.phone) _buildPhoneUI(),
-                      
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: 16),
-                        Text(_errorMessage!, style: context.bodySecondary.copyWith(color: context.colorError), textAlign: TextAlign.center),
-                      ],
+                      _buildWelcomeCard(240),
+                      const SizedBox(width: 28),
+                      _buildLoginCard(320),
+                      const SizedBox(width: 28),
+                      _buildSignUpCard(320),
                     ],
+                  )
+                : Column(
+                    children: [
+                      _buildWelcomeCard(compactCardWidth),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () => setState(() => _isLogin = true),
+                            child: Text(
+                              'Login',
+                              style: context.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: _isLogin ? context.colorPrimary : context.colorTextSecondary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () => setState(() => _isLogin = false),
+                            child: Text(
+                              'Sign up',
+                              style: context.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: !_isLogin ? context.colorPrimary : context.colorTextSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: _isLogin
+                            ? _buildLoginCard(compactCardWidth, key: const ValueKey('login-card-mobile'))
+                            : _buildSignUpCard(compactCardWidth, key: const ValueKey('signup-card-mobile')),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeCard(double width, {Key? key}) {
+    return _buildReferenceCardContainer(
+      key: key,
+      width: width,
+      height: 470,
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Wel\ncom\ne',
+            style: context.displayLarge.copyWith(
+              color: const Color(0xFFEF5A61),
+              fontSize: 76,
+              height: 0.83,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '“Story telling is the\nmost powerful way\nto put ideas into the\nworld today”\n-Robert Mckee',
+            style: context.labelLarge.copyWith(color: const Color(0xFF8A8A8A), height: 1.35),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() => _isLogin = true),
+            child: Text(
+              'Login',
+              style: context.headingMedium.copyWith(
+                color: const Color(0xFF2F2F2F),
+                decoration: TextDecoration.underline,
+                decorationColor: const Color(0xFF2AAE8A),
+                decorationThickness: 4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () => setState(() => _isLogin = false),
+            child: Text(
+              'Register?',
+              style: context.headingMedium.copyWith(
+                color: const Color(0xFF2F2F2F),
+                decoration: TextDecoration.underline,
+                decorationColor: const Color(0xFFE7C35E),
+                decorationThickness: 4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginCard(double width, {Key? key}) {
+    return _buildReferenceCardContainer(
+      key: key,
+      width: width,
+      height: 530,
+      color: const Color(0xFFF1C86D),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.chevron_left, color: Colors.white),
+          const SizedBox(height: 4),
+          Text(
+            'Log\nin',
+            style: context.displayLarge.copyWith(
+              color: Colors.white,
+              fontSize: 74,
+              height: 0.88,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Happy to see you\nagain. Now let\'s\nmake memories.',
+            style: context.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _socialDot(icon: Icons.g_mobiledata),
+              const SizedBox(width: 10),
+              _socialDot(icon: Icons.facebook),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _outlinedField(
+            controller: _emailController,
+            hint: 'Email',
+            icon: Icons.mail_outline,
+            keyboardType: TextInputType.emailAddress,
+            textColor: Colors.white,
+          ),
+          const SizedBox(height: 14),
+          _outlinedField(
+            controller: _passwordController,
+            hint: 'Password',
+            icon: Icons.lock_outline,
+            obscureText: true,
+            textColor: Colors.white,
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              TapScale(
+                onTap: _loading
+                    ? null
+                    : () {
+                        setState(() => _isLogin = true);
+                        _handleEmailAuth();
+                      },
+                child: Text(
+                  _loading ? 'Loading…' : 'Login',
+                  style: context.headingMedium.copyWith(
+                    color: Colors.white,
+                    decoration: TextDecoration.underline,
+                    decorationColor: const Color(0xFF2AAE8A),
+                    decorationThickness: 4,
                   ),
                 ),
               ),
-
-              _buildMethodSwitcher(),
-              const SizedBox(height: 20),
+              const Spacer(),
+              Text(
+                'Forgot\nPassword?',
+                style: context.labelLarge.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+              ),
             ],
           ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _errorMessage!,
+              style: context.labelSmall.copyWith(color: const Color(0xFF7A1B1B)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignUpCard(double width, {Key? key}) {
+    return _buildReferenceCardContainer(
+      key: key,
+      width: width,
+      height: 530,
+      color: const Color(0xFF4FB989),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.chevron_left, color: Colors.white),
+          const SizedBox(height: 4),
+          Text(
+            'Sign\nup',
+            style: context.displayLarge.copyWith(
+              color: Colors.white,
+              fontSize: 74,
+              height: 0.88,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'One step, one\nway',
+            style: context.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+          ),
+          const SizedBox(height: 16),
+          _outlinedField(
+            controller: _emailController,
+            hint: 'Email',
+            icon: Icons.mail_outline,
+            keyboardType: TextInputType.emailAddress,
+            textColor: Colors.white,
+          ),
+          const SizedBox(height: 14),
+          _outlinedField(
+            controller: _passwordController,
+            hint: 'Password',
+            icon: Icons.lock_outline,
+            obscureText: true,
+            textColor: Colors.white,
+          ),
+          const SizedBox(height: 14),
+          _outlinedField(
+            controller: _confirmPasswordController,
+            hint: 'Confirm Password',
+            icon: Icons.lock_outline,
+            obscureText: true,
+            textColor: Colors.white,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Checkbox(
+                value: true,
+                onChanged: (_) {},
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.8)),
+                checkColor: const Color(0xFF4FB989),
+                fillColor: const WidgetStatePropertyAll(Colors.white),
+                visualDensity: VisualDensity.compact,
+              ),
+              Expanded(
+                child: Text(
+                  'Accept Terms and Condition.',
+                  style: context.labelLarge.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          TapScale(
+            onTap: _loading
+                ? null
+                : () {
+                    if (_passwordController.text != _confirmPasswordController.text) {
+                      setState(() => _errorMessage = 'Passwords do not match');
+                      return;
+                    }
+                    setState(() => _isLogin = false);
+                    _handleEmailAuth();
+                  },
+            child: Text(
+              _loading ? 'Loading…' : 'SignUp',
+              style: context.headingMedium.copyWith(
+                color: Colors.white,
+                decoration: TextDecoration.underline,
+                decorationColor: const Color(0xFF2AAE8A),
+                decorationThickness: 4,
+              ),
+            ),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _errorMessage!,
+              style: context.labelSmall.copyWith(color: const Color(0xFF4A0D0D)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReferenceCardContainer({
+    required double width,
+    required double height,
+    required Color color,
+    required Widget child,
+    Key? key,
+  }) {
+    return Container(
+      key: key,
+      width: width,
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _socialDot({required IconData icon}) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 18, color: const Color(0xFF737373)),
+    );
+  }
+
+  Widget _outlinedField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required Color textColor,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: context.bodyMedium.copyWith(color: textColor),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: context.bodyMedium.copyWith(color: textColor.withValues(alpha: 0.8)),
+        prefixIcon: Icon(icon, size: 18, color: textColor.withValues(alpha: 0.85)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: textColor.withValues(alpha: 0.65), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: textColor, width: 1.2),
         ),
       ),
     );
@@ -346,7 +706,23 @@ class _AuthScreenState extends State<AuthScreen> {
                   border: Border.all(color: Colors.black12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(_selectedCountryCode, style: context.bodyLarge),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        color: context.colorSurface,
+                      ),
+                      child: const Icon(Icons.flag, size: 12),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(_selectedCountryCode, style: context.bodyLarge),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down, size: 20),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -354,7 +730,11 @@ class _AuthScreenState extends State<AuthScreen> {
               child: TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(hintText: 'Phone Number'),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10), // Max 10 digits for phone number
+                ],
+                decoration: const InputDecoration(hintText: 'Phone number'),
                 style: context.input,
               ),
             ),
@@ -362,40 +742,154 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 24),
         TapScale(
+          onTap: _loading ? null : () {
+            HapticFeedback.mediumImpact();
+            _handlePhoneSubmit();
+          },
           child: ElevatedButton(
             onPressed: _loading ? null : _handlePhoneSubmit,
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: context.colorSuccess,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
             ),
             child: _loading 
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Send Code', style: AppTypography.button),
+              : Text('Sign in', style: AppTypography.button.copyWith(color: Colors.white)),
           ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            const Expanded(child: Divider()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('OR', style: context.bodySecondary.copyWith(fontWeight: FontWeight.w500)),
+            ),
+            const Expanded(child: Divider()),
+          ],
+        ),
+        const SizedBox(height: 24),
+        _buildSocialButtons(),
+      ],
+    );
+  }
+
+  Widget _buildSocialButtons() {
+    return Column(
+      children: [
+        TapScale(
+          onTap: () {
+            // TODO: Add Google sign-in
+            HapticFeedback.lightImpact();
+          },
+          child: Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: context.colorSurfaceGlass,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.colorBorder, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: context.colorGlassShadow,
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.network('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg', height: 20,
+                  errorBuilder: (_, error, stackTrace) => const Icon(Icons.account_circle, size: 20)),
+                const SizedBox(width: 12),
+                Text('Continue with Google', style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TapScale(
+          onTap: () {
+            // TODO: Add Apple sign-in
+            HapticFeedback.lightImpact();
+          },
+          child: Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: context.colorSurfaceGlass,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.colorBorder, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: context.colorGlassShadow,
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.apple, size: 20),
+                const SizedBox(width: 12),
+                Text('Continue with Apple', style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TapScale(
+          onTap: () {
+            // TODO: Add Facebook sign-in
+            HapticFeedback.lightImpact();
+          },
+          child: Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: context.colorSurfaceGlass,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.colorBorder, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: context.colorGlassShadow,
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.facebook, size: 20, color: Color(0xFF1877F2)),
+                const SizedBox(width: 12),
+                Text('Continue with Facebook', style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'By continuing, you agree to our Terms & Conditions and Privacy Policy',
+          style: context.labelSmall.copyWith(color: context.colorTextSecondary),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'To learn more, see our communication preferences',
+          style: context.labelSmall.copyWith(color: context.colorTextSecondary),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
   Widget _buildMethodSwitcher() {
-    return SegmentedButton<AuthMethod>(
-      segments: const [
-        ButtonSegment(value: AuthMethod.google, icon: Icon(Icons.g_mobiledata), label: Text('Google')),
-        ButtonSegment(value: AuthMethod.email, icon: Icon(Icons.email_outlined), label: Text('Email')),
-        ButtonSegment(value: AuthMethod.phone, icon: Icon(Icons.phone_outlined), label: Text('Phone')),
-      ],
-      selected: {_method},
-      onSelectionChanged: (set) => setState(() {
-        _method = set.first;
-        _errorMessage = null;
-      }),
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        backgroundColor: Colors.white54,
-        selectedBackgroundColor: context.colorPrimary,
-        selectedForegroundColor: Colors.white,
-      ),
-    );
+    return const SizedBox.shrink(); // Hide method switcher for cleaner look
   }
 }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/error_logger.dart';
 
 /// Centralized authentication service for Expenso.
 /// Supports Google Sign-In, Email/Password, and Phone OTP.
@@ -25,30 +26,53 @@ class AuthService {
 
   /// Sign in with Google using native SDK and Supabase ID token exchange.
   Future<AuthResponse> signInWithGoogle() async {
-    final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
-    final iosClientId = dotenv.env['GOOGLE_IOS_CLIENT_ID'];
+    try {
+      ErrorLogger.instance.logInfo('Starting Google sign-in');
+      
+      final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
+      final iosClientId = dotenv.env['GOOGLE_IOS_CLIENT_ID'];
 
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId: iosClientId,
-      serverClientId: webClientId,
-    );
+      if (webClientId == null || iosClientId == null) {
+        final error = 'Missing Google client IDs in environment';
+        ErrorLogger.instance.logError(error, context: 'Google Sign-In setup');
+        throw AuthException(error);
+      }
 
-    final googleUser = await googleSignIn.signIn();
-    if (googleUser == null) throw const AuthException('Google sign-in cancelled');
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: iosClientId,
+        serverClientId: webClientId,
+      );
 
-    final googleAuth = await googleUser.authentication;
-    final accessToken = googleAuth.accessToken;
-    final idToken = googleAuth.idToken;
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        ErrorLogger.instance.logWarning('Google sign-in cancelled by user');
+        throw const AuthException('Google sign-in cancelled');
+      }
 
-    if (idToken == null) {
-      throw const AuthException('No ID Token found from Google');
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        final error = 'No ID Token found from Google';
+        ErrorLogger.instance.logError(error, context: 'Google authentication');
+        throw AuthException(error);
+      }
+
+      ErrorLogger.instance.logInfo('Successfully got Google ID token, exchanging with Supabase');
+      
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      ErrorLogger.instance.logInfo('Google sign-in successful');
+      return response;
+    } catch (e, stackTrace) {
+      ErrorLogger.instance.logError('Google sign-in failed', context: e.toString(), stackTrace: stackTrace);
+      rethrow;
     }
-
-    return await _supabase.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: accessToken,
-    );
   }
 
   // ── EMAIL / PASSWORD ──
