@@ -25,7 +25,11 @@ import 'screens/groups/invite_resolver.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'widgets/initialization_error_app.dart';
+
 void main() async {
+  String? initError;
+  
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,63 +38,42 @@ void main() async {
       await dotenv.load(fileName: ".env");
     } catch (e) {
       debugPrint('Warning: Could not load .env file: $e');
+      // We don't set initError here yet, as some vars might be passed via --dart-define
     }
 
     final supabaseUrl = dotenv.env['SUPABASE_URL'];
     final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
     if (supabaseUrl == null || supabaseAnonKey == null) {
-      throw Exception('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env file');
+      initError = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY.\n\nPlease check your .env file or build configuration.';
+    } else {
+      // Initialize Supabase.
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+
+      // Load local profile cache FIRST (instant, before any network)
+      await Future.wait([
+        UserProfileCache.instance.load(),
+        LocaleService.instance.load(),
+      ]).timeout(const Duration(seconds: 5), onTimeout: () => []);
+
+      CycleRepository.instance.loadFromLocalCache();
     }
-
-    // Initialize Supabase.
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
-
-    // Load local profile cache FIRST (instant, before any network)
-    await Future.wait([
-      UserProfileCache.instance.load(),
-      LocaleService.instance.load(),
-    ]).timeout(const Duration(seconds: 5), onTimeout: () => []);
-
-    CycleRepository.instance.loadFromLocalCache();
-
-    runApp(const MyApp());
   } catch (e, stack) {
     debugPrint('FATAL INITIALIZATION ERROR: $e');
     debugPrint(stack.toString());
-    
-    // Fallback app to show the error instead of a black screen
-    runApp(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                const SizedBox(height: 24),
-                const Text(
-                  'Failed to start Expenso',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  e.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    initError = e.toString();
+  }
+
+  if (initError != null) {
+    runApp(InitializationErrorApp(
+      error: initError,
+      onRetry: () => main(), // Re-run main to try again
+    ));
+  } else {
+    runApp(const MyApp());
   }
 }
 

@@ -81,14 +81,14 @@ extension ThemedTypography on BuildContext {
 abstract final class AppTypography {
   // Display (Amounts, Big Numbers)
   static const displayLarge = TextStyle(
-    fontSize: 36,
+    fontSize: 40,                    // Increased from 36
     fontWeight: FontWeight.w600,
     height: 1.1,
     letterSpacing: -0.8,
   );
 
   static const displayMedium = TextStyle(
-    fontSize: 28,
+    fontSize: 32,                    // Increased from 28
     fontWeight: FontWeight.w600,
     height: 1.2,
     letterSpacing: -0.5,
@@ -96,128 +96,128 @@ abstract final class AppTypography {
 
   // Headings
   static const headingLarge = TextStyle(
-    fontSize: 24,
+    fontSize: 26,                    // Increased from 24
     fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
   static const headingMedium = TextStyle(
-    fontSize: 20,
+    fontSize: 22,                    // Increased from 20
     fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
   static const headingSmall = TextStyle(
-    fontSize: 18,
+    fontSize: 20,                    // Increased from 18
     fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
   // Body
   static const bodyLarge = TextStyle(
-    fontSize: 17,
+    fontSize: 18,                    // Increased from 17
     fontWeight: FontWeight.w400,
     height: 1.5,
   );
 
   static const bodyMedium = TextStyle(
-    fontSize: 15,
+    fontSize: 16,                    // Increased from 15
     fontWeight: FontWeight.w400,
     height: 1.5,
   );
 
   // Labels
   static const labelLarge = TextStyle(
-    fontSize: 13,
+    fontSize: 14,                    // Increased from 13
     fontWeight: FontWeight.w400,
     height: 1.4,
   );
 
   static const labelMedium = TextStyle(
-    fontSize: 13,
+    fontSize: 14,                    // Increased from 13
     fontWeight: FontWeight.w500,
     height: 1.4,
   );
 
   static const labelSmall = TextStyle(
-    fontSize: 12,
+    fontSize: 13,                    // Increased from 12
     fontWeight: FontWeight.w500,
     height: 1.3,
     letterSpacing: 0.4,
   );
 
-  // Legacy/Supporting styles (consider refactoring later)
+  // Supporting styles
   static const heroTitle = TextStyle(
-    fontSize: 34,
+    fontSize: 38,                    // Increased from 34
     fontWeight: FontWeight.w600,
     letterSpacing: -0.6,
   );
 
   static const screenTitle = TextStyle(
-    fontSize: 28,
+    fontSize: 32,                    // Increased from 28
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
 
   static const subheader = TextStyle(
-    fontSize: 22,
+    fontSize: 24,                    // Increased from 22
     fontWeight: FontWeight.w600,
     letterSpacing: -0.4,
   );
 
   static const amountXL = TextStyle(
-    fontSize: 52,
+    fontSize: 56,                    // Increased from 52
     fontWeight: FontWeight.w600,
     letterSpacing: -1.2,
     height: 1.1,
   );
 
   static const amountLG = TextStyle(
-    fontSize: 38,
+    fontSize: 42,                    // Increased from 38
     fontWeight: FontWeight.w600,
     letterSpacing: -0.9,
     height: 1.1,
   );
 
   static const amountMD = TextStyle(
-    fontSize: 24,
+    fontSize: 28,                    // Increased from 24
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
 
-  static const amountSM = TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
+  static const amountSM = TextStyle(fontSize: 18, fontWeight: FontWeight.w600); // 17 -> 18
 
   static const appBarTitle = TextStyle(
-    fontSize: 18,
+    fontSize: 20,                    // 18 -> 20
     fontWeight: FontWeight.w600,
     letterSpacing: -0.3,
   );
 
   static const listItemTitle = TextStyle(
-    fontSize: 19,
+    fontSize: 20,                    // 19 -> 20
     fontWeight: FontWeight.w500,
     letterSpacing: -0.3,
   );
 
   static const sectionLabel = TextStyle(
-    fontSize: 13,
+    fontSize: 14,                    // 13 -> 14
     fontWeight: FontWeight.w500,
     letterSpacing: 0.3,
   );
 
-  static const bodyPrimary = TextStyle(fontSize: 17);
+  static const bodyPrimary = TextStyle(fontSize: 18); // 17 -> 18
 
-  static const bodySecondary = TextStyle(fontSize: 15, height: 1.5);
+  static const bodySecondary = TextStyle(fontSize: 16, height: 1.5); // 15 -> 16
 
-  static const button = TextStyle(fontSize: 17, fontWeight: FontWeight.w500);
+  static const button = TextStyle(fontSize: 18, fontWeight: FontWeight.w500); // 17 -> 18
 
-  static const caption = TextStyle(fontSize: 14);
+  static const caption = TextStyle(fontSize: 15); // 14 -> 15
 
-  static const captionSmall = TextStyle(fontSize: 12);
+  static const captionSmall = TextStyle(fontSize: 13); // 12 -> 13
 
-  static const input = TextStyle(fontSize: 17);
+  static const input = TextStyle(fontSize: 18); // 17 -> 18
 
-  static const hint = TextStyle(fontSize: 17);
+  static const hint = TextStyle(fontSize: 18); // 17 -> 18
 
-  static const errorText = TextStyle(fontSize: 13);
+  static const errorText = TextStyle(fontSize: 14); // 13 -> 14
 }
