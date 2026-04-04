@@ -981,6 +981,8 @@ function renderGroups(){
     const cs=g.cycleStatus==='active'?`<span class="badge b-act">● Active</span>`:g.cycleStatus==='settling'?`<span class="badge b-set">⟳ Settling</span>`:`<span class="badge b-none">${g.cycleStatus||'—'}</span>`;
     const invLink=g.inviteLinkEnabled?`<span class="badge b-beta">Live</span>`:`<span class="badge b-none">Off</span>`;
     const pend=(Array.isArray(g.pendingMembers)?g.pendingMembers.length:0);
+    const gnameJson=JSON.stringify(g.groupName||'Unnamed');
+    const gnameAttr=gnameJson.replace(/"/g,'&quot;');
     return`<tr>
       <td><div class="un">${g.groupName||'Unnamed'}</div><div class="up">${g.gid}</div></td>
       <td><div class="uc">${avHtml(creator)}<div><div class="nm">${creator?.displayName||nameOf(g.creatorId)}</div><div class="dt" style="font-size:11px;color:var(--tx2)">${creator?.phoneNumber||''}</div></div></div></td>
@@ -989,7 +991,7 @@ function renderGroups(){
       <td>${cs}</td>
       <td class="tm">${g.currencyCode||'INR'}</td>
       <td>${invLink}</td>
-      <td><button class="bdel" onclick="openDeleteGroup('${g.gid}','${(g.groupName||'Unnamed').replace(/'/g,"\\'")}')">Delete</button></td>
+      <td><button class="bdel" data-gid="${g.gid}" data-gname="${gnameAttr}" onclick="openDeleteGroup(this.dataset.gid,JSON.parse(this.dataset.gname))">Delete</button></td>
     </tr>`;
   }).join('');
 }
