@@ -15,7 +15,7 @@ Expenso addresses the human psychology of debt in personal relationships. It aim
 
 ## Tech Stack
 - **Frontend**: Flutter (Dart), Material 3, Neo-Minimalist UI (Glassmorphism).
-- **Backend**: Supabase (Postgres, Realtime, Edge Functions), legacy Firebase components (Auth, Storage).
+- **Backend**: Supabase (Postgres, Realtime, Edge Functions).
 - **AI/NLP**: Groq API (Llama-3/4) for the Magic Bar natural language parsing.
 - **Payments**: UPI Deep-linking (`upi_india`), Razorpay, and Dynamic QR Generation.
 
@@ -42,7 +42,7 @@ Expenso follows a **Repository-driven Architecture**.
 ## Known Issues
 - **Multi-currency**: Currently limited to single-currency groups.
 - **Offline Support**: Writes require a network connection (Optimistic UI foundation exists but needs refinement).
-- **FCM Foundation**: Push notifications infrastructure is present but pending full rollout.
+- **Supabase Transition**: Legacy Firebase Functions and Node-based tests have been deprecated in favor of Supabase Edge Functions.
 
 ## Current Focus / Next Steps
 - **Animation Polish**: Completing the tactile feedback pass (V5).
