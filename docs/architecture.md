@@ -24,10 +24,11 @@ Expenso is built on a modular "Repository-driven" architecture designed for high
 -   `utils/`: `SettlementEngine`, normalization logic, and lifecycle guards.
 -   `widgets/`: Custom UI components like `MagicBar`, `TapScale`, and loaders.
 
-### `functions/` (Edge/Cloud Functions)
--   `settleAndRestart`: Atomic cycle rotation logic (written in Node.js/Typescript).
--   `callGroqParser`: Edge function to orchestrate AI parsing requests.
--   `encryption`: Key derivation for field-level security.
+### `supabase/` (Backend Source)
+-   `functions/`: Supabase Edge Functions (Typescript for Deno).
+    -   `settleAndRestart`: Atomic cycle rotation logic.
+    -   `_shared`: Shared utilities (CORS, types).
+-   `migrations/`: SQL migrations for the Postgres database.
 
 ---
 
