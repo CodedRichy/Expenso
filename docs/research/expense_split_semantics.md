@@ -63,7 +63,8 @@ Implementation: Even + `participantPhones.isEmpty` → repo uses `allPhones`; co
 - **Exact sum ≠ total (rounding):** Prompt says “Sum of exactAmounts + me share = total”. Confirmation requires `|exactSum − amount| ≤ 0.01`. If AI omits “me” from exactAmounts, dialog may show sum ≠ total; consider adding “me” slot with `amount − sum(exactAmounts)` when splitType is exact and only others are listed.
 - **Exclude everyone:** If excluded set = all members, repo falls back to [payer] so at least one person is in the split; avoid UX that allows excluding all.
 - **Empty group / no members:** Repo uses `[payer]` or `[currentUser]` when `allPhones.isEmpty` so we never divide by zero.
-- **Settlement:** Net balance = total paid − total share per person; debts computed from that. “Your share” in the card = sum of your portions (from splits or even share); “Your status” = net (positive = owed to you, negative = you owe).
+- **Settlement:** Net balance = total paid − total share per person; debts computed from that. “Your share” in the card = sum of your portions (from splits or amount/participants.length or amount/members.length when participants empty).
+- **Your status:** = net (positive = owed to you, negative = you owe).
 
 ---
 
@@ -94,4 +95,3 @@ Implementation: Even + `participantPhones.isEmpty` → repo uses `allPhones`; co
 - Repo: `addExpenseFromMagicBar` and `addExpense` in `lib/repositories/cycle_repository.dart`.
 - Balances: `lib/utils/settlement_engine.dart` (`computeNetBalances`, `computeDebts`).
 - Confirmation dialog: `_showConfirmationDialog` and `_onConfirm` in `lib/screens/group_detail.dart`.
-- **Prompt refinement:** When the parser produces a wrong result, document the error and fix in **docs/EXPENSE_PARSER_PROMPT_REFINEMENT.md** and update the prompt (rule, COMMON MISTAKES, or example) in `groq_expense_parser_service.dart`.
