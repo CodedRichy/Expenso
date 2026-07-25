@@ -56,9 +56,9 @@ Expenso follows a **Repository-driven Architecture** with a clear separation bet
   - `SettlementEngine`: A dedicated utility for complex balance math and debt minimization.
   - `GroqExpenseParserService`: Orchestrates AI parsing with few-shot example learning and local fallback logic.
 - **Data Flow**:
-  - User input (Magic Bar/Manual) → `CycleRepository` → Firestore.
-  - Firestore Change → `CycleRepository` internal cache → UI Rebuild (via `ListenableBuilder`).
-  - Settlement/Archive → Firebase Cloud Functions (v2) for atomic cross-collection transactions.
+  - User input (Magic Bar/Manual) -> `CycleRepository` -> Supabase.
+  - Supabase Realtime -> `CycleRepository` internal cache -> UI Rebuild (via `ListenableBuilder`).
+  - Settlement/Archive -> Supabase Edge Functions for atomic transactions.
 
 ## Tech Stack
 
@@ -79,7 +79,7 @@ Expenso follows a **Repository-driven Architecture** with a clear separation bet
   /services     → External API wrappers (AI Parser, UPI, Firebase, Connectivity)
   /utils        → Logic helpers: SettlementEngine, formatting, normalization
   /widgets      → Generic UI components (MagicBar, TapScale, Loaders)
-/functions      → Node.js Firebase Cloud Functions for atomic cycle rotation
+/supabase       → Supabase Edge Functions for atomic cycle operations
 /docs           → Comprehensive technical documentation and specifications
 /test           → 187+ unit, widget, and golden tests
 ```
@@ -88,7 +88,7 @@ Expenso follows a **Repository-driven Architecture** with a clear separation bet
 
 ### Prerequisites
 - Flutter SDK (3.10.x or higher)
-- Firebase CLI (for backend deployment)
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (for backend/edge functions)
 - Groq API Key (for NLP parsing)
 
 ### Setup
@@ -101,19 +101,17 @@ Expenso follows a **Repository-driven Architecture** with a clear separation bet
    ```bash
    flutter pub get
    ```
-3. **Environment**: Create a `.env` in the root and add your Groq key:
+3. **Environment**: Create a `.env` in the root:
    ```env
-   GROQ_API_KEY=your_api_key_here
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   GROQ_API_KEY=your_groq_api_key
    ```
-4. **Firebase Configuration**:
+4. **Edge Functions** (optional, for settlement/OCR):
    ```bash
-   dart run flutterfire configure
-   ```
-5. **Functions Deployment**:
-   ```bash
-   cd functions
-   npm install
-   firebase deploy --only functions
+   supabase functions deploy settleAndRestart
+   supabase functions deploy callGroqParser
+   supabase functions deploy callOcrScanner
    ```
 
 ## Usage
@@ -161,7 +159,7 @@ Expenso is built with a test-heavy philosophy (187+ tests).
 
 - **Android**: `flutter build appbundle` (configured for Play Store via GitHub Actions).
 - **iOS**: `flutter build ipa` (configured for App Store Connect).
-- **Cloud Functions**: Deployable to `asia-south1` via Firebase CLI.
+- **Edge Functions**: Deployable via `supabase functions deploy`.
 
 ## Roadmap
 
@@ -174,7 +172,7 @@ Expenso is built with a test-heavy philosophy (187+ tests).
 
 This is a proprietary project. Access is limited to authorized contributors.
 1. Follow the Repository pattern in `lib/repositories`.
-2. Ensure no UI code directly accesses Firestore; use the `CycleRepository`.
+2. Ensure no UI code directly accesses Supabase; use the `CycleRepository`.
 3. All feature changes must pass the full test suite (`flutter test`).
 
 ## License
